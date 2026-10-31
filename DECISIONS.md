@@ -30,6 +30,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 | TypeScript | 6.0.3 | npm (plantilla) | 2026-10-31 |
 | Tailwind CSS (`tailwindcss`) | 4.3.3 | npm (F0-02) | 2026-10-31 |
 | @tailwindcss/vite | 4.3.3 | npm (F0-02) | 2026-10-31 |
+| window-vibrancy (crate, solo Windows) | 0.8.1 | Cargo (F0-07, ya era dependencia transitiva de `tauri`) | 2026-10-31 |
 | eslint | 10.14.0 | npm (F0-03) | 2026-10-31 |
 | @eslint/js | 10.0.1 | npm (F0-03) | 2026-10-31 |
 | typescript-eslint | 8.72.1 | npm (F0-03) | 2026-10-31 |
@@ -145,6 +146,14 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
   - Rust: `[lints.clippy]` en `Cargo.toml` con `unwrap_used`, `expect_used`, `todo` y `unimplemented` en `deny`; `clippy.toml` los permite en tests (CLAUDE.md §6). `rustfmt.toml` fija edición 2024 y ancho 100.
   - Prettier usa `endOfLine: auto` porque en Windows `autocrlf` convierte los finales de línea; `.md`, `docs/` y `src-tauri/` quedan fuera de Prettier.
 - **Alternativas descartadas:** Biome (sustituiría ESLint y Prettier, pero el soporte de Svelte 5 es menos completo); lint solo con `svelte-check` (no cubre reglas de estilo ni de los límites de CLAUDE.md).
+
+## D-16 — Efectos de ventana mediante `window-vibrancy` directo
+- **Estado:** PROPOSED · **Fecha:** 2026-10-31
+- **Contexto:** D-01 pide `set_effects` de Tauri y que `window/effects.rs` "devuelva el efecto realmente aplicado". En `tauri` 2.12.5, `Window::set_effects` ignora el error del sistema (`let _ = ...set_window_effects(...)`) y devuelve siempre `Ok`, por lo que con él no se puede detectar que Mica ha fallado ni encadenar el fallback a Acrylic.
+- **Decisión propuesta:** llamar a `window_vibrancy::apply_mica` / `apply_acrylic` / `clear_*` (0.8.1, solo `cfg(windows)`), la misma librería que usa Tauri por debajo y cuyas funciones devuelven `Result`. El acceso queda tras el trait `EffectBackend`, así la lógica de fallback se prueba con un backend simulado (DoD de F0). El permiso `core:window:allow-set-effects` se mantiene (SPEC §8.1).
+- **Consecuencias:** una dependencia directa nueva, pero con versión idéntica a la ya bloqueada en `Cargo.lock` (sin crates nuevos en el árbol). Afecta a F0-07, F0-08 (el frontend usa el efecto devuelto para la clase `.native-effect`) y F6-05. Si se rechaza, solo hay que sustituir `NativeBackend`.
+- **Alternativas descartadas:** `set_effects` de Tauri (no informa del fallo, incumple la consecuencia de D-01); declarar el efecto aplicado sin comprobarlo (la UI mostraría un tinte incorrecto).
+- **Acción humana:** confirmar o rechazar. El trabajo continúa porque la sustitución está aislada en un solo tipo.
 
 ---
 

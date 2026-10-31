@@ -17,6 +17,7 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 
 - [ ] La ventana aparece sin barra nativa, con esquinas redondeadas de 10 px.
 - [ ] El efecto Mica se ve en Windows 11. Si no, indicar qué efecto se aplica (Acrylic o sólido).
+- [ ] El efecto que informa `window_set_effect` (`applied`) coincide con lo que se ve al pedir `mica`, `acrylic` y `none` (una vez F0-08 lo conecte a la UI).
 - [ ] La ventana se arrastra desde la barra de título y no desde los botones.
 - [ ] Minimizar, maximizar y cerrar funcionan.
 - [ ] Redimensionar respeta el tamaño mínimo de 720×480.
