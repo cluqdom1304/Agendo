@@ -2,8 +2,8 @@
 
 **Fase activa:** 1
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F1-06
-**Última actualización:** 2026-10-31 (F1-05)
+**Siguiente tarea:** F1-07
+**Última actualización:** 2026-10-31 (F1-06)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -44,7 +44,7 @@
 - [x] F1-03 `repo/tasks.rs`, `repo/tags.rs`, `repo/fts.rs` con sincronización FTS en transacción
 - [x] F1-04 `domain/dates.rs`: validación `YYYY-MM-DD` / `HH:MM`, conversión local/UTC
 - [x] F1-05 `domain/ordering.rs`: funciones puras de orden (D-05) con tests de tabla
-- [ ] F1-06 `domain/validation.rs`: longitudes, profundidad de etiquetas (D-06)
+- [x] F1-06 `domain/validation.rs`: longitudes, profundidad de etiquetas (D-06)
 - [ ] F1-07 Comandos `tasks_*`, `tag_*`, `task_tags_set`, `trash_list`, `task_restore`
 - [ ] F1-08 `error.rs` con prefijos de código (D-08)
 - [ ] F1-09 `api.ts` y tipos DTO sincronizados con Rust (test de serialización)
@@ -55,6 +55,7 @@
 - F1-03: `repo/{model,tasks,tags,fts}.rs`. Todas las escrituras reciben `&Transaction` (el FTS se actualiza en la misma transacción por construcción) y `repo::with_tx` ejecuta una operación lógica en una transacción `IMMEDIATE`. El repositorio no lee el reloj ni genera ids: el llamador pasa `id` y `now` (UTC). Devuelve `rusqlite::Result`; "no encontrado" es `None`/`false` y los errores de restricción los traducirá `error.rs` (F1-08). `Task` y `Tag` ya serializan en camelCase según SPEC §7.2 (tags y recordatorios se leen con subconsultas JSON, sin N+1). 40 tests nuevos: CRUD, posición al final de la sección, parches (incluido borrar fecha/hora), completar/reabrir, soft delete, restaurar, papelera, purga a 30 días (límite exacto, cascada), listados todo/agenda/rango con filtro por etiqueta, etiquetas (upsert, contadores de pendientes, borrado, `set_task_tags`), FTS (insert/sync/rebuild/rollback) y **10 000 operaciones aleatorias** tras las que `integrity_check = ok`, `foreign_key_check` vacío y `tasks_fts` idéntica a las tareas vivas. Batería completa en verde (82 tests de lib + 4 + 3).
 - F1-04: `domain/dates.rs` (dependencia `chrono`, D-18). `parse_date`/`parse_time`/`parse_instant` son estrictos (`YYYY-MM-DD` con fecha de calendario real, `HH:MM` 00:00–23:59, `YYYY-MM-DDTHH:MM:SSZ`; rechazan espacios, signos, dígitos no ASCII y formatos laxos) y sus errores `DateError` tienen mensaje en español. `local_to_utc` / `utc_to_local` reciben la zona como parámetro (`chrono::Local` en producción); no se lee el reloj. Reglas de DST fijadas y probadas con una zona simulada tipo Madrid: hora inexistente de primavera pasa a la hora siguiente (02:30 → 03:30), hora repetida de otoño = primera aparición; fechas extremas devuelven `OutOfRange` en lugar de provocar el pánico de `chrono`. 17 tests (99 de lib en total + 4 + 3). La zona horaria real del equipo solo se ejercita con un test de ida y vuelta fuera de transiciones.
 - F1-05: `domain/ordering.rs` con el trait `Sortable` (implementado para `repo::model::Task`, así `domain` no depende de `repo`), `sort_todo`, `sort_day` y `group_by_day` (`DayGroup<T>`, serializa `{ date, tasks }`; deja fuera las tareas sin fecha). Implementa D-05: día más reciente primero; dentro del día, con hora (ascendente) → sin hora (`position`) → completadas por `completed_at`; `id` desempata, de modo que el resultado no depende del orden de entrada (comprobado con todas las permutaciones). Tests de tabla (11 casos de día, 5 de POR HACER), agrupación, serialización y uno con datos reales de SQLite: 7 tests nuevos (106 de lib + 4 + 3). D-05 no dice qué pasa con las completadas sin fecha: se aplicó la misma regla de subsección y se registró la decisión pendiente como B-03.
+- F1-06: `domain/validation.rs` con `ValidationError` (mensajes en español; `error.rs` añadirá el prefijo `VALIDATION:`). `validate_title` (≤ 500 caracteres, no bytes), `validate_tag_name` (devuelve el nombre recortado, 1–60), `validate_color_hex` (`#RRGGBB`), `validate_content_json` (objeto JSON de tipo `doc`), `validate_schedule` (fecha y hora válidas vía `dates.rs`) y `validate_tag_parent` (D-06: no ser su propio padre, el padre no puede ser subetiqueta y una etiqueta con hijos no puede pasar a ser hija; el llamador carga el padre y `has_children`). Dos reglas no estaban explícitas en SPEC y se añadieron por coherencia con el esquema: una hora exige fecha (POR HACER no tiene horario) y `content_json` debe ser un documento `doc`; los límites de `content_json`/`content_text` no existen en SPEC y no se inventaron. 10 tests de tabla (116 de lib + 4 + 3).
 **Ítems [H]:** ninguno en esta fase
 
 ---
