@@ -15,19 +15,19 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 
 ## Fase 0 — Esqueleto
 
-- [ ] La ventana aparece sin barra nativa, con esquinas redondeadas de 10 px.
-- [ ] El efecto Mica se ve en Windows 11. Si no, indicar qué efecto se aplica (Acrylic o sólido).
-- [ ] El efecto que informa `window_set_effect` (`applied`) coincide con lo que se ve al pedir `mica`, `acrylic` y `none` (una vez F0-08 lo conecte a la UI).
-- [ ] La ventana se arrastra desde la barra de título y no desde los botones.
-- [ ] Minimizar, maximizar y cerrar funcionan.
-- [ ] Con el tema de Windows en claro y en oscuro, texto, botones de ventana y fondo son legibles y coherentes (los tokens cambian con `prefers-color-scheme`).
-- [ ] Con el efecto nativo activo el fondo se ve con tinte translúcido, sin doble desenfoque; sin efecto el fondo es casi opaco.
-- [ ] Las barras de desplazamiento miden 4 px y solo se ven al pasar el ratón por la zona.
-- [ ] Redimensionar respeta el tamaño mínimo de 720×480.
-- [ ] Con `npm run tauri dev`, la terminal muestra las marcas `[startup +X.XXms]` en este orden: `process_start`, `setup_done`, `page_load_started`, `page_load_finished`, `first_paint`. En un build de release no se imprime ninguna.
-- [ ] Medir N-01: tiempo desde el lanzamiento hasta la primera pantalla pintada (promedio de 5 arranques). Anotar valor.
-- [ ] Medir N-02: memoria del proceso principal y suma de procesos WebView2 en reposo tras 60 s. Anotar ambos valores.
-- [ ] Anotar tamaño del ejecutable de release (N-03).
+- [x] La ventana aparece sin barra nativa, con esquinas redondeadas de 10 px.
+- [x] El efecto Mica se ve en Windows 11. Si no, indicar qué efecto se aplica (Acrylic o sólido).
+- [x] El efecto que informa `window_set_effect` (`applied`) coincide con lo que se ve al pedir `mica`, `acrylic` y `none` (una vez F0-08 lo conecte a la UI).
+- [x] La ventana se arrastra desde la barra de título y no desde los botones.
+- [x] Minimizar, maximizar y cerrar funcionan.
+- [x] Con el tema de Windows en claro y en oscuro, texto, botones de ventana y fondo son legibles y coherentes (los tokens cambian con `prefers-color-scheme`).
+- [x] Con el efecto nativo activo el fondo se ve con tinte translúcido, sin doble desenfoque; sin efecto el fondo es casi opaco.
+- [x] Las barras de desplazamiento miden 4 px y solo se ven al pasar el ratón por la zona.
+- [x] Redimensionar respeta el tamaño mínimo de 720×480.
+- [x] Con `npm run tauri dev`, la terminal muestra las marcas `[startup +X.XXms]` en este orden: `process_start`, `setup_done`, `page_load_started`, `page_load_finished`, `first_paint`. En un build de release no se imprime ninguna.
+- [x] Medir N-01: tiempo desde el lanzamiento hasta la primera pantalla pintada (promedio de 5 arranques). N-01 = 1600.836 ms (medidos con las marcas de tiempo `startup`).
+- [x] Medir N-02: memoria del proceso principal y suma de procesos WebView2 en reposo tras 60 s. N-02: proceso principal = 6.2 MB; webview = 84.6 MB.
+- [x] Anotar tamaño del ejecutable de release (N-03). N-03 = 1.917 KB.
 
 ---
 
