@@ -42,7 +42,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 | TipTap | pendiente (F3-01) | npm | |
 | rusqlite (con `bundled` y `cache`) | 0.41.1 (`Cargo.lock`; libsqlite3-sys 0.39.1) | Cargo (F1-01) | 2026-10-31 |
 | tokio | pendiente (F4-01) | Cargo | |
-| chrono | pendiente (F1-04) | Cargo | |
+| chrono (solo feature `clock`) | 0.4.45 | Cargo (F1-04) | 2026-10-31 |
 | Vitest | pendiente (F1 o F2) | npm | |
 
 ---
@@ -161,6 +161,13 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Decisión:** `rusqlite = { version = "0.41", default-features = false, features = ["bundled", "cache"] }`. `bundled` compila SQLite (con FTS5) dentro del ejecutable, de modo que no depende de ninguna DLL del sistema y la versión de SQLite es la misma en todos los equipos. `cache` da `prepare_cached` para las consultas repetidas de los repos. Se desactivan las features por defecto porque la única que añaden, `ffi-sqlite-wasm-rs`, arrastra crates solo para WebAssembly. El esquema, las migraciones y los pragmas se gestionan en `db/` sin ORM ni crate de migraciones.
 - **Consecuencias:** compilar la dependencia requiere el compilador de C del toolchain (MSVC en Windows, ya necesario para Tauri); primera compilación más lenta. Añade `libsqlite3-sys`, `hashlink`, `fallible-iterator`, `fallible-streaming-iterator` y `vcpkg` (build) al árbol.
 - **Alternativas descartadas:** `sqlx` (async y macros innecesarios, árbol de dependencias mayor); `refinery`/`rusqlite_migration` (SPEC §5 define migraciones por `user_version`, que son ~60 líneas propias y se prueban sin dependencia); SQLite del sistema (versión y soporte de FTS5 no garantizados en Windows).
+
+## D-18 — `chrono` para fechas y conversión local/UTC
+- **Estado:** ACCEPTED · **Fecha:** 2026-10-31
+- **Contexto:** `domain/dates.rs` (F1-04) debe validar fechas de calendario reales y convertir entre hora local y UTC respetando el horario de verano (SPEC §5.1); hacerlo a mano es propenso a errores.
+- **Decisión:** `chrono = { version = "0.4.45", default-features = false, features = ["clock"] }`. `clock` aporta `Local` (zona del sistema, en Windows vía `windows-link`). Las funciones reciben la zona como parámetro genérico `TimeZone`, de modo que producción usa `chrono::Local` y los tests usan una zona simulada con DST sin depender de la configuración del equipo. Nunca se llama a `Utc::now()` ni `Local::now()` fuera de la implementación real de `Clock` (F4-01). Hueco de primavera (hora inexistente): se interpreta con el desplazamiento previo al salto (02:30 pasa a 03:30). Hora repetida de otoño: se toma la primera aparición.
+- **Consecuencias:** añade `chrono`, `num-traits` y `windows-link` (ya presente en el árbol de Tauri) al árbol. `oldtime`, `wasmbind` y `serde` quedan desactivadas. El formato de transporte sigue siendo texto `YYYY-MM-DD`, `HH:MM` y `YYYY-MM-DDTHH:MM:SSZ`; `chrono` no se expone en los DTO.
+- **Alternativas descartadas:** `time` (solo conoce el desplazamiento local actual, no el de una fecha arbitraria, así que no resuelve el DST de fechas futuras); `chrono-tz` como dependencia de pruebas (base IANA completa y tiempo de compilación elevado para cubrir solo dos transiciones, que se simulan en el test); aritmética manual de fechas.
 
 ---
 

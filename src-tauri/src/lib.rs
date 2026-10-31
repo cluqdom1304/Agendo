@@ -1,5 +1,6 @@
 mod commands;
 pub mod db;
+pub mod domain;
 pub mod repo;
 mod startup;
 mod window;
