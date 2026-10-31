@@ -20,6 +20,9 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] El efecto que informa `window_set_effect` (`applied`) coincide con lo que se ve al pedir `mica`, `acrylic` y `none` (una vez F0-08 lo conecte a la UI).
 - [ ] La ventana se arrastra desde la barra de título y no desde los botones.
 - [ ] Minimizar, maximizar y cerrar funcionan.
+- [ ] Con el tema de Windows en claro y en oscuro, texto, botones de ventana y fondo son legibles y coherentes (los tokens cambian con `prefers-color-scheme`).
+- [ ] Con el efecto nativo activo el fondo se ve con tinte translúcido, sin doble desenfoque; sin efecto el fondo es casi opaco.
+- [ ] Las barras de desplazamiento miden 4 px y solo se ven al pasar el ratón por la zona.
 - [ ] Redimensionar respeta el tamaño mínimo de 720×480.
 - [ ] Medir N-01: tiempo desde el lanzamiento hasta la primera pantalla pintada (promedio de 5 arranques). Anotar valor.
 - [ ] Medir N-02: memoria del proceso principal y suma de procesos WebView2 en reposo tras 60 s. Anotar ambos valores.

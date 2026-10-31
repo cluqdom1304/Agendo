@@ -2,8 +2,8 @@
 
 **Fase activa:** 0
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F0-08
-**Última actualización:** 2026-10-31 (F0-07)
+**Siguiente tarea:** F0-09
+**Última actualización:** 2026-10-31 (F0-08)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -17,7 +17,7 @@
 - [x] F0-05 `capabilities/default.json` con permisos mínimos
 - [x] F0-06 `TitleBar` con `data-tauri-drag-region` y `WindowControls`
 - [x] F0-07 `window/effects.rs`: Mica → Acrylic → none, comando `window_set_effect`
-- [ ] F0-08 Tokens CSS y tema oscuro/claro (SPEC §8.3)
+- [x] F0-08 Tokens CSS y tema oscuro/claro (SPEC §8.3)
 - [ ] F0-09 `scripts/size-check.mjs` con presupuesto N-04
 - [ ] F0-10 Log de arranque con marcas de tiempo (solo debug)
 
@@ -28,6 +28,7 @@
 - F0-05: `src-tauri/tests/capabilities.rs` (4 tests) fija el conjunto exacto de permisos, sin `*:default`, solo ventana `main` y `opener` limitado a `http`/`https`/`mailto`. Los permisos de notificaciones (F4-05) y diálogo de archivos (F6-04) se añadirán con sus plugins, porque un permiso de un plugin no instalado rompe el build. `core:event` se añadirá en F4-08 y cualquier permiso extra de ventana (p. ej. `allow-is-maximized`) se añadirá en la tarea que lo use, actualizando el test.
 - F0-06: `TitleBar` y `WindowControls` en `src/lib/shell/` (SvelteKit, D-12; SPEC §10 indica `src/shell/`), textos en `src/lib/i18n.ts`. Lint, `svelte-check` y build en verde. Sin pruebas de componente: Vitest aún no está instalado y la tarea no exige test [A]; el comportamiento real (arrastre, botones) es [H]. Los estilos usan tokens (`--bg-hover`, `--danger`, etc.) que define F0-08; hasta entonces no tienen valor.
 - F0-07: `window/effects.rs` + `commands/window.rs` (`window_set_effect` → `EffectApplied { requested, applied }`). 9 tests de fallback con backend simulado (Mica→Acrylic→none, `none` solo limpia, error `INTERNAL:`, serialización en minúsculas). Clippy/tests compilan la ruta nativa de Windows, por lo que `cargo check --target x86_64-pc-windows-msvc` queda cubierto en este equipo. Que el efecto se vea realmente es [H].
+- F0-08: `src/styles/tokens.css` (SPEC §8.3), `src/styles/base.css` (raíz `.app-root` con radio 10 px y `.native-effect`, scrollbars de 4 px, `prefers-reduced-motion`), `src/lib/api.ts` (único punto IPC), `src/lib/stores/windowEffect.svelte.ts` (runes; pide `mica` al montar y fija `.native-effect` según el efecto devuelto). Lint, `svelte-check`, build y Rust en verde; el CSS compilado contiene tokens, `.native-effect` y utilidades de Tailwind. Se eliminó el demo de la plantilla (comando `greet`, logos y la página con estilos `:root` que habrían tapado los tokens y el efecto). Apariencia, tema y scrollbars reales son [H].
 - No existen aún (no cuentan como fallo): `npm run test` (Vitest, F1/F2), `npm run size` (F0-09).
 
 **Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 0
@@ -138,6 +139,7 @@
 
 ## Notas de sesión
 - 2026-10-31: el entorno real es Windows 11, no Linux (CLAUDE.md §8). El terminal con sandbox (WSL) no arranca por falta de `libasound.so.2`; los comandos se ejecutan fuera del sandbox con aprobación del usuario. Por tanto `cargo check --target x86_64-pc-windows-msvc` es posible en este equipo cuando toque (F0-07).
+- 2026-10-31: SPEC §8.3 no define los tokens claros cuando `data-theme="light"` y el SO está en oscuro (el bloque claro solo vive dentro de `prefers-color-scheme: light`). `tokens.css` añade el bloque `:root[data-theme="light"]` para que el selector manual de tema (F6-05) funcione. También añade `--bg-window-native`, `--bg-window-solid` (valores de SPEC §8.2, ahora por tema), `--scrollbar-thumb` y `--tag-1`…`--tag-8` (colores propuestos por el agente; su contraste se revisa en F6-02).
 - 2026-10-31: hasta F0-06 la ventana no tiene barra de título ni botones (`decorations: false`); para cerrarla en `tauri dev` usar Alt+F4 o detener el proceso.
 - 2026-10-31: el identifier heredado de F0-01 es `com.cristian.miagendaap` (una `p` menos que el nombre del proyecto). Se mantiene y el test lo fija; cambiarlo después mueve el directorio de datos de la app y la identidad de notificaciones. Decidir antes de distribuir (pendiente para el humano).
 - 2026-10-31: `PROGRESS.md` tenía F0-01 sin marcar aunque estaba commiteada (`c62a00e`); marcada en la sesión de F0-02.

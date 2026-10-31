@@ -1,0 +1,59 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.app-root {
+  height: 100vh;
+  overflow: hidden;
+  border-radius: var(--radius-window);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-window-solid);
+}
+
+.app-root.native-effect {
+  background: var(--bg-window-native);
+}
+
+::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: var(--radius-chip);
+  transition: background-color var(--motion-fast) var(--ease-apple);
+}
+
+:hover::-webkit-scrollbar-thumb,
+:focus-within::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

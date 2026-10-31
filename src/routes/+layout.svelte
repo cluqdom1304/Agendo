@@ -1,11 +1,17 @@
 <script lang="ts">
   import "../app.css";
+  import { onMount } from "svelte";
   import TitleBar from "$lib/shell/TitleBar.svelte";
+  import { windowEffect } from "$lib/stores/windowEffect.svelte";
 
   let { children } = $props();
+
+  onMount(() => {
+    void windowEffect.request("mica");
+  });
 </script>
 
-<div class="flex h-screen flex-col overflow-hidden">
+<div class="app-root flex flex-col" class:native-effect={windowEffect.isNative}>
   <TitleBar />
   <div class="min-h-0 flex-1 overflow-auto">
     {@render children()}
