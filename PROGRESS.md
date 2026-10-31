@@ -2,8 +2,8 @@
 
 **Fase activa:** 1
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F1-03
-**Última actualización:** 2026-10-31 (F1-02)
+**Siguiente tarea:** F1-04
+**Última actualización:** 2026-10-31 (F1-03)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -41,7 +41,7 @@
 ## Fase 1 — Persistencia y dominio
 - [x] F1-01 `db/`: conexión con pragmas (SPEC §5.4), migraciones por `user_version`, test de migración desde vacío
 - [x] F1-02 Migración `001_init.sql` (SPEC §5.2)
-- [ ] F1-03 `repo/tasks.rs`, `repo/tags.rs`, `repo/fts.rs` con sincronización FTS en transacción
+- [x] F1-03 `repo/tasks.rs`, `repo/tags.rs`, `repo/fts.rs` con sincronización FTS en transacción
 - [ ] F1-04 `domain/dates.rs`: validación `YYYY-MM-DD` / `HH:MM`, conversión local/UTC
 - [ ] F1-05 `domain/ordering.rs`: funciones puras de orden (D-05) con tests de tabla
 - [ ] F1-06 `domain/validation.rs`: longitudes, profundidad de etiquetas (D-06)
@@ -52,6 +52,7 @@
 **Verificaciones [A]:**
 - F1-01: `src-tauri/src/db/` (`mod.rs`: `open`, `open_in_memory`, `DbError`; `pragmas.rs`: SPEC §5.4; `migrate.rs`: `Migration`, `migrate` por `user_version`). Cada migración corre en su propia transacción `IMMEDIATE` junto con el `user_version`; si falla se revierte, y una base más nueva que la app se rechaza (`SchemaTooNew`). 16 tests: migración desde vacío, idempotencia, solo pendientes, rollback de una migración fallida (memoria y disco), lista no consecutiva, pragmas reales en fichero (WAL, `foreign_keys`, `synchronous=NORMAL`, `busy_timeout=5000`, `temp_store=MEMORY`), reapertura sin reaplicar. Los tests usan migraciones de prueba; la lista real (`001_init.sql`) llega en F1-02. Dependencia `rusqlite` registrada como D-17. `cargo fmt --check`, `clippy --all-targets -D warnings`, `cargo test` (30 de lib + 4 + 3), `npm run lint`, `check`, `build` y `size` (32,8 KB) en verde; `npm run test` aún no existe.
 - F1-02: `src-tauri/migrations/001_init.sql` (copia literal de SPEC §5.2) incrustado con `include_str!` en `db::MIGRATIONS`. `db/schema_tests.rs` (12 tests) comprueba migración desde vacío a `user_version = 1`, tablas e índices, valores por defecto, `CHECK` de título/fechas/hora/color/nombre (incluidos límites 500 y 60), unicidad de etiquetas sin distinguir mayúsculas, claves foráneas, cascadas (`ON DELETE CASCADE` y `SET NULL`) y FTS5 con y sin acentos, mayúsculas y prefijo. Batería completa en verde (42 tests de lib + 4 + 3; bundle JS 32,9 KB).
+- F1-03: `repo/{model,tasks,tags,fts}.rs`. Todas las escrituras reciben `&Transaction` (el FTS se actualiza en la misma transacción por construcción) y `repo::with_tx` ejecuta una operación lógica en una transacción `IMMEDIATE`. El repositorio no lee el reloj ni genera ids: el llamador pasa `id` y `now` (UTC). Devuelve `rusqlite::Result`; "no encontrado" es `None`/`false` y los errores de restricción los traducirá `error.rs` (F1-08). `Task` y `Tag` ya serializan en camelCase según SPEC §7.2 (tags y recordatorios se leen con subconsultas JSON, sin N+1). 40 tests nuevos: CRUD, posición al final de la sección, parches (incluido borrar fecha/hora), completar/reabrir, soft delete, restaurar, papelera, purga a 30 días (límite exacto, cascada), listados todo/agenda/rango con filtro por etiqueta, etiquetas (upsert, contadores de pendientes, borrado, `set_task_tags`), FTS (insert/sync/rebuild/rollback) y **10 000 operaciones aleatorias** tras las que `integrity_check = ok`, `foreign_key_check` vacío y `tasks_fts` idéntica a las tareas vivas. Batería completa en verde (82 tests de lib + 4 + 3).
 **Ítems [H]:** ninguno en esta fase
 
 ---
@@ -135,14 +136,18 @@
 | Bundle JS gzip (N-04) | < 250 KB | 32,8 KB (CSS 3,7 KB) | 2026-10-31 | `npm run size` tras F0-09 |
 | Arranque (N-01) [H] | < 200 ms | | | |
 | RAM en reposo (N-02) [H] | < 40 MB (proceso principal) | | | |
-| Consulta de un mes, 10 000 tareas (N-05) | < 30 ms | | | |
+| Consulta de un mes, 10 000 tareas (N-05) | < 30 ms | 3,4 ms (434 filas, mejor de 5) | 2026-10-31 | Test `month_query_with_ten_thousand_tasks_is_fast`, build de depuración; el test falla si supera 30 ms |
 | Búsqueda, 10 000 tareas (F-09) | < 100 ms | | | |
+| `fts::sync` con 10 000 filas (D-11) | < 100 ms (umbral del test) | 2,3 ms (mejor de 5) | 2026-10-31 | Borrado por `task_id` sobre FTS independiente; no hace falta cambiar el diseño de D-11 |
 
 ## Discrepancias detectadas
 - D-01 pide `set_effects` de Tauri, pero este no informa de errores y no permite el fallback real; se usa `window-vibrancy` directo. Registrado como D-16 (`PROPOSED`, pendiente de confirmación humana).
 - (resuelta en F0-09) El perfil `release` de la plantilla difería de SPEC §10.1; ahora usa `lto = "thin"`, `strip = "symbols"`, `panic = "unwind"`.
 
 ## Notas de sesión
+- 2026-10-31 (F1-03, para F4): al mover una tarea a la papelera sus `reminders` no se borran (se restauran con ella). El scheduler (F4-02/F4-03) debe ignorar los recordatorios cuyas tareas tengan `deleted_at` y las consultas de recuperación (F4-04) también.
+- 2026-10-31 (F1-03): `TagWithCount` se serializa como `Tag` más `pendingCount` (SPEC §7.3 no define el campo); F1-09 debe reflejarlo en `api.ts`.
+- 2026-10-31 (F1-01): SPEC §5.3 menciona la "ruta del backup" cuando falla una migración; la copia previa a migrar depende de `db/backup.rs` (F6-04) y aún no existe. Hasta entonces el fallo deja la base intacta (rollback) y el error indica la versión que falló.
 - 2026-10-31: el entorno real es Windows 11, no Linux (CLAUDE.md §8). El terminal con sandbox (WSL) no arranca por falta de `libasound.so.2`; los comandos se ejecutan fuera del sandbox con aprobación del usuario. Por tanto `cargo check --target x86_64-pc-windows-msvc` es posible en este equipo cuando toque (F0-07).
 - 2026-10-31: SPEC §8.3 no define los tokens claros cuando `data-theme="light"` y el SO está en oscuro (el bloque claro solo vive dentro de `prefers-color-scheme: light`). `tokens.css` añade el bloque `:root[data-theme="light"]` para que el selector manual de tema (F6-05) funcione. También añade `--bg-window-native`, `--bg-window-solid` (valores de SPEC §8.2, ahora por tema), `--scrollbar-thumb` y `--tag-1`…`--tag-8` (colores propuestos por el agente; su contraste se revisa en F6-02).
 - 2026-10-31: hasta F0-06 la ventana no tiene barra de título ni botones (`decorations: false`); para cerrarla en `tauri dev` usar Alt+F4 o detener el proceso.
