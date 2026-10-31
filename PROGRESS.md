@@ -2,8 +2,8 @@
 
 **Fase activa:** 0
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F0-03
-**Última actualización:** 2026-10-31 (F0-02)
+**Siguiente tarea:** F0-04
+**Última actualización:** 2026-10-31 (F0-03)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -12,7 +12,7 @@
 ## Fase 0 — Esqueleto y medición base
 - [x] F0-01 Crear proyecto con `npm create tauri-app@latest` (Svelte + TypeScript); registrar versiones en DECISIONS.md
 - [x] F0-02 Tailwind CSS v4 mediante plugin de Vite
-- [ ] F0-03 ESLint, Prettier, svelte-check, rustfmt, clippy configurados
+- [x] F0-03 ESLint, Prettier, svelte-check, rustfmt, clippy configurados
 - [ ] F0-04 `tauri.conf.json`: `decorations: false`, `transparent: true`, identifier estable, tamaños 1100×720 / mínimo 720×480
 - [ ] F0-05 `capabilities/default.json` con permisos mínimos
 - [ ] F0-06 `TitleBar` con `data-tauri-drag-region` y `WindowControls`
@@ -23,7 +23,8 @@
 
 **Verificaciones [A]:**
 - F0-02: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (0 tests), `npm run check` (0 errores, 0 avisos) y `npm run build` en verde. El CSS generado incluye el banner `tailwindcss v4.3.3`.
-- No existen aún (no cuentan como fallo): `npm run lint` (F0-03), `npm run test` (Vitest, F1/F2), `npm run size` (F0-09).
+- F0-03: `npm run lint` (Prettier + ESLint) en verde; comprobado que ESLint falla ante `TODO` y `any`. `cargo clippy` con `unwrap_used`/`expect_used`/`todo`/`unimplemented` en `deny`.
+- No existen aún (no cuentan como fallo): `npm run test` (Vitest, F1/F2), `npm run size` (F0-09).
 
 **Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 0
 
@@ -128,7 +129,7 @@
 | Búsqueda, 10 000 tareas (F-09) | < 100 ms | | | |
 
 ## Discrepancias detectadas
-- (ninguna)
+- `src-tauri/Cargo.toml` (plantilla) usa `lto = true`, `panic = "abort"`, `strip = true`; SPEC §10.1 pide `lto = "thin"`, `strip = "symbols"`, `panic = "unwind"` (el scheduler necesita capturar pánicos). Se corregirá en F0-09, antes de medir el tamaño del ejecutable.
 
 ## Notas de sesión
 - 2026-10-31: el entorno real es Windows 11, no Linux (CLAUDE.md §8). El terminal con sandbox (WSL) no arranca por falta de `libasound.so.2`; los comandos se ejecutan fuera del sandbox con aprobación del usuario. Por tanto `cargo check --target x86_64-pc-windows-msvc` es posible en este equipo cuando toque (F0-07).

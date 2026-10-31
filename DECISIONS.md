@@ -30,6 +30,14 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 | TypeScript | 6.0.3 | npm (plantilla) | 2026-10-31 |
 | Tailwind CSS (`tailwindcss`) | 4.3.3 | npm (F0-02) | 2026-10-31 |
 | @tailwindcss/vite | 4.3.3 | npm (F0-02) | 2026-10-31 |
+| eslint | 10.14.0 | npm (F0-03) | 2026-10-31 |
+| @eslint/js | 10.0.1 | npm (F0-03) | 2026-10-31 |
+| typescript-eslint | 8.72.1 | npm (F0-03) | 2026-10-31 |
+| eslint-plugin-svelte | 3.23.1 | npm (F0-03) | 2026-10-31 |
+| eslint-config-prettier | 10.1.8 | npm (F0-03) | 2026-10-31 |
+| globals | 17.13.0 | npm (F0-03) | 2026-10-31 |
+| prettier | 3.9.10 | npm (F0-03) | 2026-10-31 |
+| prettier-plugin-svelte | 4.1.1 | npm (F0-03) | 2026-10-31 |
 | TipTap | pendiente (F3-01) | npm | |
 | rusqlite | pendiente (F1-01) | Cargo | |
 | tokio | pendiente (F4-01) | Cargo | |
@@ -128,6 +136,15 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Decisión:** `tailwindcss` y `@tailwindcss/vite` en `devDependencies`, ambos en 4.3.3 con versión exacta (sin `^`). El plugin va antes de `sveltekit()` en `vite.config.js`. Sin `tailwind.config.js` ni PostCSS: la configuración es CSS (`src/app.css`, `@import "tailwindcss"`), importado desde `src/routes/+layout.svelte`.
 - **Consecuencias:** no se versiona CSS generado; coste en el bundle CSS a vigilar con `size-check` (F0-09).
 - **Alternativas descartadas:** Tailwind v3 con PostCSS (contradice la especificación); CSS puro (más código propio para layout).
+
+## D-15 — Herramientas de lint y formato
+- **Estado:** ACCEPTED · **Fecha:** 2026-10-31
+- **Contexto:** F0-03 exige ESLint, Prettier, `svelte-check`, `rustfmt` y `clippy`, y CLAUDE.md §6 prohíbe `TODO`/`FIXME`, `unwrap()`/`expect()`, `todo!()` y `unimplemented!()`.
+- **Decisión:**
+  - Frontend: ESLint 10 (flat config) con `typescript-eslint` y `eslint-plugin-svelte`; Prettier con `prettier-plugin-svelte`; `eslint-config-prettier` evita conflictos; `globals` aporta los entornos. Todas en versión exacta, en `devDependencies`. `npm run lint` = `prettier --check . && eslint .`; `npm run format` aplica Prettier. La regla `no-warning-comments` falla ante `todo`/`fixme`.
+  - Rust: `[lints.clippy]` en `Cargo.toml` con `unwrap_used`, `expect_used`, `todo` y `unimplemented` en `deny`; `clippy.toml` los permite en tests (CLAUDE.md §6). `rustfmt.toml` fija edición 2024 y ancho 100.
+  - Prettier usa `endOfLine: auto` porque en Windows `autocrlf` convierte los finales de línea; `.md`, `docs/` y `src-tauri/` quedan fuera de Prettier.
+- **Alternativas descartadas:** Biome (sustituiría ESLint y Prettier, pero el soporte de Svelte 5 es menos completo); lint solo con `svelte-check` (no cubre reglas de estilo ni de los límites de CLAUDE.md).
 
 ---
 
