@@ -40,7 +40,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 | prettier | 3.9.10 | npm (F0-03) | 2026-10-31 |
 | prettier-plugin-svelte | 4.1.1 | npm (F0-03) | 2026-10-31 |
 | TipTap | pendiente (F3-01) | npm | |
-| rusqlite | pendiente (F1-01) | Cargo | |
+| rusqlite (con `bundled` y `cache`) | 0.41.1 (`Cargo.lock`; libsqlite3-sys 0.39.1) | Cargo (F1-01) | 2026-10-31 |
 | tokio | pendiente (F4-01) | Cargo | |
 | chrono | pendiente (F1-04) | Cargo | |
 | Vitest | pendiente (F1 o F2) | npm | |
@@ -154,6 +154,13 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Consecuencias:** una dependencia directa nueva, pero con versión idéntica a la ya bloqueada en `Cargo.lock` (sin crates nuevos en el árbol). Afecta a F0-07, F0-08 (el frontend usa el efecto devuelto para la clase `.native-effect`) y F6-05. Si se rechaza, solo hay que sustituir `NativeBackend`.
 - **Alternativas descartadas:** `set_effects` de Tauri (no informa del fallo, incumple la consecuencia de D-01); declarar el efecto aplicado sin comprobarlo (la UI mostraría un tinte incorrecto).
 - **Acción humana:** confirmar o rechazar. El trabajo continúa porque la sustitución está aislada en un solo tipo.
+
+## D-17 — `rusqlite` con SQLite embebido
+- **Estado:** ACCEPTED · **Fecha:** 2026-10-31
+- **Contexto:** SPEC §3 fija SQLite vía `rusqlite` con feature `bundled`; F1-01 es la primera tarea que lo usa.
+- **Decisión:** `rusqlite = { version = "0.41", default-features = false, features = ["bundled", "cache"] }`. `bundled` compila SQLite (con FTS5) dentro del ejecutable, de modo que no depende de ninguna DLL del sistema y la versión de SQLite es la misma en todos los equipos. `cache` da `prepare_cached` para las consultas repetidas de los repos. Se desactivan las features por defecto porque la única que añaden, `ffi-sqlite-wasm-rs`, arrastra crates solo para WebAssembly. El esquema, las migraciones y los pragmas se gestionan en `db/` sin ORM ni crate de migraciones.
+- **Consecuencias:** compilar la dependencia requiere el compilador de C del toolchain (MSVC en Windows, ya necesario para Tauri); primera compilación más lenta. Añade `libsqlite3-sys`, `hashlink`, `fallible-iterator`, `fallible-streaming-iterator` y `vcpkg` (build) al árbol.
+- **Alternativas descartadas:** `sqlx` (async y macros innecesarios, árbol de dependencias mayor); `refinery`/`rusqlite_migration` (SPEC §5 define migraciones por `user_version`, que son ~60 líneas propias y se prueban sin dependencia); SQLite del sistema (versión y soporte de FTS5 no garantizados en Windows).
 
 ---
 

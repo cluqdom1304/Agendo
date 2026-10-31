@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** 0
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F1-01 (no iniciar sin confirmación humana de la Fase 0)
-**Última actualización:** 2026-10-31 (F0-10, fin de Fase 0)
+**Fase activa:** 1
+**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F1-02
+**Última actualización:** 2026-10-31 (F1-01)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -39,7 +39,7 @@
 ---
 
 ## Fase 1 — Persistencia y dominio
-- [ ] F1-01 `db/`: conexión con pragmas (SPEC §5.4), migraciones por `user_version`, test de migración desde vacío
+- [x] F1-01 `db/`: conexión con pragmas (SPEC §5.4), migraciones por `user_version`, test de migración desde vacío
 - [ ] F1-02 Migración `001_init.sql` (SPEC §5.2)
 - [ ] F1-03 `repo/tasks.rs`, `repo/tags.rs`, `repo/fts.rs` con sincronización FTS en transacción
 - [ ] F1-04 `domain/dates.rs`: validación `YYYY-MM-DD` / `HH:MM`, conversión local/UTC
@@ -49,7 +49,8 @@
 - [ ] F1-08 `error.rs` con prefijos de código (D-08)
 - [ ] F1-09 `api.ts` y tipos DTO sincronizados con Rust (test de serialización)
 
-**Verificaciones [A]:** (pendiente)
+**Verificaciones [A]:**
+- F1-01: `src-tauri/src/db/` (`mod.rs`: `open`, `open_in_memory`, `DbError`; `pragmas.rs`: SPEC §5.4; `migrate.rs`: `Migration`, `migrate` por `user_version`). Cada migración corre en su propia transacción `IMMEDIATE` junto con el `user_version`; si falla se revierte, y una base más nueva que la app se rechaza (`SchemaTooNew`). 16 tests: migración desde vacío, idempotencia, solo pendientes, rollback de una migración fallida (memoria y disco), lista no consecutiva, pragmas reales en fichero (WAL, `foreign_keys`, `synchronous=NORMAL`, `busy_timeout=5000`, `temp_store=MEMORY`), reapertura sin reaplicar. Los tests usan migraciones de prueba; la lista real (`001_init.sql`) llega en F1-02. Dependencia `rusqlite` registrada como D-17. `cargo fmt --check`, `clippy --all-targets -D warnings`, `cargo test` (30 de lib + 4 + 3), `npm run lint`, `check`, `build` y `size` (32,8 KB) en verde; `npm run test` aún no existe.
 **Ítems [H]:** ninguno en esta fase
 
 ---
