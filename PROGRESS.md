@@ -2,8 +2,8 @@
 
 **Fase activa:** 0
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F0-09
-**Última actualización:** 2026-10-31 (F0-08)
+**Siguiente tarea:** F0-10
+**Última actualización:** 2026-10-31 (F0-09)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -18,7 +18,7 @@
 - [x] F0-06 `TitleBar` con `data-tauri-drag-region` y `WindowControls`
 - [x] F0-07 `window/effects.rs`: Mica → Acrylic → none, comando `window_set_effect`
 - [x] F0-08 Tokens CSS y tema oscuro/claro (SPEC §8.3)
-- [ ] F0-09 `scripts/size-check.mjs` con presupuesto N-04
+- [x] F0-09 `scripts/size-check.mjs` con presupuesto N-04
 - [ ] F0-10 Log de arranque con marcas de tiempo (solo debug)
 
 **Verificaciones [A]:**
@@ -29,6 +29,7 @@
 - F0-06: `TitleBar` y `WindowControls` en `src/lib/shell/` (SvelteKit, D-12; SPEC §10 indica `src/shell/`), textos en `src/lib/i18n.ts`. Lint, `svelte-check` y build en verde. Sin pruebas de componente: Vitest aún no está instalado y la tarea no exige test [A]; el comportamiento real (arrastre, botones) es [H]. Los estilos usan tokens (`--bg-hover`, `--danger`, etc.) que define F0-08; hasta entonces no tienen valor.
 - F0-07: `window/effects.rs` + `commands/window.rs` (`window_set_effect` → `EffectApplied { requested, applied }`). 9 tests de fallback con backend simulado (Mica→Acrylic→none, `none` solo limpia, error `INTERNAL:`, serialización en minúsculas). Clippy/tests compilan la ruta nativa de Windows, por lo que `cargo check --target x86_64-pc-windows-msvc` queda cubierto en este equipo. Que el efecto se vea realmente es [H].
 - F0-08: `src/styles/tokens.css` (SPEC §8.3), `src/styles/base.css` (raíz `.app-root` con radio 10 px y `.native-effect`, scrollbars de 4 px, `prefers-reduced-motion`), `src/lib/api.ts` (único punto IPC), `src/lib/stores/windowEffect.svelte.ts` (runes; pide `mica` al montar y fija `.native-effect` según el efecto devuelto). Lint, `svelte-check`, build y Rust en verde; el CSS compilado contiene tokens, `.native-effect` y utilidades de Tailwind. Se eliminó el demo de la plantilla (comando `greet`, logos y la página con estilos `:root` que habrían tapado los tokens y el efecto). Apariencia, tema y scrollbars reales son [H].
+- F0-09: `scripts/size-check.mjs` + `npm run size` suman el JS de `build/` en gzip (nivel 9, KB = 1024 B), informan por fichero y fallan (exit 1) si superan 250 KB; `--budget-kb` permite ajustar el límite (comprobado: con 1 KB falla). Perfil `release` alineado con SPEC §10.1. `npx tauri build --no-bundle` genera `miagendaapp.exe` (DoD de F0: ejecutable generado, tamaño registrado). Se usa `--no-bundle` porque el instalador es F6-07.
 - No existen aún (no cuentan como fallo): `npm run test` (Vitest, F1/F2), `npm run size` (F0-09).
 
 **Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 0
@@ -126,8 +127,8 @@
 
 | Métrica | Objetivo | Valor | Fecha | Notas |
 |---------|----------|-------|-------|-------|
-| Tamaño ejecutable (N-03) | < 15 MB | | | |
-| Bundle JS gzip (N-04) | < 250 KB | | | |
+| Tamaño ejecutable (N-03) | < 15 MB | 8 496 640 B (≈ 8,1 MiB) | 2026-10-31 | `tauri build --no-bundle`, commit F0-09, sin instalador; plantilla + TitleBar + window-vibrancy |
+| Bundle JS gzip (N-04) | < 250 KB | 32,8 KB (CSS 3,7 KB) | 2026-10-31 | `npm run size` tras F0-09 |
 | Arranque (N-01) [H] | < 200 ms | | | |
 | RAM en reposo (N-02) [H] | < 40 MB (proceso principal) | | | |
 | Consulta de un mes, 10 000 tareas (N-05) | < 30 ms | | | |
@@ -135,7 +136,7 @@
 
 ## Discrepancias detectadas
 - D-01 pide `set_effects` de Tauri, pero este no informa de errores y no permite el fallback real; se usa `window-vibrancy` directo. Registrado como D-16 (`PROPOSED`, pendiente de confirmación humana).
-- `src-tauri/Cargo.toml` (plantilla) usa `lto = true`, `panic = "abort"`, `strip = true`; SPEC §10.1 pide `lto = "thin"`, `strip = "symbols"`, `panic = "unwind"` (el scheduler necesita capturar pánicos). Se corregirá en F0-09, antes de medir el tamaño del ejecutable.
+- (resuelta en F0-09) El perfil `release` de la plantilla difería de SPEC §10.1; ahora usa `lto = "thin"`, `strip = "symbols"`, `panic = "unwind"`.
 
 ## Notas de sesión
 - 2026-10-31: el entorno real es Windows 11, no Linux (CLAUDE.md §8). El terminal con sandbox (WSL) no arranca por falta de `libasound.so.2`; los comandos se ejecutan fuera del sandbox con aprobación del usuario. Por tanto `cargo check --target x86_64-pc-windows-msvc` es posible en este equipo cuando toque (F0-07).
