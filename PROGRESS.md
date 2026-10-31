@@ -2,16 +2,16 @@
 
 **Fase activa:** 0
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F0-01
-**Última actualización:** — (pendiente de primera sesión)
+**Siguiente tarea:** F0-03
+**Última actualización:** 2026-10-31 (F0-02)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
 ---
 
 ## Fase 0 — Esqueleto y medición base
-- [ ] F0-01 Crear proyecto con `npm create tauri-app@latest` (Svelte + TypeScript); registrar versiones en DECISIONS.md
-- [ ] F0-02 Tailwind CSS v4 mediante plugin de Vite
+- [x] F0-01 Crear proyecto con `npm create tauri-app@latest` (Svelte + TypeScript); registrar versiones en DECISIONS.md
+- [x] F0-02 Tailwind CSS v4 mediante plugin de Vite
 - [ ] F0-03 ESLint, Prettier, svelte-check, rustfmt, clippy configurados
 - [ ] F0-04 `tauri.conf.json`: `decorations: false`, `transparent: true`, identifier estable, tamaños 1100×720 / mínimo 720×480
 - [ ] F0-05 `capabilities/default.json` con permisos mínimos
@@ -21,7 +21,10 @@
 - [ ] F0-09 `scripts/size-check.mjs` con presupuesto N-04
 - [ ] F0-10 Log de arranque con marcas de tiempo (solo debug)
 
-**Verificaciones [A]:** (pendiente)
+**Verificaciones [A]:**
+- F0-02: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (0 tests), `npm run check` (0 errores, 0 avisos) y `npm run build` en verde. El CSS generado incluye el banner `tailwindcss v4.3.3`.
+- No existen aún (no cuentan como fallo): `npm run lint` (F0-03), `npm run test` (Vitest, F1/F2), `npm run size` (F0-09).
+
 **Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 0
 
 ---
@@ -128,4 +131,5 @@
 - (ninguna)
 
 ## Notas de sesión
-- (vacío)
+- 2026-10-31: el entorno real es Windows 11, no Linux (CLAUDE.md §8). El terminal con sandbox (WSL) no arranca por falta de `libasound.so.2`; los comandos se ejecutan fuera del sandbox con aprobación del usuario. Por tanto `cargo check --target x86_64-pc-windows-msvc` es posible en este equipo cuando toque (F0-07).
+- 2026-10-31: `PROGRESS.md` tenía F0-01 sin marcar aunque estaba commiteada (`c62a00e`); marcada en la sesión de F0-02.

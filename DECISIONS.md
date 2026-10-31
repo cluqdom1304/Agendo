@@ -18,7 +18,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 | tauri-plugin-opener (crate) | 2.7.2 | Cargo (plantilla) | 2026-10-31 |
 | @tauri-apps/api | 2.12.4 | npm | 2026-10-31 |
 | @tauri-apps/plugin-opener | 2.7.2 | npm (plantilla) | 2026-10-31 |
-| @tauri-apps/cli | pendiente (`npm list @tauri-apps/cli`) | npm | |
+| @tauri-apps/cli | 2.12.4 | npm (plantilla) | 2026-10-31 |
 | tauri-plugin-notification | pendiente (F4-05) | Cargo + npm | |
 | serde | 1.0.229 | Cargo | 2026-10-31 |
 | serde_json | 1.0.154 | Cargo | 2026-10-31 |
@@ -27,8 +27,9 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 | @sveltejs/vite-plugin-svelte | 7.3.1 | npm (plantilla) | 2026-10-31 |
 | svelte-check | 4.7.7 | npm (plantilla) | 2026-10-31 |
 | Vite | 8.3.5 | npm | 2026-10-31 |
-| TypeScript | pendiente (`npm list typescript`) | npm | |
-| Tailwind CSS (+ plugin Vite) | pendiente (F0-02, aún no instalado) | npm | |
+| TypeScript | 6.0.3 | npm (plantilla) | 2026-10-31 |
+| Tailwind CSS (`tailwindcss`) | 4.3.3 | npm (F0-02) | 2026-10-31 |
+| @tailwindcss/vite | 4.3.3 | npm (F0-02) | 2026-10-31 |
 | TipTap | pendiente (F3-01) | npm | |
 | rusqlite | pendiente (F1-01) | Cargo | |
 | tokio | pendiente (F4-01) | Cargo | |
@@ -120,6 +121,14 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Estado:** ACCEPTED · **Fecha:** 2026-10-31
 - **Decisión:** se mantiene `tauri-plugin-opener` porque lo genera la plantilla y sirve para abrir enlaces `http`, `https` y `mailto` (F3-06). Sus permisos se limitan a esos esquemas en `capabilities/default.json`.
 - **Alternativas descartadas:** eliminarlo y gestionar enlaces a mano (más código propio sin ventaja).
+
+## D-14 — Tailwind CSS v4 con plugin de Vite
+- **Estado:** ACCEPTED · **Fecha:** 2026-10-31
+- **Contexto:** SPEC §3 exige Tailwind CSS v4 mediante su plugin de Vite, solo para utilidades de layout; los tokens de diseño son CSS propio (F0-08).
+- **Decisión:** `tailwindcss` y `@tailwindcss/vite` en `devDependencies`, ambos en 4.3.3 con versión exacta (sin `^`). El plugin va antes de `sveltekit()` en `vite.config.js`. Sin `tailwind.config.js` ni PostCSS: la configuración es CSS (`src/app.css`, `@import "tailwindcss"`), importado desde `src/routes/+layout.svelte`.
+- **Consecuencias:** no se versiona CSS generado; coste en el bundle CSS a vigilar con `size-check` (F0-09).
+- **Alternativas descartadas:** Tailwind v3 con PostCSS (contradice la especificación); CSS puro (más código propio para layout).
+
 ---
 
 ## Decisiones pendientes de producto
