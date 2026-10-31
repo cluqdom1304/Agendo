@@ -10,6 +10,12 @@ pub struct Migration {
     pub sql: &'static str,
 }
 
+/// Every schema migration of the app, in order. A schema change is always a new numbered file.
+pub const MIGRATIONS: [Migration; 1] = [Migration {
+    version: 1,
+    sql: include_str!("../../migrations/001_init.sql"),
+}];
+
 /// Highest version defined by `migrations` (0 when the list is empty).
 pub fn latest_version(migrations: &[Migration]) -> u32 {
     migrations.last().map_or(0, |migration| migration.version)

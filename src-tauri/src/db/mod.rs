@@ -2,12 +2,14 @@
 
 pub mod migrate;
 pub mod pragmas;
+#[cfg(test)]
+mod schema_tests;
 
 use std::{fmt, fs, io, path::Path};
 
 use rusqlite::Connection;
 
-pub use migrate::Migration;
+pub use migrate::{MIGRATIONS, Migration};
 
 #[derive(Debug)]
 pub enum DbError {
