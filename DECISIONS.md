@@ -9,23 +9,31 @@ Cambiar una decisión `ACCEPTED` requiere un ADR nuevo que la sustituya; nunca e
 
 ## Versiones fijadas
 
-Completar en F0-01. No actualizar sin tarea dedicada.
+Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
-| Componente | Versión exacta | Fecha de fijado |
-|------------|----------------|-----------------|
-| Tauri (crate `tauri`) | pendiente | |
-| `@tauri-apps/api` | pendiente | |
-| `@tauri-apps/cli` | pendiente | |
-| `tauri-plugin-notification` | pendiente | |
-| Svelte | pendiente | |
-| Vite | pendiente | |
-| TypeScript | pendiente | |
-| Tailwind CSS (+ plugin Vite) | pendiente | |
-| TipTap | pendiente | |
-| rusqlite | pendiente | |
-| tokio | pendiente | |
-| chrono | pendiente | |
-| Vitest | pendiente | |
+| Componente | Versión exacta | Origen | Fecha de fijado |
+|------------|----------------|--------|-----------------|
+| Tauri (crate `tauri`) | 2.12.5 | Cargo | 2026-10-31 |
+| tauri-build (crate) | 2.7.4 | Cargo (build) | 2026-10-31 |
+| tauri-plugin-opener (crate) | 2.7.2 | Cargo (plantilla) | 2026-10-31 |
+| @tauri-apps/api | 2.12.4 | npm | 2026-10-31 |
+| @tauri-apps/plugin-opener | 2.7.2 | npm (plantilla) | 2026-10-31 |
+| @tauri-apps/cli | pendiente (`npm list @tauri-apps/cli`) | npm | |
+| tauri-plugin-notification | pendiente (F4-05) | Cargo + npm | |
+| serde | 1.0.229 | Cargo | 2026-10-31 |
+| serde_json | 1.0.154 | Cargo | 2026-10-31 |
+| Svelte | 5.57.3 | npm | 2026-10-31 |
+| @sveltejs/kit | 2.70.3 | npm (plantilla) | 2026-10-31 |
+| @sveltejs/vite-plugin-svelte | 7.3.1 | npm (plantilla) | 2026-10-31 |
+| svelte-check | 4.7.7 | npm (plantilla) | 2026-10-31 |
+| Vite | 8.3.5 | npm | 2026-10-31 |
+| TypeScript | pendiente (`npm list typescript`) | npm | |
+| Tailwind CSS (+ plugin Vite) | pendiente (F0-02, aún no instalado) | npm | |
+| TipTap | pendiente (F3-01) | npm | |
+| rusqlite | pendiente (F1-01) | Cargo | |
+| tokio | pendiente (F4-01) | Cargo | |
+| chrono | pendiente (F1-04) | Cargo | |
+| Vitest | pendiente (F1 o F2) | npm | |
 
 ---
 
@@ -101,6 +109,17 @@ Completar en F0-01. No actualizar sin tarea dedicada.
 - **Decisión:** aceptable para el volumen objetivo (10 000 tareas). Si N-05 o F-09 fallan, revisar con una columna de `rowid` estable y tabla FTS external-content.
 - **Consecuencias:** el test de rendimiento de F1-03 mide esta operación.
 
+## D-12 — SvelteKit en modo SPA
+- **Estado:** ACCEPTED · **Fecha:** 2026-10-31
+- **Contexto:** la plantilla oficial de Tauri para Svelte usa SvelteKit. La especificación (§3) pedía Svelte 5 con Vite.
+- **Decisión:** usar SvelteKit con `adapter-static` en modo SPA (sin SSR). Las rutas no se usan para navegación; la app es una única ventana. Svelte 5 y Vite siguen siendo los motores reales.
+- **Consecuencias:** no se usa SSR ni prerenderizado de páginas. `svelte.config.js` debe configurar el adaptador estático con `fallback` a `index.html`. Claude no debe añadir `+page.server.ts` ni endpoints.
+- **Alternativas descartadas:** recrear el proyecto con Svelte puro (más trabajo sin beneficio para una app de escritorio).
+
+## D-13 — Plugin opener de la plantilla
+- **Estado:** ACCEPTED · **Fecha:** 2026-10-31
+- **Decisión:** se mantiene `tauri-plugin-opener` porque lo genera la plantilla y sirve para abrir enlaces `http`, `https` y `mailto` (F3-06). Sus permisos se limitan a esos esquemas en `capabilities/default.json`.
+- **Alternativas descartadas:** eliminarlo y gestionar enlaces a mano (más código propio sin ventaja).
 ---
 
 ## Decisiones pendientes de producto
