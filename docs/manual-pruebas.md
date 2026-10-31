@@ -24,6 +24,7 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] Con el efecto nativo activo el fondo se ve con tinte translúcido, sin doble desenfoque; sin efecto el fondo es casi opaco.
 - [ ] Las barras de desplazamiento miden 4 px y solo se ven al pasar el ratón por la zona.
 - [ ] Redimensionar respeta el tamaño mínimo de 720×480.
+- [ ] Con `npm run tauri dev`, la terminal muestra las marcas `[startup +X.XXms]` en este orden: `process_start`, `setup_done`, `page_load_started`, `page_load_finished`, `first_paint`. En un build de release no se imprime ninguna.
 - [ ] Medir N-01: tiempo desde el lanzamiento hasta la primera pantalla pintada (promedio de 5 arranques). Anotar valor.
 - [ ] Medir N-02: memoria del proceso principal y suma de procesos WebView2 en reposo tras 60 s. Anotar ambos valores.
 - [ ] Anotar tamaño del ejecutable de release (N-03).

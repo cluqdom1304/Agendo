@@ -7,6 +7,10 @@ export interface EffectApplied {
   applied: EffectMode;
 }
 
+export function startupMark(label: string): Promise<void> {
+  return invoke<void>("startup_mark", { label });
+}
+
 export function windowSetEffect(mode: EffectMode): Promise<EffectApplied> {
   return invoke<EffectApplied>("window_set_effect", { mode });
 }

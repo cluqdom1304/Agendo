@@ -1,9 +1,9 @@
 # PROGRESS.md
 
 **Fase activa:** 0
-**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F0-10
-**Última actualización:** 2026-10-31 (F0-09)
+**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F1-01 (no iniciar sin confirmación humana de la Fase 0)
+**Última actualización:** 2026-10-31 (F0-10, fin de Fase 0)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -19,7 +19,7 @@
 - [x] F0-07 `window/effects.rs`: Mica → Acrylic → none, comando `window_set_effect`
 - [x] F0-08 Tokens CSS y tema oscuro/claro (SPEC §8.3)
 - [x] F0-09 `scripts/size-check.mjs` con presupuesto N-04
-- [ ] F0-10 Log de arranque con marcas de tiempo (solo debug)
+- [x] F0-10 Log de arranque con marcas de tiempo (solo debug)
 
 **Verificaciones [A]:**
 - F0-02: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (0 tests), `npm run check` (0 errores, 0 avisos) y `npm run build` en verde. El CSS generado incluye el banner `tailwindcss v4.3.3`.
@@ -30,6 +30,8 @@
 - F0-07: `window/effects.rs` + `commands/window.rs` (`window_set_effect` → `EffectApplied { requested, applied }`). 9 tests de fallback con backend simulado (Mica→Acrylic→none, `none` solo limpia, error `INTERNAL:`, serialización en minúsculas). Clippy/tests compilan la ruta nativa de Windows, por lo que `cargo check --target x86_64-pc-windows-msvc` queda cubierto en este equipo. Que el efecto se vea realmente es [H].
 - F0-08: `src/styles/tokens.css` (SPEC §8.3), `src/styles/base.css` (raíz `.app-root` con radio 10 px y `.native-effect`, scrollbars de 4 px, `prefers-reduced-motion`), `src/lib/api.ts` (único punto IPC), `src/lib/stores/windowEffect.svelte.ts` (runes; pide `mica` al montar y fija `.native-effect` según el efecto devuelto). Lint, `svelte-check`, build y Rust en verde; el CSS compilado contiene tokens, `.native-effect` y utilidades de Tailwind. Se eliminó el demo de la plantilla (comando `greet`, logos y la página con estilos `:root` que habrían tapado los tokens y el efecto). Apariencia, tema y scrollbars reales son [H].
 - F0-09: `scripts/size-check.mjs` + `npm run size` suman el JS de `build/` en gzip (nivel 9, KB = 1024 B), informan por fichero y fallan (exit 1) si superan 250 KB; `--budget-kb` permite ajustar el límite (comprobado: con 1 KB falla). Perfil `release` alineado con SPEC §10.1. `npx tauri build --no-bundle` genera `miagendaapp.exe` (DoD de F0: ejecutable generado, tamaño registrado). Se usa `--no-bundle` porque el instalador es F6-07.
+- F0-10: `src-tauri/src/startup.rs` con marcas `process_start`, `setup_done`, `page_load_started/finished` (Rust) y `first_paint` (frontend, 2 × `requestAnimationFrame`, vía comando `startup_mark` validado con `VALIDATION:`). Todo se compila a no-op sin `debug_assertions`; `cargo clippy --release -D warnings` en verde. 5 tests (formato, validación de etiquetas, `mark` antes de `init`). La salida real en `tauri dev` es [H].
+- Fin de Fase 0, batería final: `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test` (14 de lib + 4 + 3 de integración), `npm run lint`, `npm run check`, `npm run build`, `npm run size` en verde.
 - No existen aún (no cuentan como fallo): `npm run test` (Vitest, F1/F2), `npm run size` (F0-09).
 
 **Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 0
