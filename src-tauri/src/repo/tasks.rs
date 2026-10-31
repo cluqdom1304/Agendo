@@ -801,6 +801,47 @@ mod tests {
     }
 
     #[test]
+    fn stored_tasks_follow_the_display_order_of_the_domain() {
+        use crate::domain::ordering::{group_by_day, sort_todo};
+
+        let mut conn = database();
+        add(
+            &mut conn,
+            &new_task("untimed", "untimed", Some("2026-03-10")),
+        );
+        let mut timed = new_task("timed", "timed", Some("2026-03-10"));
+        timed.due_time = Some("09:00".to_string());
+        add(&mut conn, &timed);
+        add(&mut conn, &new_task("done", "done", Some("2026-03-10")));
+        add(
+            &mut conn,
+            &new_task("other-day", "other", Some("2026-03-12")),
+        );
+        add(&mut conn, &new_task("t1", "todo-1", None));
+        add(&mut conn, &new_task("t2", "todo-2", None));
+        for id in ["done", "t1"] {
+            with_tx(&mut conn, |tx| set_completed(tx, id, true, T1)).expect("complete");
+        }
+
+        let days = group_by_day(list(&conn, Query::Agenda, None).expect("agenda"));
+        let mut todo = list(&conn, Query::Todo, None).expect("todo");
+        sort_todo(&mut todo);
+
+        let summary: Vec<(&str, Vec<&str>)> = days
+            .iter()
+            .map(|day| (day.date.as_str(), titles(&day.tasks)))
+            .collect();
+        assert_eq!(
+            summary,
+            [
+                ("2026-03-12", vec!["other"]),
+                ("2026-03-10", vec!["timed", "untimed", "done"]),
+            ]
+        );
+        assert_eq!(titles(&todo), ["todo-2", "todo-1"]);
+    }
+
+    #[test]
     fn serializes_with_the_camel_case_contract() {
         let mut conn = database();
         let task = add(&mut conn, &new_task("t1", "Una", Some("2026-03-10")));

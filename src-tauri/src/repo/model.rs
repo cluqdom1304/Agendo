@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::domain::ordering::Sortable;
+
 /// `content_json` of a task without notes.
 pub const EMPTY_DOC: &str = r#"{"type":"doc","content":[]}"#;
 
@@ -19,6 +21,27 @@ pub struct Task {
     pub reminders: Vec<Reminder>,
     pub created_at: String,
     pub updated_at: String,
+}
+
+impl Sortable for Task {
+    fn id(&self) -> &str {
+        &self.id
+    }
+    fn due_date(&self) -> Option<&str> {
+        self.due_date.as_deref()
+    }
+    fn due_time(&self) -> Option<&str> {
+        self.due_time.as_deref()
+    }
+    fn is_completed(&self) -> bool {
+        self.is_completed
+    }
+    fn completed_at(&self) -> Option<&str> {
+        self.completed_at.as_deref()
+    }
+    fn position(&self) -> i64 {
+        self.position
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

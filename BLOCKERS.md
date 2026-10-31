@@ -45,6 +45,18 @@ El agente registra aquí cualquier bloqueo, ambigüedad de producto o test que n
 - **Estado:** ABIERTO
 - **Resolución humana:**
 
+## B-03 — Tareas completadas dentro de POR HACER
+- **Fecha:** 2026-10-31
+- **Tarea afectada:** F1-05 (implementada con la opción 1), F2-03, F2-05
+- **Tipo:** DECISION_PRODUCTO
+- **Causa:** D-05 y F-05 definen la subsección "Completadas" al final del bloque de cada **día** de AGENDA, pero no dicen qué ocurre con una tarea completada que no tiene fecha (sección POR HACER, que solo se ordena por `position`).
+- **Opciones:**
+  1. POR HACER también termina con una subsección "Completadas", ordenada por `completed_at` ascendente, igual que un día.
+  2. Las completadas sin fecha conservan su `position` entre las pendientes.
+- **Recomendación del agente:** opción 1 (misma regla en todos los bloques; evita que una tarea hecha siga mezclada con las pendientes). Es la que implementa `domain::ordering::sort_todo`; cambiarla solo toca esa función y su test de tabla. El trabajo continúa con la opción 1 hasta que un humano decida.
+- **Estado:** ABIERTO
+- **Resolución humana:**
+
 ---
 
 ## Resueltos
