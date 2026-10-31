@@ -2,8 +2,8 @@
 
 **Fase activa:** 0
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F0-05
-**Última actualización:** 2026-10-31 (F0-04)
+**Siguiente tarea:** F0-06
+**Última actualización:** 2026-10-31 (F0-05)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -14,7 +14,7 @@
 - [x] F0-02 Tailwind CSS v4 mediante plugin de Vite
 - [x] F0-03 ESLint, Prettier, svelte-check, rustfmt, clippy configurados
 - [x] F0-04 `tauri.conf.json`: `decorations: false`, `transparent: true`, identifier estable, tamaños 1100×720 / mínimo 720×480
-- [ ] F0-05 `capabilities/default.json` con permisos mínimos
+- [x] F0-05 `capabilities/default.json` con permisos mínimos
 - [ ] F0-06 `TitleBar` con `data-tauri-drag-region` y `WindowControls`
 - [ ] F0-07 `window/effects.rs`: Mica → Acrylic → none, comando `window_set_effect`
 - [ ] F0-08 Tokens CSS y tema oscuro/claro (SPEC §8.3)
@@ -25,6 +25,7 @@
 - F0-02: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (0 tests), `npm run check` (0 errores, 0 avisos) y `npm run build` en verde. El CSS generado incluye el banner `tailwindcss v4.3.3`.
 - F0-03: `npm run lint` (Prettier + ESLint) en verde; comprobado que ESLint falla ante `TODO` y `any`. `cargo clippy` con `unwrap_used`/`expect_used`/`todo`/`unimplemented` en `deny`.
 - F0-04: `src-tauri/tests/tauri_conf.rs` (3 tests) comprueba ventana `main` sin decoraciones, transparente, con sombra, 1100×720 / mínimo 720×480 e identifier. `tauri-build` acepta la configuración (clippy/test compilan). La apariencia real es [H] (manual-pruebas § Fase 0).
+- F0-05: `src-tauri/tests/capabilities.rs` (4 tests) fija el conjunto exacto de permisos, sin `*:default`, solo ventana `main` y `opener` limitado a `http`/`https`/`mailto`. Los permisos de notificaciones (F4-05) y diálogo de archivos (F6-04) se añadirán con sus plugins, porque un permiso de un plugin no instalado rompe el build. `core:event` se añadirá en F4-08 y cualquier permiso extra de ventana (p. ej. `allow-is-maximized`) se añadirá en la tarea que lo use, actualizando el test.
 - No existen aún (no cuentan como fallo): `npm run test` (Vitest, F1/F2), `npm run size` (F0-09).
 
 **Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 0
