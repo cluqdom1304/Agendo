@@ -2,8 +2,8 @@
 
 **Fase activa:** 1
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F1-07
-**Última actualización:** 2026-10-31 (F1-08, hecha antes que F1-07)
+**Siguiente tarea:** F1-09
+**Última actualización:** 2026-11-06 (F1-07)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -45,7 +45,7 @@
 - [x] F1-04 `domain/dates.rs`: validación `YYYY-MM-DD` / `HH:MM`, conversión local/UTC
 - [x] F1-05 `domain/ordering.rs`: funciones puras de orden (D-05) con tests de tabla
 - [x] F1-06 `domain/validation.rs`: longitudes, profundidad de etiquetas (D-06)
-- [ ] F1-07 Comandos `tasks_*`, `tag_*`, `task_tags_set`, `trash_list`, `task_restore`
+- [x] F1-07 Comandos `tasks_*`, `tag_*`, `task_tags_set`, `trash_list`, `task_restore`
 - [x] F1-08 `error.rs` con prefijos de código (D-08)
 - [ ] F1-09 `api.ts` y tipos DTO sincronizados con Rust (test de serialización)
 
@@ -57,6 +57,7 @@
 - F1-05: `domain/ordering.rs` con el trait `Sortable` (implementado para `repo::model::Task`, así `domain` no depende de `repo`), `sort_todo`, `sort_day` y `group_by_day` (`DayGroup<T>`, serializa `{ date, tasks }`; deja fuera las tareas sin fecha). Implementa D-05: día más reciente primero; dentro del día, con hora (ascendente) → sin hora (`position`) → completadas por `completed_at`; `id` desempata, de modo que el resultado no depende del orden de entrada (comprobado con todas las permutaciones). Tests de tabla (11 casos de día, 5 de POR HACER), agrupación, serialización y uno con datos reales de SQLite: 7 tests nuevos (106 de lib + 4 + 3). D-05 no dice qué pasa con las completadas sin fecha: se aplicó la misma regla de subsección y se registró la decisión pendiente como B-03.
 - F1-06: `domain/validation.rs` con `ValidationError` (mensajes en español; `error.rs` añadirá el prefijo `VALIDATION:`). `validate_title` (≤ 500 caracteres, no bytes), `validate_tag_name` (devuelve el nombre recortado, 1–60), `validate_color_hex` (`#RRGGBB`), `validate_content_json` (objeto JSON de tipo `doc`), `validate_schedule` (fecha y hora válidas vía `dates.rs`) y `validate_tag_parent` (D-06: no ser su propio padre, el padre no puede ser subetiqueta y una etiqueta con hijos no puede pasar a ser hija; el llamador carga el padre y `has_children`). Dos reglas no estaban explícitas en SPEC y se añadieron por coherencia con el esquema: una hora exige fecha (POR HACER no tiene horario) y `content_json` debe ser un documento `doc`; los límites de `content_json`/`content_text` no existen en SPEC y no se inventaron. 10 tests de tabla (116 de lib + 4 + 3).
 - F1-08 (hecha antes que F1-07 porque los comandos la necesitan para devolver `Result<T, String>`): `error.rs` con `AppError` (`NotFound`, `Validation`, `Conflict`, `Db`, `Io`, `Notify`, `Internal`), `code()`, `message()` y `Display` = `CODIGO: mensaje`. `From<AppError> for String` permite usar `?` en el cuerpo de un comando. Conversiones: `rusqlite::Error` (UNIQUE/PRIMARY KEY → `CONFLICT`, FOREIGN KEY → `NOT_FOUND`, CHECK/NOT NULL → `VALIDATION`, sin filas → `NOT_FOUND`, resto → `DB` con detalle), `DbError`, `ValidationError`, `DateError` e `io::Error`. Los tests provocan violaciones reales en SQLite. 8 tests (124 de lib + 4 + 3). Los errores con cadena propia de F0 (`startup`, `window`) ya usan el mismo formato y no se han migrado a `AppError`.
+- F1-07: `commands/tasks.rs` (`tasks_list`, `task_create`, `task_update`, `task_set_completed`, `task_move`, `task_delete`, `task_restore`, `trash_list`) y `commands/tags.rs` (`tag_list`, `tag_upsert`, `tag_delete`, `task_tags_set`), registrados en `lib.rs`. Cada comando es un envoltorio `async` que ejecuta una función normal (la que prueban los tests) en `spawn_blocking`; las escrituras van en una transacción `IMMEDIATE` y los errores salen como `CODIGO: mensaje`. Piezas nuevas: `state.rs` (`AppState` con `Db` = conexión de escritura + conexión de solo lectura en WAL, `Clock` e `IdGenerator`; al abrir purga la papelera de más de 30 días), `ids.rs` (UUID v7 desde el `Clock`, D-19), `domain/content.rs` (`content_text` derivado de `content_json`, D-03), `repo::tasks::move_task` (reordena y renumera la sección destino; pasar a POR HACER borra fecha y hora), `repo::tags::has_children`, `db::open_read_only` y `scheduler/clock.rs` (trait `Clock` con `SystemClock` y `ManualClock`, adelantado porque los comandos necesitan "ahora"; F4-01 sigue sin marcar hasta revisarlo en su fase). `task_update` distingue campo ausente de `null`; quitar la fecha quita también la hora. `tasks_list` con `range` devuelve `Task[]` plano ascendente y valida `from ≤ to`. El evento `tasks:changed` (SPEC §7.4) no se emite aún: necesita `core:event` (F4-08). Batería completa en verde (183 tests de lib + 4 + 3; bundle JS 32,9 KB); `npm run test` aún no existe.
 **Ítems [H]:** ninguno en esta fase
 
 ---

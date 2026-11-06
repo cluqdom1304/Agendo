@@ -7,7 +7,7 @@ mod schema_tests;
 
 use std::{fmt, fs, io, path::Path};
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OpenFlags};
 
 pub use migrate::{MIGRATIONS, Migration};
 
@@ -79,6 +79,17 @@ pub fn open(path: &Path, migrations: &[Migration]) -> Result<Connection, DbError
     prepare(Connection::open(path)?, migrations)
 }
 
+/// Opens a second, read-only connection to a database that [`open`] already created. In WAL
+/// mode it reads while the writer works.
+pub fn open_read_only(path: &Path) -> Result<Connection, DbError> {
+    let flags = OpenFlags::SQLITE_OPEN_READ_ONLY
+        | OpenFlags::SQLITE_OPEN_NO_MUTEX
+        | OpenFlags::SQLITE_OPEN_URI;
+    let conn = Connection::open_with_flags(path, flags)?;
+    pragmas::apply_read_only(&conn)?;
+    Ok(conn)
+}
+
 pub fn open_in_memory(migrations: &[Migration]) -> Result<Connection, DbError> {
     prepare(Connection::open_in_memory()?, migrations)
 }
@@ -91,12 +102,8 @@ fn prepare(mut conn: Connection, migrations: &[Migration]) -> Result<Connection,
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        path::PathBuf,
-        sync::atomic::{AtomicU32, Ordering},
-    };
-
     use super::*;
+    use crate::test_support::TempDir;
 
     const SCHEMA: [Migration; 2] = [
         Migration {
@@ -111,29 +118,6 @@ mod tests {
                   );",
         },
     ];
-
-    static NEXT_DIR: AtomicU32 = AtomicU32::new(0);
-
-    struct TempDir(PathBuf);
-
-    impl TempDir {
-        fn new() -> Self {
-            let id = NEXT_DIR.fetch_add(1, Ordering::Relaxed);
-            let path = std::env::temp_dir()
-                .join(format!("miagendaapp-db-test-{}-{id}", std::process::id()));
-            Self(path)
-        }
-
-        fn database(&self) -> PathBuf {
-            self.0.join("nested").join("agenda.sqlite")
-        }
-    }
-
-    impl Drop for TempDir {
-        fn drop(&mut self) {
-            let _ = fs::remove_dir_all(&self.0);
-        }
-    }
 
     fn pragma(conn: &Connection, name: &str) -> i64 {
         conn.query_row(&format!("PRAGMA {name}"), [], |row| row.get(0))
@@ -174,6 +158,37 @@ mod tests {
             .expect("count");
         assert_eq!(count, 1);
         assert_eq!(migrate::current_version(&conn).expect("version"), 2);
+    }
+
+    #[test]
+    fn read_only_connection_sees_committed_writes_and_refuses_to_write() {
+        let dir = TempDir::new();
+        let writer = open(&dir.database(), &SCHEMA).expect("writer");
+        let reader = open_read_only(&dir.database()).expect("reader");
+
+        writer
+            .execute("INSERT INTO parents (id) VALUES (1)", [])
+            .expect("insert");
+
+        let seen: i64 = reader
+            .query_row("SELECT COUNT(*) FROM parents", [], |row| row.get(0))
+            .expect("count");
+        assert_eq!(seen, 1);
+        assert!(
+            reader
+                .execute("INSERT INTO parents (id) VALUES (2)", [])
+                .is_err()
+        );
+        assert_eq!(pragma(&reader, "busy_timeout"), 5000);
+    }
+
+    #[test]
+    fn read_only_open_fails_for_a_missing_database() {
+        let dir = TempDir::new();
+        assert!(matches!(
+            open_read_only(&dir.database()),
+            Err(DbError::Sqlite(_))
+        ));
     }
 
     #[test]

@@ -6,6 +6,17 @@ use super::DbError;
 
 pub const BUSY_TIMEOUT_MS: u64 = 5000;
 
+/// Pragmas for a read-only connection: it cannot change the journal mode or the schema, so
+/// only the settings that affect reads apply, and `query_only` guards against accidental writes.
+pub fn apply_read_only(conn: &Connection) -> Result<(), DbError> {
+    conn.busy_timeout(Duration::from_millis(BUSY_TIMEOUT_MS))?;
+    conn.execute_batch(
+        "PRAGMA temp_store = MEMORY;
+         PRAGMA query_only = ON;",
+    )?;
+    Ok(())
+}
+
 /// Applies the connection pragmas of SPEC §5.4.
 ///
 /// `busy_timeout` goes first so the journal-mode switch waits for a lock instead of failing.

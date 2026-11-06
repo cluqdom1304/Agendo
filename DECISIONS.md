@@ -43,6 +43,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 | rusqlite (con `bundled` y `cache`) | 0.41.1 (`Cargo.lock`; libsqlite3-sys 0.39.1) | Cargo (F1-01) | 2026-10-31 |
 | tokio | pendiente (F4-01) | Cargo | |
 | chrono (solo feature `clock`) | 0.4.45 | Cargo (F1-04) | 2026-10-31 |
+| uuid (features `v7`, `std`) | 1.29.0 | Cargo (F1-07, ya era dependencia transitiva de `tauri`) | 2026-11-06 |
 | Vitest | pendiente (F1 o F2) | npm | |
 
 ---
@@ -168,6 +169,13 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Decisión:** `chrono = { version = "0.4.45", default-features = false, features = ["clock"] }`. `clock` aporta `Local` (zona del sistema, en Windows vía `windows-link`). Las funciones reciben la zona como parámetro genérico `TimeZone`, de modo que producción usa `chrono::Local` y los tests usan una zona simulada con DST sin depender de la configuración del equipo. Nunca se llama a `Utc::now()` ni `Local::now()` fuera de la implementación real de `Clock` (F4-01). Hueco de primavera (hora inexistente): se interpreta con el desplazamiento previo al salto (02:30 pasa a 03:30). Hora repetida de otoño: se toma la primera aparición.
 - **Consecuencias:** añade `chrono`, `num-traits` y `windows-link` (ya presente en el árbol de Tauri) al árbol. `oldtime`, `wasmbind` y `serde` quedan desactivadas. El formato de transporte sigue siendo texto `YYYY-MM-DD`, `HH:MM` y `YYYY-MM-DDTHH:MM:SSZ`; `chrono` no se expone en los DTO.
 - **Alternativas descartadas:** `time` (solo conoce el desplazamiento local actual, no el de una fecha arbitraria, así que no resuelve el DST de fechas futuras); `chrono-tz` como dependencia de pruebas (base IANA completa y tiempo de compilación elevado para cubrir solo dos transiciones, que se simulan en el test); aritmética manual de fechas.
+
+## D-19 — `uuid` para identificadores v7
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-06
+- **Contexto:** SPEC §5.1 fija ids UUID v7 en texto; F1-07 es la primera tarea que crea filas desde un comando y necesita generarlos.
+- **Decisión:** `uuid = { version = "1.29.0", default-features = false, features = ["v7", "std"] }`. `ids::UuidV7Generator` construye el timestamp a partir del `Clock` (nunca de la hora del sistema) y usa `ContextV7` para que los ids del mismo milisegundo sigan siendo crecientes. Los comandos reciben el generador por `AppState` (trait `IdGenerator`), y los tests usan ids secuenciales predecibles.
+- **Consecuencias:** sin coste de árbol: `uuid` 1.29.0 ya estaba en `Cargo.lock` como dependencia transitiva de `tauri-utils`. Solo se activan `v7` y `std` (aleatoriedad vía `getrandom`, ya presente).
+- **Alternativas descartadas:** generar UUID v7 a mano (formato de bits, contador monótono y aleatoriedad son fáciles de equivocar); `ulid` (formato distinto al de SPEC §5.1); `uuid` con feature `serde` (los ids se transportan como `String`).
 
 ---
 

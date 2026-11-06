@@ -18,6 +18,12 @@ pub fn get(conn: &Connection, id: &str) -> rusqlite::Result<Option<Tag>> {
         .optional()
 }
 
+/// Whether other tags have `id` as their parent.
+pub fn has_children(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
+    conn.prepare_cached("SELECT EXISTS (SELECT 1 FROM tags WHERE parent_id = ?1)")?
+        .query_row([id], |row| row.get(0))
+}
+
 /// All tags with their pending-task counts, in display order.
 pub fn list(conn: &Connection) -> rusqlite::Result<Vec<TagWithCount>> {
     let mut statement = conn.prepare_cached(
@@ -201,6 +207,17 @@ mod tests {
         assert!(with_tx(&mut conn, |tx| upsert(tx, &bad_color)).is_err());
         assert!(with_tx(&mut conn, |tx| upsert(tx, &input("d", "X", Some("nope")))).is_err());
         assert_eq!(list(&conn).expect("list").len(), 1);
+    }
+
+    #[test]
+    fn has_children_reports_parents_only() {
+        let mut conn = database();
+        save(&mut conn, &input("parent", "Grado", None));
+        save(&mut conn, &input("child", "Álgebra", Some("parent")));
+
+        assert!(has_children(&conn, "parent").expect("parent"));
+        assert!(!has_children(&conn, "child").expect("child"));
+        assert!(!has_children(&conn, "missing").expect("missing"));
     }
 
     #[test]

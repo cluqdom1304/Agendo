@@ -15,10 +15,11 @@ mod random_ops_tests;
 use rusqlite::{Connection, Transaction, TransactionBehavior};
 
 /// Runs `operation` in one `IMMEDIATE` transaction: committed on `Ok`, rolled back on `Err`.
-pub fn with_tx<T>(
+/// Works with any error type that a SQLite error converts into (`rusqlite::Error`, `AppError`).
+pub fn with_tx<T, E: From<rusqlite::Error>>(
     conn: &mut Connection,
-    operation: impl FnOnce(&Transaction<'_>) -> rusqlite::Result<T>,
-) -> rusqlite::Result<T> {
+    operation: impl FnOnce(&Transaction<'_>) -> Result<T, E>,
+) -> Result<T, E> {
     let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let value = operation(&tx)?;
     tx.commit()?;

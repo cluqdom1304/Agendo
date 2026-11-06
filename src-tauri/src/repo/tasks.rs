@@ -214,6 +214,50 @@ pub fn set_completed(
     get(tx, id)
 }
 
+/// Moves a live task into the "to do" list (`due_date` `None`) or onto a day, placing it before
+/// `before_id` or, if that is `None` or not in the destination section, last. The positions of
+/// the whole destination section are renumbered 0..n. Moving to the to-do list clears the time.
+/// Returns `None` if the task does not exist or is in the trash.
+pub fn move_task(
+    tx: &Transaction<'_>,
+    id: &str,
+    due_date: Option<&str>,
+    before_id: Option<&str>,
+    now: &str,
+) -> rusqlite::Result<Option<Task>> {
+    if get(tx, id)?.is_none() {
+        return Ok(None);
+    }
+
+    let mut ordered: Vec<String> = tx
+        .prepare_cached(
+            "SELECT id FROM tasks
+             WHERE deleted_at IS NULL AND due_date IS ?1 AND id <> ?2
+             ORDER BY position, id",
+        )?
+        .query_map(params![due_date, id], |row| row.get(0))?
+        .collect::<Result<_, _>>()?;
+    let index = before_id
+        .and_then(|anchor| ordered.iter().position(|other| other == anchor))
+        .unwrap_or(ordered.len());
+    ordered.insert(index, id.to_string());
+
+    tx.prepare_cached(
+        "UPDATE tasks SET
+             due_date = ?2,
+             due_time = CASE WHEN ?2 IS NULL THEN NULL ELSE due_time END,
+             updated_at = ?3
+         WHERE id = ?1",
+    )?
+    .execute(params![id, due_date, now])?;
+    let mut renumber =
+        tx.prepare_cached("UPDATE tasks SET position = ?2 WHERE id = ?1 AND position <> ?2")?;
+    for (position, task_id) in (0_i64..).zip(&ordered) {
+        renumber.execute(params![task_id, position])?;
+    }
+    get(tx, id)
+}
+
 /// Moves a live task to the trash. Returns `false` if there was nothing to delete.
 pub fn soft_delete(tx: &Transaction<'_>, id: &str, now: &str) -> rusqlite::Result<bool> {
     let changed = tx
@@ -562,6 +606,105 @@ mod tests {
         let missing =
             with_tx(&mut conn, |tx| set_completed(tx, "missing", true, T1)).expect("none");
         assert_eq!(missing, None);
+    }
+
+    fn positions_of(conn: &Connection, due_date: Option<&str>) -> Vec<(String, i64)> {
+        conn.prepare(
+            "SELECT id, position FROM tasks WHERE deleted_at IS NULL AND due_date IS ?1
+             ORDER BY position, id",
+        )
+        .expect("prepare")
+        .query_map([due_date], |row| Ok((row.get(0)?, row.get(1)?)))
+        .expect("query")
+        .collect::<Result<_, _>>()
+        .expect("rows")
+    }
+
+    fn at(id: &str, position: i64) -> (String, i64) {
+        (id.to_string(), position)
+    }
+
+    fn relocate(
+        conn: &mut Connection,
+        id: &str,
+        date: Option<&str>,
+        before: Option<&str>,
+    ) -> Option<Task> {
+        with_tx(conn, |tx| move_task(tx, id, date, before, T1)).expect("move")
+    }
+
+    #[test]
+    fn move_within_a_section_reorders_and_renumbers() {
+        let mut conn = database();
+        for id in ["a", "b", "c", "d"] {
+            add(&mut conn, &new_task(id, id, None));
+        }
+
+        let moved = relocate(&mut conn, "d", None, Some("b")).expect("found");
+        assert_eq!(moved.position, 1);
+        assert_eq!(
+            positions_of(&conn, None),
+            [at("a", 0), at("d", 1), at("b", 2), at("c", 3)]
+        );
+
+        relocate(&mut conn, "a", None, None);
+        assert_eq!(
+            positions_of(&conn, None),
+            [at("d", 0), at("b", 1), at("c", 2), at("a", 3)]
+        );
+    }
+
+    #[test]
+    fn move_to_a_day_sets_the_date_and_keeps_the_time() {
+        let mut conn = database();
+        add(&mut conn, &new_task("x", "x", Some("2026-03-11")));
+        let mut timed = new_task("t", "t", Some("2026-03-10"));
+        timed.due_time = Some("09:00".to_string());
+        add(&mut conn, &timed);
+        add(&mut conn, &new_task("u", "u", None));
+
+        let to_day = relocate(&mut conn, "t", Some("2026-03-11"), Some("x")).expect("found");
+        assert_eq!(to_day.due_date.as_deref(), Some("2026-03-11"));
+        assert_eq!(to_day.due_time.as_deref(), Some("09:00"));
+        assert_eq!(to_day.updated_at, T1);
+        assert_eq!(
+            positions_of(&conn, Some("2026-03-11")),
+            [at("t", 0), at("x", 1)]
+        );
+
+        let from_todo = relocate(&mut conn, "u", Some("2026-03-11"), None).expect("found");
+        assert_eq!(from_todo.position, 2);
+        assert_eq!(from_todo.due_time, None);
+    }
+
+    #[test]
+    fn move_to_the_todo_list_clears_date_and_time() {
+        let mut conn = database();
+        add(&mut conn, &new_task("a", "a", None));
+        let mut timed = new_task("b", "b", Some("2026-03-10"));
+        timed.due_time = Some("09:00".to_string());
+        add(&mut conn, &timed);
+
+        let moved = relocate(&mut conn, "b", None, Some("a")).expect("found");
+
+        assert_eq!((moved.due_date, moved.due_time), (None, None));
+        assert_eq!(positions_of(&conn, None), [at("b", 0), at("a", 1)]);
+        assert!(positions_of(&conn, Some("2026-03-10")).is_empty());
+    }
+
+    #[test]
+    fn move_ignores_an_anchor_outside_the_destination_and_skips_missing_tasks() {
+        let mut conn = database();
+        add(&mut conn, &new_task("a", "a", None));
+        add(&mut conn, &new_task("b", "b", Some("2026-03-10")));
+        add(&mut conn, &new_task("c", "c", None));
+
+        relocate(&mut conn, "a", None, Some("b")).expect("found");
+        assert_eq!(positions_of(&conn, None), [at("c", 0), at("a", 1)]);
+
+        assert_eq!(relocate(&mut conn, "missing", None, None), None);
+        with_tx(&mut conn, |tx| soft_delete(tx, "c", T1)).expect("delete");
+        assert_eq!(relocate(&mut conn, "c", None, None), None);
     }
 
     #[test]

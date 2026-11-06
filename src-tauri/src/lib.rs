@@ -2,11 +2,23 @@ mod commands;
 pub mod db;
 pub mod domain;
 pub mod error;
+pub mod ids;
 pub mod repo;
+pub mod scheduler;
 mod startup;
+pub mod state;
+#[cfg(test)]
+mod test_support;
 mod window;
 
-use tauri::webview::PageLoadEvent;
+use std::sync::Arc;
+
+use tauri::{Manager, webview::PageLoadEvent};
+
+use crate::{scheduler::clock::SystemClock, state::AppState};
+
+/// File name of the SQLite database inside the app data directory.
+const DATABASE_FILE: &str = "agenda.sqlite";
 
 // Si Tauri no puede arrancar no hay estado recuperable: abortar con mensaje es correcto.
 #[allow(clippy::expect_used)]
@@ -15,7 +27,10 @@ pub fn run() {
     startup::init();
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .setup(|_app| {
+        .setup(|app| {
+            let path = app.path().app_data_dir()?.join(DATABASE_FILE);
+            let state = AppState::open(&path, Arc::new(SystemClock))?;
+            app.manage(Arc::new(state));
             startup::mark("setup_done");
             Ok(())
         })
@@ -25,7 +40,19 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::startup::startup_mark,
-            commands::window::window_set_effect
+            commands::window::window_set_effect,
+            commands::tasks::tasks_list,
+            commands::tasks::task_create,
+            commands::tasks::task_update,
+            commands::tasks::task_set_completed,
+            commands::tasks::task_move,
+            commands::tasks::task_delete,
+            commands::tasks::task_restore,
+            commands::tasks::trash_list,
+            commands::tags::tag_list,
+            commands::tags::tag_upsert,
+            commands::tags::tag_delete,
+            commands::tags::task_tags_set
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
