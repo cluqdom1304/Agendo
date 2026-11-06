@@ -33,14 +33,14 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 
 ## Fase 2 — Vista principal
 
-- [ ] Las secciones "POR HACER", "AGENDA" y "Completadas" se distinguen visualmente.
-- [ ] Las fechas aparecen en `DD/MM/YYYY` y en orden descendente.
-- [ ] Al completar una tarea, la animación es fluida (sin saltos visibles) y la tarea acaba en "Completadas" del mismo día.
-- [ ] El checkbox tiene la animación elástica y no hay artefactos.
-- [ ] Ctrl+N crea una tarea y el foco queda en el título.
-- [ ] El deshacer de 5 s restaura la tarea eliminada.
-- [ ] Con `prefers-reduced-motion` activado en Windows, las animaciones desaparecen.
-- [ ] La sensación de documento tipo Notepad++ es clara y coherente.
+- [x] Las secciones "POR HACER", "AGENDA" y "Completadas" se distinguen visualmente.
+- [x] Las fechas aparecen en `DD/MM/YYYY` y en orden descendente.
+- [x] Al completar una tarea, la animación es fluida (sin saltos visibles) y la tarea acaba en "Completadas" del mismo día.
+- [x] El checkbox tiene la animación elástica y no hay artefactos.
+- [x] Ctrl+N crea una tarea y el foco queda en el título.
+- [x] El deshacer de 5 s restaura la tarea eliminada.
+- [x] Con `prefers-reduced-motion` activado en Windows, las animaciones desaparecen.
+- [x] La sensación de documento tipo Notepad++ es clara y coherente.
 
 ---
 

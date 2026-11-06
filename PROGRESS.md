@@ -83,7 +83,7 @@
 - Dependencias nuevas: `@testing-library/svelte` 5.4.2 y `jsdom` 31.0.0 (D-21), solo desarrollo.
 - Desviaciones: SPEC §10 sitúa los componentes en `src/features/` y `src/shell/`; con SvelteKit (D-12) viven en `src/lib/features/todo/` y `src/lib/shell/`. `TodoView` es una vista nueva y `DayGroup` sirve también para el bloque POR HACER (`block.date === null`) para no añadir un componente fuera del inventario de SPEC §8.6. La subsección "Completadas" también existe en POR HACER (opción 1 de B-03, sigue abierto). No hay arrastre para reordenar (`task_move` no se usa hasta que una tarea lo pida) ni etiquetas en la fila (llegan con el Sidebar). El evento `tasks:changed` aún no existe (F4-08), así que el store no se refresca por eventos.
 
-**Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 2 (8 ítems; ninguno verificado por el agente: fluidez de la animación a 60 fps, checkbox elástico, foco tras Ctrl+N, deshacer de 5 s en la ventana real, `prefers-reduced-motion` de Windows y la sensación de documento)
+**Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 2 (8 ítems; los 8 validados por un humano el 2026-11-06; dos fallaron al principio (sin forma de poner fecha ni botón de eliminar) y se corrigieron en `0da79b4` con selector de fecha y botón de eliminar en la fila)
 
 ---
 
