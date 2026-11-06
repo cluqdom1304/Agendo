@@ -204,6 +204,15 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-23 — Completar una tarea sin fecha la mueve al día de completado
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-06
+- **Contexto:** B-03. D-05 no decía qué pasa con una tarea completada que no tiene fecha. Resolución humana: pasa a AGENDA, al día en que se completó.
+- **Decisión:** `task_set_completed` acepta `completedDate` (fecha local de hoy, `YYYY-MM-DD`, que solo conoce el frontend); si la tarea no tiene fecha y se completa, `due_date` toma ese valor en la misma transacción (`repo::tasks::set_completed_on`). Solo se asigna fecha, no hora: dentro del día las completadas ya se ordenan por `completed_at`. Reabrir conserva la fecha. Sin `completedDate` la tarea sigue sin fecha.
+- **Consecuencias:** POR HACER ya no recibe tareas completadas desde la interfaz (la subsección «Completadas» de ese bloque solo aparecería con datos antiguos); `sort_todo` no cambia.
+- **Alternativas descartadas:** dos llamadas (completar y luego actualizar la fecha; no atómico); calcular la fecha local en Rust (el backend no conoce la zona horaria del usuario).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

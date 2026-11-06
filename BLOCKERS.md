@@ -54,7 +54,7 @@ El agente registra aquí cualquier bloqueo, ambigüedad de producto o test que n
   1. POR HACER también termina con una subsección "Completadas", ordenada por `completed_at` ascendente, igual que un día.
   2. Las completadas sin fecha conservan su `position` entre las pendientes.
 - **Recomendación del agente:** opción 1 (misma regla en todos los bloques; evita que una tarea hecha siga mezclada con las pendientes). Es la que implementa `domain::ordering::sort_todo`; cambiarla solo toca esa función y su test de tabla. El trabajo continúa con la opción 1 hasta que un humano decida.
-- **Estado:** ABIERTO
+- **Estado:** RESUELTO
 - **Resolución humana:** Cuando una tarea sin fecha se complete, ajustar la fecha (y hora si procede) al momento que se ha marcado como completada, añadiendola como completada en el día correspondiente.
 
 ---

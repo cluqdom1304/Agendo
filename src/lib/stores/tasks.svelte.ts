@@ -13,7 +13,11 @@ export interface TasksApi {
   taskCreate(input: { title?: string; dueDate?: string }): Promise<Task>;
   taskUpdate(id: string, patch: TaskPatch): Promise<Task>;
   search(query: string): Promise<SearchHit[]>;
-  taskSetCompleted(id: string, completed: boolean): Promise<Task>;
+  taskSetCompleted(
+    id: string,
+    completed: boolean,
+    completedDate?: string,
+  ): Promise<Task>;
   taskDelete(id: string): Promise<void>;
   taskRestore(id: string): Promise<Task>;
 }
@@ -22,7 +26,8 @@ const realApi: TasksApi = {
   tasksList: (query) => backend.tasksList(query),
   taskCreate: (input) => backend.taskCreate(input),
   taskUpdate: (id, patch) => backend.taskUpdate(id, patch),
-  taskSetCompleted: (id, completed) => backend.taskSetCompleted(id, completed),
+  taskSetCompleted: (id, completed, completedDate) =>
+    backend.taskSetCompleted(id, completed, completedDate),
   taskDelete: (id) => backend.taskDelete(id),
   taskRestore: (id) => backend.taskRestore(id),
   search: (query) => backend.search(query),
@@ -278,8 +283,13 @@ export class TasksStore {
     }
     // The row changes place; closing the notes first lets the editor save before it remounts.
     if (this.notesOpenId === id) this.notesOpenId = null;
+    // B-03: an undated task that gets completed moves to the day it was completed.
+    const today = toLocalIsoDate(this.#now());
+    const completedDate =
+      completed && before.dueDate === null ? today : undefined;
     const guess: Task = {
       ...before,
+      dueDate: completedDate ?? before.dueDate,
       isCompleted: completed,
       completedAt: completed ? toInstant(this.#now()) : null,
     };
@@ -287,14 +297,16 @@ export class TasksStore {
     // Read through a function: the answer is filled in by callbacks TypeScript cannot see.
     const answered = () => answer;
     this.settling.add(id);
-    const request = this.#api.taskSetCompleted(id, completed).then(
-      (task) => {
-        answer.task = task;
-      },
-      (error: unknown) => {
-        answer.failure = { error };
-      },
-    );
+    const request = this.#api
+      .taskSetCompleted(id, completed, completedDate)
+      .then(
+        (task) => {
+          answer.task = task;
+        },
+        (error: unknown) => {
+          answer.failure = { error };
+        },
+      );
     await new Promise((resolve) => setTimeout(resolve, this.#settleMs()));
     this.settling.delete(id);
     const early = answered().failure;

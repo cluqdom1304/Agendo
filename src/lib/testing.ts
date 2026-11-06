@@ -115,10 +115,18 @@ export class FakeApi implements TasksApi {
       }));
   }
 
-  async taskSetCompleted(id: string, completed: boolean): Promise<Task> {
+  async taskSetCompleted(
+    id: string,
+    completed: boolean,
+    completedDate?: string,
+  ): Promise<Task> {
     await this.#enter("taskSetCompleted", `${id}=${completed}`);
+    const before = this.#get(id);
     return this.#put({
-      ...this.#get(id),
+      ...before,
+      dueDate: completed
+        ? (before.dueDate ?? completedDate ?? null)
+        : before.dueDate,
       isCompleted: completed,
       completedAt: completed ? "2026-03-10T10:00:00Z" : null,
     });

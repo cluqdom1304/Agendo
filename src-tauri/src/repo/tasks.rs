@@ -196,6 +196,18 @@ pub fn set_completed(
     completed: bool,
     now: &str,
 ) -> rusqlite::Result<Option<Task>> {
+    set_completed_on(tx, id, completed, now, None)
+}
+
+/// Like [`set_completed`], and a task without date that becomes completed takes `local_date`
+/// (the day it was completed, in the user's time zone) as its day (B-03). Reopening keeps it.
+pub fn set_completed_on(
+    tx: &Transaction<'_>,
+    id: &str,
+    completed: bool,
+    now: &str,
+    local_date: Option<&str>,
+) -> rusqlite::Result<Option<Task>> {
     let changed = tx
         .prepare_cached(
             "UPDATE tasks SET
@@ -203,11 +215,12 @@ pub fn set_completed(
                      WHEN ?2 = 0 THEN NULL
                      WHEN is_completed = 1 THEN completed_at
                      ELSE ?3 END,
+                 due_date = CASE WHEN ?2 = 1 AND is_completed = 0 THEN COALESCE(due_date, ?4) ELSE due_date END,
                  is_completed = ?2,
                  updated_at = ?3
              WHERE id = ?1 AND deleted_at IS NULL",
         )?
-        .execute(params![id, completed, now])?;
+        .execute(params![id, completed, now, local_date])?;
     if changed == 0 {
         return Ok(None);
     }

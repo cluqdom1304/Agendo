@@ -328,3 +328,38 @@ describe("notes", () => {
     expect(store.reveal("zzz")).toBe(false);
   });
 });
+
+describe("completing an undated task (B-03)", () => {
+  it("moves it to today's day, completed, and keeps the day on reopen", async () => {
+    const { api, store } = setup([makeTask({ id: "a", position: 1 })]);
+    await store.load();
+    await store.setCompleted("a", true);
+    expect(store.todoBlock.open).toHaveLength(0);
+    expect(store.todoBlock.completed).toHaveLength(0);
+    expect(store.find("a")?.dueDate).toBe("2026-03-10");
+    expect(store.agendaBlocks[0]).toMatchObject({ date: "2026-03-10" });
+    expect(titles(store.agendaBlocks[0]!.completed)).toEqual(["a"]);
+    expect(api.tasks[0]?.dueDate).toBe("2026-03-10");
+
+    await store.setCompleted("a", false);
+    expect(store.find("a")?.dueDate).toBe("2026-03-10");
+  });
+
+  it("leaves a dated task on its own day", async () => {
+    const { store } = setup([makeTask({ id: "a", dueDate: "2026-03-01" })]);
+    await store.load();
+    await store.setCompleted("a", true);
+    expect(store.find("a")?.dueDate).toBe("2026-03-01");
+  });
+
+  it("puts the task back undated if the backend refuses", async () => {
+    const { api, store } = setup([makeTask({ id: "a", position: 1 })]);
+    await store.load();
+    api.failing.add("taskSetCompleted");
+    await store.setCompleted("a", true);
+    expect(store.find("a")).toMatchObject({
+      dueDate: null,
+      isCompleted: false,
+    });
+  });
+});

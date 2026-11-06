@@ -195,10 +195,26 @@ pub fn update(state: &AppState, id: &str, patch: TaskPatchInput) -> AppResult<Ta
     })
 }
 
+#[cfg(test)]
 pub fn set_completed(state: &AppState, id: &str, completed: bool) -> AppResult<Task> {
+    complete(state, id, completed, None)
+}
+
+/// `local_date` is today in the user's time zone, which only the frontend knows; a task
+/// without date that is completed moves to that day (B-03).
+pub fn complete(
+    state: &AppState,
+    id: &str,
+    completed: bool,
+    local_date: Option<&str>,
+) -> AppResult<Task> {
+    if let Some(date) = local_date {
+        dates::parse_date(date)?;
+    }
     let now = state.clock.now_string();
     state.db.write(|tx| {
-        tasks::set_completed(tx, id, completed, &now)?.ok_or_else(|| task_not_found(id))
+        tasks::set_completed_on(tx, id, completed, &now, local_date)?
+            .ok_or_else(|| task_not_found(id))
     })
 }
 
@@ -320,9 +336,10 @@ pub async fn task_set_completed(
     state: State<'_, Arc<AppState>>,
     id: String,
     completed: bool,
+    completed_date: Option<String>,
 ) -> Result<Task, String> {
     run_blocking(state.inner().clone(), move |state| {
-        set_completed(state, &id, completed)
+        complete(state, &id, completed, completed_date.as_deref())
     })
     .await
 }
@@ -747,6 +764,50 @@ mod tests {
         assert_eq!(
             code_of(move_task(&state, "nope", Section::Todo, None, None)),
             missing
+        );
+    }
+
+    #[test]
+    fn completing_an_undated_task_moves_it_to_the_completion_day() {
+        let state = state();
+        let undated = create_titled(&state, "sin fecha", None);
+        let dated = create_titled(&state, "con fecha", Some("2026-03-12"));
+
+        let done = complete(&state, &undated.id, true, Some("2026-03-20")).expect("complete");
+        assert_eq!(done.due_date.as_deref(), Some("2026-03-20"));
+        assert!(done.is_completed);
+
+        let kept = complete(&state, &dated.id, true, Some("2026-03-20")).expect("complete");
+        assert_eq!(kept.due_date.as_deref(), Some("2026-03-12"));
+
+        let reopened = complete(&state, &undated.id, false, Some("2026-03-25")).expect("reopen");
+        assert_eq!(reopened.due_date.as_deref(), Some("2026-03-20"));
+        assert!(!reopened.is_completed);
+    }
+
+    #[test]
+    fn completing_without_a_local_date_keeps_the_task_undated() {
+        let state = state();
+        let task = create_titled(&state, "t", None);
+        let done = set_completed(&state, &task.id, true).expect("complete");
+        assert_eq!(done.due_date, None);
+    }
+
+    #[test]
+    fn completing_rejects_a_malformed_local_date() {
+        let state = state();
+        let task = create_titled(&state, "t", None);
+        assert!(
+            code_of(complete(&state, &task.id, true, Some("20-03-2026")))
+                .starts_with("VALIDATION:")
+        );
+        assert!(
+            !state
+                .db
+                .read(|c| Ok(tasks::get(c, &task.id)?))
+                .expect("get")
+                .expect("task")
+                .is_completed
         );
     }
 

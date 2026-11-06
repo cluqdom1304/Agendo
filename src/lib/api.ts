@@ -72,11 +72,13 @@ export function taskUpdate(id: string, patch: TaskPatch): Promise<Task> {
   return invoke<Task>("task_update", { id, patch });
 }
 
+/** `completedDate` (local `YYYY-MM-DD`) is the day an undated task takes when it is completed. */
 export function taskSetCompleted(
   id: string,
   completed: boolean,
+  completedDate?: string,
 ): Promise<Task> {
-  return invoke<Task>("task_set_completed", { id, completed });
+  return invoke<Task>("task_set_completed", { id, completed, completedDate });
 }
 
 export function taskMove(
