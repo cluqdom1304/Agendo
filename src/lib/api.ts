@@ -4,6 +4,7 @@ import type {
   EffectApplied,
   EffectMode,
   ErrorCode,
+  SearchHit,
   Section,
   Tag,
   TagUpsertInput,
@@ -96,6 +97,10 @@ export function taskRestore(id: string): Promise<Task> {
 
 export function trashList(): Promise<Task[]> {
   return invoke<Task[]>("trash_list");
+}
+
+export function search(query: string, limit?: number): Promise<SearchHit[]> {
+  return invoke<SearchHit[]>("search", { query, limit });
 }
 
 export function tagList(): Promise<TagWithCount[]> {

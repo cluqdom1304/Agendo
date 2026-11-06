@@ -274,3 +274,57 @@ describe("delete with undo", () => {
     expect(store.notice).toBeNull();
   });
 });
+
+describe("notes", () => {
+  const doc = '{"type":"doc","content":[]}';
+
+  it("saveNotes replaces the task with the backend's answer", async () => {
+    const { api, store } = setup();
+    await store.load();
+    await store.saveNotes("a", doc);
+    expect(api.calls).toContain(`taskUpdate:a#notes=${doc}`);
+    expect(store.find("a")?.contentJson).toBe(doc);
+  });
+
+  it("saveNotes reports a refusal and rejects so the editor keeps its text", async () => {
+    const { api, store } = setup();
+    await store.load();
+    api.failing.add("taskUpdate");
+    await expect(store.saveNotes("a", doc)).rejects.toBeDefined();
+    expect(store.notice?.message).toContain("base de datos");
+    expect(store.find("a")?.contentJson).toBe("");
+  });
+
+  it("toggleNotes keeps one task open at a time", async () => {
+    const { store } = setup([makeTask({ id: "a" }), makeTask({ id: "b" })]);
+    await store.load();
+    store.toggleNotes("a");
+    store.toggleNotes("b");
+    expect(store.notesOpenId).toBe("b");
+    store.toggleNotes("b");
+    expect(store.notesOpenId).toBeNull();
+  });
+
+  it("completing a task closes its notes", async () => {
+    const { store } = setup();
+    await store.load();
+    store.toggleNotes("a");
+    await store.setCompleted("a", true);
+    expect(store.notesOpenId).toBeNull();
+  });
+
+  it("reveal selects the task and opens its notes only when it has text", async () => {
+    const withText =
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"hola"}]}]}';
+    const { store } = setup([
+      makeTask({ id: "a", contentJson: withText }),
+      makeTask({ id: "b" }),
+    ]);
+    await store.load();
+    expect(store.reveal("a")).toBe(true);
+    expect([store.selectedId, store.notesOpenId]).toEqual(["a", "a"]);
+    expect(store.reveal("b")).toBe(true);
+    expect([store.selectedId, store.notesOpenId]).toEqual(["b", null]);
+    expect(store.reveal("zzz")).toBe(false);
+  });
+});

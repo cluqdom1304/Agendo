@@ -10,6 +10,10 @@
     title: string;
     isCompleted: boolean;
     dueTime: string | null;
+    /** The task has notes; the toggle is drawn stronger so they are easy to spot. */
+    hasNotes?: boolean;
+    notesOpen?: boolean;
+    onToggleNotes?: () => void;
     /** Playing the exit animation of SPEC §8.4 while the backend confirms. */
     settling?: boolean;
     /** An unsaved row waiting for its title. */
@@ -25,6 +29,9 @@
     title,
     isCompleted,
     dueTime,
+    hasNotes = false,
+    notesOpen = false,
+    onToggleNotes,
     settling = false,
     draft = false,
     onToggle,
@@ -64,6 +71,22 @@
     {onCommit}
     {onCancel}
   />
+  {#if !draft}
+    <button
+      type="button"
+      class="notes-toggle"
+      class:has-notes={hasNotes}
+      aria-expanded={notesOpen}
+      aria-label={notesOpen ? t.notes.close(title) : t.notes.open(title)}
+      title={notesOpen ? t.notes.close(title) : t.notes.open(title)}
+      tabindex="-1"
+      onclick={() => onToggleNotes?.()}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true" class="notes-icon">
+        <path d="M3 4.5h10M3 8h10M3 11.5h6" />
+      </svg>
+    </button>
+  {/if}
   {#if dueTime}
     <span class="time">
       <svg viewBox="0 0 16 16" aria-hidden="true" class="clock">
@@ -100,6 +123,42 @@
   .row.settling {
     opacity: 0;
     transform: translateY(8px);
+  }
+
+  .notes-toggle {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity var(--motion-fast) var(--ease-apple);
+  }
+
+  .row:hover .notes-toggle,
+  .row:focus-within .notes-toggle,
+  .notes-toggle.has-notes,
+  .notes-toggle[aria-expanded="true"] {
+    opacity: 1;
+  }
+
+  .notes-toggle.has-notes {
+    color: var(--accent);
+  }
+
+  .notes-icon {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
   }
 
   .time {

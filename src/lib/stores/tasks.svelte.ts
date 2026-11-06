@@ -3,14 +3,16 @@ import { SvelteSet } from "svelte/reactivity";
 import * as backend from "../api";
 import { toInstant, toLocalIsoDate } from "../dates";
 import { t } from "../i18n";
+import { hasNotes } from "../features/notes/content";
 import { groupByDay, sortTodo, splitCompleted } from "../ordering";
-import type { Task, TasksSections } from "../types";
+import type { SearchHit, Task, TaskPatch, TasksSections } from "../types";
 
 /** The slice of `api.ts` the store uses; tests pass a fake. */
 export interface TasksApi {
   tasksList(query: { view: "todo" | "agenda" }): Promise<TasksSections>;
   taskCreate(input: { title?: string; dueDate?: string }): Promise<Task>;
-  taskUpdate(id: string, patch: { title: string }): Promise<Task>;
+  taskUpdate(id: string, patch: TaskPatch): Promise<Task>;
+  search(query: string): Promise<SearchHit[]>;
   taskSetCompleted(id: string, completed: boolean): Promise<Task>;
   taskDelete(id: string): Promise<void>;
   taskRestore(id: string): Promise<Task>;
@@ -23,6 +25,7 @@ const realApi: TasksApi = {
   taskSetCompleted: (id, completed) => backend.taskSetCompleted(id, completed),
   taskDelete: (id) => backend.taskDelete(id),
   taskRestore: (id) => backend.taskRestore(id),
+  search: (query) => backend.search(query),
 };
 
 /** Where a new task goes: the "por hacer" list or one day of the agenda. */
@@ -91,6 +94,8 @@ export class TasksStore {
   draft = $state.raw<Draft | null>(null);
   undoStack = $state.raw<UndoEntry[]>([]);
   notice = $state.raw<Notice | null>(null);
+  /** The task whose notes are open under its row; one at a time keeps the document short. */
+  notesOpenId = $state<string | null>(null);
   /** Rows playing their exit animation; per-key reactivity re-renders only the row concerned. */
   readonly settling = new SvelteSet<string>();
 
@@ -248,6 +253,8 @@ export class TasksStore {
     if (!before || before.isCompleted === completed || this.settling.has(id)) {
       return;
     }
+    // The row changes place; closing the notes first lets the editor save before it remounts.
+    if (this.notesOpenId === id) this.notesOpenId = null;
     const guess: Task = {
       ...before,
       isCompleted: completed,
@@ -281,6 +288,35 @@ export class TasksStore {
       this.#replace(before);
       this.#report(failure.error);
     }
+  }
+
+  // ---- notes and search --------------------------------------------------------------
+
+  toggleNotes(id: string): void {
+    this.notesOpenId = this.notesOpenId === id ? null : id;
+  }
+
+  /** Saves the notes document; throws after reporting, so the editor keeps its pending text. */
+  async saveNotes(id: string, contentJson: string): Promise<void> {
+    try {
+      this.#replace(await this.#api.taskUpdate(id, { contentJson }));
+    } catch (error) {
+      this.#report(error);
+      throw error;
+    }
+  }
+
+  search(query: string): Promise<SearchHit[]> {
+    return this.#api.search(query);
+  }
+
+  /** Selects a search result and opens its notes when it has any. */
+  reveal(id: string): boolean {
+    const task = this.find(id);
+    if (!task) return false;
+    this.selectedId = id;
+    this.notesOpenId = hasNotes(task.contentJson) ? id : null;
+    return true;
   }
 
   // ---- deletion -------------------------------------------------------------------------

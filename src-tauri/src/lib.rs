@@ -51,6 +51,7 @@ pub fn run() {
             commands::tasks::task_delete,
             commands::tasks::task_restore,
             commands::tasks::trash_list,
+            commands::search::search,
             commands::tags::tag_list,
             commands::tags::tag_upsert,
             commands::tags::tag_delete,

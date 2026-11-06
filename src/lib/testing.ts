@@ -1,7 +1,7 @@
 // Test helpers shared by the store and component tests. Not imported by the app.
 import { groupByDay, sortTodo } from "./ordering";
 import type { TasksApi } from "./stores/tasks.svelte";
-import type { Task, TasksSections } from "./types";
+import type { SearchHit, Task, TaskPatch, TasksSections } from "./types";
 
 export function makeTask(overrides: Partial<Task> & { id: string }): Task {
   return {
@@ -77,9 +77,40 @@ export class FakeApi implements TasksApi {
     return task;
   }
 
-  async taskUpdate(id: string, patch: { title: string }): Promise<Task> {
-    await this.#enter("taskUpdate", `${id}=${patch.title}`);
-    return this.#put({ ...this.#get(id), title: patch.title });
+  async taskUpdate(id: string, patch: TaskPatch): Promise<Task> {
+    await this.#enter(
+      "taskUpdate",
+      patch.contentJson === undefined
+        ? `${id}=${patch.title}`
+        : `${id}#notes=${patch.contentJson}`,
+    );
+    const before = this.#get(id);
+    return this.#put({
+      ...before,
+      title: patch.title ?? before.title,
+      contentJson: patch.contentJson ?? before.contentJson,
+    });
+  }
+
+  async search(query: string): Promise<SearchHit[]> {
+    await this.#enter("search", query);
+    const fold = (text: string) =>
+      text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+    const needle = fold(query.trim());
+    if (!needle) return [];
+    return this.tasks
+      .filter(
+        (task) =>
+          !this.#deleted.has(task.id) &&
+          fold(`${task.title} ${task.contentJson}`).includes(needle),
+      )
+      .map((task) => ({
+        taskId: task.id,
+        title: task.title,
+        snippet: "",
+        dueDate: task.dueDate,
+        isCompleted: task.isCompleted,
+      }));
   }
 
   async taskSetCompleted(id: string, completed: boolean): Promise<Task> {
@@ -102,4 +133,15 @@ export class FakeApi implements TasksApi {
     this.#deleted.delete(id);
     return this.#get(id);
   }
+}
+
+/** jsdom has no layout; ProseMirror asks for rectangles when it scrolls the selection into view. */
+export function installLayoutStubs(): void {
+  const rects = {
+    getClientRects: () => [],
+    getBoundingClientRect: () => new DOMRect(),
+  };
+  Object.assign(Range.prototype, rects);
+  Object.assign(Text.prototype, rects);
+  document.elementFromPoint = () => null;
 }

@@ -2,6 +2,8 @@
   import { formatDisplayDate } from "../../dates";
   import { t } from "../../i18n";
   import type { TaskBlock, TasksStore } from "../../stores/tasks.svelte";
+  import NoteEditor from "../notes/NoteEditor.svelte";
+  import { hasNotes } from "../notes/content";
   import TaskRow from "./TaskRow.svelte";
 
   // One block of tasks: a day of AGENDA, or POR HACER when `block.date` is null.
@@ -29,6 +31,9 @@
     title={task.title}
     isCompleted={task.isCompleted}
     dueTime={task.dueTime}
+    hasNotes={hasNotes(task.contentJson)}
+    notesOpen={store.notesOpenId === task.id}
+    onToggleNotes={() => store.toggleNotes(task.id)}
     settling={store.settling.has(task.id)}
     onToggle={() => store.setCompleted(task.id, !task.isCompleted)}
     onSelect={() => (store.selectedId = task.id)}
@@ -37,6 +42,12 @@
       if (trigger === "enter") store.startDraft(target);
     }}
   />
+  {#if store.notesOpenId === task.id}
+    <NoteEditor
+      contentJson={task.contentJson}
+      save={(json) => store.saveNotes(task.id, json)}
+    />
+  {/if}
 {/snippet}
 
 <section class="block" aria-label={heading}>

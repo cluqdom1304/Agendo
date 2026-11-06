@@ -3,8 +3,10 @@
 
   import { t } from "../../i18n";
   import { findShortcut, focusContextOf, ROW_ATTRIBUTE } from "../../keymap";
+  import Spotlight from "../../shell/Spotlight.svelte";
   import EmptyState from "../../shell/EmptyState.svelte";
   import Toast from "../../shell/Toast.svelte";
+  import type { SearchHit } from "../../types";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import DayGroup from "./DayGroup.svelte";
   import SectionHeader from "./SectionHeader.svelte";
@@ -14,6 +16,8 @@
   }
 
   let { store }: Props = $props();
+
+  let searchOpen = $state(false);
 
   const lastDeletion = $derived(store.undoStack.at(-1));
 
@@ -41,6 +45,17 @@
     all[next]?.focus();
   }
 
+  async function revealHit(hit: SearchHit) {
+    searchOpen = false;
+    if (!store.reveal(hit.taskId)) return;
+    await focusRow(hit.taskId);
+    document
+      .querySelector<HTMLElement>(
+        `[${ROW_ATTRIBUTE}][data-task-id="${hit.taskId}"]`,
+      )
+      ?.scrollIntoView?.({ block: "center" });
+  }
+
   function onKeydown(event: KeyboardEvent) {
     const shortcut = findShortcut(event, focusContextOf(event.target));
     if (!shortcut) return;
@@ -48,6 +63,9 @@
     const id = row?.dataset.taskId;
 
     switch (shortcut) {
+      case "openSearch":
+        searchOpen = true;
+        break;
       case "newTask":
         store.startDraft(store.defaultTarget());
         break;
@@ -112,6 +130,14 @@
     {/each}
   {/if}
 </div>
+
+{#if searchOpen}
+  <Spotlight
+    search={(query) => store.search(query)}
+    onSelect={revealHit}
+    onClose={() => (searchOpen = false)}
+  />
+{/if}
 
 {#if lastDeletion}
   <Toast

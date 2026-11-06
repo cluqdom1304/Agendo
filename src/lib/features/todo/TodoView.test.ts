@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, within } from "@testing-library/svelte";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TasksStore } from "../../stores/tasks.svelte";
-import { FakeApi, makeTask } from "../../testing";
+import { FakeApi, installLayoutStubs, makeTask } from "../../testing";
 import type { Task } from "../../types";
 import TodoView from "./TodoView.svelte";
 
@@ -30,6 +36,7 @@ const rowFor = (title: string) =>
 const key = (init: KeyboardEventInit, target: Element = document.body) =>
   fireEvent.keyDown(target, init);
 
+installLayoutStubs();
 afterEach(() => vi.useRealTimers());
 
 describe("document layout", () => {
@@ -279,5 +286,85 @@ describe("rendering cost", () => {
     for (const id of ["a", "d"]) {
       expect(reads.get(id)).toBe(beforeComplete.get(id));
     }
+  });
+});
+
+describe("notes and search", () => {
+  const notes = JSON.stringify({
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: "detalle" }] },
+    ],
+  });
+
+  it("opens and closes the notes under a task with its toggle", async () => {
+    await mount([
+      makeTask({ id: "a", title: "Con notas", contentJson: notes }),
+    ]);
+    expect(
+      screen.queryByRole("textbox", { name: "Notas de la tarea" }),
+    ).toBeNull();
+    await fireEvent.click(
+      screen.getByRole("button", { name: /Mostrar notas/ }),
+    );
+    expect(
+      (await screen.findByRole("textbox", { name: "Notas de la tarea" }))
+        .textContent,
+    ).toBe("detalle");
+    await fireEvent.click(
+      screen.getByRole("button", { name: /Ocultar notas/ }),
+    );
+    expect(
+      screen.queryByRole("textbox", { name: "Notas de la tarea" }),
+    ).toBeNull();
+  });
+
+  it("saves edited notes through the store", async () => {
+    const { api } = await mount([makeTask({ id: "a", title: "Tarea" })]);
+    await fireEvent.click(
+      screen.getByRole("button", { name: /Mostrar notas/ }),
+    );
+    await screen.findByRole("textbox", { name: "Notas de la tarea" });
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Lista con viñetas" }),
+    );
+    await fireEvent.click(
+      screen.getByRole("button", { name: /Ocultar notas/ }),
+    );
+    await waitFor(() =>
+      expect(
+        api.calls.some((call) => call.startsWith("taskUpdate:a#notes=")),
+      ).toBe(true),
+    );
+  });
+
+  it("Ctrl+K opens the search and Enter reveals the chosen task with its notes", async () => {
+    const { store } = await mount([
+      makeTask({ id: "a", title: "Primera" }),
+      makeTask({ id: "b", title: "Estudiar álgebra", contentJson: notes }),
+    ]);
+    await key({ key: "k", ctrlKey: true });
+    const field = await screen.findByRole("combobox");
+    await fireEvent.input(field, { target: { value: "algebra" } });
+    await screen.findByRole("option");
+    await fireEvent.keyDown(field, { key: "Enter" });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(store.selectedId).toBe("b");
+    expect(store.notesOpenId).toBe("b");
+    expect(
+      await screen.findByRole("textbox", { name: "Notas de la tarea" }),
+    ).toBeTruthy();
+  });
+
+  it("does not run list shortcuts while the search is open", async () => {
+    const { api } = await mount([makeTask({ id: "a", title: "Primera" })]);
+    await key({ key: "k", ctrlKey: true });
+    const field = await screen.findByRole("combobox");
+    await fireEvent.keyDown(field, { key: "n", ctrlKey: true });
+    expect(screen.getAllByRole("row")).toHaveLength(1);
+    expect(
+      api.calls.filter((call) => call.startsWith("taskCreate")),
+    ).toHaveLength(0);
   });
 });

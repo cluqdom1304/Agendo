@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** 2
+**Fase activa:** 3
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F3-01 (tras confirmación humana)
-**Última actualización:** 2026-11-06 (F2-09, fin de Fase 2)
+**Siguiente tarea:** F4-01 (tras confirmación humana)
+**Última actualización:** 2026-11-06 (F3-06, fin de Fase 3)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -88,15 +88,23 @@
 ---
 
 ## Fase 3 — Editor de notas y búsqueda
-- [ ] F3-01 `NoteEditor` con TipTap (carga diferida, D-10) y `NoteToolbar`
-- [ ] F3-02 Extensiones: negrita, cursiva, código, enlace, listas, historial
-- [ ] F3-03 Guardado con debounce de 400 ms y `content_text` derivado
-- [ ] F3-04 Sub-puntos indentados bajo la tarea (24 px)
-- [ ] F3-05 Spotlight (`Ctrl+K`) con búsqueda FTS y navegación por teclado
-- [ ] F3-06 Saneado de enlaces (solo `http`, `https`, `mailto`)
+- [x] F3-01 `NoteEditor` con TipTap (carga diferida, D-10) y `NoteToolbar`
+- [x] F3-02 Extensiones: negrita, cursiva, código, enlace, listas, historial
+- [x] F3-03 Guardado con debounce de 400 ms y `content_text` derivado
+- [x] F3-04 Sub-puntos indentados bajo la tarea (24 px)
+- [x] F3-05 Spotlight (`Ctrl+K`) con búsqueda FTS y navegación por teclado
+- [x] F3-06 Saneado de enlaces (solo `http`, `https`, `mailto`)
 
-**Verificaciones [A]:** (pendiente)
-**Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 3
+**Verificaciones [A]:**
+- Fase 3 completa (F3-01…F3-06, un commit: editor, guardado y buscador comparten store y `TodoView`). Backend: `repo/search.rs` (FTS5 con cada palabra entrecomillada y como prefijo, `bm25` con el título pesando 4× las notas, `snippet()`), `commands/search.rs` (`search { query, limit? }`, límite 50 por defecto y 200 máximo, SPEC §7.3) y `validate_content_json` rechaza cualquier marca `link` cuyo `href` no sea `http`/`https`/`mailto` (en cualquier nivel del documento). `content_text` ya se derivaba en cada guardado desde F1 (`domain/content.rs`). Frontend: `features/notes/{editor.ts,NoteEditor,NoteToolbar}`, `noteSaver.ts`, `content.ts`, `links.ts`, `shell/Spotlight.svelte`; atajos `Ctrl+K` (tabla de `keymap.ts`), `Ctrl+B/I/E` (extensiones de TipTap) y `Ctrl+L` (campo de enlace).
+- Comportamiento: cada fila tiene un botón de notas (visible al pasar el ratón o con notas); abre el editor bajo la tarea, de una en una. Las listas de la nota llevan 24 px de sangría. Guardado a los 400 ms de la última pulsación, secuencial (nunca se solapan dos guardados), con vaciado al cerrar la nota; si falla, el texto se conserva y se reintenta. Completar una tarea cierra sus notas antes de moverla. Ctrl+clic en un enlace lo abre con `opener` (ya permitido solo para http/https/mailto); un clic normal nunca navega la ventana. Spotlight descarta respuestas antiguas, captura el teclado mientras está abierto y, al elegir un resultado, selecciona la tarea y abre sus notas si las tiene.
+- Tests de Rust: 194 de lib (antes 184; +10: enlaces, tabla de esquemas, búsqueda con y sin acentos en ambos sentidos, prefijos, entrada hostil, borradas, ranking, rendimiento, comando) + 4 + 3. **F-09: búsqueda en 20 ms en el peor caso con 10 000 tareas** (límite 100 ms). Contrato Rust↔TS ampliado con `SearchHit` (`fixtures/dto.json`).
+- Tests de Vitest: 105 (antes 56): `links.test.ts` (saneado: `javascript:`, `file:`, `data:`, tabuladores intercalados…), `noteSaver.test.ts` (debounce, orden, reintento), `NoteEditor.test.ts` (TipTap real en jsdom: carga diferida, guardado a los 400 ms, vaciado al cerrar, enlaces rechazados), `Spotlight.test.ts` (flechas, Intro, Esc, respuestas desordenadas, error), `TodoView.test.ts` (abrir/cerrar notas, Ctrl+K → Intro, atajos bloqueados con el buscador abierto) y store.
+- Batería: `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test`, `npm run lint`, `npm run check` (0 errores, 0 avisos), `npm run test`, `npm run build` y `npm run size` en verde. JS total 159,8 KB gzip de 250: **bundle inicial ≈ 45 KB; TipTap vive en un chunk diferido de 114,6 KB** que solo se pide con `import()` desde `NoteEditor` (comprobado en `build/`).
+- Dependencias nuevas: TipTap 3.33.0 (D-22), extensiones sueltas en lugar de `starter-kit`.
+- Desviaciones: el botón de notas no está en SPEC §8.6; es la única forma de abrir el editor con el ratón y con teclado hasta que haya panel de detalle. `Ctrl+Z` dentro del editor lo gestiona el historial de TipTap, no el deshacer de borrado. La resolución humana de B-03 (una tarea sin fecha que se completa pasa al día en que se completó) cambia el comportamiento de F1/F2 y **no** se ha aplicado en esta fase; queda como tarea propia para no mezclar cambios.
+
+**Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 3 (6 ítems; ninguno verificado por el agente)
 
 ---
 

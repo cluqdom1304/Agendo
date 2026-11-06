@@ -1,0 +1,81 @@
+// @vitest-environment jsdom
+import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { installLayoutStubs } from "../../testing";
+import NoteEditor from "./NoteEditor.svelte";
+
+installLayoutStubs();
+
+const doc = (text: string) =>
+  JSON.stringify({
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+  });
+
+async function mount(
+  contentJson: string,
+  save = vi.fn<(json: string) => Promise<void>>(async () => {}),
+) {
+  render(NoteEditor, { contentJson, save });
+  const box = await screen.findByRole("textbox");
+  return { box, save };
+}
+
+afterEach(() => vi.useRealTimers());
+
+describe("NoteEditor", () => {
+  it("loads TipTap lazily and shows the stored notes", async () => {
+    const { box } = await mount(doc("apuntes de álgebra"));
+    expect(box.textContent).toBe("apuntes de álgebra");
+    expect(screen.getByRole("toolbar")).toBeTruthy();
+  });
+
+  it("opens with an empty document or with legacy empty content", async () => {
+    for (const content of ["", '{"type":"doc","content":[]}']) {
+      const { box } = await mount(content);
+      expect(box.textContent).toBe("");
+      document.body.innerHTML = "";
+    }
+  });
+
+  it("saves the edited document 400 ms after the last change", async () => {
+    const { save } = await mount(doc("hola"));
+    vi.useFakeTimers();
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Lista con viñetas" }),
+    );
+    await vi.advanceTimersByTimeAsync(399);
+    expect(save).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(save).toHaveBeenCalledTimes(1);
+    const saved = JSON.parse(save.mock.calls[0]![0] as string);
+    expect(saved.content[0].type).toBe("bulletList");
+  });
+
+  it("refuses javascript: and file: links and accepts https", async () => {
+    const { box } = await mount(doc("sitio"));
+    await waitFor(() => expect(box.textContent).toBe("sitio"));
+    await fireEvent.click(screen.getByRole("button", { name: /Enlace/ }));
+    const field = screen.getByLabelText("Dirección del enlace");
+
+    for (const bad of ["javascript:alert(1)", "file:///C:/x.txt"]) {
+      await fireEvent.input(field, { target: { value: bad } });
+      await fireEvent.keyDown(field, { key: "Enter" });
+      expect(screen.getByRole("alert").textContent).toContain("http");
+    }
+    expect(box.querySelector("a")).toBeNull();
+  });
+
+  it("flushes pending text when the editor closes", async () => {
+    const save = vi.fn<(json: string) => Promise<void>>(async () => {});
+    const view = render(NoteEditor, { contentJson: doc("x"), save });
+    await screen.findByRole("textbox");
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Lista numerada" }),
+    );
+    expect(save).not.toHaveBeenCalled();
+    view.unmount();
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+  });
+});

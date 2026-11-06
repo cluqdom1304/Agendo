@@ -87,3 +87,12 @@ export interface TagUpsertInput {
 
 export type ErrorCode =
   "NOT_FOUND" | "VALIDATION" | "CONFLICT" | "DB" | "IO" | "NOTIFY" | "INTERNAL";
+
+export interface SearchHit {
+  taskId: string;
+  title: string;
+  /** Fragment of the notes around the match; empty when the task has no notes. */
+  snippet: string;
+  dueDate: string | null;
+  isCompleted: boolean;
+}

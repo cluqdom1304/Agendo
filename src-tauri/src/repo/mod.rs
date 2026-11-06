@@ -6,6 +6,7 @@
 
 pub mod fts;
 pub mod model;
+pub mod search;
 pub mod tags;
 pub mod tasks;
 

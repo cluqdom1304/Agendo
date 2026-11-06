@@ -10,7 +10,10 @@ use serde_json::{Value, json};
 use crate::{
     commands::tasks::{Sections, TasksListOutput},
     domain::ordering::DayGroup,
-    repo::model::{Reminder, Tag, TagWithCount, Task},
+    repo::{
+        model::{Reminder, Tag, TagWithCount, Task},
+        search::SearchHit,
+    },
     window::effects::{EffectApplied, EffectMode},
 };
 
@@ -69,6 +72,13 @@ fn current() -> Value {
             agenda: vec![day],
         }),
         "rangeOutput": TasksListOutput::Range(vec![task(true)]),
+        "searchHit": SearchHit {
+            task_id: "task-1".into(),
+            title: "Entregar práctica".into(),
+            snippet: "…revisar la práctica…".into(),
+            due_date: None,
+            is_completed: false,
+        },
         "effectApplied": EffectApplied {
             requested: EffectMode::Mica,
             applied: EffectMode::Acrylic,

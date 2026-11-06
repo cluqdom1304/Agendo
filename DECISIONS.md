@@ -195,6 +195,15 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-22 — TipTap 3 con extensiones sueltas
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-06
+- **Contexto:** F3-01/F3-02 exigen el editor de notas de D-10 con negrita, cursiva, código, enlace, listas e historial, y nada más.
+- **Decisión:** dependencias exactas `3.33.0` de `@tiptap/core`, `@tiptap/pm`, `@tiptap/extension-document`, `-paragraph`, `-text`, `-bold`, `-italic`, `-code`, `-link`, `-list` (listas con y sin orden), `-hard-break` y `@tiptap/extensions` (historial `UndoRedo`). Se cargan solo desde `NoteEditor` mediante `import()` (D-10).
+- **Consecuencias:** entran en un chunk diferido, no en el bundle inicial. El presupuesto de `npm run size` cuenta todos los `.js`, así que se vigila su suma. El enlace se valida en el cliente (`links.ts`) y otra vez en el backend (`validate_content_json`).
+- **Alternativas descartadas:** `@tiptap/starter-kit` (arrastra encabezados, citas, bloques de código y tachado que la especificación no pide); Lexical/CodeMirror (otro modelo de documento: D-03 fija ProseMirror JSON).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

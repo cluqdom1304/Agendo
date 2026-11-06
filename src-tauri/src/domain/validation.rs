@@ -88,9 +88,48 @@ pub fn validate_content_json(content: &str) -> Result<(), ValidationError> {
     let invalid = || ValidationError::new("las notas no tienen un formato válido");
     let value: serde_json::Value = serde_json::from_str(content).map_err(|_| invalid())?;
     match value.get("type").and_then(serde_json::Value::as_str) {
-        Some("doc") => Ok(()),
-        _ => Err(invalid()),
+        Some("doc") => {}
+        _ => return Err(invalid()),
     }
+    if has_unsafe_link(&value) {
+        return Err(ValidationError::new(
+            "las notas contienen un enlace no permitido (solo http, https y mailto)",
+        ));
+    }
+    Ok(())
+}
+
+/// Whether `href` may be stored and opened: only `http`, `https` and `mailto` (SPEC F-08).
+pub fn is_allowed_link(href: &str) -> bool {
+    let Some((scheme, rest)) = href.trim().split_once(':') else {
+        return false;
+    };
+    match scheme.to_ascii_lowercase().as_str() {
+        "http" | "https" => rest.len() > 2 && rest.starts_with("//"),
+        "mailto" => !rest.is_empty(),
+        _ => false,
+    }
+}
+
+fn has_unsafe_link(node: &serde_json::Value) -> bool {
+    let bad_mark = node
+        .get("marks")
+        .and_then(serde_json::Value::as_array)
+        .is_some_and(|marks| {
+            marks.iter().any(|mark| {
+                mark.get("type").and_then(serde_json::Value::as_str) == Some("link")
+                    && !mark
+                        .get("attrs")
+                        .and_then(|attrs| attrs.get("href"))
+                        .and_then(serde_json::Value::as_str)
+                        .is_some_and(is_allowed_link)
+            })
+        });
+    bad_mark
+        || node
+            .get("content")
+            .and_then(serde_json::Value::as_array)
+            .is_some_and(|children| children.iter().any(has_unsafe_link))
 }
 
 /// Validates a task's date and time together: both well formed, and no time without a date
@@ -322,6 +361,36 @@ mod tests {
                 Some(text) => assert_eq!(message(result), text, "{label}"),
             }
         }
+    }
+
+    #[test]
+    fn link_scheme_table() {
+        for (href, allowed) in [
+            ("https://example.com", true),
+            ("HTTP://example.com/a?b=1", true),
+            ("mailto:ana@example.com", true),
+            ("javascript:alert(1)", false),
+            ("file:///c:/secret.txt", false),
+            ("data:text/html,<b>x</b>", false),
+            (" javascript:alert(1)", false),
+            ("https:", false),
+            ("example.com", false),
+            ("", false),
+        ] {
+            assert_eq!(is_allowed_link(href), allowed, "{href}");
+        }
+    }
+
+    #[test]
+    fn content_with_an_unsafe_link_is_rejected_even_when_nested() {
+        let doc = |href: &str| {
+            format!(
+                r#"{{"type":"doc","content":[{{"type":"bulletList","content":[{{"type":"listItem","content":[{{"type":"paragraph","content":[{{"type":"text","text":"x","marks":[{{"type":"link","attrs":{{"href":"{href}"}}}}]}}]}}]}}]}}]}}"#
+            )
+        };
+        assert!(validate_content_json(&doc("https://example.com")).is_ok());
+        assert!(validate_content_json(&doc("javascript:alert(1)")).is_err());
+        assert!(validate_content_json(&doc("file:///x")).is_err());
     }
 
     #[test]

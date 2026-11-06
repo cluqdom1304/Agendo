@@ -6,6 +6,7 @@ import type {
   DayGroup,
   EffectApplied,
   Reminder,
+  SearchHit,
   Tag,
   TagWithCount,
   Task,
@@ -23,6 +24,7 @@ interface Fixture {
   sectionsOutput: TasksSections;
   rangeOutput: Task[];
   effectApplied: EffectApplied;
+  searchHit: SearchHit;
 }
 
 const fixture = fixtureJson as unknown as Fixture;
@@ -68,6 +70,14 @@ const sectionsKeys: Record<keyof TasksSections, true> = {
 const effectKeys: Record<keyof EffectApplied, true> = {
   requested: true,
   applied: true,
+};
+
+const searchHitKeys: Record<keyof SearchHit, true> = {
+  taskId: true,
+  title: true,
+  snippet: true,
+  dueDate: true,
+  isCompleted: true,
 };
 
 function keys(value: object): string[] {
@@ -129,6 +139,13 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
       requested: "mica",
       applied: "acrylic",
     });
+  });
+});
+
+describe("SearchHit", () => {
+  it("matches the Rust serialization", () => {
+    expect(keys(fixture.searchHit)).toEqual(keys(searchHitKeys));
+    expect(fixture.searchHit.dueDate).toBeNull();
   });
 });
 
