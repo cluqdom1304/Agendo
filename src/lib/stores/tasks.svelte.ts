@@ -283,10 +283,8 @@ export class TasksStore {
     }
     // The row changes place; closing the notes first lets the editor save before it remounts.
     if (this.notesOpenId === id) this.notesOpenId = null;
-    // B-03: an undated task that gets completed moves to the day it was completed.
-    const today = toLocalIsoDate(this.#now());
-    const completedDate =
-      completed && before.dueDate === null ? today : undefined;
+    // D-23: a completed task always sits in the "Completadas" of the day it was completed.
+    const completedDate = completed ? toLocalIsoDate(this.#now()) : undefined;
     const guess: Task = {
       ...before,
       dueDate: completedDate ?? before.dueDate,

@@ -199,7 +199,7 @@ pub fn set_completed(
     set_completed_on(tx, id, completed, now, None)
 }
 
-/// Like [`set_completed`], and a task without date that becomes completed takes `local_date`
+/// Like [`set_completed`], and a task that becomes completed takes `local_date`
 /// (the day it was completed, in the user's time zone) as its day (B-03). Reopening keeps it.
 pub fn set_completed_on(
     tx: &Transaction<'_>,
@@ -215,7 +215,7 @@ pub fn set_completed_on(
                      WHEN ?2 = 0 THEN NULL
                      WHEN is_completed = 1 THEN completed_at
                      ELSE ?3 END,
-                 due_date = CASE WHEN ?2 = 1 AND is_completed = 0 THEN COALESCE(due_date, ?4) ELSE due_date END,
+                 due_date = CASE WHEN ?2 = 1 AND is_completed = 0 THEN COALESCE(?4, due_date) ELSE due_date END,
                  is_completed = ?2,
                  updated_at = ?3
              WHERE id = ?1 AND deleted_at IS NULL",

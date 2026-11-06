@@ -329,7 +329,7 @@ describe("notes", () => {
   });
 });
 
-describe("completing an undated task (B-03)", () => {
+describe("completing a task (B-03, D-23)", () => {
   it("moves it to today's day, completed, and keeps the day on reopen", async () => {
     const { api, store } = setup([makeTask({ id: "a", position: 1 })]);
     await store.load();
@@ -345,11 +345,11 @@ describe("completing an undated task (B-03)", () => {
     expect(store.find("a")?.dueDate).toBe("2026-03-10");
   });
 
-  it("leaves a dated task on its own day", async () => {
+  it("moves a dated task from another day to today as well", async () => {
     const { store } = setup([makeTask({ id: "a", dueDate: "2026-03-01" })]);
     await store.load();
     await store.setCompleted("a", true);
-    expect(store.find("a")?.dueDate).toBe("2026-03-01");
+    expect(store.find("a")?.dueDate).toBe("2026-03-10");
   });
 
   it("puts the task back undated if the backend refuses", async () => {

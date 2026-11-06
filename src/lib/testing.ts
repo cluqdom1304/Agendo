@@ -124,9 +124,7 @@ export class FakeApi implements TasksApi {
     const before = this.#get(id);
     return this.#put({
       ...before,
-      dueDate: completed
-        ? (before.dueDate ?? completedDate ?? null)
-        : before.dueDate,
+      dueDate: completed ? (completedDate ?? before.dueDate) : before.dueDate,
       isCompleted: completed,
       completedAt: completed ? "2026-03-10T10:00:00Z" : null,
     });

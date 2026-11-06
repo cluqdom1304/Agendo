@@ -200,8 +200,8 @@ pub fn set_completed(state: &AppState, id: &str, completed: bool) -> AppResult<T
     complete(state, id, completed, None)
 }
 
-/// `local_date` is today in the user's time zone, which only the frontend knows; a task
-/// without date that is completed moves to that day (B-03).
+/// `local_date` is today in the user's time zone, which only the frontend knows; a task that is
+/// completed moves to that day, whatever day it had (B-03, D-23).
 pub fn complete(
     state: &AppState,
     id: &str,
@@ -768,7 +768,7 @@ mod tests {
     }
 
     #[test]
-    fn completing_an_undated_task_moves_it_to_the_completion_day() {
+    fn completing_a_task_moves_it_to_the_completion_day() {
         let state = state();
         let undated = create_titled(&state, "sin fecha", None);
         let dated = create_titled(&state, "con fecha", Some("2026-03-12"));
@@ -777,8 +777,8 @@ mod tests {
         assert_eq!(done.due_date.as_deref(), Some("2026-03-20"));
         assert!(done.is_completed);
 
-        let kept = complete(&state, &dated.id, true, Some("2026-03-20")).expect("complete");
-        assert_eq!(kept.due_date.as_deref(), Some("2026-03-12"));
+        let moved = complete(&state, &dated.id, true, Some("2026-03-20")).expect("complete");
+        assert_eq!(moved.due_date.as_deref(), Some("2026-03-20"));
 
         let reopened = complete(&state, &undated.id, false, Some("2026-03-25")).expect("reopen");
         assert_eq!(reopened.due_date.as_deref(), Some("2026-03-20"));
