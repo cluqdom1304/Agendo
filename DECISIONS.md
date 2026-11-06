@@ -44,7 +44,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 | tokio | pendiente (F4-01) | Cargo | |
 | chrono (solo feature `clock`) | 0.4.45 | Cargo (F1-04) | 2026-10-31 |
 | uuid (features `v7`, `std`) | 1.29.0 | Cargo (F1-07, ya era dependencia transitiva de `tauri`) | 2026-11-06 |
-| Vitest | pendiente (F1 o F2) | npm | |
+| Vitest | 5.1.0 | npm (F1-09) | 2026-11-06 |
 
 ---
 
@@ -176,6 +176,13 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Decisión:** `uuid = { version = "1.29.0", default-features = false, features = ["v7", "std"] }`. `ids::UuidV7Generator` construye el timestamp a partir del `Clock` (nunca de la hora del sistema) y usa `ContextV7` para que los ids del mismo milisegundo sigan siendo crecientes. Los comandos reciben el generador por `AppState` (trait `IdGenerator`), y los tests usan ids secuenciales predecibles.
 - **Consecuencias:** sin coste de árbol: `uuid` 1.29.0 ya estaba en `Cargo.lock` como dependencia transitiva de `tauri-utils`. Solo se activan `v7` y `std` (aleatoriedad vía `getrandom`, ya presente).
 - **Alternativas descartadas:** generar UUID v7 a mano (formato de bits, contador monótono y aleatoriedad son fáciles de equivocar); `ulid` (formato distinto al de SPEC §5.1); `uuid` con feature `serde` (los ids se transportan como `String`).
+
+## D-20 — Vitest para pruebas del frontend
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-06
+- **Contexto:** SPEC §3 y §13 fijan Vitest; F1-09 necesita el primer test de contrato IPC y `npm run test` (CLAUDE.md §4).
+- **Decisión:** `vitest@5.1.0` exacto como devDependency, con `vitest.config.ts` propio (entorno `node`, `src/**/*.test.ts`) para no cargar los plugins de SvelteKit/Tailwind en los tests. `@testing-library/svelte` y jsdom se añadirán en F2 con su propia entrada, cuando haya componentes que probar. El contrato Rust ↔ TypeScript se prueba con `src-tauri/fixtures/dto.json`: un test de Rust compara la serialización real con el fixture y Vitest lo comprueba contra los tipos de `src/lib/types.ts`.
+- **Consecuencias:** solo afecta a desarrollo (no entra en el bundle). `npm audit` informa avisos de dependencias de desarrollo ya presentes; no se ha forzado ninguna actualización.
+- **Alternativas descartadas:** Jest (configuración de ESM/TypeScript más pesada con Vite); generar los tipos desde Rust con `ts-rs`/`specta` (dependencia nueva y generación en build; el fixture detecta la misma divergencia sin ella).
 
 ---
 

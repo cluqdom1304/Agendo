@@ -1,0 +1,184 @@
+{
+  "dayGroup": {
+    "date": "2026-03-12",
+    "tasks": [
+      {
+        "completedAt": "2026-03-12T08:00:00Z",
+        "contentJson": "{\"type\":\"doc\",\"content\":[]}",
+        "createdAt": "2026-03-10T10:00:00Z",
+        "dueDate": "2026-03-12",
+        "dueTime": "09:30",
+        "id": "task-1",
+        "isCompleted": true,
+        "position": 3,
+        "reminders": [
+          {
+            "id": "rem-1",
+            "isSent": false,
+            "notifyAt": "2026-03-12T08:30:00Z",
+            "offsetMinutes": 60
+          }
+        ],
+        "tagIds": [
+          "tag-1"
+        ],
+        "title": "Entregar práctica",
+        "updatedAt": "2026-03-10T11:00:00Z"
+      }
+    ]
+  },
+  "effectApplied": {
+    "applied": "acrylic",
+    "requested": "mica"
+  },
+  "rangeOutput": [
+    {
+      "completedAt": "2026-03-12T08:00:00Z",
+      "contentJson": "{\"type\":\"doc\",\"content\":[]}",
+      "createdAt": "2026-03-10T10:00:00Z",
+      "dueDate": "2026-03-12",
+      "dueTime": "09:30",
+      "id": "task-1",
+      "isCompleted": true,
+      "position": 3,
+      "reminders": [
+        {
+          "id": "rem-1",
+          "isSent": false,
+          "notifyAt": "2026-03-12T08:30:00Z",
+          "offsetMinutes": 60
+        }
+      ],
+      "tagIds": [
+        "tag-1"
+      ],
+      "title": "Entregar práctica",
+      "updatedAt": "2026-03-10T11:00:00Z"
+    }
+  ],
+  "sectionsOutput": {
+    "agenda": [
+      {
+        "date": "2026-03-12",
+        "tasks": [
+          {
+            "completedAt": "2026-03-12T08:00:00Z",
+            "contentJson": "{\"type\":\"doc\",\"content\":[]}",
+            "createdAt": "2026-03-10T10:00:00Z",
+            "dueDate": "2026-03-12",
+            "dueTime": "09:30",
+            "id": "task-1",
+            "isCompleted": true,
+            "position": 3,
+            "reminders": [
+              {
+                "id": "rem-1",
+                "isSent": false,
+                "notifyAt": "2026-03-12T08:30:00Z",
+                "offsetMinutes": 60
+              }
+            ],
+            "tagIds": [
+              "tag-1"
+            ],
+            "title": "Entregar práctica",
+            "updatedAt": "2026-03-10T11:00:00Z"
+          }
+        ]
+      }
+    ],
+    "todo": [
+      {
+        "completedAt": null,
+        "contentJson": "{\"type\":\"doc\",\"content\":[]}",
+        "createdAt": "2026-03-10T10:00:00Z",
+        "dueDate": null,
+        "dueTime": null,
+        "id": "task-1",
+        "isCompleted": false,
+        "position": 3,
+        "reminders": [
+          {
+            "id": "rem-1",
+            "isSent": false,
+            "notifyAt": "2026-03-12T08:30:00Z",
+            "offsetMinutes": null
+          }
+        ],
+        "tagIds": [
+          "tag-1"
+        ],
+        "title": "Entregar práctica",
+        "updatedAt": "2026-03-10T11:00:00Z"
+      }
+    ]
+  },
+  "tag": {
+    "colorHex": "#0A84FF",
+    "id": "tag-1",
+    "name": "Física",
+    "parentId": "tag-0",
+    "position": 0
+  },
+  "tagWithCount": {
+    "colorHex": "#0A84FF",
+    "id": "tag-1",
+    "name": "Física",
+    "parentId": null,
+    "pendingCount": 4,
+    "position": 0
+  },
+  "tagWithoutParent": {
+    "colorHex": "#0A84FF",
+    "id": "tag-1",
+    "name": "Física",
+    "parentId": null,
+    "position": 0
+  },
+  "task": {
+    "completedAt": "2026-03-12T08:00:00Z",
+    "contentJson": "{\"type\":\"doc\",\"content\":[]}",
+    "createdAt": "2026-03-10T10:00:00Z",
+    "dueDate": "2026-03-12",
+    "dueTime": "09:30",
+    "id": "task-1",
+    "isCompleted": true,
+    "position": 3,
+    "reminders": [
+      {
+        "id": "rem-1",
+        "isSent": false,
+        "notifyAt": "2026-03-12T08:30:00Z",
+        "offsetMinutes": 60
+      }
+    ],
+    "tagIds": [
+      "tag-1"
+    ],
+    "title": "Entregar práctica",
+    "updatedAt": "2026-03-10T11:00:00Z"
+  },
+  "taskWithoutOptionals": {
+    "completedAt": null,
+    "contentJson": "{\"type\":\"doc\",\"content\":[]}",
+    "createdAt": "2026-03-10T10:00:00Z",
+    "dueDate": null,
+    "dueTime": null,
+    "id": "task-1",
+    "isCompleted": false,
+    "position": 3,
+    "reminders": [
+      {
+        "id": "rem-1",
+        "isSent": false,
+        "notifyAt": "2026-03-12T08:30:00Z",
+        "offsetMinutes": null
+      }
+    ],
+    "tagIds": [
+      "tag-1"
+    ],
+    "title": "Entregar práctica",
+    "updatedAt": "2026-03-10T11:00:00Z"
+  }
+}
