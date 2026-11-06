@@ -45,6 +45,8 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 | chrono (solo feature `clock`) | 0.4.45 | Cargo (F1-04) | 2026-10-31 |
 | uuid (features `v7`, `std`) | 1.29.0 | Cargo (F1-07, ya era dependencia transitiva de `tauri`) | 2026-11-06 |
 | Vitest | 5.1.0 | npm (F1-09) | 2026-11-06 |
+| @testing-library/svelte | 5.4.2 | npm (F2-01) | 2026-11-06 |
+| jsdom | 31.0.0 | npm (F2-01) | 2026-11-06 |
 
 ---
 
@@ -183,6 +185,13 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Decisión:** `vitest@5.1.0` exacto como devDependency, con `vitest.config.ts` propio (entorno `node`, `src/**/*.test.ts`) para no cargar los plugins de SvelteKit/Tailwind en los tests. `@testing-library/svelte` y jsdom se añadirán en F2 con su propia entrada, cuando haya componentes que probar. El contrato Rust ↔ TypeScript se prueba con `src-tauri/fixtures/dto.json`: un test de Rust compara la serialización real con el fixture y Vitest lo comprueba contra los tipos de `src/lib/types.ts`.
 - **Consecuencias:** solo afecta a desarrollo (no entra en el bundle). `npm audit` informa avisos de dependencias de desarrollo ya presentes; no se ha forzado ninguna actualización.
 - **Alternativas descartadas:** Jest (configuración de ESM/TypeScript más pesada con Vite); generar los tipos desde Rust con `ts-rs`/`specta` (dependencia nueva y generación en build; el fixture detecta la misma divergencia sin ella).
+
+## D-21 — Pruebas de componentes: `@testing-library/svelte` y jsdom
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-06
+- **Contexto:** el DoD de F2 exige tests de componentes (agrupación, completar, deshacer) y un test de renders de fila. D-20 dejó esta entrada pendiente para F2.
+- **Decisión:** `@testing-library/svelte@5.4.2` y `jsdom@31.0.0` exactos como devDependencies. `vitest.config.ts` añade `@sveltejs/vite-plugin-svelte` (ya instalado) y el plugin `svelteTesting` de la librería (condición `browser` y limpieza automática). El entorno por defecto sigue siendo `node`; cada test de componente pide jsdom con `// @vitest-environment jsdom`. No se instala `@testing-library/jest-dom` ni `user-event`: bastan `fireEvent` y aserciones sobre el DOM.
+- **Consecuencias:** solo desarrollo; no entra en el bundle. `npm audit` mantiene los avisos de herramientas de desarrollo ya conocidos (D-20).
+- **Alternativas descartadas:** `happy-dom` (jsdom es la referencia de la librería y de sus ejemplos); Playwright component testing (navegador completo para pruebas que no lo necesitan; los E2E llegan en F6-06).
 
 ---
 
