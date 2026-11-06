@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** 1
+**Fase activa:** 2
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F2-01 (tras confirmación humana)
-**Última actualización:** 2026-11-06 (F1-09, fin de Fase 1)
+**Siguiente tarea:** F3-01 (tras confirmación humana)
+**Última actualización:** 2026-11-06 (F2-09, fin de Fase 2)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -65,18 +65,25 @@
 ---
 
 ## Fase 2 — Vista principal tipo documento
-- [ ] F2-01 Componentes `SectionHeader`, `DayGroup`, `TaskRow`, `Checkbox`, `InlineTitle`
-- [ ] F2-02 Stores con runes (`tasks.svelte.ts`) y agrupación con `$derived`
-- [ ] F2-03 Secciones "POR HACER" y "AGENDA" con fechas `DD/MM/YYYY` descendentes
-- [ ] F2-04 Creación rápida (Ctrl+N, Enter en título)
-- [ ] F2-05 Completar con animación y reubicación en "Completadas"
-- [ ] F2-06 Edición inline de título (guardado en Enter o pérdida de foco)
-- [ ] F2-07 Eliminación con deshacer de 5 s (F-02)
-- [ ] F2-08 Atajos de SPEC §9 para estas acciones (`lib/keymap.ts`)
-- [ ] F2-09 Estados vacíos (`EmptyState`)
+- [x] F2-01 Componentes `SectionHeader`, `DayGroup`, `TaskRow`, `Checkbox`, `InlineTitle`
+- [x] F2-02 Stores con runes (`tasks.svelte.ts`) y agrupación con `$derived`
+- [x] F2-03 Secciones "POR HACER" y "AGENDA" con fechas `DD/MM/YYYY` descendentes
+- [x] F2-04 Creación rápida (Ctrl+N, Enter en título)
+- [x] F2-05 Completar con animación y reubicación en "Completadas"
+- [x] F2-06 Edición inline de título (guardado en Enter o pérdida de foco)
+- [x] F2-07 Eliminación con deshacer de 5 s (F-02)
+- [x] F2-08 Atajos de SPEC §9 para estas acciones (`lib/keymap.ts`)
+- [x] F2-09 Estados vacíos (`EmptyState`)
 
-**Verificaciones [A]:** (pendiente)
-**Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 2
+**Verificaciones [A]:**
+- Fase 2 completa (F2-01…F2-09, un único commit porque las piezas son interdependientes y los tests de componentes necesitan todas). Código en `src/lib/`: `ordering.ts` (port de `domain/ordering.rs`, así las actualizaciones optimistas caen donde las dejaría una recarga), `dates.ts`, `keymap.ts` (tabla única de SPEC §9 con contexto de foco: título / lista / otro), `stores/tasks.svelte.ts` (`TasksStore`, runes; tareas en `$state.raw` inmutables, bloques `todoBlock`/`agendaBlocks` con `$derived`, `settling` como `SvelteSet`), `features/todo/{Checkbox,InlineTitle,TaskRow,SectionHeader,DayGroup,TodoView}.svelte`, `shell/{EmptyState,Toast}.svelte`. `+page.svelte` carga el store real; los textos están en `i18n.ts` y los códigos de error se traducen por prefijo (nunca se muestra `DB:` crudo).
+- Comportamiento: Ctrl+N crea en el día de la tarea seleccionada o en POR HACER, Ctrl+Mayús+N con fecha de hoy. La fila nueva es un borrador no persistido (no se crean tareas vacías); Intro guarda y abre el siguiente borrador, Esc o perder el foco vacío lo descarta, y si el guardado falla el borrador conserva su texto. Completar: animación de 220 ms (0 con `prefers-reduced-motion`), la fila pasa a "Completadas" sin esperar al backend, que luego confirma o revierte. Renombrar y eliminar son optimistas con reversión. Eliminar usa `task_delete` (papelera) y ofrece 5 s de deshacer con `task_restore` (botón del aviso o Ctrl+Z); varios borrados se deshacen del más reciente al más antiguo.
+- Tests (DoD de F2): 56 de Vitest (antes 8) — orden y agrupación (`ordering.test.ts`), atajos (`keymap.test.ts`), store con API simulada incl. actualización optimista y reversión si falla `invoke` (`tasks.store.test.ts`) y componentes con jsdom (`TodoView.test.ts`): agrupación por día y orden, completar mueve a "Completadas", deshacer con botón y Ctrl+Z, Ctrl+N / Intro / Esc, edición, navegación con flechas y un test de renders de fila (un título que cuenta sus lecturas demuestra que renombrar o completar una tarea no re-renderiza las demás).
+- Batería: `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test` (184 de lib + 4 + 3; sin cambios de Rust en la fase), `npm run lint`, `npm run check` (0 errores, 0 avisos), `npm run test` (56), `npm run build` y `npm run size` (JS 41,3 KB gzip de 250) en verde.
+- Dependencias nuevas: `@testing-library/svelte` 5.4.2 y `jsdom` 31.0.0 (D-21), solo desarrollo.
+- Desviaciones: SPEC §10 sitúa los componentes en `src/features/` y `src/shell/`; con SvelteKit (D-12) viven en `src/lib/features/todo/` y `src/lib/shell/`. `TodoView` es una vista nueva y `DayGroup` sirve también para el bloque POR HACER (`block.date === null`) para no añadir un componente fuera del inventario de SPEC §8.6. La subsección "Completadas" también existe en POR HACER (opción 1 de B-03, sigue abierto). No hay arrastre para reordenar (`task_move` no se usa hasta que una tarea lo pida) ni etiquetas en la fila (llegan con el Sidebar). El evento `tasks:changed` aún no existe (F4-08), así que el store no se refresca por eventos.
+
+**Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 2 (8 ítems; ninguno verificado por el agente: fluidez de la animación a 60 fps, checkbox elástico, foco tras Ctrl+N, deshacer de 5 s en la ventana real, `prefers-reduced-motion` de Windows y la sensación de documento)
 
 ---
 

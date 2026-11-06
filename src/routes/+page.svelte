@@ -1,7 +1,13 @@
 <script lang="ts">
-  import { t } from "$lib/i18n";
+  import { onMount } from "svelte";
+
+  import TodoView from "$lib/features/todo/TodoView.svelte";
+  import { tasksStore } from "$lib/stores/tasks.svelte";
+
+  onMount(() => {
+    void tasksStore.load();
+    return () => tasksStore.dispose();
+  });
 </script>
 
-<main class="p-6">
-  <h1 class="text-xl font-semibold">{t.app.name}</h1>
-</main>
+<TodoView store={tasksStore} />
