@@ -243,6 +243,29 @@ export class TasksStore {
     }
   }
 
+  /** Optimistic: the task moves to its new day at once; a refusal puts it back. Clearing the date clears the time too (a task without date has no schedule). */
+  async setDueDate(id: string, date: string | null): Promise<void> {
+    const before = this.find(id);
+    if (!before || before.dueDate === date) return;
+    if (this.notesOpenId === id) this.notesOpenId = null;
+    this.#replace({
+      ...before,
+      dueDate: date,
+      dueTime: date === null ? null : before.dueTime,
+    });
+    try {
+      this.#replace(
+        await this.#api.taskUpdate(
+          id,
+          date === null ? { dueDate: null, dueTime: null } : { dueDate: date },
+        ),
+      );
+    } catch (error) {
+      this.#replace(before);
+      this.#report(error);
+    }
+  }
+
   /**
    * Completing plays the exit animation first, then the row moves to "Completadas" without
    * waiting for the backend; the backend's answer replaces the local guess, and a refusal

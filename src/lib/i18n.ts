@@ -22,6 +22,8 @@ export const t = {
     pendingCount: (count: number) =>
       count === 1 ? "1 pendiente" : `${count} pendientes`,
     loading: "Cargando tareas…",
+    dateLabel: (title: string) => `Fecha de «${title}»`,
+    deleteLabel: (title: string) => `Eliminar «${title}»`,
   },
   notes: {
     open: (title: string) => `Mostrar notas de «${title}»`,

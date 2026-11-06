@@ -10,6 +10,9 @@
     title: string;
     isCompleted: boolean;
     dueTime: string | null;
+    dueDate?: string | null;
+    onDateChange?: (date: string | null) => void;
+    onDelete?: () => void;
     /** The task has notes; the toggle is drawn stronger so they are easy to spot. */
     hasNotes?: boolean;
     notesOpen?: boolean;
@@ -29,6 +32,9 @@
     title,
     isCompleted,
     dueTime,
+    dueDate = null,
+    onDateChange,
+    onDelete,
     hasNotes = false,
     notesOpen = false,
     onToggleNotes,
@@ -71,6 +77,29 @@
     {onCommit}
     {onCancel}
   />
+  {#if !draft}
+    <input
+      type="date"
+      class="date-input"
+      value={dueDate ?? ""}
+      aria-label={t.tasks.dateLabel(title)}
+      title={t.tasks.dateLabel(title)}
+      tabindex="-1"
+      onchange={(event) => onDateChange?.(event.currentTarget.value || null)}
+    />
+    <button
+      type="button"
+      class="delete"
+      aria-label={t.tasks.deleteLabel(title)}
+      title={t.tasks.deleteLabel(title)}
+      tabindex="-1"
+      onclick={() => onDelete?.()}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true" class="notes-icon">
+        <path d="M4 4l8 8M12 4l-8 8" />
+      </svg>
+    </button>
+  {/if}
   {#if !draft}
     <button
       type="button"
@@ -123,6 +152,49 @@
   .row.settling {
     opacity: 0;
     transform: translateY(8px);
+  }
+
+  .date-input {
+    flex: none;
+    width: 118px;
+    height: 22px;
+    padding: 0 var(--space-1);
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 12px;
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity var(--motion-fast) var(--ease-apple);
+  }
+
+  .delete {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity var(--motion-fast) var(--ease-apple);
+  }
+
+  .row:hover .date-input,
+  .row:focus-within .date-input,
+  .row:hover .delete,
+  .row:focus-within .delete {
+    opacity: 1;
+  }
+
+  .delete:hover {
+    color: var(--danger);
   }
 
   .notes-toggle {

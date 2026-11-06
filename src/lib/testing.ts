@@ -89,6 +89,8 @@ export class FakeApi implements TasksApi {
       ...before,
       title: patch.title ?? before.title,
       contentJson: patch.contentJson ?? before.contentJson,
+      dueDate: patch.dueDate === undefined ? before.dueDate : patch.dueDate,
+      dueTime: patch.dueTime === undefined ? before.dueTime : patch.dueTime,
     });
   }
 

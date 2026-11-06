@@ -368,3 +368,40 @@ describe("notes and search", () => {
     ).toHaveLength(0);
   });
 });
+
+describe("row actions", () => {
+  it("setting a date moves the task into that day, newest day first", async () => {
+    await mount([
+      makeTask({ id: "a", title: "Uno", dueDate: "2026-03-01" }),
+      makeTask({ id: "b", title: "Dos" }),
+    ]);
+    await fireEvent.change(screen.getByLabelText("Fecha de «Dos»"), {
+      target: { value: "2026-03-15" },
+    });
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent),
+      ).toEqual(["15/03/2026", "01/03/2026"]),
+    );
+  });
+
+  it("clearing the date sends the task back to POR HACER", async () => {
+    const { store } = await mount([
+      makeTask({ id: "a", title: "Uno", dueDate: "2026-03-01" }),
+    ]);
+    await fireEvent.change(screen.getByLabelText("Fecha de «Uno»"), {
+      target: { value: "" },
+    });
+    await waitFor(() => expect(store.find("a")?.dueDate).toBeNull());
+  });
+
+  it("the delete button removes the task and the toast restores it", async () => {
+    await mount([makeTask({ id: "a", title: "Uno" })]);
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Eliminar «Uno»" }),
+    );
+    await waitFor(() => expect(screen.queryByDisplayValue("Uno")).toBeNull());
+    await fireEvent.click(screen.getByRole("button", { name: "Deshacer" }));
+    expect(await screen.findByDisplayValue("Uno")).toBeTruthy();
+  });
+});

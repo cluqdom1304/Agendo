@@ -31,6 +31,9 @@
     title={task.title}
     isCompleted={task.isCompleted}
     dueTime={task.dueTime}
+    dueDate={task.dueDate}
+    onDateChange={(date) => store.setDueDate(task.id, date)}
+    onDelete={() => store.remove(task.id)}
     hasNotes={hasNotes(task.contentJson)}
     notesOpen={store.notesOpenId === task.id}
     onToggleNotes={() => store.toggleNotes(task.id)}
