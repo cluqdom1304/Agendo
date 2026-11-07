@@ -63,6 +63,18 @@
     custom = "";
   }
 
+  let panel = $state<HTMLElement>();
+
+  // Clicking anywhere else closes the panel, except the bell that toggles it (it would
+  // close and immediately reopen). Pickers of the browser draw outside the page and never
+  // reach this handler.
+  function onPointerDown(event: PointerEvent) {
+    const target = event.target;
+    if (!(target instanceof Element) || panel?.contains(target)) return;
+    if (target.closest("[data-reminders-toggle]")) return;
+    onClose();
+  }
+
   function onKeydown(event: KeyboardEvent) {
     if (event.key !== "Escape") return;
     event.stopPropagation();
@@ -70,12 +82,14 @@
   }
 </script>
 
+<svelte:window onpointerdown={onPointerDown} onkeydown={onKeydown} />
+
 <div
+  bind:this={panel}
   class="popover"
   role="dialog"
   aria-label={t.reminders.open(title)}
   tabindex="-1"
-  onkeydown={onKeydown}
 >
   <h5>{t.reminders.heading}</h5>
 

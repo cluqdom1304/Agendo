@@ -111,6 +111,7 @@
     <button
       type="button"
       class="notes-toggle"
+      data-reminders-toggle
       class:has-notes={reminderCount > 0}
       aria-expanded={remindersOpen}
       aria-label={reminderCount > 0

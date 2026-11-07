@@ -122,4 +122,22 @@ describe("ReminderPopover", () => {
     await fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("closes when clicking outside, but not inside", async () => {
+    const { onClose } = mount({});
+    await fireEvent.pointerDown(screen.getByRole("dialog"));
+    expect(onClose).not.toHaveBeenCalled();
+    await fireEvent.pointerDown(document.body);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores the bell that toggles it", async () => {
+    const { onClose } = mount({});
+    const bell = document.createElement("button");
+    bell.setAttribute("data-reminders-toggle", "");
+    document.body.append(bell);
+    await fireEvent.pointerDown(bell);
+    expect(onClose).not.toHaveBeenCalled();
+    bell.remove();
+  });
 });
