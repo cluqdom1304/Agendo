@@ -32,6 +32,18 @@
   let toolbar = $state.raw<ToolbarState>(idleState);
   let linkRequest = $state(0);
   let failed = $state(false);
+  // The controls only show while the focus is inside the note (editor or toolbar).
+  let focused = $state(true);
+
+  function onFocusOut(event: FocusEvent) {
+    const next = event.relatedTarget;
+    if (
+      next instanceof Node &&
+      (event.currentTarget as HTMLElement).contains(next)
+    )
+      return;
+    focused = false;
+  }
 
   // The saver outlives the editor module's loading: edits only exist after it is ready.
   const saver = new NoteSaver((json) => save(json));
@@ -75,18 +87,20 @@
   const setLink = (href: string | null) => handle?.setLink(href) ?? false;
 </script>
 
-<div class="note">
+<div class="note" onfocusin={() => (focused = true)} onfocusout={onFocusOut}>
   {#if failed}
     <p class="status" role="alert">{t.notes.loadFailed}</p>
   {:else}
-    <NoteToolbar
-      formats={toolbar}
-      {linkRequest}
-      onToggle={toggle}
-      onSetLink={setLink}
-      onUndo={() => handle?.undo()}
-      onRedo={() => handle?.redo()}
-    />
+    {#if focused}
+      <NoteToolbar
+        formats={toolbar}
+        {linkRequest}
+        onToggle={toggle}
+        onSetLink={setLink}
+        onUndo={() => handle?.undo()}
+        onRedo={() => handle?.redo()}
+      />
+    {/if}
     {#if !handle}
       <p class="status">{t.notes.loading}</p>
     {/if}

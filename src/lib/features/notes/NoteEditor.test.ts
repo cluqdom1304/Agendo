@@ -31,6 +31,17 @@ describe("NoteEditor", () => {
     expect(screen.getByRole("toolbar")).toBeTruthy();
   });
 
+  it("shows the controls only while the focus is inside the note", async () => {
+    const { box } = await mount(doc("apuntes"));
+    expect(screen.getByRole("toolbar")).toBeTruthy();
+
+    await fireEvent.focusOut(box, { relatedTarget: document.body });
+    expect(screen.queryByRole("toolbar")).toBeNull();
+
+    await fireEvent.focusIn(box);
+    expect(screen.getByRole("toolbar")).toBeTruthy();
+  });
+
   it("opens with an empty document or with legacy empty content", async () => {
     for (const content of ["", '{"type":"doc","content":[]}']) {
       const { box } = await mount(content);
