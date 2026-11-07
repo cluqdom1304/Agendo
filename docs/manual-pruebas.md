@@ -46,12 +46,12 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 
 ## Fase 3 — Editor y búsqueda
 
-- [ ] Negrita, cursiva, código, enlaces y listas se aplican con los atajos indicados.
+- [x] Negrita, cursiva, código, enlaces y listas se aplican con los atajos indicados.
 - [ ] Un enlace `javascript:` o `file:` no se abre ni se guarda.
-- [ ] Escribir en una nota no provoca tirones perceptibles.
-- [ ] Ctrl+K abre la búsqueda y los resultados se navegan con las flechas y Enter.
-- [ ] La búsqueda encuentra palabras con y sin acento.
-- [ ] Los sub-puntos aparecen indentados justo debajo de su tarea.
+- [x] Escribir en una nota no provoca tirones perceptibles.
+- [x] Ctrl+K abre la búsqueda y los resultados se navegan con las flechas y Enter.
+- [x] La búsqueda encuentra palabras con y sin acento.
+- [x] Los sub-puntos aparecen indentados justo debajo de su tarea.
 
 ---
 
@@ -66,6 +66,9 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] Un recordatorio personalizado se respeta tras reiniciar el equipo.
 - [ ] Si se cambia la zona horaria de Windows, los recordatorios disparan a la hora local esperada (anotar comportamiento).
 - [ ] Si hay varias notificaciones seguidas, Windows las agrupa o las muestra sin bloquear la app.
+- [ ] La campana de cada fila abre el panel de recordatorios; las opciones cuyo momento ya pasó aparecen desactivadas, y el campo «Hora de la tarea» permite poner o quitar la hora.
+- [ ] Con la app abierta y en primer plano, al disparar un recordatorio aparece además el aviso «Recordatorio: …» dentro de la app.
+- [ ] Una tarea completada o eliminada no avisa; si se reabre o se restaura a tiempo, vuelve a avisar.
 
 ---
 
