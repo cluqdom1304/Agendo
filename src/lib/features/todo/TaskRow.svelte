@@ -17,6 +17,10 @@
     hasNotes?: boolean;
     notesOpen?: boolean;
     onToggleNotes?: () => void;
+    /** Reminders that have not fired yet; the bell stays visible while there are any. */
+    reminderCount?: number;
+    remindersOpen?: boolean;
+    onToggleReminders?: () => void;
     /** Playing the exit animation of SPEC §8.4 while the backend confirms. */
     settling?: boolean;
     /** An unsaved row waiting for its title. */
@@ -38,6 +42,9 @@
     hasNotes = false,
     notesOpen = false,
     onToggleNotes,
+    reminderCount = 0,
+    remindersOpen = false,
+    onToggleReminders,
     settling = false,
     draft = false,
     onToggle,
@@ -101,6 +108,22 @@
     </button>
   {/if}
   {#if !draft}
+    <button
+      type="button"
+      class="notes-toggle"
+      class:has-notes={reminderCount > 0}
+      aria-expanded={remindersOpen}
+      aria-label={reminderCount > 0
+        ? `${t.reminders.open(title)} (${t.reminders.count(reminderCount)})`
+        : t.reminders.open(title)}
+      title={t.reminders.open(title)}
+      tabindex="-1"
+      onclick={() => onToggleReminders?.()}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true" class="notes-icon">
+        <path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3zM6.5 14h3" />
+      </svg>
+    </button>
     <button
       type="button"
       class="notes-toggle"

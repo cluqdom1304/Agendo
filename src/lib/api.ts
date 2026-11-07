@@ -1,9 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 import type {
   EffectApplied,
   EffectMode,
   ErrorCode,
+  ReminderFired,
+  ReminderInput,
   SearchHit,
   Section,
   Tag,
@@ -99,6 +102,23 @@ export function taskRestore(id: string): Promise<Task> {
 
 export function trashList(): Promise<Task[]> {
   return invoke<Task[]>("trash_list");
+}
+
+/** Replaces the task's unsent reminders (F-12). */
+export function remindersSet(
+  taskId: string,
+  reminders: ReminderInput[],
+): Promise<Task> {
+  return invoke<Task>("reminders_set", { taskId, reminders });
+}
+
+/** Calls `handler` each time the scheduler delivers a reminder (SPEC §7.4). */
+export function onReminderFired(
+  handler: (fired: ReminderFired) => void,
+): Promise<UnlistenFn> {
+  return listen<ReminderFired>("reminder:fired", (event) =>
+    handler(event.payload),
+  );
 }
 
 export function search(query: string, limit?: number): Promise<SearchHit[]> {

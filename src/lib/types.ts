@@ -15,6 +15,18 @@ export interface Reminder {
   isSent: boolean;
 }
 
+/** One entry of `reminders_set`: minutes before the task's date and time, or a UTC instant. */
+export interface ReminderInput {
+  offsetMinutes?: number;
+  notifyAt?: string;
+}
+
+/** Payload of the `reminder:fired` event (SPEC §7.4). */
+export interface ReminderFired {
+  taskId: string;
+  reminderId: string;
+}
+
 export interface Task {
   id: string;
   title: string;

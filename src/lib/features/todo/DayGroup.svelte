@@ -2,8 +2,10 @@
   import { formatDisplayDate } from "../../dates";
   import { t } from "../../i18n";
   import type { TaskBlock, TasksStore } from "../../stores/tasks.svelte";
+  import { pending } from "../../reminders";
   import NoteEditor from "../notes/NoteEditor.svelte";
   import { hasNotes } from "../notes/content";
+  import ReminderPopover from "./ReminderPopover.svelte";
   import TaskRow from "./TaskRow.svelte";
 
   // One block of tasks: a day of AGENDA, or POR HACER when `block.date` is null.
@@ -37,6 +39,9 @@
     hasNotes={hasNotes(task.contentJson)}
     notesOpen={store.notesOpenId === task.id}
     onToggleNotes={() => store.toggleNotes(task.id)}
+    reminderCount={pending(task.reminders).length}
+    remindersOpen={store.remindersOpenId === task.id}
+    onToggleReminders={() => store.toggleReminders(task.id)}
     settling={store.settling.has(task.id)}
     onToggle={() => store.setCompleted(task.id, !task.isCompleted)}
     onSelect={() => (store.selectedId = task.id)}
@@ -45,6 +50,17 @@
       if (trigger === "enter") store.startDraft(target);
     }}
   />
+  {#if store.remindersOpenId === task.id}
+    <ReminderPopover
+      title={task.title}
+      dueDate={task.dueDate}
+      dueTime={task.dueTime}
+      reminders={task.reminders}
+      onSetTime={(time) => void store.setDueTime(task.id, time)}
+      onChange={(inputs) => void store.setReminders(task.id, inputs)}
+      onClose={() => (store.remindersOpenId = null)}
+    />
+  {/if}
   {#if store.notesOpenId === task.id}
     <NoteEditor
       contentJson={task.contentJson}

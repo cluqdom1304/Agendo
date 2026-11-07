@@ -149,7 +149,7 @@
   />
 {:else if store.notice}
   <Toast
-    kind="error"
+    kind={store.notice.kind}
     message={store.notice.message}
     closeLabel={t.tasks.dismiss}
     onClose={() => store.dismissNotice()}

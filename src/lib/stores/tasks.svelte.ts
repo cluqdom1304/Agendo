@@ -5,7 +5,13 @@ import { toInstant, toLocalIsoDate } from "../dates";
 import { t } from "../i18n";
 import { hasNotes } from "../features/notes/content";
 import { groupByDay, sortTodo, splitCompleted } from "../ordering";
-import type { SearchHit, Task, TaskPatch, TasksSections } from "../types";
+import type {
+  ReminderInput,
+  SearchHit,
+  Task,
+  TaskPatch,
+  TasksSections,
+} from "../types";
 
 /** The slice of `api.ts` the store uses; tests pass a fake. */
 export interface TasksApi {
@@ -20,6 +26,7 @@ export interface TasksApi {
   ): Promise<Task>;
   taskDelete(id: string): Promise<void>;
   taskRestore(id: string): Promise<Task>;
+  remindersSet(taskId: string, reminders: ReminderInput[]): Promise<Task>;
 }
 
 const realApi: TasksApi = {
@@ -31,6 +38,7 @@ const realApi: TasksApi = {
   taskDelete: (id) => backend.taskDelete(id),
   taskRestore: (id) => backend.taskRestore(id),
   search: (query) => backend.search(query),
+  remindersSet: (taskId, reminders) => backend.remindersSet(taskId, reminders),
 };
 
 /** Where a new task goes: the "por hacer" list or one day of the agenda. */
@@ -52,6 +60,7 @@ export interface UndoEntry {
 export interface Notice {
   key: number;
   message: string;
+  kind: "info" | "error";
 }
 
 export interface TaskBlock {
@@ -101,6 +110,8 @@ export class TasksStore {
   notice = $state.raw<Notice | null>(null);
   /** The task whose notes are open under its row; one at a time keeps the document short. */
   notesOpenId = $state<string | null>(null);
+  /** The task whose reminder panel is open under its row. */
+  remindersOpenId = $state<string | null>(null);
   /** Rows playing their exit animation; per-key reactivity re-renders only the row concerned. */
   readonly settling = new SvelteSet<string>();
 
@@ -156,16 +167,20 @@ export class TasksStore {
   async load(): Promise<void> {
     this.status = "loading";
     try {
-      const [todo, agenda] = await Promise.all([
-        this.#api.tasksList({ view: "todo" }),
-        this.#api.tasksList({ view: "agenda" }),
-      ]);
-      this.tasks = [...todo.todo, ...agenda.agenda.flatMap((day) => day.tasks)];
+      this.tasks = await this.#fetchAll();
       this.status = "ready";
     } catch (error) {
       this.status = "error";
       this.#report(error);
     }
+  }
+
+  async #fetchAll(): Promise<Task[]> {
+    const [todo, agenda] = await Promise.all([
+      this.#api.tasksList({ view: "todo" }),
+      this.#api.tasksList({ view: "agenda" }),
+    ]);
+    return [...todo.todo, ...agenda.agenda.flatMap((day) => day.tasks)];
   }
 
   find(id: string): Task | undefined {
@@ -269,6 +284,47 @@ export class TasksStore {
       this.#replace(before);
       this.#report(error);
     }
+  }
+
+  /** Optimistic like the date; the answer carries the reminders the backend recalculated. */
+  async setDueTime(id: string, time: string | null): Promise<void> {
+    const before = this.find(id);
+    if (!before || before.dueDate === null || before.dueTime === time) return;
+    this.#replace({ ...before, dueTime: time });
+    try {
+      this.#replace(await this.#api.taskUpdate(id, { dueTime: time }));
+    } catch (error) {
+      this.#replace(before);
+      this.#report(error);
+    }
+  }
+
+  // ---- reminders ------------------------------------------------------------------------
+
+  toggleReminders(id: string): void {
+    this.remindersOpenId = this.remindersOpenId === id ? null : id;
+  }
+
+  /** Replaces the task's unsent reminders; the panel shows what the backend stored. */
+  async setReminders(id: string, reminders: ReminderInput[]): Promise<void> {
+    try {
+      this.#replace(await this.#api.remindersSet(id, reminders));
+    } catch (error) {
+      this.#report(error);
+    }
+  }
+
+  /** The scheduler delivered a reminder: refresh the task (it is now sent) and tell the user. */
+  async onReminderFired(taskId: string): Promise<void> {
+    try {
+      const fresh = await this.#fetchAll();
+      this.tasks = fresh;
+    } catch (error) {
+      this.#report(error);
+      return;
+    }
+    const title = this.find(taskId)?.title.trim();
+    this.#inform(t.reminders.fired(title || t.reminders.untitled));
   }
 
   /**
@@ -422,9 +478,17 @@ export class TasksStore {
   }
 
   #report(error: unknown): void {
+    this.#show("error", describeError(error));
+  }
+
+  #inform(message: string): void {
+    this.#show("info", message);
+  }
+
+  #show(kind: Notice["kind"], message: string): void {
     this.#clearNotice();
     const key = ++this.#keys;
-    this.notice = { key, message: describeError(error) };
+    this.notice = { key, message, kind };
     this.#noticeTimer = setTimeout(() => {
       if (this.notice?.key === key) this.notice = null;
     }, this.#noticeMs);

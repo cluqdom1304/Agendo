@@ -25,6 +25,29 @@ export const t = {
     dateLabel: (title: string) => `Fecha de «${title}»`,
     deleteLabel: (title: string) => `Eliminar «${title}»`,
   },
+  reminders: {
+    open: (title: string) => `Recordatorios de «${title}»`,
+    count: (count: number) =>
+      count === 1 ? "1 recordatorio" : `${count} recordatorios`,
+    heading: "Recordatorios",
+    timeLabel: "Hora de la tarea",
+    noTime: "Sin hora",
+    needsSchedule:
+      "Pon fecha y hora a la tarea para avisar con antelación, o añade un aviso a una hora concreta.",
+    needsTime: "Pon una hora a la tarea para avisar con antelación.",
+    atTime: "En el momento",
+    minutesBefore: (minutes: number) => `${minutes} min antes`,
+    hoursBefore: (hours: number) =>
+      hours === 1 ? "1 hora antes" : `${hours} horas antes`,
+    daysBefore: (days: number) =>
+      days === 1 ? "1 día antes" : `${days} días antes`,
+    customLabel: "Aviso a una hora concreta",
+    customAdd: "Añadir aviso",
+    remove: (when: string) => `Quitar el aviso de ${when}`,
+    pastOption: "Esa hora ya ha pasado",
+    fired: (title: string) => `Recordatorio: ${title}`,
+    untitled: "Tarea sin título",
+  },
   notes: {
     open: (title: string) => `Mostrar notas de «${title}»`,
     close: (title: string) => `Ocultar notas de «${title}»`,

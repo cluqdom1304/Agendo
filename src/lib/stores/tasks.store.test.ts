@@ -363,3 +363,78 @@ describe("completing a task (B-03, D-23)", () => {
     });
   });
 });
+
+describe("reminders", () => {
+  it("replaces the reminders with what the backend stored", async () => {
+    const { api, store } = setup([
+      makeTask({ id: "a", dueDate: "2026-03-11", dueTime: "09:00" }),
+    ]);
+    await store.load();
+    await store.setReminders("a", [{ offsetMinutes: 15 }]);
+    expect(api.calls).toContain('remindersSet:a=[{"offsetMinutes":15}]');
+    expect(store.find("a")?.reminders).toHaveLength(1);
+    expect(store.find("a")?.reminders[0].offsetMinutes).toBe(15);
+  });
+
+  it("reports a refusal without touching the task", async () => {
+    const { api, store } = setup([makeTask({ id: "a" })]);
+    await store.load();
+    api.failing.add("remindersSet");
+    await store.setReminders("a", [{ offsetMinutes: 15 }]);
+    expect(store.find("a")?.reminders).toEqual([]);
+    expect(store.notice?.kind).toBe("error");
+  });
+
+  it("sets the time of a dated task and ignores undated ones", async () => {
+    const { api, store } = setup([
+      makeTask({ id: "dated", dueDate: "2026-03-11" }),
+      makeTask({ id: "undated" }),
+    ]);
+    await store.load();
+    await store.setDueTime("dated", "18:30");
+    await store.setDueTime("undated", "18:30");
+    expect(store.find("dated")?.dueTime).toBe("18:30");
+    expect(store.find("undated")?.dueTime).toBeNull();
+    expect(api.calls.filter((c) => c.startsWith("taskUpdate"))).toHaveLength(1);
+  });
+
+  it("restores the time if the backend refuses it", async () => {
+    const { api, store } = setup([
+      makeTask({ id: "a", dueDate: "2026-03-11", dueTime: "09:00" }),
+    ]);
+    await store.load();
+    api.failing.add("taskUpdate");
+    await store.setDueTime("a", "18:30");
+    expect(store.find("a")?.dueTime).toBe("09:00");
+  });
+
+  it("opens one panel at a time", () => {
+    const { store } = setup();
+    store.toggleReminders("a");
+    expect(store.remindersOpenId).toBe("a");
+    store.toggleReminders("a");
+    expect(store.remindersOpenId).toBeNull();
+  });
+
+  it("shows an in-app notice and refreshes the task when a reminder fires", async () => {
+    const { api, store } = setup([makeTask({ id: "a", title: "Entregar" })]);
+    await store.load();
+    api.tasks = api.tasks.map((task) => ({
+      ...task,
+      reminders: [
+        {
+          id: "r",
+          notifyAt: "2026-03-10T10:00:00Z",
+          offsetMinutes: 0,
+          isSent: true,
+        },
+      ],
+    }));
+    await store.onReminderFired("a");
+    expect(store.notice).toMatchObject({
+      kind: "info",
+      message: "Recordatorio: Entregar",
+    });
+    expect(store.find("a")?.reminders[0].isSent).toBe(true);
+  });
+});

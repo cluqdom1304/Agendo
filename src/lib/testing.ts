@@ -1,7 +1,13 @@
 // Test helpers shared by the store and component tests. Not imported by the app.
 import { groupByDay, sortTodo } from "./ordering";
 import type { TasksApi } from "./stores/tasks.svelte";
-import type { SearchHit, Task, TaskPatch, TasksSections } from "./types";
+import type {
+  ReminderInput,
+  SearchHit,
+  Task,
+  TaskPatch,
+  TasksSections,
+} from "./types";
 
 export function makeTask(overrides: Partial<Task> & { id: string }): Task {
   return {
@@ -127,6 +133,23 @@ export class FakeApi implements TasksApi {
       dueDate: completed ? (completedDate ?? before.dueDate) : before.dueDate,
       isCompleted: completed,
       completedAt: completed ? "2026-03-10T10:00:00Z" : null,
+    });
+  }
+
+  async remindersSet(
+    taskId: string,
+    reminders: ReminderInput[],
+  ): Promise<Task> {
+    await this.#enter("remindersSet", `${taskId}=${JSON.stringify(reminders)}`);
+    const before = this.#get(taskId);
+    return this.#put({
+      ...before,
+      reminders: reminders.map((reminder, index) => ({
+        id: `rem-${index}`,
+        notifyAt: reminder.notifyAt ?? "2026-03-11T08:00:00Z",
+        offsetMinutes: reminder.offsetMinutes ?? null,
+        isSent: false,
+      })),
     });
   }
 
