@@ -6,6 +6,7 @@ use std::{
 };
 
 use rusqlite::{Connection, Transaction};
+use tokio::sync::Notify;
 
 use crate::{
     db::{self, DbError, MIGRATIONS, Migration},
@@ -66,11 +67,18 @@ pub struct AppState {
     pub db: Db,
     pub clock: Arc<dyn Clock>,
     pub ids: Arc<dyn IdGenerator>,
+    /// Wakes the reminder scheduler after anything that can change what fires next (SPEC §6.1).
+    pub wake: Arc<Notify>,
 }
 
 impl AppState {
     pub fn new(db: Db, clock: Arc<dyn Clock>, ids: Arc<dyn IdGenerator>) -> Self {
-        Self { db, clock, ids }
+        Self {
+            db,
+            clock,
+            ids,
+            wake: Arc::new(Notify::new()),
+        }
     }
 
     /// Opens (and migrates) the database file, then permanently removes tasks that have been in

@@ -213,6 +213,33 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-24 — `tokio` directo para el scheduler
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-07
+- **Contexto:** SPEC §6.1 exige `tokio::select!`, `sleep_until` y `Notify`. `tauri::async_runtime` solo expone el runtime, no esas primitivas.
+- **Decisión:** `tokio 1` (ya presente en el árbol por Tauri, versión 1.54.1) con `default-features = false` y solo `sync`, `time`, `macros`, `rt`.
+- **Consecuencias:** sin crate nuevo en el binario final; solo se declara como dependencia directa.
+- **Alternativas descartadas:** bucle con `std::thread::sleep` + `Condvar` (reimplementa `select!` y es más difícil de probar con reloj simulado).
+
+---
+
+## D-25 — `tauri-plugin-notification` para avisos nativos
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-07
+- **Contexto:** F-13 y F4-05 piden notificaciones nativas de Windows 11.
+- **Decisión:** `tauri-plugin-notification 2.8.0`. Solo se usa desde Rust (`app.notification().builder()`), por lo que no se concede ningún permiso de frontend en `capabilities/default.json`. Sin acción «Marcar como hecha» en v1 (B-01).
+- **Consecuencias:** el plugin no hace red. En `tauri dev` Windows atribuye el aviso al host de PowerShell; con el ejecutable instalado usa el `identifier` de la app (comprobación [H]).
+- **Alternativas descartadas:** `notify-rust` directo (pierde la integración con el identifier de Tauri); `windows` crate/WinRT directo (más superficie y `unsafe`).
+
+---
+
+## D-26 — Semántica de los recordatorios
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-07
+- **Contexto:** SPEC §5.3 y §6 no cubren varios casos límite.
+- **Decisión:** (1) un recordatorio con `offsetMinutes` exige que la tarea tenga fecha **y** hora; `notify_at` = fecha/hora local convertida a UTC (`Local`, vía `domain/dates.rs`) menos el offset. (2) Solo disparan tareas no completadas y no eliminadas; los de tareas completadas quedan pendientes y se reevalúan si se reabre la tarea. (3) Al quitar fecha u hora a una tarea se borran sus recordatorios con offset aún no enviados; los personalizados y los enviados no se tocan. (4) Backoff 30 s, 60 s, 120 s, 120 s (5 intentos); el estado de reintento vive en memoria. (5) La caducidad de 24 h (§6.4) se aplica en cada vuelta del bucle, no solo al arrancar, para cubrir suspensiones largas.
+- **Consecuencias:** el arranque no necesita código aparte: la primera vuelta del bucle recupera.
+- **Alternativas descartadas:** asumir una hora por defecto para tareas sin hora (decisión de producto no pedida).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

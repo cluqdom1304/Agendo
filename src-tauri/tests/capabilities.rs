@@ -39,6 +39,8 @@ mod capabilities {
             .collect();
         actual.sort();
         let mut expected = vec![
+            "core:event:allow-listen",
+            "core:event:allow-unlisten",
             "core:window:allow-close",
             "core:window:allow-minimize",
             "core:window:allow-set-effects",

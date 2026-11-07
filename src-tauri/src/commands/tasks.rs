@@ -4,6 +4,7 @@
 
 use std::sync::Arc;
 
+use chrono::Local;
 use serde::{Deserialize, Deserializer, Serialize};
 use tauri::State;
 
@@ -16,6 +17,7 @@ use crate::{
     error::{AppError, AppResult},
     repo::{
         model::{NewTask, Task, TaskPatch},
+        reminders,
         tasks::{self, Query},
     },
     state::{AppState, run_blocking},
@@ -166,7 +168,7 @@ pub fn update(state: &AppState, id: &str, patch: TaskPatchInput) -> AppResult<Ta
         .transpose()?;
     let now = state.clock.now_string();
 
-    state.db.write(|tx| {
+    let task = state.db.write(|tx| {
         let current = tasks::get(tx, id)?.ok_or_else(|| task_not_found(id))?;
 
         let due_time_patch = match (&patch.due_date, &patch.due_time) {
@@ -191,8 +193,14 @@ pub fn update(state: &AppState, id: &str, patch: TaskPatchInput) -> AppResult<Ta
         if untouched {
             return Ok(current);
         }
-        tasks::update(tx, id, &repo_patch, &now)?.ok_or_else(|| task_not_found(id))
-    })
+        tasks::update(tx, id, &repo_patch, &now)?.ok_or_else(|| task_not_found(id))?;
+        if repo_patch.due_date.is_some() || repo_patch.due_time.is_some() {
+            reminders::recalculate(tx, id, &Local)?;
+        }
+        tasks::get(tx, id)?.ok_or_else(|| task_not_found(id))
+    })?;
+    state.wake.notify_one();
+    Ok(task)
 }
 
 #[cfg(test)]
@@ -212,10 +220,14 @@ pub fn complete(
         dates::parse_date(date)?;
     }
     let now = state.clock.now_string();
-    state.db.write(|tx| {
+    let task = state.db.write(|tx| {
         tasks::set_completed_on(tx, id, completed, &now, local_date)?
-            .ok_or_else(|| task_not_found(id))
-    })
+            .ok_or_else(|| task_not_found(id))?;
+        reminders::recalculate(tx, id, &Local)?;
+        tasks::get(tx, id)?.ok_or_else(|| task_not_found(id))
+    })?;
+    state.wake.notify_one();
+    Ok(task)
 }
 
 /// Moves a task into POR HACER or onto a day, before `before_id` (a task of the destination
@@ -246,7 +258,7 @@ pub fn move_task(
     };
     let now = state.clock.now_string();
 
-    state.db.write(|tx| {
+    let task = state.db.write(|tx| {
         if let Some(anchor_id) = before_id.as_deref() {
             let anchor = tasks::get(tx, anchor_id)?.ok_or_else(|| task_not_found(anchor_id))?;
             if anchor.due_date.as_deref() != target {
@@ -256,8 +268,12 @@ pub fn move_task(
             }
         }
         tasks::move_task(tx, id, target, before_id.as_deref(), &now)?
-            .ok_or_else(|| task_not_found(id))
-    })
+            .ok_or_else(|| task_not_found(id))?;
+        reminders::recalculate(tx, id, &Local)?;
+        tasks::get(tx, id)?.ok_or_else(|| task_not_found(id))
+    })?;
+    state.wake.notify_one();
+    Ok(task)
 }
 
 /// Soft delete: the task goes to the trash and can be restored for 30 days.
@@ -269,14 +285,18 @@ pub fn delete(state: &AppState, id: &str) -> AppResult<()> {
         } else {
             Err(task_not_found(id))
         }
-    })
+    })?;
+    state.wake.notify_one();
+    Ok(())
 }
 
 pub fn restore(state: &AppState, id: &str) -> AppResult<Task> {
     let now = state.clock.now_string();
-    state
+    let task = state
         .db
-        .write(|tx| tasks::restore(tx, id, &now)?.ok_or_else(|| task_not_found(id)))
+        .write(|tx| tasks::restore(tx, id, &now)?.ok_or_else(|| task_not_found(id)))?;
+    state.wake.notify_one();
+    Ok(task)
 }
 
 pub fn trash(state: &AppState) -> AppResult<Vec<Task>> {
@@ -426,6 +446,119 @@ mod tests {
 
     fn code_of<T: std::fmt::Debug>(result: AppResult<T>) -> String {
         result.expect_err("must fail").to_string()
+    }
+
+    fn local_utc(date: &str, time: &str, offset: i64) -> String {
+        dates::format_instant(
+            crate::domain::reminders::offset_notify_at(&Local, date, time, offset).expect("at"),
+        )
+    }
+
+    fn reminders_of(state: &AppState, id: &str) -> Vec<crate::repo::model::Reminder> {
+        state
+            .db
+            .read(|conn| Ok(reminders::for_task(conn, id)?))
+            .expect("reminders")
+    }
+
+    fn timed_task_with_reminder(state: &AppState) -> Task {
+        use crate::commands::reminders::{ReminderInput, set};
+        let task = create(
+            state,
+            TaskCreateInput {
+                due_date: Some("2030-05-01".into()),
+                due_time: Some("09:00".into()),
+                ..TaskCreateInput::default()
+            },
+        )
+        .expect("task");
+        let relative = ReminderInput {
+            offset_minutes: Some(15),
+            notify_at: None,
+        };
+        set(state, &task.id, &[relative], &Local).expect("reminder");
+        task
+    }
+
+    #[test]
+    fn changing_the_time_of_a_task_reschedules_its_relative_reminders() {
+        let state = state();
+        let task = timed_task_with_reminder(&state);
+        assert_eq!(
+            reminders_of(&state, &task.id)[0].notify_at,
+            local_utc("2030-05-01", "09:00", 15)
+        );
+
+        let updated =
+            update(&state, &task.id, patch(r#"{"dueTime":"18:30"}"#)).expect("change time");
+        assert_eq!(
+            updated.reminders[0].notify_at,
+            local_utc("2030-05-01", "18:30", 15)
+        );
+
+        let moved = update(&state, &task.id, patch(r#"{"dueDate":"2030-05-03"}"#)).expect("date");
+        assert_eq!(
+            moved.reminders[0].notify_at,
+            local_utc("2030-05-03", "18:30", 15)
+        );
+    }
+
+    #[test]
+    fn dragging_a_task_to_another_day_reschedules_its_reminders() {
+        let state = state();
+        let task = timed_task_with_reminder(&state);
+        let moved = move_task(
+            &state,
+            &task.id,
+            Section::Agenda,
+            Some("2030-06-10".into()),
+            None,
+        )
+        .expect("move");
+        assert_eq!(
+            moved.reminders[0].notify_at,
+            local_utc("2030-06-10", "09:00", 15)
+        );
+    }
+
+    #[test]
+    fn removing_the_time_removes_unsent_relative_reminders_but_not_custom_ones() {
+        use crate::commands::reminders::{ReminderInput, set};
+        let state = state();
+        let task = timed_task_with_reminder(&state);
+        let custom = ReminderInput {
+            offset_minutes: None,
+            notify_at: Some("2030-04-30T08:00:00Z".into()),
+        };
+        let relative = ReminderInput {
+            offset_minutes: Some(15),
+            notify_at: None,
+        };
+        set(&state, &task.id, &[relative, custom], &Local).expect("both");
+
+        let updated = update(&state, &task.id, patch(r#"{"dueTime":null}"#)).expect("clear");
+
+        assert_eq!(updated.reminders.len(), 1);
+        assert_eq!(updated.reminders[0].offset_minutes, None);
+    }
+
+    #[test]
+    fn sent_reminders_are_not_touched_when_the_time_changes() {
+        let state = state();
+        let task = timed_task_with_reminder(&state);
+        let before = reminders_of(&state, &task.id)[0].clone();
+        let now = state.clock.now_string();
+        state
+            .db
+            .write(|tx| Ok(reminders::mark_sent(tx, &before.id, &now)?))
+            .expect("sent");
+
+        update(&state, &task.id, patch(r#"{"dueTime":"18:30"}"#)).expect("change time");
+
+        let after = reminders_of(&state, &task.id);
+        assert_eq!(after.len(), 1);
+        assert_eq!(after[0].notify_at, before.notify_at);
+        assert!(after[0].is_sent);
     }
 
     #[test]
