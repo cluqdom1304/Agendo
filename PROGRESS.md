@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** 3
+**Fase activa:** 4
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F4-01 (tras confirmación humana)
-**Última actualización:** 2026-11-06 (F3-06, fin de Fase 3)
+**Siguiente tarea:** F5-01 (tras confirmación humana)
+**Última actualización:** 2026-11-07 (F4-08, fin de Fase 4)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -109,17 +109,27 @@
 ---
 
 ## Fase 4 — Recordatorios y notificaciones
-- [ ] F4-01 `scheduler/clock.rs`: trait `Clock` y dos implementaciones
-- [ ] F4-02 `scheduler/mod.rs`: bucle `select!` con tope de 60 s y reprogramación por `Notify`
-- [ ] F4-03 Disparo transaccional con reintento y backoff (SPEC §6.3)
-- [ ] F4-04 Recuperación al arrancar (ventana 24 h, SPEC §6.4)
-- [ ] F4-05 `notify/mod.rs` con `tauri-plugin-notification`
-- [ ] F4-06 `ReminderPopover` con opciones de F-12
-- [ ] F4-07 Recalcular recordatorios al cambiar fecha/hora de la tarea
-- [ ] F4-08 Evento `reminder:fired` y toast in-app
+- [x] F4-01 `scheduler/clock.rs`: trait `Clock` y dos implementaciones
+- [x] F4-02 `scheduler/mod.rs`: bucle `select!` con tope de 60 s y reprogramación por `Notify`
+- [x] F4-03 Disparo transaccional con reintento y backoff (SPEC §6.3)
+- [x] F4-04 Recuperación al arrancar (ventana 24 h, SPEC §6.4)
+- [x] F4-05 `notify/mod.rs` con `tauri-plugin-notification`
+- [x] F4-06 `ReminderPopover` con opciones de F-12
+- [x] F4-07 Recalcular recordatorios al cambiar fecha/hora de la tarea
+- [x] F4-08 Evento `reminder:fired` y toast in-app
 
-**Verificaciones [A]:** (pendiente)
-**Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 4
+**Verificaciones [A]:**
+- F4-01: `scheduler/clock.rs` (trait `Clock` con `now()`, `SystemClock` y `ManualClock`) ya existía desde F1 porque los comandos necesitan «ahora»; la firma es `now()` y no `now_utc()` como en SPEC §6.2 (misma semántica). Único lugar con `Utc::now()`.
+- F4-02/03/04: `scheduler/mod.rs`. `Engine::tick` (una pasada: caduca lo vencido hace > 24 h sin avisar, dispara lo demás) y `Engine::wait` (hasta el próximo aviso o reintento, tope de 60 s); `run` es el bucle con `tokio::select!` entre `sleep` y `AppState.wake` (`Notify`). El marcado `is_sent` y la notificación van en **una sola transacción**: si la notificación falla, o el proceso muere, se revierte y se reintenta (30, 60, 120, 120 s; a los 5 intentos se registra y se marca como enviado). La recuperación al arrancar no necesita código aparte: la primera vuelta del bucle la hace (D-26).
+- F4-05: `notify/mod.rs` (`Notifier`, `FiredSink`, `TauriNotifier`, `TauriFiredSink`); título = tarea, cuerpo = etiquetas · hora. Sin acción «Marcar como hecha» en v1 (B-01, resuelto por el humano). Plugin `tauri-plugin-notification 2.8.0` (D-25); se usa solo desde Rust, así que no se añade ningún permiso de frontend.
+- F4-07: `repo::reminders::recalculate` se llama en la misma transacción desde `task_update`, `task_set_completed` y `task_move` (completar cambia `due_date`, D-23). Nuevo comando `reminders_set` (`commands/reminders.rs`, SPEC §7.3): reemplaza los no enviados, valida (offset 0–30 días, requiere fecha y hora para offsets, no admite avisos en el pasado, máx. 10) y es atómico.
+- F4-06/08 (frontend): `ReminderPopover.svelte` (4 opciones de F-12, hora personalizada, lista con quitar, y campo de hora de la tarea, porque sin hora no hay avisos relativos y la interfaz no tenía otra forma de ponerla), botón de campana en `TaskRow`, `lib/reminders.ts` (funciones puras), `store.setReminders/setDueTime/onReminderFired`. El evento `reminder:fired` se escucha en `+page.svelte` (permisos `core:event:allow-listen/unlisten` añadidos y fijados en `tests/capabilities.rs`); refresca las tareas y muestra un toast informativo (`Notice.kind`).
+- Decisiones: D-24 (tokio directo), D-25 (plugin de notificaciones), D-26 (semántica: solo tareas abiertas y no borradas disparan; al quitar fecha u hora se borran los offsets no enviados; caducidad de 24 h en cada vuelta, no solo al arrancar). B-01 y B-02 pasan a RESUELTO con la resolución humana ya escrita.
+- DoD [A] de la fase: disparo exacto (`fires_exactly_when_the_time_comes_and_only_once`), reintento tras fallo (`a_failed_notification_is_rolled_back_and_retried_with_backoff`), no duplicados (mismo test + `_gives_up_after_five_attempts_`), recuperación < 24 h y > 24 h (+ borde exacto de 24 h), cambio de hora reprograma (`changing_the_time_of_a_task_reschedules_its_relative_reminders`, `a_new_zone_offset_is_seen_by_recalculation`), bucle real reprogramado por `Notify` (`the_loop_fires_after_a_wake_up_...`). **Test de corte:** `tests/crash_recovery.rs` lanza un proceso hijo que hace `abort()` en mitad de una transacción; el padre comprueba `integrity_check = ok` y que lo no confirmado no existe.
+- Tests: Rust 228 de lib + 4 (capabilities) + 1 (corte) + 3 (tauri.conf); Vitest 133. Batería completa en verde: `cargo fmt --check`, `cargo clippy --all-targets -D warnings` (y `--release`), `cargo test`, `npm run lint`, `npm run check` (0/0), `npm run test`, `npm run build`, `npm run size` (JS 162,2 KB gzip de 250). `cargo check` para Windows queda cubierto: este equipo es Windows y compila las rutas `cfg(windows)`.
+- Desviaciones: el campo de hora y la campana no están en SPEC §8.6 (necesarios para poder usar F-12). La zona horaria se lee con `chrono::Local` en el comando; los tests de comandos comparan contra la misma conversión, y los de `domain`/`repo` usan zonas fijas simuladas.
+
+**Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 4 (9 ítems originales + 3 nuevos; ninguno verificado por el agente)
 
 ---
 

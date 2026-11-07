@@ -30,7 +30,7 @@ El agente registra aquí cualquier bloqueo, ambigüedad de producto o test que n
   1. Incluirla en v1 si la versión del plugin la soporta; si no, abrir la app en la tarea.
   2. Posponerla a v2 y en v1 solo abrir la app en la tarea.
 - **Recomendación del agente:** opción 2. Reduce riesgo en el worker de notificaciones, que es la parte más crítica de la fase 4.
-- **Estado:** ABIERTO
+- **Estado:** RESUELTO
 - **Resolución humana:** añadir para la v2, por ahora no se hace en v1.
 
 ## B-02 — Formato de exportación además de `.sqlite`
@@ -42,7 +42,7 @@ El agente registra aquí cualquier bloqueo, ambigüedad de producto o test que n
   1. Solo `.sqlite` (copia completa y restaurable).
   2. `.sqlite` más exportación JSON (legible y portable, sin restauración directa en v1).
 - **Recomendación del agente:** opción 1 para v1. Añadir JSON en v2 si se pide.
-- **Estado:** ABIERTO
+- **Estado:** RESUELTO
 - **Resolución humana:** Por ahora, solo .sqlite, permitir importación en la app de este tipo de archivos para v1.
 
 ## B-03 — Tareas completadas dentro de POR HACER
