@@ -9,9 +9,11 @@
     maxDuration,
   } from "../../schedule";
   import Modal from "../../shell/Modal.svelte";
+  import { tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ReminderInput, Task } from "../../types";
   import { textToDoc } from "../notes/content";
+  import TagPicker from "../tags/TagPicker.svelte";
   import ReminderEditor from "./ReminderEditor.svelte";
 
   // Creates a task, or edits `task` when it is given (the notes are edited in the task's own
@@ -42,6 +44,8 @@
   let dueTime = $state(task?.dueTime ?? "");
   // svelte-ignore state_referenced_locally
   let duration = $state<number | null>(task?.durationMinutes ?? null);
+  // svelte-ignore state_referenced_locally
+  let tagId = $state<string | null>(task?.tagIds[0] ?? null);
   let description = $state("");
   // svelte-ignore state_referenced_locally
   let inputs = $state.raw<ReminderInput[]>(
@@ -124,6 +128,7 @@
         dueDate: dueDate || null,
         dueTime: dueDate && dueTime ? dueTime : null,
         durationMinutes,
+        tagId,
         ...(remindersTouched && !isDone ? { reminders: usable } : {}),
       });
     } else {
@@ -133,6 +138,7 @@
         ...(dueDate ? { dueDate } : {}),
         ...(dueDate && dueTime ? { dueTime } : {}),
         ...(durationMinutes ? { durationMinutes } : {}),
+        ...(tagId ? { tagId } : {}),
         ...(contentJson ? { contentJson } : {}),
         reminders: usable,
       });
@@ -191,6 +197,15 @@
     {#if titleMissing}
       <p class="error" role="alert">{t.newTask.needsTitle}</p>
     {/if}
+
+    <div class="block">
+      <span class="label">{t.tags.taskLabel}</span>
+      <TagPicker
+        tags={tagsStore.tags}
+        value={tagId}
+        onChange={(id) => (tagId = id)}
+      />
+    </div>
 
     <div class="row">
       <label class="block">

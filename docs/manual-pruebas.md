@@ -131,6 +131,17 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] Una tarea hecha no ofrece recordatorios (lista, detalle ni diálogo) y no suena ningún aviso; al reabrirla vuelven los pendientes.
 - [ ] En la lista, las tareas hechas se ven más apagadas y «Completadas» queda en gris con su contador.
 
+## Etiquetas (D-34)
+- [ ] La barra lateral se despliega y pliega con su botón de la barra superior (animación fluida) y empieza plegada si la ventana mide menos de 900 px; con un filtro activo el botón muestra un punto.
+- [ ] Crear una etiqueta con un color predefinido, con el selector nativo y escribiendo `#RRGGBB`; un código inválido no deja guardar.
+- [ ] Las etiquetas salen siempre en el mismo orden, con su contador (0 si no tienen tareas) y «Sin etiqueta» al final.
+- [ ] Desmarcar una casilla oculta esas tareas en la lista y en el calendario; «Todas», «Ninguna» y «Solo» funcionan; ocultarlo todo muestra el aviso con «Mostrar todas».
+- [ ] En el diálogo de tarea se elige o se quita la etiqueta; el chip aparece en la fila de la lista y en el detalle.
+- [ ] En el calendario el evento toma el color de la etiqueta y muestra su nombre pequeño en semana, día, mes y «Todo el día»; el texto se lee con colores muy claros y muy oscuros, en tema claro y oscuro y con Mica.
+- [ ] Editar el nombre o el color se refleja al instante; eliminar una etiqueta pide confirmación y deja sus tareas sin etiqueta.
+- [ ] Crear una tarea desde el calendario con «Sin etiqueta» oculto muestra el aviso de que el filtro la oculta.
+- [ ] Con la ventana al mínimo (720×480) la barra lateral y el contenido no se solapan ni aparece scroll horizontal.
+
 ---
 
 ## Registro de sesiones de prueba

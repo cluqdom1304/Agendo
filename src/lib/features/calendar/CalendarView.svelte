@@ -4,6 +4,7 @@
   import { toLocalIsoDate } from "../../dates";
   import { t } from "../../i18n";
   import SegmentedControl from "../../shell/SegmentedControl.svelte";
+  import { tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ViewStore } from "../../stores/view.svelte";
   import type { Task, ViewMode } from "../../types";
@@ -28,7 +29,7 @@
     { value: "month", label: t.views.month },
   ];
 
-  const byDate = $derived(tasksByDate(store.tasks));
+  const byDate = $derived(tasksByDate(store.visibleTasks));
   const heading = $derived(periodLabel(view.mode, view.anchor, view.firstDay));
   // The clock ticks every 30 s so the "now" line moves and midnight changes "today".
   let current = $state.raw(new Date());
@@ -42,6 +43,7 @@
   });
   const week = $derived(weekDates(view.anchor, view.firstDay));
 
+  const tagOf = (task: Task) => tagsStore.tagOf(task);
   const create = (
     title: string,
     date: string,
@@ -84,6 +86,7 @@
         label={t.calendar.monthGrid}
         onShowDay={(date) => view.showDay(date)}
         {onOpenTask}
+        {tagOf}
       />
     {:else if view.mode === "week"}
       <CalendarWeek
@@ -94,6 +97,7 @@
         label={t.calendar.weekGrid}
         onCreate={create}
         {onOpenTask}
+        {tagOf}
       />
     {:else}
       <CalendarDay
@@ -104,6 +108,7 @@
         label={t.calendar.dayGrid}
         onCreate={create}
         {onOpenTask}
+        {tagOf}
       />
     {/if}
   </div>

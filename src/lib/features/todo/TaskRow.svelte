@@ -2,6 +2,7 @@
   import { t } from "../../i18n";
   import { timeRange } from "../../schedule";
   import Checkbox from "./Checkbox.svelte";
+  import TagChip from "../tags/TagChip.svelte";
   import InlineTitle from "./InlineTitle.svelte";
 
   // Only the fields the row draws (CLAUDE.md §6): a change elsewhere in the task does not
@@ -13,6 +14,8 @@
     dueTime: string | null;
     durationMinutes?: number | null;
     dueDate?: string | null;
+    tagName?: string | null;
+    tagColor?: string | null;
     onDateChange?: (date: string | null) => void;
     onDelete?: () => void;
     /** The task has notes; the toggle is drawn stronger so they are easy to spot. */
@@ -40,6 +43,8 @@
     dueTime,
     durationMinutes = null,
     dueDate = null,
+    tagName = null,
+    tagColor = null,
     onDateChange,
     onDelete,
     hasNotes = false,
@@ -143,6 +148,9 @@
         <path d="M3 4.5h10M3 8h10M3 11.5h6" />
       </svg>
     </button>
+  {/if}
+  {#if tagName && tagColor}
+    <TagChip name={tagName} color={tagColor} />
   {/if}
   {#if dueTime}
     <span class="time">

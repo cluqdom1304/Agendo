@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from "../../i18n";
   import { sortDay } from "../../ordering";
-  import type { Task } from "../../types";
+  import type { Tag, Task } from "../../types";
   import { isSameMonth, monthGrid, type WeekDay } from "./grid";
   import { dayNumber, weekdayName } from "./labels";
 
@@ -16,6 +16,8 @@
     label: string;
     onShowDay: (date: string) => void;
     onOpenTask: (task: Task) => void;
+    /** The task's tag, which gives its colour and the small name on the event. */
+    tagOf?: (task: Task) => Tag | undefined;
   }
 
   let {
@@ -26,6 +28,7 @@
     label,
     onShowDay,
     onOpenTask,
+    tagOf,
   }: Props = $props();
 
   const weeks = $derived(
@@ -69,15 +72,18 @@
             {dayNumber(day.date)}
           </button>
           {#each day.shown as task (task.id)}
+            {@const tag = tagOf?.(task)}
             <button
               type="button"
               class="chip"
               class:done={task.isCompleted}
+              style:--tag={tag?.colorHex}
               title={t.calendar.openTask(task.title || t.calendar.untitled)}
               onclick={() => onOpenTask(task)}
             >
               {#if task.dueTime}<span class="time">{task.dueTime}</span>{/if}
               {task.title || t.calendar.untitled}
+              {#if tag}<span class="tag-name">{tag.name}</span>{/if}
             </button>
           {/each}
           {#if day.hidden > 0}
@@ -156,7 +162,8 @@
     padding: 1px 6px;
     border: 0;
     border-radius: 4px;
-    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    border-left: 3px solid var(--tag, var(--accent));
+    background: color-mix(in srgb, var(--tag, var(--accent)) 22%, transparent);
     color: var(--text-primary);
     font: inherit;
     font-size: 12px;
@@ -175,6 +182,16 @@
   .time {
     color: var(--text-secondary);
     margin-right: 4px;
+  }
+
+  .tag-name {
+    margin-left: 4px;
+    padding: 0 4px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--tag) 28%, transparent);
+    color: color-mix(in srgb, var(--tag) 45%, var(--text-primary));
+    font-size: 10px;
+    font-weight: 500;
   }
 
   .more {

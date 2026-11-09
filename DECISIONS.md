@@ -294,6 +294,15 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-34 — Etiquetas de tareas: una por tarea, filtro en barra lateral
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-09
+- **Contexto:** petición del usuario: etiquetas con color en la lista y el calendario, y un menú lateral para filtrar por ellas. El backend (tablas `tags` y `task_tags`, comandos `tag_*` y `task_tags_set`) existía desde F1; faltaba toda la interfaz. **No hay migración.**
+- **Decisión:** la interfaz admite **una** etiqueta por tarea (la primera de `tagIds`); el modelo y el contrato IPC siguen admitiendo varias. El color es `#RRGGBB`: 8 predefinidos (`TAG_PRESETS`), selector nativo y campo de texto (acepta `#RGB` y sin `#`, se normaliza a mayúsculas). Los chips usan el color al 20 % de fondo y el texto mezclado con `--text-primary`, así se leen en tema claro y oscuro sin calcular contraste a mano. En el calendario el evento toma el color de la etiqueta (fondo y borde izquierdo) y muestra su nombre en pequeño. La barra lateral (224 px, plegable; empieza plegada por debajo de 900 px de ancho de ventana) tiene una casilla por etiqueta, **siempre todas y en el orden del backend**, con su contador de tareas pendientes (0 si no hay), y una entrada fija «Sin etiqueta». Incluye «Todas», «Ninguna», «Solo» por fila y crear, editar y eliminar etiquetas (eliminar pide confirmación; las tareas se quedan sin etiqueta). Un único filtro sirve a la lista y al calendario. El filtro **no se persiste**: al arrancar se ve todo, para que nada parezca perdido. Si se guarda una tarea que el filtro oculta, se avisa. Abrir una tarea oculta desde el calendario en la lista restablece el filtro.
+- **Consecuencias:** `TasksStore` gana `filter`, `visibleTasks` y `allFiltered`, y `setTag`; `createDetailed` y `saveDetails` aceptan `tagId`. Etiquetas anidadas (`parentId`) no tienen interfaz.
+- **Alternativas descartadas:** varias etiquetas por tarea (el color del evento sería ambiguo); persistir el filtro en `settings` (exigiría ampliar la lista blanca de valores del backend y arranca con tareas ocultas); un filtro distinto para cada vista (confunde).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

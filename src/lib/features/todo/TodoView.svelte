@@ -7,6 +7,7 @@
   import EmptyState from "../../shell/EmptyState.svelte";
   import Toast from "../../shell/Toast.svelte";
   import type { SearchHit } from "../../types";
+  import { tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import DayGroup from "./DayGroup.svelte";
   import SectionHeader from "./SectionHeader.svelte";
@@ -109,6 +110,13 @@
 <div class="document" role="grid" aria-label={t.app.name}>
   {#if store.status === "loading" || store.status === "idle"}
     <p class="status">{t.tasks.loading}</p>
+  {:else if store.allFiltered && !store.draft}
+    <EmptyState
+      title={t.tags.allHiddenTitle}
+      description={t.tags.allHiddenDescription}
+      actionLabel={t.tags.showAll}
+      onAction={() => tagsStore.showAll()}
+    />
   {:else if store.isEmpty && !store.draft}
     <EmptyState
       title={t.empty.title}

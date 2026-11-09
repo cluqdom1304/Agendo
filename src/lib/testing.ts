@@ -77,6 +77,7 @@ export class FakeApi implements TasksApi {
     dueDate?: string;
     dueTime?: string;
     durationMinutes?: number;
+    tagIds?: string[];
     contentJson?: string;
   }): Promise<Task> {
     await this.#enter(
@@ -91,11 +92,17 @@ export class FakeApi implements TasksApi {
       dueDate: input.dueDate ?? null,
       dueTime: input.dueTime ?? null,
       durationMinutes: input.durationMinutes ?? null,
+      tagIds: input.tagIds ?? [],
       contentJson: input.contentJson ?? "",
       position: 1000 + this.#created,
     });
     this.tasks = [...this.tasks, task];
     return task;
+  }
+
+  async taskTagsSet(taskId: string, tagIds: string[]): Promise<Task> {
+    await this.#enter("taskTagsSet", `${taskId}=${tagIds.join(",")}`);
+    return this.#put({ ...this.#get(taskId), tagIds });
   }
 
   async taskUpdate(id: string, patch: TaskPatch): Promise<Task> {

@@ -10,9 +10,11 @@
   } from "../../reminders";
   import { durationLabel, timeRange } from "../../schedule";
   import Modal from "../../shell/Modal.svelte";
+  import { tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { Reminder, Task } from "../../types";
   import NoteEditor from "../notes/NoteEditor.svelte";
+  import TagChip from "../tags/TagChip.svelte";
 
   // The view of one task: everything about it, notes included, with the actions that matter
   // (done, edit, delete). Editing opens the same dialog that creates tasks.
@@ -96,6 +98,15 @@
             {task.dueDate ? formatDisplayDate(task.dueDate) : t.detail.noDate}
           </dd>
         </div>
+        {#if tagsStore.tagOf(task)}
+          {@const tag = tagsStore.tagOf(task)}
+          {#if tag}
+            <div>
+              <dt>{t.tags.taskLabel}</dt>
+              <dd><TagChip name={tag.name} color={tag.colorHex} /></dd>
+            </div>
+          {/if}
+        {/if}
         {#if task.dueTime}
           <div>
             <dt>{t.detail.schedule}</dt>

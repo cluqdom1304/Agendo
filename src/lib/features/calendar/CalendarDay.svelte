@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Task } from "../../types";
+  import type { Tag, Task } from "../../types";
   import CalendarWeek from "./CalendarWeek.svelte";
 
   interface Props {
@@ -15,6 +15,7 @@
       duration?: number,
     ) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
+    tagOf?: (task: Task) => Tag | undefined;
   }
 
   let { date, ...rest }: Props = $props();

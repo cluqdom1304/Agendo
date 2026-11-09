@@ -3,7 +3,7 @@
 
   import { t } from "../../i18n";
   import { timeRange } from "../../schedule";
-  import type { Task } from "../../types";
+  import type { Tag, Task } from "../../types";
   import {
     BLOCK_MINUTES,
     SNAP_MINUTES,
@@ -35,6 +35,8 @@
       duration?: number,
     ) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
+    /** The task's tag, which gives its colour and the small name on the event. */
+    tagOf?: (task: Task) => Tag | undefined;
   }
 
   let {
@@ -43,6 +45,7 @@
     nowMinutes,
     tasksByDate,
     label,
+    tagOf,
     onCreate,
     onOpenTask,
   }: Props = $props();
@@ -218,14 +221,17 @@
     {#each columns as column (column.date)}
       <div class="allday-cell" role="gridcell">
         {#each column.allDay as task (task.id)}
+          {@const tag = tagOf?.(task)}
           <button
             type="button"
             class="chip"
             class:done={task.isCompleted}
+            style:--tag={tag?.colorHex}
             title={t.calendar.openTask(task.title || t.calendar.untitled)}
             onclick={() => onOpenTask(task)}
           >
             {task.title || t.calendar.untitled}
+            {#if tag}<span class="tag-name">{tag.name}</span>{/if}
           </button>
         {/each}
       </div>
@@ -252,10 +258,12 @@
           onkeydown={(event) => onColumnKeydown(event, column.date)}
         >
           {#each column.placed as item (item.task.id)}
+            {@const tag = tagOf?.(item.task)}
             <button
               type="button"
               class="block"
               class:done={item.task.isCompleted}
+              style:--tag={tag?.colorHex}
               data-block
               style:top="{top(item.start)}px"
               style:height="{top(item.span) - 2}px"
@@ -270,6 +278,7 @@
                 {timeRange(item.task.dueTime ?? "", item.task.durationMinutes)}
               </span>
               {item.task.title || t.calendar.untitled}
+              {#if tag}<span class="tag-name">{tag.name}</span>{/if}
             </button>
           {/each}
 
@@ -381,7 +390,7 @@
   .block {
     border: 0;
     border-radius: 4px;
-    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    background: color-mix(in srgb, var(--tag, var(--accent)) 22%, transparent);
     color: var(--text-primary);
     font: inherit;
     font-size: 12px;
@@ -451,7 +460,17 @@
     min-height: 14px;
     padding: 1px 6px;
     line-height: 1.2;
-    border-left: 3px solid var(--accent);
+    border-left: 3px solid var(--tag, var(--accent));
+  }
+
+  .tag-name {
+    margin-left: 4px;
+    padding: 0 4px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--tag) 28%, transparent);
+    color: color-mix(in srgb, var(--tag) 45%, var(--text-primary));
+    font-size: 10px;
+    font-weight: 500;
   }
 
   .block .time {

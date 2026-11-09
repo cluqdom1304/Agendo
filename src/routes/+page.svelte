@@ -2,6 +2,7 @@
   import { onMount, tick } from "svelte";
 
   import { onReminderFired } from "$lib/api";
+  import TagSidebar from "$lib/features/tags/TagSidebar.svelte";
   import TaskDialog from "$lib/features/todo/TaskDialog.svelte";
   import SettingsDialog from "$lib/features/settings/SettingsDialog.svelte";
   import TaskDetailDialog from "$lib/features/todo/TaskDetailDialog.svelte";
@@ -11,6 +12,7 @@
   import SegmentedControl from "$lib/shell/SegmentedControl.svelte";
   import Toast from "$lib/shell/Toast.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
+  import { tagsStore } from "$lib/stores/tags.svelte";
   import { tasksStore } from "$lib/stores/tasks.svelte";
   import { viewStore } from "$lib/stores/view.svelte";
   import type { Task, ViewMode } from "$lib/types";
@@ -19,6 +21,10 @@
 
   let settingsOpen = $state(false);
   let newTaskOpen = $state(false);
+  // Narrow windows start with the sidebar folded so the content keeps its room.
+  let sidebarOpen = $state(
+    typeof window === "undefined" || window.innerWidth >= 900,
+  );
   /** The task whose view is open (opened from the calendar). */
   let detailId = $state<string | null>(null);
   /** The task being edited in the creation dialog; the view comes back when it closes. */
@@ -45,6 +51,8 @@
     import("$lib/features/calendar/CalendarView.svelte");
 
   onMount(() => {
+    tasksStore.filter = (task) => tagsStore.isVisible(task);
+    void tagsStore.load();
     void tasksStore.load();
     void viewStore.load();
     const unlisten = onReminderFired((fired) =>
@@ -57,12 +65,15 @@
   });
 
   function onRestored() {
+    tagsStore.showAll();
+    void tagsStore.load();
     void tasksStore.load();
     void viewStore.load();
   }
 
   async function openInList(task: Task) {
     detailId = null;
+    if (!tagsStore.isVisible(task)) tagsStore.showAll();
     viewStore.setMode("list");
     if (!tasksStore.reveal(task.id)) return;
     await tick();
@@ -84,90 +95,124 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div class="page">
-  <div class="toolbar">
-    <button
-      type="button"
-      class="new-task"
-      title={t.newTask.buttonHint}
-      aria-haspopup="dialog"
-      onclick={() => (newTaskOpen = true)}
-    >
-      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-        <path
-          d="M8 3v10M3 8h10"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-        />
-      </svg>
-      {t.newTask.button}
-    </button>
-    <SegmentedControl
-      label={t.views.label}
-      options={SECTION_OPTIONS}
-      value={viewStore.mode === "list" ? "list" : "calendar"}
-      onChange={(section) =>
-        viewStore.setMode(section === "list" ? "list" : viewStore.calendarMode)}
-    />
-    <button
-      type="button"
-      class="settings-button"
-      aria-label={t.settings.open}
-      title={t.settings.open}
-      aria-haspopup="dialog"
-      onclick={() => (settingsOpen = true)}
-    >
-      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-        <path
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          d="M4 7h10M18 7h2M4 17h2M10 17h10"
-        />
-        <circle
-          cx="16"
-          cy="7"
-          r="2"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-        />
-        <circle
-          cx="8"
-          cy="17"
-          r="2"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-        />
-      </svg>
-    </button>
-  </div>
-
-  {#if viewStore.ready}
-    {#if viewStore.mode === "list"}
-      <div class="content scrolls">
-        <TodoView store={tasksStore} />
+<div class="shell">
+  <TagSidebar tags={tagsStore} tasks={tasksStore} open={sidebarOpen} />
+  <div class="page">
+    <div class="toolbar">
+      <div class="lead">
+        <button
+          type="button"
+          class="sidebar-toggle"
+          class:filtered={tagsStore.filtered}
+          aria-pressed={sidebarOpen}
+          aria-label={tagsStore.filtered
+            ? `${t.tags.toggleSidebar}. ${t.tags.filterActive}`
+            : t.tags.toggleSidebar}
+          title={tagsStore.filtered
+            ? t.tags.filterActive
+            : t.tags.toggleSidebar}
+          onclick={() => (sidebarOpen = !sidebarOpen)}
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <rect
+              x="2"
+              y="3"
+              width="12"
+              height="10"
+              rx="2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <path d="M6 3v10" stroke="currentColor" stroke-width="1.5" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="new-task"
+          title={t.newTask.buttonHint}
+          aria-haspopup="dialog"
+          onclick={() => (newTaskOpen = true)}
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path
+              d="M8 3v10M3 8h10"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+          {t.newTask.button}
+        </button>
       </div>
-    {:else}
-      <div class="content">
-        {#await loadCalendar()}
-          <p class="status">{t.calendar.loading}</p>
-        {:then module}
-          <module.default
-            store={tasksStore}
-            view={viewStore}
-            onOpenTask={(task: Task) => (detailId = task.id)}
+      <SegmentedControl
+        label={t.views.label}
+        options={SECTION_OPTIONS}
+        value={viewStore.mode === "list" ? "list" : "calendar"}
+        onChange={(section) =>
+          viewStore.setMode(
+            section === "list" ? "list" : viewStore.calendarMode,
+          )}
+      />
+      <button
+        type="button"
+        class="settings-button"
+        aria-label={t.settings.open}
+        title={t.settings.open}
+        aria-haspopup="dialog"
+        onclick={() => (settingsOpen = true)}
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            d="M4 7h10M18 7h2M4 17h2M10 17h10"
           />
-        {:catch}
-          <p class="status">{t.calendar.loadFailed}</p>
-        {/await}
-      </div>
+          <circle
+            cx="16"
+            cy="7"
+            r="2"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          />
+          <circle
+            cx="8"
+            cy="17"
+            r="2"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          />
+        </svg>
+      </button>
+    </div>
+
+    {#if viewStore.ready}
+      {#if viewStore.mode === "list"}
+        <div class="content scrolls">
+          <TodoView store={tasksStore} />
+        </div>
+      {:else}
+        <div class="content">
+          {#await loadCalendar()}
+            <p class="status">{t.calendar.loading}</p>
+          {:then module}
+            <module.default
+              store={tasksStore}
+              view={viewStore}
+              onOpenTask={(task: Task) => (detailId = task.id)}
+            />
+          {:catch}
+            <p class="status">{t.calendar.loadFailed}</p>
+          {/await}
+        </div>
+      {/if}
     {/if}
-  {/if}
+  </div>
 </div>
 
 {#if newTaskOpen}
@@ -224,9 +269,16 @@
 {/if}
 
 <style>
+  .shell {
+    display: flex;
+    height: 100%;
+  }
+
   .page {
     display: flex;
+    flex: 1;
     flex-direction: column;
+    min-width: 0;
     height: 100%;
   }
 
@@ -238,10 +290,51 @@
     padding: var(--space-2) var(--space-4) 0;
   }
 
-  .new-task {
+  .lead {
     position: absolute;
     top: var(--space-2);
     left: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .sidebar-toggle {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .sidebar-toggle:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .sidebar-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .sidebar-toggle.filtered::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-chip);
+    background: var(--accent);
+  }
+
+  .new-task {
     display: inline-flex;
     align-items: center;
     gap: 6px;

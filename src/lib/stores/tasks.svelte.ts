@@ -21,9 +21,11 @@ export interface TasksApi {
     dueDate?: string;
     dueTime?: string;
     durationMinutes?: number;
+    tagIds?: string[];
     contentJson?: string;
   }): Promise<Task>;
   taskUpdate(id: string, patch: TaskPatch): Promise<Task>;
+  taskTagsSet(taskId: string, tagIds: string[]): Promise<Task>;
   search(query: string): Promise<SearchHit[]>;
   taskSetCompleted(
     id: string,
@@ -39,6 +41,7 @@ const realApi: TasksApi = {
   tasksList: (query) => backend.tasksList(query),
   taskCreate: (input) => backend.taskCreate(input),
   taskUpdate: (id, patch) => backend.taskUpdate(id, patch),
+  taskTagsSet: (taskId, tagIds) => backend.taskTagsSet(taskId, tagIds),
   taskSetCompleted: (id, completed, completedDate) =>
     backend.taskSetCompleted(id, completed, completedDate),
   taskDelete: (id) => backend.taskDelete(id),
@@ -121,14 +124,22 @@ export class TasksStore {
   /** Rows playing their exit animation; per-key reactivity re-renders only the row concerned. */
   readonly settling = new SvelteSet<string>();
 
+  /** Which tasks the views show (the tag filter); everything until the page sets it. */
+  filter = $state.raw<(task: Task) => boolean>(() => true);
+  visibleTasks = $derived(this.tasks.filter(this.filter));
+  /** There are tasks but the filter hides all of them. */
+  allFiltered = $derived(
+    this.tasks.length > 0 && this.visibleTasks.length === 0,
+  );
+
   todoBlock = $derived.by<TaskBlock>(() => {
-    const undated = this.tasks.filter((task) => task.dueDate === null);
+    const undated = this.visibleTasks.filter((task) => task.dueDate === null);
     return { date: null, ...splitCompleted(sortTodo(undated)) };
   });
 
   /** Days, latest first. The draft's day is included even if it has no tasks yet. */
   agendaBlocks = $derived.by<TaskBlock[]>(() => {
-    const blocks: TaskBlock[] = groupByDay(this.tasks).map((day) => ({
+    const blocks: TaskBlock[] = groupByDay(this.visibleTasks).map((day) => ({
       date: day.date,
       ...splitCompleted(day.tasks),
     }));
@@ -271,6 +282,7 @@ export class TasksStore {
         ...(dueTime && durationMinutes ? { durationMinutes } : {}),
       });
       this.tasks = [...this.tasks, created];
+      this.#warnIfHidden(created);
       return true;
     } catch (error) {
       this.#report(error);
@@ -290,6 +302,7 @@ export class TasksStore {
     dueDate?: string;
     dueTime?: string;
     durationMinutes?: number;
+    tagId?: string;
     contentJson?: string;
     reminders?: ReminderInput[];
   }): Promise<boolean> {
@@ -304,9 +317,11 @@ export class TasksStore {
         ...(input.dueDate && input.dueTime && input.durationMinutes
           ? { durationMinutes: input.durationMinutes }
           : {}),
+        ...(input.tagId ? { tagIds: [input.tagId] } : {}),
         ...(input.contentJson ? { contentJson: input.contentJson } : {}),
       });
       this.tasks = [...this.tasks, created];
+      this.#warnIfHidden(created);
       if (input.reminders && input.reminders.length > 0) {
         try {
           created = await this.#api.remindersSet(created.id, input.reminders);
@@ -338,6 +353,8 @@ export class TasksStore {
       dueDate: string | null;
       dueTime: string | null;
       durationMinutes: number | null;
+      /** Absent = leave as is; `null` = remove the tag. */
+      tagId?: string | null;
       reminders?: ReminderInput[];
     },
   ): Promise<boolean> {
@@ -356,9 +373,19 @@ export class TasksStore {
       if (Object.keys(patch).length > 0) {
         this.#replace(await this.#api.taskUpdate(id, patch));
       }
+      if (
+        input.tagId !== undefined &&
+        input.tagId !== (before.tagIds[0] ?? null)
+      ) {
+        this.#replace(
+          await this.#api.taskTagsSet(id, input.tagId ? [input.tagId] : []),
+        );
+      }
       if (input.reminders && !before.isCompleted) {
         this.#replace(await this.#api.remindersSet(id, input.reminders));
       }
+      const saved = this.find(id);
+      if (saved) this.#warnIfHidden(saved);
       return true;
     } catch (error) {
       this.#report(error);
@@ -410,6 +437,19 @@ export class TasksStore {
     this.#replace({ ...before, dueTime: time });
     try {
       this.#replace(await this.#api.taskUpdate(id, { dueTime: time }));
+    } catch (error) {
+      this.#replace(before);
+      this.#report(error);
+    }
+  }
+
+  /** Optimistic: the task takes its tag (or loses it) at once; a refusal puts it back. */
+  async setTag(id: string, tagId: string | null): Promise<void> {
+    const before = this.find(id);
+    if (!before || (before.tagIds[0] ?? null) === tagId) return;
+    this.#replace({ ...before, tagIds: tagId ? [tagId] : [] });
+    try {
+      this.#replace(await this.#api.taskTagsSet(id, tagId ? [tagId] : []));
     } catch (error) {
       this.#replace(before);
       this.#report(error);
@@ -596,6 +636,11 @@ export class TasksStore {
 
   #report(error: unknown): void {
     this.#show("error", describeError(error));
+  }
+
+  /** A task the filter hides would seem lost right after saving it. */
+  #warnIfHidden(task: Task): void {
+    if (!this.filter(task)) this.#inform(t.tags.hiddenByFilter);
   }
 
   #inform(message: string): void {
