@@ -15,3 +15,14 @@ export function toLocalIsoDate(date: Date): string {
 export function toInstant(date: Date): string {
   return date.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
+
+/**
+ * Whether a date field's value may be committed. While the year is typed the browser reports
+ * `0002`, `0020`, `0202` before `2026`; committing those would move the task to year 2 and
+ * re-render the field in the middle of the typing. An empty value (cleared field) is settled.
+ */
+export function isSettledDate(value: string): boolean {
+  if (value === "") return true;
+  const match = /^(\d{4,6})-\d{2}-\d{2}$/.exec(value);
+  return match !== null && Number(match[1]) >= 1000;
+}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isSettledDate } from "../../dates";
   import { t } from "../../i18n";
   import { draftReminders, pending, toInput } from "../../reminders";
   import {
@@ -222,7 +223,10 @@
           <input
             type="date"
             value={dueDate}
-            onchange={(event) => setDate(event.currentTarget.value)}
+            onchange={(event) => {
+              if (isSettledDate(event.currentTarget.value))
+                setDate(event.currentTarget.value);
+            }}
           />
           {#if dueDate}
             <button type="button" class="link" onclick={() => setDate("")}>

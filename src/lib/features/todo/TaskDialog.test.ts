@@ -72,6 +72,20 @@ describe("TaskDialog", () => {
     expect(task.reminders[0].offsetMinutes).toBe(15);
   });
 
+  it("ignores the partial years reported while the date is typed", async () => {
+    const { store, onClose } = await mount();
+    await fireEvent.input(title(), { target: { value: "Entrega" } });
+    const date = screen.getByLabelText("Fecha") as HTMLInputElement;
+    for (const value of ["0002-11-23", "0020-11-23", "0202-11-23"]) {
+      await fireEvent.change(date, { target: { value } });
+    }
+    await fireEvent.change(date, { target: { value: "2026-11-23" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Crear tarea" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(store.tasks[0].dueDate).toBe("2026-11-23");
+  });
+
   it("pre-fills the day it is opened from and disables the time without a date", async () => {
     await mount("2026-03-14");
     expect((screen.getByLabelText("Fecha") as HTMLInputElement).value).toBe(

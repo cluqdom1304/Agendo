@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isSettledDate } from "../../dates";
   import { t } from "../../i18n";
   import { timeRange } from "../../schedule";
   import Checkbox from "./Checkbox.svelte";
@@ -128,7 +129,10 @@
       aria-label={t.tasks.dateLabel(title)}
       title={t.tasks.dateLabel(title)}
       tabindex="-1"
-      onchange={(event) => onDateChange?.(event.currentTarget.value || null)}
+      onchange={(event) => {
+        if (isSettledDate(event.currentTarget.value))
+          onDateChange?.(event.currentTarget.value || null);
+      }}
     />
     <button
       type="button"

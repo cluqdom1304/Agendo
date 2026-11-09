@@ -165,6 +165,12 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] Un clic en una casilla la marca o desmarca sin entrar a editar el texto; se tacha al marcarla y el cambio persiste al cerrar y reabrir la tarea.
 - [ ] Las casillas se ven bien (tamaño, alineación, color de acento) en tema claro y oscuro.
 
+## Versión 1.0.3
+
+- [ ] En el diálogo de tarea, escribir `23112026` (o `23 11 2026`) en el campo de fecha DD/MM/AAAA deja `23/11/2026`, sin saltar al año 0002 ni perder dígitos.
+- [ ] Lo mismo en la fecha de la fila de la lista: no se mueve la tarea hasta completar el año.
+- [ ] Borrar la fecha sigue funcionando.
+
 ---
 
 ## Registro de sesiones de prueba

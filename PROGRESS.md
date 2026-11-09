@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** — (Versión 1.0.2 cerrada)
+**Fase activa:** — (Versión 1.0.3 cerrada)
 **Estado:** DONE   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
 **Siguiente tarea:** ninguna. Validar los ítems `[H]` pendientes de `docs/manual-pruebas.md` (incluidas las secciones 1.0.1 y 1.0.2) y ejecutar F6-06 (E2E) en un equipo con `tauri-driver`
-**Última actualización:** 2026-11-09 (cierre de la V1.0.2, etiqueta `v1.0.2`)
+**Última actualización:** 2026-11-09 (cierre de la V1.0.3, etiqueta `v1.0.3`)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -229,3 +229,4 @@
 - 2026-11-09: tema claro opaco (D-36): sin Mica/Acrílico en claro, fondos opacos y borde más marcado; se reaplica al cambiar el tema del sistema. Batería `[A]`: lint, check, Vitest 341, build y size en verde; Rust sin cambios. Apariencia real `[H]`.
 - 2026-11-09: **Versión 1.0.1 lanzada** (D-35, D-36). Versión fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y los dos lockfiles. El usuario revisó la interfaz con `tauri dev` (tema claro opaco, hora de aviso por defecto, semana alineada). Instaladores con `npx tauri build`. Los ítems `[H]` de la 1.0.1 siguen sin marcar en `docs/manual-pruebas.md` hasta su validación formal.
 - 2026-11-09: **Versión 1.0.2 lanzada** (D-37): casillas (subtareas) en las notas de las tareas, marcables con un clic sin editar el texto. Batería `[A]` en verde (`cargo fmt/clippy/test` 264 de lib; `npm lint/check/test` 342/build/size 187,3 KB). Pendiente `[H]`: manual-pruebas § «Versión 1.0.2». Versión fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y lockfiles; instaladores con `npx tauri build`.
+- 2026-11-09: **Versión 1.0.3 lanzada.** Corrección: al teclear la fecha, el navegador notifica años parciales (`0002`, `0020`, `0202`) y la app los confirmaba, dejando la tarea en el año 2 y rompiendo la escritura. `isSettledDate` (`dates.ts`) ignora esos valores en el diálogo de tarea y en la fila. Batería `[A]` en verde (Vitest 346, build, size, Rust 264). Nota: `NoteEditor.test.ts` «loads TipTap lazily» falló una vez por tiempo de carga con la máquina ocupada y pasó en las dos ejecuciones siguientes. Pendiente `[H]`: manual-pruebas § «Versión 1.0.3».
