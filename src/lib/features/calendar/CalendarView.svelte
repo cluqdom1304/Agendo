@@ -1,8 +1,9 @@
 <script lang="ts">
   import { t } from "../../i18n";
+  import SegmentedControl from "../../shell/SegmentedControl.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ViewStore } from "../../stores/view.svelte";
-  import type { Task } from "../../types";
+  import type { Task, ViewMode } from "../../types";
   import CalendarDay from "./CalendarDay.svelte";
   import CalendarMonth from "./CalendarMonth.svelte";
   import CalendarWeek from "./CalendarWeek.svelte";
@@ -18,6 +19,12 @@
 
   let { store, view, onOpenTask }: Props = $props();
 
+  const SCALES: { value: ViewMode; label: string }[] = [
+    { value: "day", label: t.views.day },
+    { value: "week", label: t.views.week },
+    { value: "month", label: t.views.month },
+  ];
+
   const byDate = $derived(tasksByDate(store.tasks));
   const heading = $derived(periodLabel(view.mode, view.anchor, view.firstDay));
   const today = $derived(view.today());
@@ -29,7 +36,15 @@
 
 <section class="calendar">
   <div class="nav">
-    <h2>{heading}</h2>
+    <div class="title">
+      <SegmentedControl
+        label={t.views.label}
+        options={SCALES}
+        value={view.mode}
+        onChange={(mode) => view.setMode(mode)}
+      />
+      <h2>{heading}</h2>
+    </div>
     <div class="buttons">
       <button type="button" onclick={() => view.shift(-1)}>
         {t.calendar.previous}
@@ -91,6 +106,12 @@
     justify-content: space-between;
     gap: var(--space-3);
     padding: var(--space-2) var(--space-2) var(--space-3);
+  }
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
   }
 
   h2 {

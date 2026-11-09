@@ -29,6 +29,8 @@ export interface ViewStoreOptions {
 /** Which view is showing (persisted in `settings`) and which date the calendar is centred on. */
 export class ViewStore {
   mode = $state<ViewMode>("list");
+  /** The calendar view to return to when switching from the list; week until one is chosen. */
+  calendarMode = $state<Exclude<ViewMode, "list">>("week");
   /** `YYYY-MM-DD` the day, week or month view is showing. */
   anchor = $state("");
   /** Waits for the saved mode so the list does not flash before a saved calendar view. */
@@ -58,6 +60,7 @@ export class ViewStore {
       // The saved view is a convenience: without it the app starts on the list.
       this.mode = "list";
     }
+    if (this.mode !== "list") this.calendarMode = this.mode;
     this.anchor = this.today();
     this.ready = true;
   }
@@ -66,6 +69,7 @@ export class ViewStore {
   setMode(mode: ViewMode): void {
     if (mode === this.mode) return;
     this.mode = mode;
+    if (mode !== "list") this.calendarMode = mode;
     void this.#api.settingsSet("view_mode", mode).catch(() => undefined);
   }
 

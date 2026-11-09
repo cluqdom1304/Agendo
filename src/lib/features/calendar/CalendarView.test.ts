@@ -226,6 +226,18 @@ describe("quick creation by dragging (F-11)", () => {
   });
 });
 
+describe("scale selector", () => {
+  it("switches between day, week and month from inside the calendar", async () => {
+    const { view } = await mount("week");
+    const group = screen.getByRole("radiogroup", { name: "Vista" });
+    expect(group.textContent).toBe("DíaSemanaMes");
+    await fireEvent.click(screen.getByRole("radio", { name: "Mes" }));
+    expect(view.mode).toBe("month");
+    await fireEvent.click(screen.getByRole("radio", { name: "Día" }));
+    expect(view.mode).toBe("day");
+  });
+});
+
 describe("day view", () => {
   it("shows a single column for the anchor day", async () => {
     await mount("day");

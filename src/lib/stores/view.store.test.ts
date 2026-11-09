@@ -92,6 +92,16 @@ describe("ViewStore", () => {
     expect(store.anchor).toBe("2026-03-10");
   });
 
+  it("remembers the last calendar view to come back to from the list", async () => {
+    const store = make(new FakeViewApi("month"));
+    expect(store.calendarMode).toBe("week");
+    await store.load();
+    expect(store.calendarMode).toBe("month");
+    store.setMode("day");
+    store.setMode("list");
+    expect(store.calendarMode).toBe("day");
+  });
+
   it("showDay centres on that day and switches to the day view", () => {
     const api = new FakeViewApi();
     const store = make(api);

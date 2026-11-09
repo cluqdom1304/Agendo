@@ -83,6 +83,7 @@ export const t = {
   views: {
     label: "Vista",
     list: "Lista",
+    calendar: "Calendario",
     day: "Día",
     week: "Semana",
     month: "Mes",

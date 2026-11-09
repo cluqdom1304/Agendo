@@ -10,11 +10,11 @@
   import { viewStore } from "$lib/stores/view.svelte";
   import type { Task, ViewMode } from "$lib/types";
 
-  const VIEW_OPTIONS: { value: ViewMode; label: string }[] = [
+  type Section = "list" | "calendar";
+
+  const SECTION_OPTIONS: { value: Section; label: string }[] = [
     { value: "list", label: t.views.list },
-    { value: "day", label: t.views.day },
-    { value: "week", label: t.views.week },
-    { value: "month", label: t.views.month },
+    { value: "calendar", label: t.views.calendar },
   ];
 
   const SHORTCUT_VIEWS: Record<string, ViewMode> = {
@@ -67,9 +67,10 @@
   <div class="toolbar">
     <SegmentedControl
       label={t.views.label}
-      options={VIEW_OPTIONS}
-      value={viewStore.mode}
-      onChange={(mode) => viewStore.setMode(mode)}
+      options={SECTION_OPTIONS}
+      value={viewStore.mode === "list" ? "list" : "calendar"}
+      onChange={(section) =>
+        viewStore.setMode(section === "list" ? "list" : viewStore.calendarMode)}
     />
   </div>
 
