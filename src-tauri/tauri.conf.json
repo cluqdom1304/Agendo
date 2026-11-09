@@ -30,13 +30,33 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "nsis",
+      "msi"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "publisher": "Cristian Luque Domínguez",
+    "copyright": "© 2026 Cristian Luque Domínguez",
+    "category": "Productivity",
+    "shortDescription": "Agenda y editor de notas de escritorio, 100 % local.",
+    "longDescription": "MiAgendaApp reúne tareas, recordatorios, calendario y notas en una sola aplicación de escritorio. Todos los datos se guardan en tu equipo: sin cuentas, sin telemetría y sin conexión a internet.",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "Spanish"
+        ],
+        "displayLanguageSelector": false
+      },
+      "wix": {
+        "language": "es-ES"
+      }
+    }
   }
 }

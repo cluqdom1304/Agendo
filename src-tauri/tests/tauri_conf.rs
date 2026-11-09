@@ -43,4 +43,40 @@ mod tauri_conf {
         assert_ne!(identifier, "com.tauri.dev");
         assert_eq!(identifier, "com.cristian.miagendaap");
     }
+
+    #[test]
+    fn installers_are_nsis_and_msi_with_metadata_and_a_windows_icon() {
+        let conf = load_conf();
+        let bundle = &conf["bundle"];
+        let targets: Vec<&str> = bundle["targets"]
+            .as_array()
+            .expect("targets must list the installers")
+            .iter()
+            .filter_map(Value::as_str)
+            .collect();
+        assert_eq!(targets, ["nsis", "msi"]);
+        for field in [
+            "publisher",
+            "copyright",
+            "shortDescription",
+            "longDescription",
+        ] {
+            assert!(
+                bundle[field].as_str().is_some_and(|text| !text.is_empty()),
+                "bundle.{field} must be set"
+            );
+        }
+        let icons: Vec<&str> = bundle["icon"]
+            .as_array()
+            .expect("icons")
+            .iter()
+            .filter_map(Value::as_str)
+            .collect();
+        assert!(icons.contains(&"icons/icon.ico"));
+        for icon in icons {
+            let path = format!("{}/{icon}", env!("CARGO_MANIFEST_DIR"));
+            assert!(std::path::Path::new(&path).is_file(), "missing {icon}");
+        }
+        assert_eq!(bundle["windows"]["nsis"]["installMode"], "currentUser");
+    }
 }

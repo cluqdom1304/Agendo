@@ -26,6 +26,18 @@ export default ts.config(
     },
   },
   {
+    files: ["e2e/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        ...globals.mocha,
+        $: "readonly",
+        $$: "readonly",
+        browser: "readonly",
+        expect: "readonly",
+      },
+    },
+  },
+  {
     files: ["**/*.svelte", "**/*.svelte.ts", "**/*.svelte.js"],
     languageOptions: {
       parserOptions: {
