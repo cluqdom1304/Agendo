@@ -8,7 +8,8 @@ pub mod clock;
 
 use std::{collections::HashMap, sync::Arc, time::Duration as StdDuration};
 
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, Local, Utc};
+use rusqlite::Transaction;
 
 use crate::{
     domain::{dates, reminders as rules},
@@ -55,6 +56,31 @@ fn log(message: &str) {
     eprintln!("[scheduler] {message}");
 }
 
+/// A reminder of a repeating series has just been closed (sounded, given up or expired): store
+/// the next sounding, if the series goes on (D-32). Runs in the same transaction as the closing.
+fn continue_series(
+    state: &AppState,
+    tx: &Transaction<'_>,
+    id: &str,
+    now: DateTime<Utc>,
+) -> AppResult<()> {
+    let Some(member) = reminders::series_member(tx, id)? else {
+        return Ok(());
+    };
+    let current = dates::parse_instant(&member.notify_at)?;
+    if let Some((at, occurrence)) = rules::next_occurrence(&Local, current, &member.repeat, now)? {
+        reminders::insert_next(
+            tx,
+            &state.ids.new_id(),
+            &member,
+            &dates::format_instant(at),
+            occurrence,
+            &dates::format_instant(now),
+        )?;
+    }
+    Ok(())
+}
+
 impl Engine {
     pub fn tick(
         &mut self,
@@ -67,9 +93,13 @@ impl Engine {
         let mut report = TickReport::default();
 
         let cutoff = dates::format_instant(rules::stale_cutoff(now));
-        report.expired = state
-            .db
-            .write(|tx| Ok(reminders::expire_before(tx, &cutoff, &now_text)?))?;
+        report.expired = state.db.write(|tx| {
+            let ids = reminders::expire_before(tx, &cutoff, &now_text)?;
+            for id in &ids {
+                continue_series(state, tx, id, now)?;
+            }
+            Ok(ids)
+        })?;
         for id in &report.expired {
             log(&format!(
                 "recordatorio {id} caducado sin avisar (más de 24 h)"
@@ -92,7 +122,9 @@ impl Engine {
             // The reminder is marked and notified in one transaction: if the notification fails
             // (or the process dies) the mark is rolled back and it will be tried again.
             let delivery = state.db.write(|tx| {
-                reminders::mark_sent(tx, &reminder.id, &now_text)?;
+                if reminders::mark_sent(tx, &reminder.id, &now_text)? {
+                    continue_series(state, tx, &reminder.id, now)?;
+                }
                 notifier.show(&notification)
             });
             match delivery {
@@ -112,9 +144,12 @@ impl Engine {
                             reminder.id
                         ));
                         self.retries.remove(&reminder.id);
-                        state
-                            .db
-                            .write(|tx| Ok(reminders::mark_sent(tx, &reminder.id, &now_text)?))?;
+                        state.db.write(|tx| {
+                            if reminders::mark_sent(tx, &reminder.id, &now_text)? {
+                                continue_series(state, tx, &reminder.id, now)?;
+                            }
+                            Ok(())
+                        })?;
                         report.given_up.push(reminder.id);
                     } else {
                         log(&format!(
@@ -273,6 +308,7 @@ mod tests {
                         id: id.into(),
                         notify_at: notify_at.into(),
                         offset_minutes: None,
+                        repeat: None,
                     }],
                     &now,
                 )?)
@@ -545,6 +581,7 @@ mod tests {
                         id: "r1".into(),
                         notify_at: "2026-03-10T10:45:00Z".into(),
                         offset_minutes: Some(15),
+                        repeat: None,
                     }],
                     &now,
                 )?;
@@ -600,5 +637,144 @@ mod tests {
         handle.abort();
 
         assert_eq!(notifier.titles(), ["Aviso"]);
+    }
+
+    use crate::domain::reminders::{Repeat, RepeatUnit};
+
+    fn add_repeating(state: &AppState, id: &str, notify_at: &str, repeat: Repeat) {
+        let now = state.clock.now_string();
+        state
+            .db
+            .write(|tx| {
+                Ok(reminders::replace_unsent(
+                    tx,
+                    "t1",
+                    &[NewReminder {
+                        id: id.into(),
+                        notify_at: notify_at.into(),
+                        offset_minutes: None,
+                        repeat: Some(repeat),
+                    }],
+                    &now,
+                )?)
+            })
+            .expect("repeating reminder");
+    }
+
+    /// `(notify_at, is_sent, occurrence)` of every reminder, oldest first.
+    fn series(state: &AppState) -> Vec<(String, bool, i64)> {
+        state
+            .db
+            .read(|conn| {
+                Ok(conn
+                    .prepare(
+                        "SELECT notify_at, is_sent, occurrence FROM reminders ORDER BY notify_at",
+                    )?
+                    .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+                    .collect::<rusqlite::Result<Vec<_>>>()?)
+            })
+            .expect("series")
+    }
+
+    fn hourly(count: Option<u32>) -> Repeat {
+        Repeat {
+            every: 1,
+            unit: RepeatUnit::Hour,
+            count,
+            until: None,
+            occurrence: 1,
+        }
+    }
+
+    #[test]
+    fn a_repeating_reminder_leaves_its_sounding_as_history_and_schedules_the_next() {
+        let (state, clock) = test_state();
+        add_task(&state, "t1", "Beber agua");
+        add_repeating(&state, "r1", "2026-03-10T10:30:00Z", hourly(None));
+        let notifier = FakeNotifier::default();
+        let sink = FakeSink::default();
+        let mut engine = Engine::default();
+        clock.advance(Duration::minutes(30));
+
+        let report = engine.tick(&state, &notifier, &sink).expect("tick");
+
+        assert_eq!(report.fired, ["r1"]);
+        assert_eq!(
+            series(&state),
+            [
+                ("2026-03-10T10:30:00Z".to_string(), true, 1),
+                ("2026-03-10T11:30:00Z".to_string(), false, 2),
+            ]
+        );
+        clock.advance(Duration::hours(1));
+        engine.tick(&state, &notifier, &sink).expect("tick");
+        assert_eq!(notifier.titles().len(), 2);
+        assert_eq!(series(&state).len(), 3);
+    }
+
+    #[test]
+    fn a_series_with_a_count_stops_after_its_last_sounding() {
+        let (state, clock) = test_state();
+        add_task(&state, "t1", "Dos veces");
+        add_repeating(&state, "r1", "2026-03-10T10:30:00Z", hourly(Some(2)));
+        let notifier = FakeNotifier::default();
+        let sink = FakeSink::default();
+        let mut engine = Engine::default();
+
+        clock.advance(Duration::minutes(30));
+        engine.tick(&state, &notifier, &sink).expect("first");
+        clock.advance(Duration::hours(1));
+        engine.tick(&state, &notifier, &sink).expect("second");
+        clock.advance(Duration::hours(5));
+        engine.tick(&state, &notifier, &sink).expect("nothing left");
+
+        assert_eq!(notifier.titles().len(), 2);
+        assert_eq!(
+            series(&state),
+            [
+                ("2026-03-10T10:30:00Z".to_string(), true, 1),
+                ("2026-03-10T11:30:00Z".to_string(), true, 2),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_failed_notification_does_not_advance_the_series() {
+        let (state, clock) = test_state();
+        add_task(&state, "t1", "Beber agua");
+        add_repeating(&state, "r1", "2026-03-10T10:30:00Z", hourly(None));
+        let notifier = FakeNotifier::failing(1);
+        let mut engine = Engine::default();
+        clock.advance(Duration::minutes(30));
+
+        engine
+            .tick(&state, &notifier, &FakeSink::default())
+            .expect("tick");
+
+        assert_eq!(
+            series(&state).len(),
+            1,
+            "the rollback undid the next sounding too"
+        );
+        assert!(!is_sent(&state, "r1"));
+    }
+
+    #[test]
+    fn an_expired_sounding_is_skipped_and_the_series_goes_on_in_the_future() {
+        let (state, clock) = test_state();
+        add_task(&state, "t1", "Beber agua");
+        add_repeating(&state, "r1", "2026-03-10T10:30:00Z", hourly(None));
+        let mut engine = Engine::default();
+        clock.advance(Duration::days(3));
+
+        let report = engine
+            .tick(&state, &FakeNotifier::default(), &FakeSink::default())
+            .expect("tick");
+
+        assert_eq!(report.expired, ["r1"]);
+        let all = series(&state);
+        assert_eq!(all.len(), 2);
+        assert!(all[1].0.as_str() > "2026-03-13T10:00:00Z");
+        assert!(!all[1].1);
     }
 }

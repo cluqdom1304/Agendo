@@ -475,6 +475,7 @@ mod tests {
         let relative = ReminderInput {
             offset_minutes: Some(15),
             notify_at: None,
+            repeat: None,
         };
         set(state, &task.id, &[relative], &Local).expect("reminder");
         task
@@ -529,10 +530,12 @@ mod tests {
         let custom = ReminderInput {
             offset_minutes: None,
             notify_at: Some("2030-04-30T08:00:00Z".into()),
+            repeat: None,
         };
         let relative = ReminderInput {
             offset_minutes: Some(15),
             notify_at: None,
+            repeat: None,
         };
         set(&state, &task.id, &[relative, custom], &Local).expect("both");
 

@@ -5,7 +5,10 @@ use chrono::TimeZone;
 use rusqlite::{Connection, Transaction, params, types::Type};
 
 use super::{model::Reminder, tasks};
-use crate::domain::{dates, reminders as rules};
+use crate::domain::{
+    dates,
+    reminders::{self as rules, Repeat, RepeatUnit},
+};
 
 /// A reminder ready to fire, with what the notification shows.
 #[derive(Debug, Clone, PartialEq)]
@@ -25,6 +28,8 @@ pub struct NewReminder {
     pub id: String,
     pub notify_at: String,
     pub offset_minutes: Option<i64>,
+    /// Only for custom-time reminders.
+    pub repeat: Option<Repeat>,
 }
 
 /// Unsent reminders of live, open tasks whose time has come, oldest first.
@@ -104,32 +109,141 @@ pub fn replace_unsent(
     tx.prepare_cached("DELETE FROM reminders WHERE task_id = ?1 AND is_sent = 0")?
         .execute(params![task_id])?;
     let mut insert = tx.prepare_cached(
-        "INSERT INTO reminders (id, task_id, notify_at, offset_minutes, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO reminders (id, task_id, notify_at, offset_minutes, created_at,
+                                repeat_every, repeat_unit, repeat_count, repeat_until, occurrence)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
     )?;
     for reminder in reminders {
+        let repeat = reminder.repeat.as_ref();
         insert.execute(params![
             reminder.id,
             task_id,
             reminder.notify_at,
             reminder.offset_minutes,
-            now
+            now,
+            repeat.map(|r| r.every),
+            repeat.map(|r| r.unit.as_str()),
+            repeat.and_then(|r| r.count),
+            repeat.and_then(|r| r.until.as_deref()),
+            repeat.map_or(1, |r| r.occurrence),
         ])?;
     }
     Ok(())
 }
 
+/// A reminder that belongs to a repeating series, as stored.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SeriesMember {
+    pub task_id: String,
+    pub notify_at: String,
+    pub repeat: Repeat,
+}
+
+/// The repeat rule of reminder `id`, or `None` if it does not repeat.
+pub fn series_member(conn: &Connection, id: &str) -> rusqlite::Result<Option<SeriesMember>> {
+    conn.prepare_cached(
+        "SELECT task_id, notify_at, repeat_every, repeat_unit, repeat_count, repeat_until, occurrence
+         FROM reminders WHERE id = ?1 AND repeat_unit IS NOT NULL",
+    )?
+    .query_map(params![id], |row| {
+        let unit: String = row.get(3)?;
+        let unit = RepeatUnit::parse(&unit).ok_or_else(|| {
+            rusqlite::Error::FromSqlConversionFailure(
+                3,
+                Type::Text,
+                format!("unknown repeat unit {unit}").into(),
+            )
+        })?;
+        Ok(SeriesMember {
+            task_id: row.get(0)?,
+            notify_at: row.get(1)?,
+            repeat: Repeat {
+                every: row.get(2)?,
+                unit,
+                count: row.get(4)?,
+                until: row.get(5)?,
+                occurrence: row.get(6)?,
+            },
+        })
+    })?
+    .next()
+    .transpose()
+}
+
+/// Stores the next sounding of a series, unsent.
+pub fn insert_next(
+    tx: &Transaction<'_>,
+    id: &str,
+    member: &SeriesMember,
+    notify_at: &str,
+    occurrence: u32,
+    now: &str,
+) -> rusqlite::Result<()> {
+    let next = Repeat {
+        occurrence,
+        ..member.repeat.clone()
+    };
+    insert_one(tx, id, &member.task_id, notify_at, &next, now)
+}
+
+fn insert_one(
+    tx: &Transaction<'_>,
+    id: &str,
+    task_id: &str,
+    notify_at: &str,
+    repeat: &Repeat,
+    now: &str,
+) -> rusqlite::Result<()> {
+    tx.prepare_cached(
+        "INSERT INTO reminders (id, task_id, notify_at, offset_minutes, created_at,
+                                repeat_every, repeat_unit, repeat_count, repeat_until, occurrence)
+         VALUES (?1, ?2, ?3, NULL, ?4, ?5, ?6, ?7, ?8, ?9)",
+    )?
+    .execute(params![
+        id,
+        task_id,
+        notify_at,
+        now,
+        repeat.every,
+        repeat.unit.as_str(),
+        repeat.count,
+        repeat.until.as_deref(),
+        repeat.occurrence,
+    ])?;
+    Ok(())
+}
+
 pub fn for_task(conn: &Connection, task_id: &str) -> rusqlite::Result<Vec<Reminder>> {
     conn.prepare_cached(
-        "SELECT id, notify_at, offset_minutes, is_sent FROM reminders
-         WHERE task_id = ?1 ORDER BY notify_at, id",
+        "SELECT id, notify_at, offset_minutes, is_sent,
+                repeat_every, repeat_unit, repeat_count, repeat_until, occurrence
+         FROM reminders WHERE task_id = ?1 ORDER BY notify_at, id",
     )?
     .query_map(params![task_id], |row| {
+        let unit: Option<String> = row.get(5)?;
+        let repeat = match unit.as_deref().map(RepeatUnit::parse) {
+            None => None,
+            Some(Some(unit)) => Some(Repeat {
+                every: row.get(4)?,
+                unit,
+                count: row.get(6)?,
+                until: row.get(7)?,
+                occurrence: row.get(8)?,
+            }),
+            Some(None) => {
+                return Err(rusqlite::Error::FromSqlConversionFailure(
+                    5,
+                    Type::Text,
+                    "unknown repeat unit".into(),
+                ));
+            }
+        };
         Ok(Reminder {
             id: row.get(0)?,
             notify_at: row.get(1)?,
             offset_minutes: row.get(2)?,
             is_sent: row.get(3)?,
+            repeat,
         })
     })?
     .collect()

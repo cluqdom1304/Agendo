@@ -23,7 +23,13 @@ macro_rules! task_sql {
                                 json_object('id', r.id,
                                             'notifyAt', r.notify_at,
                                             'offsetMinutes', r.offset_minutes,
-                                            'isSent', json(CASE r.is_sent WHEN 1 THEN 'true' ELSE 'false' END))
+                                            'isSent', json(CASE r.is_sent WHEN 1 THEN 'true' ELSE 'false' END),
+                                            'repeat', json(CASE WHEN r.repeat_unit IS NULL THEN NULL ELSE
+                                                json_object('every', r.repeat_every,
+                                                            'unit', r.repeat_unit,
+                                                            'count', r.repeat_count,
+                                                            'until', r.repeat_until,
+                                                            'occurrence', r.occurrence) END))
                                 ORDER BY r.notify_at, r.id)
                        FROM reminders r WHERE r.task_id = t.id)
              FROM tasks t ",

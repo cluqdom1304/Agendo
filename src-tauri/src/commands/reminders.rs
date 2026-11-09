@@ -7,7 +7,10 @@ use serde::Deserialize;
 use tauri::State;
 
 use crate::{
-    domain::{dates, reminders as rules},
+    domain::{
+        dates,
+        reminders::{self as rules, Repeat},
+    },
     error::{AppError, AppResult},
     repo::{
         model::Task,
@@ -26,6 +29,9 @@ pub const MAX_PER_TASK: usize = 10;
 pub struct ReminderInput {
     pub offset_minutes: Option<i64>,
     pub notify_at: Option<String>,
+    /// Only with `notifyAt`: an offset reminder follows the task's date, so it cannot repeat.
+    #[serde(default)]
+    pub repeat: Option<Repeat>,
 }
 
 pub fn set<Tz: TimeZone>(
@@ -48,6 +54,11 @@ pub fn set<Tz: TimeZone>(
 
         let mut rows: Vec<NewReminder> = Vec::new();
         for input in inputs {
+            if input.repeat.is_some() && input.offset_minutes.is_some() {
+                return Err(AppError::Validation(
+                    "solo los avisos a una hora concreta pueden repetirse".into(),
+                ));
+            }
             let (notify_at, offset_minutes) =
                 match (input.offset_minutes, input.notify_at.as_deref()) {
                     (Some(offset), None) => {
@@ -75,6 +86,12 @@ pub fn set<Tz: TimeZone>(
                     "ese recordatorio ya habría pasado".into(),
                 ));
             }
+            // The occurrence travels with the rule so that editing another reminder of the task
+            // does not restart a series that is half way through.
+            if let Some(repeat) = &input.repeat {
+                rules::validate_repeat(zone, repeat, notify_at)?;
+            }
+            let repeat = input.repeat.clone();
             let notify_at = dates::format_instant(notify_at);
             if rows.iter().any(|row| row.notify_at == notify_at) {
                 continue;
@@ -83,6 +100,7 @@ pub fn set<Tz: TimeZone>(
                 id: state.ids.new_id(),
                 notify_at,
                 offset_minutes,
+                repeat,
             });
         }
 
@@ -137,6 +155,7 @@ mod tests {
         ReminderInput {
             offset_minutes: Some(minutes),
             notify_at: None,
+            repeat: None,
         }
     }
 
@@ -144,6 +163,7 @@ mod tests {
         ReminderInput {
             offset_minutes: None,
             notify_at: Some(at.into()),
+            repeat: None,
         }
     }
 
@@ -243,7 +263,8 @@ mod tests {
                 &timed.id,
                 &[ReminderInput {
                     offset_minutes: None,
-                    notify_at: None
+                    notify_at: None,
+                    repeat: None
                 }],
                 &zone()
             )),
@@ -255,7 +276,8 @@ mod tests {
                 &timed.id,
                 &[ReminderInput {
                     offset_minutes: Some(5),
-                    notify_at: Some("2026-03-12T00:00:00Z".into())
+                    notify_at: Some("2026-03-12T00:00:00Z".into()),
+                    repeat: None
                 }],
                 &zone()
             )),
@@ -331,5 +353,101 @@ mod tests {
                 .is_ok()
         });
         assert!(woken);
+    }
+
+    fn repeating(at: &str, repeat: Repeat) -> ReminderInput {
+        ReminderInput {
+            repeat: Some(repeat),
+            ..custom(at)
+        }
+    }
+
+    fn daily(count: Option<u32>) -> Repeat {
+        Repeat {
+            every: 1,
+            unit: rules::RepeatUnit::Day,
+            count,
+            until: None,
+            occurrence: 1,
+        }
+    }
+
+    #[test]
+    fn a_custom_reminder_can_repeat_and_the_rule_is_returned() {
+        let (state, _) = test_state();
+        let plain = task(&state, None, None);
+
+        let saved = set(
+            &state,
+            &plain.id,
+            &[repeating("2026-03-12T08:00:00Z", daily(Some(3)))],
+            &zone(),
+        )
+        .expect("set");
+
+        assert_eq!(saved.reminders.len(), 1);
+        assert_eq!(saved.reminders[0].repeat, Some(daily(Some(3))));
+    }
+
+    #[test]
+    fn the_occurrence_of_a_series_is_kept_and_checked_against_its_count() {
+        let (state, _) = test_state();
+        let plain = task(&state, None, None);
+        let half_way = Repeat {
+            occurrence: 2,
+            ..daily(Some(3))
+        };
+
+        let saved = set(
+            &state,
+            &plain.id,
+            &[repeating("2026-03-12T08:00:00Z", half_way.clone())],
+            &zone(),
+        )
+        .expect("set");
+        assert_eq!(saved.reminders[0].repeat, Some(half_way));
+
+        for occurrence in [0, 4] {
+            let bad = Repeat {
+                occurrence,
+                ..daily(Some(3))
+            };
+            let error = set(
+                &state,
+                &plain.id,
+                &[repeating("2026-03-12T08:00:00Z", bad)],
+                &zone(),
+            )
+            .expect_err("occurrence out of range");
+            assert_eq!(error.code(), "VALIDATION");
+        }
+    }
+
+    #[test]
+    fn invalid_repeats_and_repeating_offsets_are_refused() {
+        let (state, _) = test_state();
+        let code = |result: AppResult<Task>| result.expect_err("error").code();
+        let timed = task(&state, Some("2026-03-12"), Some("10:00"));
+        let bad = Repeat {
+            every: 0,
+            ..daily(None)
+        };
+        assert_eq!(
+            code(set(
+                &state,
+                &timed.id,
+                &[repeating("2026-03-12T08:00:00Z", bad)],
+                &zone()
+            )),
+            "VALIDATION"
+        );
+        let offset_with_repeat = ReminderInput {
+            repeat: Some(daily(None)),
+            ..offset(15)
+        };
+        assert_eq!(
+            code(set(&state, &timed.id, &[offset_with_repeat], &zone())),
+            "VALIDATION"
+        );
     }
 }

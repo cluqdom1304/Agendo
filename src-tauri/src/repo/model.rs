@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::domain::ordering::Sortable;
+use crate::domain::{ordering::Sortable, reminders::Repeat};
 
 /// `content_json` of a task without notes.
 pub const EMPTY_DOC: &str = r#"{"type":"doc","content":[]}"#;
@@ -51,6 +51,8 @@ pub struct Reminder {
     pub notify_at: String,
     pub offset_minutes: Option<i64>,
     pub is_sent: bool,
+    /// How the reminder repeats, if it does (custom-time reminders only, D-32).
+    pub repeat: Option<Repeat>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

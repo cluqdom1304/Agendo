@@ -276,6 +276,15 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-32 — Recordatorios periódicos (migración 002)
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-09
+- **Contexto:** petición del usuario tras F6: recordatorios que se repitan como en Google Calendar (cada N unidades, un número de veces o hasta una fecha) y que los ya sonados no desaparezcan. D-07 deja fuera la recurrencia **de tareas** (`tasks.rrule`, que sigue sin usarse); esto afecta solo a los avisos.
+- **Decisión:** migración `002_reminder_repeat.sql` con `repeat_every`, `repeat_unit` (`hour|day|week|month`), `repeat_count` (2–1000), `repeat_until` (fecha local, inclusive) y `occurrence`. Solo se repiten los avisos de **hora concreta**; los «X antes de la tarea» siguen a la fecha de la tarea. Terminar por número **o** por fecha, nunca ambos. Al sonar, ceder o caducar un aviso de una serie se queda como historial (`is_sent = 1`) y, **en la misma transacción**, se crea el siguiente con `occurrence + 1` (si el aviso falla, el rollback deshace también el siguiente). Si la app estuvo cerrada, los avisos perdidos se saltan pero cuentan para el número de veces. Días, semanas y meses conservan la hora local (DST); el día 31 se ajusta al último día del mes, sin recuperar el 31 en los meses siguientes. El frontend muestra los avisos ya sonados en gris, bajo «Ya avisados» (los últimos 5).
+- **Consecuencias:** `Reminder` gana `repeat` en el contrato IPC (fixture y tipos actualizados). Una copia de seguridad anterior a esta versión se migra al restaurarse.
+- **Alternativas descartadas:** RRULE completa (más superficie y UI de la necesaria); repetir también los avisos relativos (cambian cada vez que se mueve la tarea); generar de antemano todas las repeticiones (series sin fin).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

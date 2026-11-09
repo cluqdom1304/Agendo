@@ -53,6 +53,7 @@ fn die_during_write(path: &Path) {
                     id: "r1".into(),
                     notify_at: "2030-01-01T01:00:00Z".into(),
                     offset_minutes: None,
+                    repeat: None,
                 }],
                 "2030-01-01T00:00:00Z",
             )?;

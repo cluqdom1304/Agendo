@@ -9,7 +9,10 @@ use serde_json::{Value, json};
 
 use crate::{
     commands::tasks::{Sections, TasksListOutput},
-    domain::ordering::DayGroup,
+    domain::{
+        ordering::DayGroup,
+        reminders::{Repeat, RepeatUnit},
+    },
     repo::{
         model::{Reminder, Tag, TagWithCount, Task},
         search::SearchHit,
@@ -39,6 +42,13 @@ fn task(with_values: bool) -> Task {
             notify_at: "2026-03-12T08:30:00Z".into(),
             offset_minutes: with_values.then_some(60),
             is_sent: false,
+            repeat: with_values.then_some(Repeat {
+                every: 2,
+                unit: RepeatUnit::Week,
+                count: Some(5),
+                until: None,
+                occurrence: 3,
+            }),
         }],
         created_at: "2026-03-10T10:00:00Z".into(),
         updated_at: "2026-03-10T11:00:00Z".into(),

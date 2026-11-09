@@ -16,7 +16,14 @@
             "id": "rem-1",
             "isSent": false,
             "notifyAt": "2026-03-12T08:30:00Z",
-            "offsetMinutes": 60
+            "offsetMinutes": 60,
+            "repeat": {
+              "count": 5,
+              "every": 2,
+              "occurrence": 3,
+              "unit": "week",
+              "until": null
+            }
           }
         ],
         "tagIds": [
@@ -46,7 +53,14 @@
           "id": "rem-1",
           "isSent": false,
           "notifyAt": "2026-03-12T08:30:00Z",
-          "offsetMinutes": 60
+          "offsetMinutes": 60,
+          "repeat": {
+            "count": 5,
+            "every": 2,
+            "occurrence": 3,
+            "unit": "week",
+            "until": null
+          }
         }
       ],
       "tagIds": [
@@ -82,7 +96,14 @@
                 "id": "rem-1",
                 "isSent": false,
                 "notifyAt": "2026-03-12T08:30:00Z",
-                "offsetMinutes": 60
+                "offsetMinutes": 60,
+                "repeat": {
+                  "count": 5,
+                  "every": 2,
+                  "occurrence": 3,
+                  "unit": "week",
+                  "until": null
+                }
               }
             ],
             "tagIds": [
@@ -109,7 +130,8 @@
             "id": "rem-1",
             "isSent": false,
             "notifyAt": "2026-03-12T08:30:00Z",
-            "offsetMinutes": null
+            "offsetMinutes": null,
+            "repeat": null
           }
         ],
         "tagIds": [
@@ -156,7 +178,14 @@
         "id": "rem-1",
         "isSent": false,
         "notifyAt": "2026-03-12T08:30:00Z",
-        "offsetMinutes": 60
+        "offsetMinutes": 60,
+        "repeat": {
+          "count": 5,
+          "every": 2,
+          "occurrence": 3,
+          "unit": "week",
+          "until": null
+        }
       }
     ],
     "tagIds": [
@@ -179,7 +208,8 @@
         "id": "rem-1",
         "isSent": false,
         "notifyAt": "2026-03-12T08:30:00Z",
-        "offsetMinutes": null
+        "offsetMinutes": null,
+        "repeat": null
       }
     ],
     "tagIds": [
