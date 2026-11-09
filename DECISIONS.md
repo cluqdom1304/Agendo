@@ -240,6 +240,42 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-27 — Colores de los tokens ajustados para cumplir WCAG AA (N-08)
+- **Estado:** PROPOSED · **Fecha:** 2026-11-09
+- **Contexto:** la revisión automatizada de F6-02 (`src/lib/a11y/tokens.test.ts`) mostró que varios colores de SPEC §8.3 y los añadidos por el agente en F0-08 no llegan a 4,5:1 como texto: en el tema claro `--text-secondary`, `--accent`, `--danger`, `--success` y las etiquetas 1–4, 6 y 7; en el oscuro, `--accent` y `--danger`. El blanco fijo sobre `--accent` tampoco cumple en oscuro.
+- **Decisión:** se oscurecen (claro) o aclaran (oscuro) esos tokens lo mínimo necesario (valores en `tokens.css`) y se añaden `--on-accent` y `--on-danger` para el texto sobre fondos de acento y de peligro. El test falla si algún token vuelve a bajar de 4,5:1 sobre las superficies de la ventana.
+- **Consecuencias:** el azul de acento claro pasa de `#0071e3` a `#0061c3` y el oscuro de `#0a84ff` a `#2692ff`; en oscuro el texto sobre botones de acento es casi negro. No edita `docs/SPEC.md`: espera confirmación humana. La medición real sobre Mica es `[H]`.
+- **Alternativas descartadas:** conservar los colores de la especificación y limitar el texto a tamaño grande (3:1), porque el acento y los avisos se usan con texto de 12–14 px.
+
+---
+
+## D-28 — `tauri-plugin-dialog` para elegir el archivo de la copia de seguridad
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-09
+- **Contexto:** F-16 y F6-04 necesitan «Guardar como» y «Abrir» nativos.
+- **Decisión:** `tauri-plugin-dialog 2.8.4` (y `@tauri-apps/plugin-dialog ^2.8.4`). Permisos concedidos a la ventana principal: solo `dialog:allow-open` y `dialog:allow-save` (el test `capabilities.rs` fija el conjunto). El plugin arrastra `tauri-plugin-fs` como dependencia interna, **sin** conceder ningún permiso `fs:`: la lectura y escritura de la copia las hace Rust.
+- **Alternativas descartadas:** `rfd` directo (duplica lo que el plugin ya integra con Tauri); campo de texto para escribir la ruta (peor experiencia y más errores).
+
+## D-29 — `tauri-plugin-autostart` para «Iniciar con Windows»
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-09
+- **Contexto:** F6-05 pide iniciar con Windows, desactivado por defecto.
+- **Decisión:** `tauri-plugin-autostart 2.7.0`, usado solo desde Rust (`autostart_get` / `autostart_set`), por lo que no necesita permisos de frontend. El estado vive en el registro de Windows (clave `Run` del usuario), no en `settings`; la app nunca se registra sin que el usuario lo pida. Se consulta al abrir Ajustes, no al arrancar (N-01).
+- **Alternativas descartadas:** escribir la clave de registro con `winreg` (código `unsafe`-adyacente y propio para algo que el plugin resuelve).
+
+## D-30 — Restaurar con la API de copia de SQLite y feature `backup` de `rusqlite`
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-09
+- **Contexto:** D-09 exige validar con `integrity_check` antes de sustituir y conservar la base anterior. Con la base abierta en WAL no se puede reemplazar el archivo sin cerrar las conexiones.
+- **Decisión:** `rusqlite` con la feature `backup` (misma versión; sin crate nueva). `restore` (1) valida el archivo en solo lectura: cabecera SQLite, `integrity_check`, `foreign_key_check`, `user_version` entre 1 y la actual, tablas de la aplicación y mismo `page_size`; (2) guarda la base actual en `agenda.before-restore.sqlite` con `VACUUM INTO`; (3) copia las páginas a la conexión escritora con la API de backup de SQLite (transaccional: si falla, quedan los datos actuales); (4) migra si la copia es anterior y reaplica los pragmas. Una copia de un esquema más nuevo se rechaza. `backup_create` escribe en un `.tmp` y renombra, y nunca sobrescribe la base en uso ni sus `-wal`/`-shm`.
+- **Alternativas descartadas:** reemplazar el archivo `.sqlite` (obliga a cerrar y reabrir el estado compartido y es vulnerable a cortes); copiar el archivo en caliente (D-09).
+
+## D-31 — WebdriverIO para las pruebas E2E y `MIAGENDA_DATA_DIR`
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-09
+- **Contexto:** F6-06 pide E2E con WebdriverIO + `tauri-driver`, que solo corren en Windows.
+- **Decisión:** `@wdio/cli`, `@wdio/local-runner`, `@wdio/mocha-framework` y `@wdio/spec-reporter` `10.2.0` (solo dev, versión exacta). Los tests viven en `e2e/` (no entran en `npm run test`). Para no tocar nunca datos reales, la aplicación acepta la variable de entorno `MIAGENDA_DATA_DIR` como carpeta de datos alternativa; la configuración de E2E crea una carpeta temporal por sesión. `tauri-driver` y `msedgedriver` se instalan aparte (ver `e2e/README.md`).
+- **Consecuencias:** la variable también la podría poner un usuario; solo cambia dónde se guarda la base y no abre ningún acceso nuevo.
+- **Alternativas descartadas:** Playwright (no se integra con `tauri-driver`); exigir `APPDATA` temporal (Tauri usa la API de carpetas conocidas de Windows y la ignora).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

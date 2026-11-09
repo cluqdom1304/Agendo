@@ -96,7 +96,17 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] Restauración desde un archivo corrupto se rechaza sin tocar los datos actuales.
 - [ ] El instalador instala, desinstala y deja la app funcional tras reinstalar.
 - [ ] Sin firma digital, Windows SmartScreen muestra el aviso esperado (documentar).
-- [ ] Tabla final de métricas N-01 a N-08 completada en `docs/`.
+- [ ] Ajustes → Tema: «Sistema», «Claro» y «Oscuro» cambian la apariencia al instante y se conservan al reiniciar.
+- [ ] Ajustes → Efecto de la ventana: Mica, Acrílico y Ninguno se aplican; si el equipo no admite uno, la app avisa de cuál usa.
+- [ ] Ajustes → Iniciar con Windows está desactivado en una instalación nueva; al activarlo la app arranca al iniciar sesión y al desactivarlo deja de hacerlo (`Administrador de tareas → Inicio`).
+- [ ] Copia de seguridad: el cuadro «Guardar como» propone `MiAgenda-AAAA-MM-DD.sqlite` y sobrescribir pide confirmación de Windows.
+- [ ] Restaurar: el aviso explica que se sustituyen los datos y que los actuales quedan en `agenda.before-restore.sqlite`; tras restaurar, lista, calendario y recordatorios muestran los datos de la copia sin reiniciar.
+- [ ] Restaurar un `.sqlite` ajeno (otra aplicación) o de una versión más nueva se rechaza con un mensaje claro.
+- [ ] Calendario con teclado: `Tab` llega a cada columna de día, `Intro` abre «Nueva tarea» y la tarea se guarda a la hora indicada.
+- [ ] Contraste real sobre Mica en tema claro y oscuro (los tokens cumplen AA sobre un fondo supuesto; aquí se comprueba con el fondo real).
+- [ ] E2E (`npm run e2e`, requiere `tauri-driver` y `msedgedriver`, ver `e2e/README.md`): los tres ficheros de `e2e/specs/` pasan.
+- [ ] Medición N-01 (arranque), N-02 (RAM) y N-07 (precisión de recordatorios) registrada en `docs/metricas.md`.
+- [ ] Tabla final de métricas N-01 a N-08 completada en `docs/` (el agente rellena N-03 a N-06; las demás son `[H]`).
 
 ---
 

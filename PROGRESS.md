@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** 5
+**Fase activa:** 6
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F6-01 (tras confirmación humana)
-**Última actualización:** 2026-11-09 (F5-05, fin de Fase 5)
+**Siguiente tarea:** ninguna `[A]` pendiente; falta ejecutar F6-06 `[H]` y validar los ítems `[H]` de la Fase 6
+**Última actualización:** 2026-11-09 (fin de Fase 6)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -155,16 +155,26 @@
 ---
 
 ## Fase 6 — Pulido, accesibilidad, copias y empaquetado
-- [ ] F6-01 Modo claro/oscuro completo y verificado
-- [ ] F6-02 Revisión automatizada de contraste sobre tokens (N-08)
-- [ ] F6-03 Navegación por teclado completa y ARIA en controles
-- [ ] F6-04 `backup_create` / `backup_restore` con validación (F-16, D-09)
-- [ ] F6-05 Ajustes: tema, inicio con Windows (desactivado por defecto), efecto de ventana
-- [ ] F6-06 Tests E2E con WebdriverIO + tauri-driver
-- [ ] F6-07 Instalador NSIS/MSI, icono y metadatos (firma pendiente)
-- [ ] F6-08 Tabla de métricas N-01 a N-08 en `docs/`
+- [x] F6-01 Modo claro/oscuro completo y verificado
+- [x] F6-02 Revisión automatizada de contraste sobre tokens (N-08)
+- [x] F6-03 Navegación por teclado completa y ARIA en controles
+- [x] F6-04 `backup_create` / `backup_restore` con validación (F-16, D-09)
+- [x] F6-05 Ajustes: tema, inicio con Windows (desactivado por defecto), efecto de ventana
+- [ ] F6-06 Tests E2E con WebdriverIO + tauri-driver — escritos y con lint, **falta ejecutarlos `[H]`** (`npm run e2e`, ver `e2e/README.md`)
+- [x] F6-07 Instalador NSIS/MSI, icono y metadatos (firma pendiente)
+- [x] F6-08 Tabla de métricas N-01 a N-08 en `docs/`
 
-**Verificaciones [A]:** (pendiente)
+**Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test` (242 + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (259), `npm run build` y `npm run size` (173,1 KB gzip de 250) en verde. `npm run tauri -- build` genera `miagendaapp.exe` (12,06 MiB), el NSIS (3,17 MiB) y el MSI (4,48 MiB). Cobertura de `domain/` 98,8 % de líneas (`cargo llvm-cov`). La fase toca `window/` solo por lectura de ajustes; `cargo check` de Windows es el check nativo de este equipo.
+
+**Notas de la fase:**
+- F6-01/02: `src/lib/a11y/tokens.test.ts` calcula el contraste WCAG de cada token de texto sobre las superficies de la ventana en los tres bloques de tokens (oscuro, claro forzado y claro del sistema) y exige 4,5:1. Falló en 12 tokens; se corrigieron y se añadieron `--on-accent` / `--on-danger` → **D-27 (`PROPOSED`)**, porque toca colores de SPEC §8.3. El fondo nativo (Mica) se modela como `#202020` / `#f3f3f3`: la medición real es `[H]`. El tema se aplica con `data-theme` desde `settingsStore.load()` en el layout; hasta que se lee el ajuste se ve el tema del sistema (un parpadeo posible solo si el usuario forzó el opuesto).
+- F6-03: ya existían nombres accesibles casi en todo; `src/lib/a11y/names.ts` audita botones, campos e interruptores en lista, Día, Semana, Mes, buscador, ajustes y ventana (todos con nombre). Hueco encontrado y cerrado: las columnas de día de Semana/Día solo se podían usar con ratón; ahora son enfocables y `Intro`/`Espacio` abren «Nueva tarea» (hoy: siguiente bloque de 30 min; otros días: 09:00). Se añadió un `:focus-visible` global como red de seguridad.
+- F6-04: `db/backup.rs` + `commands/backup.rs` (D-30). Restaurar valida (cabecera, `integrity_check`, `foreign_key_check`, versión, tablas, `page_size`), guarda lo actual en `agenda.before-restore.sqlite`, copia con la API de backup de SQLite y migra si la copia es anterior. Resuelve B-02 (solo `.sqlite`, importable). Cierra la nota de F1-01: la copia previa a migrar sigue sin existir; la migración sigue haciendo rollback.
+- F6-05: claves `theme` (`system|light|dark`) y `window_effect` (`mica|acrylic|none`) en la whitelist de `settings_*`; autostart por comandos propios (D-29). Diálogo de ajustes con el `Modal` del inventario de SPEC §8.6 (nuevo componente `SettingsDialog` dentro de `features/settings/`, que SPEC §10 ya prevé). Sin atajo de teclado propio: SPEC §9 no define uno.
+- F6-06: `e2e/` (3 specs, `wdio.conf.mjs`, README). La app acepta `MIAGENDA_DATA_DIR` para que las pruebas usen datos temporales (D-31).
+- F6-07: `tauri.conf.json` con NSIS (por usuario, español) y MSI (es-ES), publisher, copyright y descripciones; un test fija objetivos, metadatos e iconos. Firma pendiente `[H]`. El identifier sigue siendo `com.cristian.miagendaap` (ver nota de 2026-10-31): **decidir antes de distribuir**, porque cambiarlo después mueve los datos de los usuarios.
+- F6-08: `docs/metricas.md`. N-03 a N-06 con valores reales; N-01, N-02 y la parte real de N-07/N-08 quedan `[H]`.
+
 **Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 6
 
 ---
@@ -173,11 +183,11 @@
 
 | Métrica | Objetivo | Valor | Fecha | Notas |
 |---------|----------|-------|-------|-------|
-| Tamaño ejecutable (N-03) | < 15 MB | 8 496 640 B (≈ 8,1 MiB) | 2026-10-31 | `tauri build --no-bundle`, commit F0-09, sin instalador; plantilla + TitleBar + window-vibrancy |
-| Bundle JS gzip (N-04) | < 250 KB | 32,8 KB (CSS 3,7 KB) | 2026-10-31 | `npm run size` tras F0-09 |
+| Tamaño ejecutable (N-03) | < 15 MB | 12 641 792 B (≈ 12,06 MiB) | 2026-11-09 | `tauri build` release de F6-07 (antes 8,1 MiB en F0-09); instaladores NSIS 3,17 MiB y MSI 4,48 MiB |
+| Bundle JS gzip (N-04) | < 250 KB | 173,1 KB (CSS 8,5 KB) | 2026-11-09 | `npm run size` al cierre de F6 |
 | Arranque (N-01) [H] | < 200 ms | | | |
 | RAM en reposo (N-02) [H] | < 40 MB (proceso principal) | | | |
-| Consulta de un mes, 10 000 tareas (N-05) | < 30 ms | 3,4 ms (434 filas, mejor de 5) | 2026-10-31 | Test `month_query_with_ten_thousand_tasks_is_fast`, build de depuración; el test falla si supera 30 ms |
+| Consulta de un mes, 10 000 tareas (N-05) | < 30 ms | 2,98 ms (434 filas, mejor de 5) | 2026-11-09 | Test `month_query_with_ten_thousand_tasks_is_fast`, build de depuración; el test falla si supera 30 ms |
 | Búsqueda, 10 000 tareas (F-09) | < 100 ms | | | |
 | `fts::sync` con 10 000 filas (D-11) | < 100 ms (umbral del test) | 2,3 ms (mejor de 5) | 2026-10-31 | Borrado por `task_id` sobre FTS independiente; no hace falta cambiar el diseño de D-11 |
 
