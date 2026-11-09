@@ -1,6 +1,6 @@
 import * as backend from "../api";
 import { t } from "../i18n";
-import { applyTheme, parseTheme } from "../theme";
+import { applyTheme, parseTheme, resolveTheme } from "../theme";
 import type { EffectMode, SettingKey, ThemeMode } from "../types";
 import { windowEffect } from "./windowEffect.svelte";
 
@@ -66,9 +66,32 @@ export class SettingsStore {
     this.#apply = options.apply ?? ((theme) => applyTheme(theme));
   }
 
+  /**
+   * In the light theme the window is opaque: a translucent material shows the desktop through
+   * and washes the light palette out (D-36).
+   */
+  get opaque(): boolean {
+    return resolveTheme(this.theme) === "light";
+  }
+
   /** The effect the OS really applied, which can differ from the one chosen. */
   get appliedEffect(): EffectMode {
-    return this.#effects.applied;
+    return this.opaque ? this.effect : this.#effects.applied;
+  }
+
+  #requestEffect(effect: EffectMode): Promise<void> {
+    return this.#effects.request(this.opaque ? "none" : effect, this.theme);
+  }
+
+  /** `system` can flip while the app runs; the material must follow. */
+  watchSystemTheme(): () => void {
+    if (typeof window === "undefined" || !window.matchMedia) return () => {};
+    const query = window.matchMedia("(prefers-color-scheme: light)");
+    const onChange = () => {
+      if (this.theme === "system") void this.#requestEffect(this.effect);
+    };
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
   }
 
   /** Reads the saved theme and window effect and applies both. Runs at startup. */
@@ -85,7 +108,7 @@ export class SettingsStore {
         : DEFAULT_NOTIFY_TIME;
     this.effect = parseEffect(effect);
     this.#apply(this.theme);
-    await this.#effects.request(this.effect, this.theme);
+    await this.#requestEffect(this.effect);
   }
 
   async loadAutostart(): Promise<void> {
@@ -99,14 +122,13 @@ export class SettingsStore {
   async setTheme(theme: ThemeMode): Promise<void> {
     this.theme = theme;
     this.#apply(theme);
-    // Mica has its own light and dark variant, chosen when it is applied.
-    await this.#effects.request(this.effect, theme);
+    await this.#requestEffect(this.effect);
     await this.#save("theme", theme);
   }
 
   async setEffect(effect: EffectMode): Promise<void> {
     this.effect = effect;
-    await this.#effects.request(effect, this.theme);
+    await this.#requestEffect(effect);
     await this.#save("window_effect", effect);
   }
 

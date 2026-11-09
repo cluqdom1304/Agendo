@@ -54,9 +54,11 @@
   let confirmingRestore = $state(false);
 
   const fallbackNote = $derived(
-    store.appliedEffect === store.effect
-      ? null
-      : t.settings.effectFallback(EFFECT_NAMES[store.appliedEffect]),
+    store.opaque
+      ? t.settings.effectOpaqueInLight
+      : store.appliedEffect === store.effect
+        ? null
+        : t.settings.effectFallback(EFFECT_NAMES[store.appliedEffect]),
   );
 
   onMount(() => {

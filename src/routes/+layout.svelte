@@ -11,6 +11,7 @@
   onMount(() => {
     void settingsStore.load();
     markFirstPaint();
+    return settingsStore.watchSystemTheme();
   });
 </script>
 

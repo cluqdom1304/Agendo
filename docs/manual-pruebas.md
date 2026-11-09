@@ -156,6 +156,8 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] La misma tarea sigue en «Todo el día» del calendario, no a la hora por defecto.
 - [ ] Cambiar la hora por defecto mueve los avisos pendientes de tareas sin hora, pero no los de tareas con hora.
 - [ ] Vista de semana: las líneas entre días coinciden con la cabecera fija en todas las columnas, con y sin scroll, y al redimensionar la ventana.
+- [ ] Tema claro (y «Sistema» con Windows en claro): fondo claro opaco, texto y bordes con buen contraste, sin tono oscuro en esquinas ni bordes; Ajustes explica que la ventana es opaca.
+- [ ] Cambiar entre claro y oscuro en Ajustes, y el tema de Windows con «Sistema», aplica Mica en oscuro y fondo opaco en claro sin parpadeos.
 
 ---
 

@@ -313,6 +313,14 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-36 — Tema claro opaco
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-09
+- **Contexto:** en el tema claro Mica/Acrílico dejaban ver el escritorio oscuro bajo una capa clara semitransparente y el contraste era malo (el oscuro sí se ve bien).
+- **Decisión:** con el tema claro (elegido o resuelto desde el sistema) la ventana se pide sin material (`none`) y los fondos `--bg-window*` y `--bg-elevated` son opacos; el borde sutil sube a 12 %. El ajuste de efecto se conserva y vuelve a aplicarse en oscuro; Ajustes lo indica. Con «Sistema» se reaplica al cambiar `prefers-color-scheme`.
+- **Alternativas descartadas:** subir solo la opacidad de la capa (el material sigue asomando en las esquinas redondeadas); confiar en la variante clara de Mica (no es fiable según el equipo).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

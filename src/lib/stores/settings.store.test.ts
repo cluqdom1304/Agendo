@@ -56,6 +56,21 @@ describe("SettingsStore", () => {
     expect(invalid.store.effect).toBe("mica");
   });
 
+  it("keeps the window opaque in the light theme and restores the material in dark", async () => {
+    const { store, effects } = setup({ theme: "light" });
+    await store.load();
+    expect(effects.request).toHaveBeenLastCalledWith("none", "light");
+    expect(store.opaque).toBe(true);
+    expect(store.appliedEffect).toBe("mica");
+
+    await store.setEffect("acrylic");
+    expect(effects.request).toHaveBeenLastCalledWith("none", "light");
+
+    await store.setTheme("dark");
+    expect(effects.request).toHaveBeenLastCalledWith("acrylic", "dark");
+    expect(store.opaque).toBe(false);
+  });
+
   it("still starts when the saved settings cannot be read", async () => {
     const { store, api, applied } = setup();
     api.settingsGet.mockRejectedValue("DB: fallo");

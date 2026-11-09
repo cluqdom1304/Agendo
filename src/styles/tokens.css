@@ -52,16 +52,16 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     color-scheme: light;
-    --bg-window: rgba(246, 246, 248, 0.72);
-    --bg-window-native: rgba(246, 246, 248, 0.35);
+    --bg-window: rgb(246, 246, 248);
+    --bg-window-native: rgb(246, 246, 248);
     --bg-window-solid: rgb(246, 246, 248);
-    --bg-elevated: rgba(255, 255, 255, 0.8);
+    --bg-elevated: rgb(255, 255, 255);
     --bg-hover: rgba(0, 0, 0, 0.05);
     --text-primary: #1d1d1f;
     --text-secondary: #646469;
     --accent: #0061c3;
     --on-accent: #ffffff;
-    --border-subtle: rgba(0, 0, 0, 0.08);
+    --border-subtle: rgba(0, 0, 0, 0.12);
     --danger: #ca0014;
     --on-danger: #ffffff;
     --success: #1e7333;
@@ -79,16 +79,16 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg-window: rgba(246, 246, 248, 0.72);
-  --bg-window-native: rgba(246, 246, 248, 0.35);
+  --bg-window: rgb(246, 246, 248);
+  --bg-window-native: rgb(246, 246, 248);
   --bg-window-solid: rgb(246, 246, 248);
-  --bg-elevated: rgba(255, 255, 255, 0.8);
+  --bg-elevated: rgb(255, 255, 255);
   --bg-hover: rgba(0, 0, 0, 0.05);
   --text-primary: #1d1d1f;
   --text-secondary: #646469;
   --accent: #0061c3;
   --on-accent: #ffffff;
-  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.12);
   --danger: #ca0014;
   --on-danger: #ffffff;
   --success: #1e7333;

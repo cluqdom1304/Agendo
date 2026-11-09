@@ -246,6 +246,8 @@ export const t = {
     effectNone: "Ninguno",
     effectFallback: (applied: string) =>
       `Este equipo no admite el efecto elegido; se usa «${applied}».`,
+    effectOpaqueInLight:
+      "En el tema claro la ventana es opaca para mantener el contraste.",
     reminders: "Avisos",
     notifyTime: "Hora de aviso por defecto",
     notifyTimeHint:
