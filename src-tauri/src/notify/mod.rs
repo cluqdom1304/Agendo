@@ -7,6 +7,9 @@ use tauri_plugin_notification::NotificationExt;
 
 use crate::{error::AppError, repo::reminders::DueReminder};
 
+/// Longest piece of the notes shown in a notification, in characters.
+const SNIPPET_CHARS: usize = 100;
+
 /// Shown when the task has no title.
 const UNTITLED: &str = "Tarea sin título";
 
@@ -33,11 +36,38 @@ impl Notification {
         if let Some(time) = &reminder.due_time {
             parts.push(time.clone());
         }
+        let mut lines = Vec::new();
+        if !parts.is_empty() {
+            lines.push(parts.join(" · "));
+        }
+        if let Some(snippet) = snippet_of(&reminder.notes) {
+            lines.push(snippet);
+        }
         Self {
             title,
-            body: parts.join(" · "),
+            body: lines.join(
+                "
+",
+            ),
         }
     }
+}
+
+/// The start of the notes on one line, cut at a word boundary with «…» if it is long.
+fn snippet_of(notes: &str) -> Option<String> {
+    let flat = notes.split_whitespace().collect::<Vec<_>>().join(" ");
+    if flat.is_empty() {
+        return None;
+    }
+    if flat.chars().count() <= SNIPPET_CHARS {
+        return Some(flat);
+    }
+    let cut: String = flat.chars().take(SNIPPET_CHARS).collect();
+    let end = cut
+        .rfind(' ')
+        .filter(|at| *at > SNIPPET_CHARS / 2)
+        .unwrap_or(cut.len());
+    Some(format!("{}…", cut[..end].trim_end()))
 }
 
 pub trait Notifier: Send + Sync {
@@ -90,6 +120,7 @@ mod tests {
             task_id: "t".into(),
             title: title.into(),
             due_time: time.map(str::to_string),
+            notes: String::new(),
             tag_names: tags.iter().map(|tag| (*tag).to_string()).collect(),
         }
     }
@@ -124,6 +155,35 @@ mod tests {
             Notification::for_reminder(&reminder("  ", &[], None)).title,
             UNTITLED
         );
+    }
+
+    #[test]
+    fn notes_add_a_second_line_flattened_to_one_line() {
+        let mut r = reminder("A", &["Mates"], Some("09:00"));
+        r.notes = "Primera línea
+
+  segunda   línea"
+            .into();
+        assert_eq!(
+            Notification::for_reminder(&r).body,
+            "Mates · 09:00
+Primera línea segunda línea"
+        );
+        r.tag_names.clear();
+        r.due_time = None;
+        assert_eq!(
+            Notification::for_reminder(&r).body,
+            "Primera línea segunda línea"
+        );
+    }
+
+    #[test]
+    fn long_notes_are_cut_at_a_word_with_an_ellipsis() {
+        let mut r = reminder("A", &[], None);
+        r.notes = "palabra ".repeat(40);
+        let body = Notification::for_reminder(&r).body;
+        assert!(body.ends_with("palabra…"), "{body}");
+        assert!(body.chars().count() <= SNIPPET_CHARS + 1);
     }
 
     #[test]

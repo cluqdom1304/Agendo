@@ -14,6 +14,8 @@ pub struct DueReminder {
     pub task_id: String,
     pub title: String,
     pub due_time: Option<String>,
+    /// Plain text of the task's notes (`content_text`), possibly empty.
+    pub notes: String,
     pub tag_names: Vec<String>,
 }
 
@@ -28,7 +30,7 @@ pub struct NewReminder {
 /// Unsent reminders of live, open tasks whose time has come, oldest first.
 pub fn due(conn: &Connection, now: &str) -> rusqlite::Result<Vec<DueReminder>> {
     conn.prepare_cached(
-        "SELECT r.id, t.id, t.title, t.due_time,
+        "SELECT r.id, t.id, t.title, t.due_time, t.content_text,
                 (SELECT json_group_array(g.name ORDER BY g.name)
                    FROM task_tags tt JOIN tags g ON g.id = tt.tag_id WHERE tt.task_id = t.id)
          FROM reminders r JOIN tasks t ON t.id = r.task_id
@@ -37,14 +39,15 @@ pub fn due(conn: &Connection, now: &str) -> rusqlite::Result<Vec<DueReminder>> {
          ORDER BY r.notify_at, r.id",
     )?
     .query_map(params![now], |row| {
-        let names: String = row.get(4)?;
+        let names: String = row.get(5)?;
         Ok(DueReminder {
             id: row.get(0)?,
             task_id: row.get(1)?,
             title: row.get(2)?,
             due_time: row.get(3)?,
+            notes: row.get(4)?,
             tag_names: serde_json::from_str(&names).map_err(|error| {
-                rusqlite::Error::FromSqlConversionFailure(4, Type::Text, Box::new(error))
+                rusqlite::Error::FromSqlConversionFailure(5, Type::Text, Box::new(error))
             })?,
         })
     })?
