@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** 6
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** ninguna `[A]` pendiente; falta ejecutar F6-06 `[H]` y validar los ítems `[H]` de la Fase 6
-**Última actualización:** 2026-11-09 (fin de Fase 6)
+**Fase activa:** — (Versión 1.0.0 cerrada)
+**Estado:** DONE   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** ninguna. Para 1.0.1: validar los ítems `[H]` de `docs/manual-pruebas.md` y ejecutar F6-06 (E2E) en un equipo con `tauri-driver`
+**Última actualización:** 2026-11-09 (cierre de la V1.0.0, etiqueta `v1.0.0`)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -201,6 +201,17 @@
 ## Discrepancias detectadas
 - D-01 pide `set_effects` de Tauri, pero este no informa de errores y no permite el fallback real; se usa `window-vibrancy` directo. Registrado como D-16 (`PROPOSED`, pendiente de confirmación humana).
 - (resuelta en F0-09) El perfil `release` de la plantilla difería de SPEC §10.1; ahora usa `lto = "thin"`, `strip = "symbols"`, `panic = "unwind"`.
+
+## Cierre de la Versión 1.0.0
+- **Fecha:** 2026-11-09 · **Etiqueta:** `v1.0.0` · **Instaladores:** `MiAgendaApp_1.0.0_x64-setup.exe` (NSIS, recomendado) y `MiAgendaApp_1.0.0_x64_es-ES.msi`.
+- **Fases 0 a 6:** todas las tareas `[A]` están hechas y verificadas con la batería de CLAUDE.md §4. Mejoras posteriores a F6, ya incluidas: recordatorios periódicos (D-32), duración y detalle de tarea (D-33), etiquetas con filtro y arrastre (D-34) e icono propio.
+- **Cierre por decisión del usuario:** la V1 se da por finalizada sin que se hayan validado los ítems `[H]` ni ejecutado F6-06. Siguen sin marcar a propósito, porque ningún humano los ha comprobado en Windows 11 (CLAUDE.md §7).
+- **Pendientes conocidos (no bloquean el uso):**
+  - Ítems `[H]` sin validar en `docs/manual-pruebas.md`, en especial los de apariencia, arrastre y etiquetas.
+  - F6-06: los E2E están escritos pero no se han ejecutado (`npm run e2e`).
+  - Firma de los instaladores (avisará SmartScreen al instalar).
+  - Etiquetas anidadas (`parentId`) sin interfaz; el filtro de etiquetas no se guarda entre sesiones (D-34).
+- **Actualizar a una versión posterior:** subir la versión, `npx tauri build` y abrir el `.exe` nuevo sobre el instalado; los datos se conservan.
 
 ## Notas de sesión
 - 2026-10-31 (F1-03, para F4): al mover una tarea a la papelera sus `reminders` no se borran (se restauran con ella). El scheduler (F4-02/F4-03) debe ignorar los recordatorios cuyas tareas tengan `deleted_at` y las consultas de recuperación (F4-04) también.

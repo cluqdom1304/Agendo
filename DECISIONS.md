@@ -151,9 +151,9 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Alternativas descartadas:** Biome (sustituiría ESLint y Prettier, pero el soporte de Svelte 5 es menos completo); lint solo con `svelte-check` (no cubre reglas de estilo ni de los límites de CLAUDE.md).
 
 ## D-16 — Efectos de ventana mediante `window-vibrancy` directo
-- **Estado:** PROPOSED · **Fecha:** 2026-10-31
+- **Estado:** ACCEPTED (confirmada al cerrar la V1, 2026-11-09) · **Fecha:** 2026-10-31
 - **Contexto:** D-01 pide `set_effects` de Tauri y que `window/effects.rs` "devuelva el efecto realmente aplicado". En `tauri` 2.12.5, `Window::set_effects` ignora el error del sistema (`let _ = ...set_window_effects(...)`) y devuelve siempre `Ok`, por lo que con él no se puede detectar que Mica ha fallado ni encadenar el fallback a Acrylic.
-- **Decisión propuesta:** llamar a `window_vibrancy::apply_mica` / `apply_acrylic` / `clear_*` (0.8.1, solo `cfg(windows)`), la misma librería que usa Tauri por debajo y cuyas funciones devuelven `Result`. El acceso queda tras el trait `EffectBackend`, así la lógica de fallback se prueba con un backend simulado (DoD de F0). El permiso `core:window:allow-set-effects` se mantiene (SPEC §8.1).
+- **Decisión:** llamar a `window_vibrancy::apply_mica` / `apply_acrylic` / `clear_*` (0.8.1, solo `cfg(windows)`), la misma librería que usa Tauri por debajo y cuyas funciones devuelven `Result`. El acceso queda tras el trait `EffectBackend`, así la lógica de fallback se prueba con un backend simulado (DoD de F0). El permiso `core:window:allow-set-effects` se mantiene (SPEC §8.1).
 - **Consecuencias:** una dependencia directa nueva, pero con versión idéntica a la ya bloqueada en `Cargo.lock` (sin crates nuevos en el árbol). Afecta a F0-07, F0-08 (el frontend usa el efecto devuelto para la clase `.native-effect`) y F6-05. Si se rechaza, solo hay que sustituir `NativeBackend`.
 - **Alternativas descartadas:** `set_effects` de Tauri (no informa del fallo, incumple la consecuencia de D-01); declarar el efecto aplicado sin comprobarlo (la UI mostraría un tinte incorrecto).
 - **Acción humana:** confirmar o rechazar. El trabajo continúa porque la sustitución está aislada en un solo tipo.
@@ -241,7 +241,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 ---
 
 ## D-27 — Colores de los tokens ajustados para cumplir WCAG AA (N-08)
-- **Estado:** PROPOSED · **Fecha:** 2026-11-09
+- **Estado:** ACCEPTED (confirmada al cerrar la V1, 2026-11-09) · **Fecha:** 2026-11-09
 - **Contexto:** la revisión automatizada de F6-02 (`src/lib/a11y/tokens.test.ts`) mostró que varios colores de SPEC §8.3 y los añadidos por el agente en F0-08 no llegan a 4,5:1 como texto: en el tema claro `--text-secondary`, `--accent`, `--danger`, `--success` y las etiquetas 1–4, 6 y 7; en el oscuro, `--accent` y `--danger`. El blanco fijo sobre `--accent` tampoco cumple en oscuro.
 - **Decisión:** se oscurecen (claro) o aclaran (oscuro) esos tokens lo mínimo necesario (valores en `tokens.css`) y se añaden `--on-accent` y `--on-danger` para el texto sobre fondos de acento y de peligro. El test falla si algún token vuelve a bajar de 4,5:1 sobre las superficies de la ventana.
 - **Consecuencias:** el azul de acento claro pasa de `#0071e3` a `#0061c3` y el oscuro de `#0a84ff` a `#2692ff`; en oscuro el texto sobre botones de acento es casi negro. No edita `docs/SPEC.md`: espera confirmación humana. La medición real sobre Mica es `[H]`.
