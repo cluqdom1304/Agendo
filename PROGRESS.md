@@ -2,7 +2,7 @@
 
 **Fase activa:** — (Versión 1.0.2 cerrada)
 **Estado:** DONE   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** ninguna. Para 1.0.1: validar los ítems `[H]` de `docs/manual-pruebas.md` y ejecutar F6-06 (E2E) en un equipo con `tauri-driver`
+**Siguiente tarea:** ninguna. Validar los ítems `[H]` pendientes de `docs/manual-pruebas.md` (incluidas las secciones 1.0.1 y 1.0.2) y ejecutar F6-06 (E2E) en un equipo con `tauri-driver`
 **Última actualización:** 2026-11-09 (cierre de la V1.0.2, etiqueta `v1.0.2`)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
