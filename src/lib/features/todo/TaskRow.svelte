@@ -3,6 +3,7 @@
   import { timeRange } from "../../schedule";
   import Checkbox from "./Checkbox.svelte";
   import TagChip from "../tags/TagChip.svelte";
+  import TagMenu from "../tags/TagMenu.svelte";
   import InlineTitle from "./InlineTitle.svelte";
 
   // Only the fields the row draws (CLAUDE.md §6): a change elsewhere in the task does not
@@ -14,8 +15,12 @@
     dueTime: string | null;
     durationMinutes?: number | null;
     dueDate?: string | null;
+    tagId?: string | null;
     tagName?: string | null;
     tagColor?: string | null;
+    onTagChange?: (tagId: string | null) => void;
+    /** Pressed on the grip: the parent starts dragging the task towards a sidebar tag. */
+    onTagDragStart?: (event: PointerEvent) => void;
     onDateChange?: (date: string | null) => void;
     onDelete?: () => void;
     /** The task has notes; the toggle is drawn stronger so they are easy to spot. */
@@ -43,8 +48,11 @@
     dueTime,
     durationMinutes = null,
     dueDate = null,
+    tagId = null,
     tagName = null,
     tagColor = null,
+    onTagChange,
+    onTagDragStart,
     onDateChange,
     onDelete,
     hasNotes = false,
@@ -60,6 +68,8 @@
     onCommit,
     onCancel,
   }: Props = $props();
+
+  let tagMenuOpen = $state(false);
 
   // While settling, the checkbox already shows the state the task is moving to.
   const checked = $derived(settling ? !isCompleted : isCompleted);
@@ -78,6 +88,23 @@
   data-task-id={draft ? undefined : id}
   onfocus={onSelect}
 >
+  {#if !draft}
+    <span
+      class="grip"
+      role="presentation"
+      title={t.tags.grab(title)}
+      onpointerdown={(event) => onTagDragStart?.(event)}
+    >
+      <svg viewBox="0 0 8 14" aria-hidden="true" width="8" height="14">
+        <circle cx="2" cy="3" r="1" />
+        <circle cx="6" cy="3" r="1" />
+        <circle cx="2" cy="7" r="1" />
+        <circle cx="6" cy="7" r="1" />
+        <circle cx="2" cy="11" r="1" />
+        <circle cx="6" cy="11" r="1" />
+      </svg>
+    </span>
+  {/if}
   <Checkbox
     {checked}
     label={checkboxLabel}
@@ -149,8 +176,37 @@
       </svg>
     </button>
   {/if}
-  {#if tagName && tagColor}
-    <TagChip name={tagName} color={tagColor} />
+  {#if !draft}
+    <span class="tag-slot">
+      <button
+        type="button"
+        class="tag-button"
+        class:empty={!tagName}
+        data-tag-toggle
+        aria-haspopup="menu"
+        aria-expanded={tagMenuOpen}
+        aria-label={t.tags.assign(title)}
+        title={t.tags.assign(title)}
+        tabindex="-1"
+        onclick={() => (tagMenuOpen = !tagMenuOpen)}
+      >
+        {#if tagName && tagColor}
+          <TagChip name={tagName} color={tagColor} />
+        {:else}
+          <svg viewBox="0 0 16 16" aria-hidden="true" class="notes-icon">
+            <path d="M2.5 8.5V3h5.5l5.5 5.5-5.5 5.5z" />
+            <circle cx="5.5" cy="6" r="0.8" />
+          </svg>
+        {/if}
+      </button>
+      {#if tagMenuOpen}
+        <TagMenu
+          value={tagId}
+          onSelect={(id) => onTagChange?.(id)}
+          onClose={() => (tagMenuOpen = false)}
+        />
+      {/if}
+    </span>
   {/if}
   {#if dueTime}
     <span class="time">
@@ -165,6 +221,7 @@
 
 <style>
   .row {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--space-3);
@@ -198,6 +255,71 @@
   .row.settling {
     opacity: 0;
     transform: translateY(8px);
+  }
+
+  .grip {
+    position: absolute;
+    top: 50%;
+    left: 1px;
+    display: grid;
+    place-items: center;
+    width: 10px;
+    height: 20px;
+    margin-top: -10px;
+    color: var(--text-secondary);
+    opacity: 0;
+    cursor: grab;
+    touch-action: none;
+    transition: opacity var(--motion-fast) var(--ease-apple);
+  }
+
+  .grip circle {
+    fill: currentColor;
+  }
+
+  .row:hover .grip,
+  .row:focus-within .grip {
+    opacity: 0.7;
+  }
+
+  .tag-slot {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+  }
+
+  .tag-button {
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .tag-button.empty {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity var(--motion-fast) var(--ease-apple);
+  }
+
+  .tag-button.empty:hover {
+    color: var(--text-primary);
+  }
+
+  .row:hover .tag-button.empty,
+  .row:focus-within .tag-button.empty,
+  .tag-button.empty[aria-expanded="true"] {
+    opacity: 1;
+  }
+
+  .tag-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
   }
 
   .date-input {

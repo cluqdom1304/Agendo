@@ -4,7 +4,8 @@
   import { toLocalIsoDate } from "../../dates";
   import { t } from "../../i18n";
   import SegmentedControl from "../../shell/SegmentedControl.svelte";
-  import { tagsStore } from "../../stores/tags.svelte";
+  import { tagDrag } from "../../stores/tagDrag.svelte";
+  import { NO_TAG, tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ViewStore } from "../../stores/view.svelte";
   import type { Task, ViewMode } from "../../types";
@@ -44,6 +45,10 @@
   const week = $derived(weekDates(view.anchor, view.firstDay));
 
   const tagOf = (task: Task) => tagsStore.tagOf(task);
+  const dragTask = (event: PointerEvent, task: Task) =>
+    tagDrag.begin(event, { id: task.id, title: task.title }, (key) =>
+      store.setTag(task.id, key === NO_TAG ? null : key),
+    );
   const create = (
     title: string,
     date: string,
@@ -87,6 +92,7 @@
         onShowDay={(date) => view.showDay(date)}
         {onOpenTask}
         {tagOf}
+        {dragTask}
       />
     {:else if view.mode === "week"}
       <CalendarWeek
@@ -98,6 +104,7 @@
         onCreate={create}
         {onOpenTask}
         {tagOf}
+        {dragTask}
       />
     {:else}
       <CalendarDay
@@ -109,6 +116,7 @@
         onCreate={create}
         {onOpenTask}
         {tagOf}
+        {dragTask}
       />
     {/if}
   </div>

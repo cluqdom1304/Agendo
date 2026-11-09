@@ -140,6 +140,10 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] En el calendario el evento toma el color de la etiqueta y muestra su nombre pequeño en semana, día, mes y «Todo el día»; el texto se lee con colores muy claros y muy oscuros, en tema claro y oscuro y con Mica.
 - [ ] Editar el nombre o el color se refleja al instante; eliminar una etiqueta pide confirmación y deja sus tareas sin etiqueta.
 - [ ] Crear una tarea desde el calendario con «Sin etiqueta» oculto muestra el aviso de que el filtro la oculta.
+- [ ] En la lista, al pasar el ratón por una tarea sin etiqueta aparece un icono de etiqueta; un clic abre un menú con todas las etiquetas y «Sin etiqueta» (la actual con ✓); elegir una la asigna al instante, y Esc o clic fuera lo cierra. En una tarea etiquetada, el propio chip abre el menú.
+- [ ] Arrastrar desde el asa de seis puntos (izquierda de la fila) una tarea sobre una etiqueta de la barra lateral la etiqueta; sobre «Sin etiqueta» se la quita. La barra lateral se abre sola si estaba plegada, la fila de destino se resalta y Esc cancela el arrastre.
+- [ ] Lo mismo con los eventos del calendario (semana, día, mes y «Todo el día»): arrastrar un evento a una etiqueta lo etiqueta, y un clic simple sigue abriendo el detalle. Al soltar tras arrastrar no se abre el detalle.
+- [ ] El arrastre es fluido (el aviso con el título sigue al puntero sin retraso) y no selecciona texto ni activa arrastres de archivos de Windows.
 - [ ] Con la ventana al mínimo (720×480) la barra lateral y el contenido no se solapan ni aparece scroll horizontal.
 
 ---

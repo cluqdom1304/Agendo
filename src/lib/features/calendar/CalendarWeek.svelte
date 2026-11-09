@@ -37,6 +37,8 @@
     onOpenTask: (task: Task) => void;
     /** The task's tag, which gives its colour and the small name on the event. */
     tagOf?: (task: Task) => Tag | undefined;
+    /** Pressed on an event: the parent starts dragging it towards a sidebar tag. */
+    dragTask?: (event: PointerEvent, task: Task) => void;
   }
 
   let {
@@ -46,6 +48,7 @@
     tasksByDate,
     label,
     tagOf,
+    dragTask,
     onCreate,
     onOpenTask,
   }: Props = $props();
@@ -227,6 +230,7 @@
             class="chip"
             class:done={task.isCompleted}
             style:--tag={tag?.colorHex}
+            onpointerdown={(event) => dragTask?.(event, task)}
             title={t.calendar.openTask(task.title || t.calendar.untitled)}
             onclick={() => onOpenTask(task)}
           >
@@ -264,6 +268,7 @@
               class="block"
               class:done={item.task.isCompleted}
               style:--tag={tag?.colorHex}
+              onpointerdown={(event) => dragTask?.(event, item.task)}
               data-block
               style:top="{top(item.start)}px"
               style:height="{top(item.span) - 2}px"

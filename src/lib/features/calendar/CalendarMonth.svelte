@@ -18,6 +18,8 @@
     onOpenTask: (task: Task) => void;
     /** The task's tag, which gives its colour and the small name on the event. */
     tagOf?: (task: Task) => Tag | undefined;
+    /** Pressed on an event: the parent starts dragging it towards a sidebar tag. */
+    dragTask?: (event: PointerEvent, task: Task) => void;
   }
 
   let {
@@ -29,6 +31,7 @@
     onShowDay,
     onOpenTask,
     tagOf,
+    dragTask,
   }: Props = $props();
 
   const weeks = $derived(
@@ -78,6 +81,7 @@
               class="chip"
               class:done={task.isCompleted}
               style:--tag={tag?.colorHex}
+              onpointerdown={(event) => dragTask?.(event, task)}
               title={t.calendar.openTask(task.title || t.calendar.untitled)}
               onclick={() => onOpenTask(task)}
             >

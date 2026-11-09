@@ -172,3 +172,33 @@ describe("TagPicker", () => {
     expect(screen.getByText(/barra lateral/)).toBeTruthy();
   });
 });
+
+describe("TagMenu", () => {
+  it("offers every tag and none, marks the current one and reports the choice", async () => {
+    const { tagsStore } = await import("../../stores/tags.svelte");
+    const TagMenu = (await import("./TagMenu.svelte")).default;
+    const store = tagsStore;
+    store.tags = [tag("mat", "Mates", 0), tag("fis", "Física", 1)];
+    const chosen: (string | null)[] = [];
+    let closed = 0;
+    render(TagMenu, {
+      value: "fis",
+      onSelect: (id: string | null) => chosen.push(id),
+      onClose: () => closed++,
+    });
+    const items = screen.getAllByRole("menuitemradio");
+    expect(items.map((item) => item.getAttribute("aria-checked"))).toEqual([
+      "false",
+      "false",
+      "true",
+    ]);
+    await fireEvent.click(screen.getByRole("menuitemradio", { name: /Mates/ }));
+    expect(chosen).toEqual(["mat"]);
+    expect(closed).toBe(1);
+    await fireEvent.click(
+      screen.getByRole("menuitemradio", { name: /Sin etiqueta/ }),
+    );
+    expect(chosen).toEqual(["mat", null]);
+    store.tags = [];
+  });
+});

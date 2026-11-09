@@ -2,6 +2,7 @@
   import { onMount, tick } from "svelte";
 
   import { onReminderFired } from "$lib/api";
+  import TagDragGhost from "$lib/features/tags/TagDragGhost.svelte";
   import TagSidebar from "$lib/features/tags/TagSidebar.svelte";
   import TaskDialog from "$lib/features/todo/TaskDialog.svelte";
   import SettingsDialog from "$lib/features/settings/SettingsDialog.svelte";
@@ -12,6 +13,7 @@
   import SegmentedControl from "$lib/shell/SegmentedControl.svelte";
   import Toast from "$lib/shell/Toast.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
+  import { tagDrag } from "$lib/stores/tagDrag.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
   import { tasksStore } from "$lib/stores/tasks.svelte";
   import { viewStore } from "$lib/stores/view.svelte";
@@ -49,6 +51,11 @@
   // it does not weigh on startup (N-01).
   const loadCalendar = () =>
     import("$lib/features/calendar/CalendarView.svelte");
+
+  // The sidebar is the drop target, so it opens as soon as a drag starts.
+  $effect(() => {
+    if (tagDrag.active) sidebarOpen = true;
+  });
 
   onMount(() => {
     tasksStore.filter = (task) => tagsStore.isVisible(task);
@@ -214,6 +221,8 @@
     {/if}
   </div>
 </div>
+
+<TagDragGhost drag={tagDrag} />
 
 {#if newTaskOpen}
   <TaskDialog

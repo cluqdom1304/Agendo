@@ -6,7 +6,8 @@
   import NoteEditor from "../notes/NoteEditor.svelte";
   import { hasNotes } from "../notes/content";
   import ReminderPopover from "./ReminderPopover.svelte";
-  import { tagsStore } from "../../stores/tags.svelte";
+  import { tagDrag } from "../../stores/tagDrag.svelte";
+  import { NO_TAG, tagsStore } from "../../stores/tags.svelte";
   import TaskRow from "./TaskRow.svelte";
 
   // One block of tasks: a day of AGENDA, or POR HACER when `block.date` is null.
@@ -36,8 +37,14 @@
     dueTime={task.dueTime}
     durationMinutes={task.durationMinutes}
     dueDate={task.dueDate}
+    tagId={tagsStore.tagOf(task)?.id}
     tagName={tagsStore.tagOf(task)?.name}
     tagColor={tagsStore.tagOf(task)?.colorHex}
+    onTagChange={(tagId) => store.setTag(task.id, tagId)}
+    onTagDragStart={(event) =>
+      tagDrag.begin(event, { id: task.id, title: task.title }, (key) =>
+        store.setTag(task.id, key === NO_TAG ? null : key),
+      )}
     onDateChange={(date) => store.setDueDate(task.id, date)}
     onDelete={() => store.remove(task.id)}
     hasNotes={hasNotes(task.contentJson)}

@@ -221,6 +221,10 @@ export const t = {
     allHiddenDescription: "Has ocultado todas las etiquetas con tareas.",
     showAll: "Mostrar todas",
     tagOf: (name: string) => `Etiqueta: ${name}`,
+    assign: (title: string) => `Cambiar la etiqueta de ${title}`,
+    menu: "Etiqueta de la tarea",
+    grab: (title: string) => `Arrastrar ${title} a una etiqueta`,
+    dropHint: "Suelta sobre una etiqueta",
   },
   settings: {
     open: "Ajustes",

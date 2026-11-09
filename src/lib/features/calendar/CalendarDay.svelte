@@ -16,6 +16,8 @@
     ) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
     tagOf?: (task: Task) => Tag | undefined;
+    /** Pressed on an event: the parent starts dragging it towards a sidebar tag. */
+    dragTask?: (event: PointerEvent, task: Task) => void;
   }
 
   let { date, ...rest }: Props = $props();

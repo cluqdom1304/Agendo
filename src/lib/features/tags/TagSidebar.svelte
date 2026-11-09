@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from "../../i18n";
+  import { tagDrag } from "../../stores/tagDrag.svelte";
   import type { TagsStore } from "../../stores/tags.svelte";
   import { NO_TAG } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
@@ -128,7 +129,12 @@
   count: number,
   tag?: Tag,
 )}
-  <div class="row" class:unchecked={!tags.isChecked(key)}>
+  <div
+    class="row"
+    class:unchecked={!tags.isChecked(key)}
+    class:drop-target={tagDrag.active?.overKey === key}
+    data-tag-drop={key}
+  >
     <label class="check" title={t.tags.pending(count)}>
       <input
         type="checkbox"
@@ -282,6 +288,11 @@
   .row:hover,
   .row:focus-within {
     background: var(--bg-hover);
+  }
+
+  .row.drop-target {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--accent);
   }
 
   .check {

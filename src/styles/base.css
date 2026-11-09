@@ -63,3 +63,10 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* While a task is dragged towards a sidebar tag. */
+body.tag-dragging,
+body.tag-dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
