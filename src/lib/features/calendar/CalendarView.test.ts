@@ -323,3 +323,40 @@ describe("month view", () => {
     expect(view.anchor).toBe("2026-02-28");
   });
 });
+
+describe("keyboard creation (N-08)", () => {
+  it("opens the quick title from a focused day column and saves at 09:00", async () => {
+    const { api } = await mount("week");
+    const target = column("2026-03-11");
+    target.focus();
+    expect(document.activeElement).toBe(target);
+    await fireEvent.keyDown(target, { key: "Enter" });
+
+    const input = screen.getByLabelText("Título de la nueva tarea");
+    await fireEvent.input(input, { target: { value: "Teclado" } });
+    await fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() =>
+      expect(api.calls).toContain("taskCreate:Teclado@09:00"),
+    );
+  });
+
+  it("starts at the next free block on today's column", async () => {
+    const { api } = await mount("week");
+    const target = column("2026-03-10");
+    await fireEvent.keyDown(target, { key: " " });
+    const input = screen.getByLabelText("Título de la nueva tarea");
+    await fireEvent.input(input, { target: { value: "Ahora" } });
+    await fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(api.calls).toContain("taskCreate:Ahora@10:00"));
+  });
+
+  it("does not hijack typing inside the quick title", async () => {
+    await mount("week");
+    await fireEvent.keyDown(column("2026-03-11"), { key: "Enter" });
+    const input = screen.getByLabelText("Título de la nueva tarea");
+    await fireEvent.keyDown(input, { key: " " });
+    expect(screen.getAllByLabelText("Título de la nueva tarea")).toHaveLength(
+      1,
+    );
+  });
+});

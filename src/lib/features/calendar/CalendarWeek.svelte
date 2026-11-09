@@ -9,6 +9,8 @@
   /** Pixels per hour. The whole day is 24 of them; the grid scrolls. */
   const HOUR_PX = 48;
   const FIRST_VISIBLE_HOUR = 7;
+  /** Where a task made from the keyboard on a day other than today starts. */
+  const DEFAULT_START_MINUTES = 9 * 60;
 
   interface Props {
     /** The columns: seven dates for a week, one for a day. */
@@ -115,6 +117,23 @@
     title = "";
   }
 
+  /** Keyboard route to what a drag does: Enter on a day column opens the quick title. */
+  function onColumnKeydown(event: KeyboardEvent, date: string) {
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    const start =
+      date === today
+        ? Math.min(
+            Math.ceil(nowMinutes / BLOCK_MINUTES) * BLOCK_MINUTES,
+            24 * 60 - BLOCK_MINUTES,
+          )
+        : DEFAULT_START_MINUTES;
+    drag = null;
+    compose = { date, start, end: start + BLOCK_MINUTES };
+    title = "";
+  }
+
   function cancelCompose() {
     compose = null;
     title = "";
@@ -201,11 +220,12 @@
           class="column"
           class:today={column.isToday}
           role="gridcell"
-          tabindex="-1"
+          tabindex="0"
           aria-label={t.calendar.createAt(column.date)}
           data-date={column.date}
           style:--hour-px="{HOUR_PX}px"
           onpointerdown={(event) => onPointerDown(event, column.date)}
+          onkeydown={(event) => onColumnKeydown(event, column.date)}
         >
           {#each column.placed as item (item.task.id)}
             <button
@@ -313,7 +333,7 @@
     padding: 0 7px;
     border-radius: var(--radius-chip);
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
   }
 
   .allday {

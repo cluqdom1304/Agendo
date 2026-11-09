@@ -49,7 +49,7 @@
     border: 0;
     border-radius: var(--radius-control);
     background: var(--accent);
-    color: white;
+    color: var(--on-accent);
     font: inherit;
     cursor: pointer;
   }
@@ -57,7 +57,7 @@
   kbd {
     padding: 0 6px;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, currentColor 22%, transparent);
     font: inherit;
     font-size: 12px;
   }

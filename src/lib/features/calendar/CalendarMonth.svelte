@@ -148,7 +148,7 @@
 
   .cell.today .number {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     font-weight: 600;
   }
 

@@ -36,7 +36,7 @@
     border: 1.5px solid var(--text-secondary);
     border-radius: var(--radius-chip);
     background: transparent;
-    color: white;
+    color: var(--on-accent);
     cursor: pointer;
     transition:
       background-color var(--motion-fast) var(--ease-apple),

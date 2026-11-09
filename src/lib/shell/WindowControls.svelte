@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
-  import { t } from "$lib/i18n";
+  import { t } from "../i18n";
 
   async function run(action: (appWindow: Window) => Promise<void>) {
     try {
@@ -78,7 +78,7 @@
 
   .control.close:hover {
     background: var(--danger);
-    color: #ffffff;
+    color: var(--on-danger);
   }
 
   .control:focus-visible {
