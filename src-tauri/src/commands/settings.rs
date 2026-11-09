@@ -12,32 +12,38 @@ use crate::{
 
 /// Which view the main area shows: the list or one of the calendar views (F-10).
 pub const VIEW_MODE: &str = "view_mode";
-const VIEW_MODES: [&str; 4] = ["list", "day", "week", "month"];
+/// Colour theme: follow the system or force light or dark (F6-05).
+pub const THEME: &str = "theme";
+/// Native window material requested at startup (F6-05); the OS may still fall back.
+pub const WINDOW_EFFECT: &str = "window_effect";
 
-fn unknown_key(key: &str) -> AppError {
-    AppError::Validation(format!("el ajuste «{key}» no existe"))
-}
+/// Whitelist: every setting with the values it accepts.
+const ALLOWED: [(&str, &[&str]); 3] = [
+    (VIEW_MODE, &["list", "day", "week", "month"]),
+    (THEME, &["system", "light", "dark"]),
+    (WINDOW_EFFECT, &["mica", "acrylic", "none"]),
+];
 
-fn validate_key(key: &str) -> AppResult<()> {
-    match key {
-        VIEW_MODE => Ok(()),
-        _ => Err(unknown_key(key)),
-    }
+fn allowed_values(key: &str) -> AppResult<&'static [&'static str]> {
+    ALLOWED
+        .iter()
+        .find(|(name, _)| *name == key)
+        .map(|(_, values)| *values)
+        .ok_or_else(|| AppError::Validation(format!("el ajuste «{key}» no existe")))
 }
 
 fn validate(key: &str, value: &str) -> AppResult<()> {
-    validate_key(key)?;
-    if VIEW_MODES.contains(&value) {
+    if allowed_values(key)?.contains(&value) {
         Ok(())
     } else {
         Err(AppError::Validation(format!(
-            "«{value}» no es una vista válida"
+            "«{value}» no es un valor válido para «{key}»"
         )))
     }
 }
 
 pub fn get(state: &AppState, key: &str) -> AppResult<Option<String>> {
-    validate_key(key)?;
+    allowed_values(key)?;
     state.db.read(|conn| Ok(settings::get(conn, key)?))
 }
 
@@ -76,10 +82,23 @@ mod tests {
     fn stores_and_returns_the_view_mode() {
         let (state, _) = test_state();
         assert_eq!(get(&state, VIEW_MODE).expect("get"), None);
-        for mode in VIEW_MODES {
+        for &mode in allowed_values(VIEW_MODE).expect("view modes") {
             set(&state, VIEW_MODE, mode).expect("set");
             assert_eq!(get(&state, VIEW_MODE).expect("get").as_deref(), Some(mode));
         }
+    }
+
+    #[test]
+    fn theme_and_window_effect_accept_only_their_own_values() {
+        let (state, _) = test_state();
+        set(&state, THEME, "dark").expect("theme");
+        set(&state, WINDOW_EFFECT, "acrylic").expect("effect");
+        assert_eq!(get(&state, THEME).expect("get").as_deref(), Some("dark"));
+
+        assert_eq!(code(set(&state, THEME, "week")), "VALIDATION");
+        assert_eq!(code(set(&state, WINDOW_EFFECT, "dark")), "VALIDATION");
+        assert_eq!(code(set(&state, VIEW_MODE, "mica")), "VALIDATION");
+        assert_eq!(get(&state, THEME).expect("get").as_deref(), Some("dark"));
     }
 
     #[test]

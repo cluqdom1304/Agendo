@@ -46,6 +46,8 @@ mod capabilities {
             "core:window:allow-set-effects",
             "core:window:allow-start-dragging",
             "core:window:allow-toggle-maximize",
+            "dialog:allow-open",
+            "dialog:allow-save",
             "opener:allow-open-url",
         ];
         expected.sort();

@@ -53,6 +53,16 @@ impl Db {
         operation(&connection)
     }
 
+    /// Exclusive access to the writer connection for operations that are not one transaction,
+    /// such as replacing the whole database from a backup.
+    pub fn with_writer<T>(
+        &self,
+        operation: impl FnOnce(&mut Connection) -> AppResult<T>,
+    ) -> AppResult<T> {
+        let mut connection = lock(&self.writer);
+        operation(&mut connection)
+    }
+
     /// One logical write: a single transaction, committed on `Ok` and rolled back on `Err`.
     pub fn write<T>(
         &self,

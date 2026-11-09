@@ -110,7 +110,10 @@ export interface SearchHit {
 }
 
 /** Settings the backend accepts (`settings_get` / `settings_set`). */
-export type SettingKey = "view_mode";
+export type SettingKey = "view_mode" | "theme" | "window_effect";
+
+/** Colour theme: follow the system or force one (F6-05). */
+export type ThemeMode = "system" | "light" | "dark";
 
 /** What the main area shows (F-10). */
 export type ViewMode = "list" | "day" | "week" | "month";

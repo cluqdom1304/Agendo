@@ -1,5 +1,6 @@
 //! SQLite connection, pragmas and schema migrations (SPEC §5).
 
+pub mod backup;
 pub mod migrate;
 pub mod pragmas;
 #[cfg(test)]

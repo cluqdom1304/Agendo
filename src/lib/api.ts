@@ -149,3 +149,19 @@ export function settingsGet(key: SettingKey): Promise<string | null> {
 export function settingsSet(key: SettingKey, value: string): Promise<void> {
   return invoke<void>("settings_set", { key, value });
 }
+
+export function backupCreate(path: string): Promise<void> {
+  return invoke<void>("backup_create", { path });
+}
+
+export function backupRestore(path: string): Promise<void> {
+  return invoke<void>("backup_restore", { path });
+}
+
+export function autostartGet(): Promise<boolean> {
+  return invoke<boolean>("autostart_get");
+}
+
+export function autostartSet(enabled: boolean): Promise<void> {
+  return invoke<void>("autostart_set", { enabled });
+}

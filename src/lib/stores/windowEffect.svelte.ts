@@ -1,4 +1,4 @@
-import { windowSetEffect, type EffectMode } from "$lib/api";
+import { windowSetEffect, type EffectMode } from "../api";
 
 class WindowEffectStore {
   applied = $state<EffectMode>("none");

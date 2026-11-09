@@ -27,6 +27,20 @@ use crate::{
 /// File name of the SQLite database inside the app data directory.
 const DATABASE_FILE: &str = "agenda.sqlite";
 
+/// When set, the app keeps its data in this directory instead of the user's profile. The E2E
+/// suite uses it so that tests never touch real data.
+const DATA_DIR_ENV: &str = "MIAGENDA_DATA_DIR";
+
+/// The directory for the database and the safety copy of a restore.
+pub(crate) fn data_dir<R: tauri::Runtime>(
+    app: &impl Manager<R>,
+) -> Result<std::path::PathBuf, tauri::Error> {
+    match std::env::var_os(DATA_DIR_ENV).filter(|value| !value.is_empty()) {
+        Some(dir) => Ok(dir.into()),
+        None => app.path().app_data_dir(),
+    }
+}
+
 // Si Tauri no puede arrancar no hay estado recuperable: abortar con mensaje es correcto.
 #[allow(clippy::expect_used)]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -35,8 +49,13 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .setup(|app| {
-            let path = app.path().app_data_dir()?.join(DATABASE_FILE);
+            let path = data_dir(app)?.join(DATABASE_FILE);
             let state = AppState::open(&path, Arc::new(SystemClock))?;
             let state = Arc::new(state);
             app.manage(Arc::clone(&state));
@@ -71,7 +90,11 @@ pub fn run() {
             commands::tags::task_tags_set,
             commands::reminders::reminders_set,
             commands::settings::settings_get,
-            commands::settings::settings_set
+            commands::settings::settings_set,
+            commands::backup::backup_create,
+            commands::backup::backup_restore,
+            commands::autostart::autostart_get,
+            commands::autostart::autostart_set
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
