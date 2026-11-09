@@ -321,6 +321,15 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-37 — Casillas (subtareas) en las notas de las tareas
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-09
+- **Contexto:** petición del usuario: poder poner casillas dentro de la descripción de una tarea y marcarlas sin editar el texto. **No hay migración ni dependencia nueva.**
+- **Decisión:** el editor de notas añade `TaskList` y `TaskItem` (sin anidar) de `@tiptap/extension-list 3.33.0`, que ya estaba instalado (D-22), y un botón «☑» en la barra. Marcar una casilla es un clic sobre ella: no hace falta enfocar ni escribir, y se guarda con el mismo guardado diferido de las notas. El documento sigue siendo ProseMirror JSON (`taskList`/`taskItem` con `attrs.checked`); el backend ya lo admite y el texto de búsqueda contiene el texto de cada casilla en su línea.
+- **Consecuencias:** las casillas marcadas se muestran tachadas y en gris secundario. Marcarlas no completa la tarea ni cambia su estado.
+- **Alternativas descartadas:** subtareas como entidad propia (migración y contrato IPC nuevos, fuera del alcance de una 1.0.x); casillas anidadas.
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

@@ -1,6 +1,6 @@
 [package]
 name = "miagendaapp"
-version = "1.0.1"
+version = "1.0.2"
 description = "Agenda y editor de notas de escritorio, 100 % local."
 authors = ["Cristian Luque Domínguez"]
 edition = "2024"

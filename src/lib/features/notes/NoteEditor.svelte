@@ -21,6 +21,7 @@
     code: false,
     bulletList: false,
     orderedList: false,
+    taskList: false,
     link: false,
     linkHref: "",
     canUndo: false,
@@ -149,6 +150,41 @@
 
   .surface :global(.tiptap ol) {
     list-style: decimal;
+  }
+
+  .surface :global(.tiptap ul[data-type="taskList"]) {
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .surface :global(.tiptap ul[data-type="taskList"] li) {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .surface :global(.tiptap ul[data-type="taskList"] li > label) {
+    flex: none;
+    padding-top: 3px;
+    user-select: none;
+  }
+
+  .surface :global(.tiptap ul[data-type="taskList"] li > div) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .surface :global(.tiptap ul[data-type="taskList"] input[type="checkbox"]) {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .surface :global(.tiptap li[data-checked="true"] > div) {
+    color: var(--text-secondary);
+    text-decoration: line-through;
   }
 
   .surface :global(.tiptap li > p) {

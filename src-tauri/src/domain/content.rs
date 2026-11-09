@@ -74,6 +74,17 @@ mod tests {
     }
 
     #[test]
+    fn checklist_items_become_lines() {
+        let json = r#"{"type":"doc","content":[{"type":"taskList","content":[
+            {"type":"taskItem","attrs":{"checked":true},"content":[
+                {"type":"paragraph","content":[{"type":"text","text":"uno"}]}]},
+            {"type":"taskItem","attrs":{"checked":false},"content":[
+                {"type":"paragraph","content":[{"type":"text","text":"dos"}]}]}
+        ]}]}"#;
+        assert_eq!(text(json), "uno\ndos");
+    }
+
+    #[test]
     fn hard_breaks_start_a_new_line() {
         let json = r#"{"type":"doc","content":[{"type":"paragraph","content":[
             {"type":"text","text":"uno"},{"type":"hardBreak"},{"type":"text","text":"dos"}

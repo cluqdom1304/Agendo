@@ -64,6 +64,46 @@ describe("NoteEditor", () => {
     expect(saved.content[0].type).toBe("bulletList");
   });
 
+  it("ticks a checklist item with one click and saves it", async () => {
+    const checklist = JSON.stringify({
+      type: "doc",
+      content: [
+        {
+          type: "taskList",
+          content: [
+            {
+              type: "taskItem",
+              attrs: { checked: false },
+              content: [
+                {
+                  type: "paragraph",
+                  content: [{ type: "text", text: "comprar" }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const { box, save } = await mount(checklist);
+    vi.useFakeTimers();
+    const checkbox = box.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]',
+    );
+    expect(checkbox?.checked).toBe(false);
+
+    await fireEvent.click(checkbox as HTMLInputElement);
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(save).toHaveBeenCalledTimes(1);
+    const saved = JSON.parse(save.mock.calls[0][0]);
+    expect(saved.content[0].type).toBe("taskList");
+    expect(saved.content[0].content[0].attrs.checked).toBe(true);
+    expect(saved.content[0].content[0].content[0].content[0].text).toBe(
+      "comprar",
+    );
+  });
+
   it("refuses javascript: and file: links and accepts https", async () => {
     const { box } = await mount(doc("sitio"));
     await waitFor(() => expect(box.textContent).toBe("sitio"));

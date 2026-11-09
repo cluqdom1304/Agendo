@@ -109,6 +109,7 @@
     formats.orderedList,
     "1.",
   )}
+  {@render toggle("taskList", t.notes.taskList, formats.taskList, "☑")}
   <span class="separator" aria-hidden="true"></span>
   <button
     type="button"

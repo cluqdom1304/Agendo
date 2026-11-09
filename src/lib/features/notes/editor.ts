@@ -8,7 +8,13 @@ import { Document } from "@tiptap/extension-document";
 import { HardBreak } from "@tiptap/extension-hard-break";
 import { Italic } from "@tiptap/extension-italic";
 import { Link } from "@tiptap/extension-link";
-import { BulletList, ListItem, OrderedList } from "@tiptap/extension-list";
+import {
+  BulletList,
+  ListItem,
+  OrderedList,
+  TaskItem,
+  TaskList,
+} from "@tiptap/extension-list";
 import { Paragraph } from "@tiptap/extension-paragraph";
 import { Text } from "@tiptap/extension-text";
 import { UndoRedo } from "@tiptap/extensions";
@@ -18,7 +24,7 @@ import { sanitizeLink } from "../../links";
 export const EMPTY_NOTE = '{"type":"doc","content":[]}';
 
 export type ToggleName =
-  "bold" | "italic" | "code" | "bulletList" | "orderedList";
+  "bold" | "italic" | "code" | "bulletList" | "orderedList" | "taskList";
 
 /** What the toolbar draws; recomputed on every transaction. */
 export interface ToolbarState {
@@ -27,6 +33,7 @@ export interface ToolbarState {
   code: boolean;
   bulletList: boolean;
   orderedList: boolean;
+  taskList: boolean;
   link: boolean;
   /** Address of the link under the cursor, for the link field. */
   linkHref: string;
@@ -72,6 +79,7 @@ function toolbarState(editor: Editor): ToolbarState {
     code: editor.isActive("code"),
     bulletList: editor.isActive("bulletList"),
     orderedList: editor.isActive("orderedList"),
+    taskList: editor.isActive("taskList"),
     link: editor.isActive("link"),
     linkHref: (editor.getAttributes("link").href as string | undefined) ?? "",
     canUndo: editor.can().undo(),
@@ -94,6 +102,8 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
       BulletList,
       OrderedList,
       ListItem,
+      TaskList,
+      TaskItem.configure({ nested: false }),
       UndoRedo,
       Link.configure({
         openOnClick: false,
@@ -162,6 +172,9 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
           break;
         case "orderedList":
           chain.toggleOrderedList().run();
+          break;
+        case "taskList":
+          chain.toggleTaskList().run();
           break;
       }
     },

@@ -159,6 +159,12 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] Tema claro (y «Sistema» con Windows en claro): fondo claro opaco, texto y bordes con buen contraste, sin tono oscuro en esquinas ni bordes; Ajustes explica que la ventana es opaca.
 - [ ] Cambiar entre claro y oscuro en Ajustes, y el tema de Windows con «Sistema», aplica Mica en oscuro y fondo opaco en claro sin parpadeos.
 
+## Versión 1.0.2
+
+- [ ] En el detalle de una tarea, el botón «☑» de la barra de notas crea una lista de casillas; Intro añade otra casilla y Intro en una vacía sale de la lista.
+- [ ] Un clic en una casilla la marca o desmarca sin entrar a editar el texto; se tacha al marcarla y el cambio persiste al cerrar y reabrir la tarea.
+- [ ] Las casillas se ven bien (tamaño, alineación, color de acento) en tema claro y oscuro.
+
 ---
 
 ## Registro de sesiones de prueba

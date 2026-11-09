@@ -95,6 +95,7 @@ export const t = {
     link: "Enlace (Ctrl+L)",
     bulletList: "Lista con viñetas",
     orderedList: "Lista numerada",
+    taskList: "Lista de tareas (casillas)",
     undo: "Deshacer",
     redo: "Rehacer",
     linkLabel: "Dirección del enlace",
