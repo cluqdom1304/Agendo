@@ -8,7 +8,12 @@
     nowMinutes: number;
     tasksByDate: Map<string, Task[]>;
     label: string;
-    onCreate: (title: string, date: string, time: string) => Promise<boolean>;
+    onCreate: (
+      title: string,
+      date: string,
+      time: string,
+      duration?: number,
+    ) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
   }
 

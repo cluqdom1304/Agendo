@@ -121,6 +121,18 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 
 ---
 
+## Detalle de tarea y duración (D-33)
+
+- [ ] Pulsar una tarea en el calendario (día, semana o mes) abre su vista de detalle, no la lista.
+- [ ] En el detalle: «Marcar como hecha» / «Reabrir», «Editar» (abre el diálogo de nueva tarea relleno) y «Eliminar»; `Supr` elimina salvo al escribir en las notas; «Deshacer» aparece tras eliminar desde el calendario.
+- [ ] Las notas con formato se editan en el detalle y se guardan.
+- [ ] En el diálogo, con fecha y hora aparecen «Sin duración», 15 min, 30 min, 1 h y «Termina a las»; la duración queda guardada y el bloque del calendario tiene esa altura.
+- [ ] Arrastrar un tramo en el calendario crea la tarea con esa duración; un clic simple no fija duración.
+- [ ] Una tarea hecha no ofrece recordatorios (lista, detalle ni diálogo) y no suena ningún aviso; al reabrirla vuelven los pendientes.
+- [ ] En la lista, las tareas hechas se ven más apagadas y «Completadas» queda en gris con su contador.
+
+---
+
 ## Registro de sesiones de prueba
 
 | Fecha | Build / commit | Equipo | Fase | Resultado | Responsable |

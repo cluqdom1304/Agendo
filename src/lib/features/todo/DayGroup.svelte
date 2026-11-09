@@ -33,6 +33,7 @@
     title={task.title}
     isCompleted={task.isCompleted}
     dueTime={task.dueTime}
+    durationMinutes={task.durationMinutes}
     dueDate={task.dueDate}
     onDateChange={(date) => store.setDueDate(task.id, date)}
     onDelete={() => store.remove(task.id)}
@@ -74,9 +75,11 @@
     <h3 class="day">{heading}</h3>
   {/if}
 
-  {#each block.open as task (task.id)}
-    {@render taskRow(task)}
-  {/each}
+  <div class="open">
+    {#each block.open as task (task.id)}
+      {@render taskRow(task)}
+    {/each}
+  </div>
 
   <!-- Keyed by draft: each draft gets a fresh input, and the handlers keep the key of the
        draft they were created for even when a late blur arrives after it was closed. -->
@@ -94,10 +97,15 @@
   {/each}
 
   {#if block.completed.length > 0}
-    <h4 class="completed-heading">{t.tasks.completed}</h4>
-    {#each block.completed as task (task.id)}
-      {@render taskRow(task)}
-    {/each}
+    <div class="completed">
+      <h4 class="completed-heading">
+        {t.tasks.completed}
+        <span class="completed-count">{block.completed.length}</span>
+      </h4>
+      {#each block.completed as task (task.id)}
+        {@render taskRow(task)}
+      {/each}
+    </div>
   {/if}
 </section>
 
@@ -109,19 +117,33 @@
   .day {
     margin: 0;
     padding: var(--space-2) var(--space-3) var(--space-1);
-    color: var(--text-secondary);
+    color: var(--text-primary);
     font-size: 13px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 
+  .completed {
+    margin-top: var(--space-3);
+    padding-top: var(--space-1);
+    border-top: 1px solid var(--border-subtle);
+  }
+
   .completed-heading {
-    margin: var(--space-2) 0 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-1) 0 0;
     padding: var(--space-1) var(--space-3);
     color: var(--text-secondary);
+    opacity: 0.75;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  .completed-count {
+    font-variant-numeric: tabular-nums;
   }
 </style>

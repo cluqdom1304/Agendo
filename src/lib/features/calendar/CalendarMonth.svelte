@@ -73,7 +73,7 @@
               type="button"
               class="chip"
               class:done={task.isCompleted}
-              title={t.calendar.openInList(task.title || t.calendar.untitled)}
+              title={t.calendar.openTask(task.title || t.calendar.untitled)}
               onclick={() => onOpenTask(task)}
             >
               {#if task.dueTime}<span class="time">{task.dueTime}</span>{/if}

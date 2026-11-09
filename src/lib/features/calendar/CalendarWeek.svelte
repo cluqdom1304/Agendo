@@ -2,8 +2,15 @@
   import { onMount } from "svelte";
 
   import { t } from "../../i18n";
+  import { timeRange } from "../../schedule";
   import type { Task } from "../../types";
-  import { BLOCK_MINUTES, layoutDay, minutesToTime, snapSpan } from "./grid";
+  import {
+    BLOCK_MINUTES,
+    SNAP_MINUTES,
+    layoutDay,
+    minutesToTime,
+    snapSpan,
+  } from "./grid";
   import { dayNumber, weekdayName } from "./labels";
 
   /** Pixels per hour. The whole day is 24 of them; the grid scrolls. */
@@ -20,7 +27,13 @@
     nowMinutes: number;
     tasksByDate: Map<string, Task[]>;
     label: string;
-    onCreate: (title: string, date: string, time: string) => Promise<boolean>;
+    /** `duration` is only given when the span was dragged out (D-33). */
+    onCreate: (
+      title: string,
+      date: string,
+      time: string,
+      duration?: number,
+    ) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
   }
 
@@ -43,6 +56,8 @@
     date: string;
     start: number;
     end: number;
+    /** Dragged over more than one step: the length is the task's duration. */
+    sized: boolean;
   }
 
   let scroller: HTMLElement | undefined = $state();
@@ -110,9 +125,11 @@
     const finished = { ...drag, current: minutesAt(event, dragColumn) };
     drag = null;
     dragColumn = null;
+    const span = snapSpan(finished.anchor, finished.current);
     compose = {
       date: finished.date,
-      ...snapSpan(finished.anchor, finished.current),
+      ...span,
+      sized: span.end - span.start > SNAP_MINUTES,
     };
     title = "";
   }
@@ -130,7 +147,7 @@
           )
         : DEFAULT_START_MINUTES;
     drag = null;
-    compose = { date, start, end: start + BLOCK_MINUTES };
+    compose = { date, start, end: start + BLOCK_MINUTES, sized: false };
     title = "";
   }
 
@@ -149,8 +166,15 @@
     }
     committing = true;
     try {
-      // The task is saved with the span's start; tasks have no end time (B-04).
-      if (await onCreate(text, pending.date, minutesToTime(pending.start))) {
+      // A dragged span becomes the duration; a plain click only picks the start (B-04, D-33).
+      if (
+        await onCreate(
+          text,
+          pending.date,
+          minutesToTime(pending.start),
+          pending.sized ? pending.end - pending.start : undefined,
+        )
+      ) {
         cancelCompose();
       }
     } finally {
@@ -198,7 +222,7 @@
             type="button"
             class="chip"
             class:done={task.isCompleted}
-            title={t.calendar.openInList(task.title || t.calendar.untitled)}
+            title={t.calendar.openTask(task.title || t.calendar.untitled)}
             onclick={() => onOpenTask(task)}
           >
             {task.title || t.calendar.untitled}
@@ -234,15 +258,17 @@
               class:done={item.task.isCompleted}
               data-block
               style:top="{top(item.start)}px"
-              style:height="{top(BLOCK_MINUTES) - 2}px"
+              style:height="{top(item.span) - 2}px"
               style:left="{(item.lane / item.lanes) * 100}%"
               style:width="calc({100 / item.lanes}% - 2px)"
-              title={t.calendar.openInList(
+              title={t.calendar.openTask(
                 item.task.title || t.calendar.untitled,
               )}
               onclick={() => onOpenTask(item.task)}
             >
-              <span class="time">{item.task.dueTime}</span>
+              <span class="time">
+                {timeRange(item.task.dueTime ?? "", item.task.durationMinutes)}
+              </span>
               {item.task.title || t.calendar.untitled}
             </button>
           {/each}
@@ -422,7 +448,9 @@
 
   .block {
     position: absolute;
-    padding: 2px 6px;
+    min-height: 14px;
+    padding: 1px 6px;
+    line-height: 1.2;
     border-left: 3px solid var(--accent);
   }
 

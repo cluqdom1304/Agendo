@@ -70,6 +70,7 @@ pub struct TaskCreateInput {
     pub title: Option<String>,
     pub due_date: Option<String>,
     pub due_time: Option<String>,
+    pub duration_minutes: Option<i64>,
     pub tag_ids: Option<Vec<String>>,
     pub content_json: Option<String>,
 }
@@ -79,6 +80,12 @@ fn present_or_null<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<Option<String>>, D::Error> {
     Option::<String>::deserialize(deserializer).map(Some)
+}
+
+fn present_or_null_number<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Option<i64>>, D::Error> {
+    Option::<i64>::deserialize(deserializer).map(Some)
 }
 
 /// Partial update of a task, as sent by the frontend.
@@ -91,6 +98,8 @@ pub struct TaskPatchInput {
     pub due_date: Option<Option<String>>,
     #[serde(default, deserialize_with = "present_or_null")]
     pub due_time: Option<Option<String>>,
+    #[serde(default, deserialize_with = "present_or_null_number")]
+    pub duration_minutes: Option<Option<i64>>,
 }
 
 pub fn list(state: &AppState, input: TasksListInput) -> AppResult<TasksListOutput> {
@@ -138,6 +147,7 @@ pub fn create(state: &AppState, input: TaskCreateInput) -> AppResult<Task> {
     let title = input.title.unwrap_or_default();
     validation::validate_title(&title)?;
     validation::validate_schedule(input.due_date.as_deref(), input.due_time.as_deref())?;
+    validation::validate_duration(input.due_time.as_deref(), input.duration_minutes)?;
     let content_text = match &input.content_json {
         Some(json) => content::text_of(json)?,
         None => String::new(),
@@ -149,6 +159,7 @@ pub fn create(state: &AppState, input: TaskCreateInput) -> AppResult<Task> {
         content_text,
         due_date: input.due_date,
         due_time: input.due_time,
+        duration_minutes: input.duration_minutes,
         tag_ids: input.tag_ids.unwrap_or_default(),
         now: state.clock.now_string(),
     };
@@ -179,17 +190,28 @@ pub fn update(state: &AppState, id: &str, patch: TaskPatchInput) -> AppResult<Ta
         let due_time = due_time_patch.clone().unwrap_or(current.due_time.clone());
         validation::validate_schedule(due_date.as_deref(), due_time.as_deref())?;
 
+        // A task without a time has no duration; changing the time keeps the duration unless
+        // the patch sets one, and the pair must still fit in the day.
+        let duration_patch = match (&patch.duration_minutes, &due_time) {
+            (_, None) if current.duration_minutes.is_some() => Some(None),
+            (patch_duration, _) => *patch_duration,
+        };
+        let duration = duration_patch.unwrap_or(current.duration_minutes);
+        validation::validate_duration(due_time.as_deref(), duration)?;
+
         let repo_patch = TaskPatch {
             title: patch.title.clone(),
             content_json: patch.content_json.clone(),
             content_text,
             due_date: patch.due_date.clone(),
             due_time: due_time_patch,
+            duration_minutes: duration_patch,
         };
         let untouched = repo_patch.title.is_none()
             && repo_patch.content_json.is_none()
             && repo_patch.due_date.is_none()
-            && repo_patch.due_time.is_none();
+            && repo_patch.due_time.is_none()
+            && repo_patch.duration_minutes.is_none();
         if untouched {
             return Ok(current);
         }
@@ -326,6 +348,7 @@ pub async fn task_create(
     title: Option<String>,
     due_date: Option<String>,
     due_time: Option<String>,
+    duration_minutes: Option<i64>,
     tag_ids: Option<Vec<String>>,
     content_json: Option<String>,
 ) -> Result<Task, String> {
@@ -333,6 +356,7 @@ pub async fn task_create(
         title,
         due_date,
         due_time,
+        duration_minutes,
         tag_ids,
         content_json,
     };
@@ -790,6 +814,64 @@ mod tests {
         let retimed = update(&state, &task.id, patch(r#"{"dueTime":"17:45"}"#)).expect("set time");
         assert_eq!(retimed.due_time.as_deref(), Some("17:45"));
         assert_eq!(retimed.due_date.as_deref(), Some("2026-03-12"));
+    }
+
+    #[test]
+    fn a_duration_is_stored_kept_cleared_and_validated() {
+        let state = state();
+        let task = create(
+            &state,
+            TaskCreateInput {
+                due_date: Some("2026-03-12".into()),
+                due_time: Some("09:00".into()),
+                duration_minutes: Some(45),
+                ..TaskCreateInput::default()
+            },
+        )
+        .expect("create");
+        assert_eq!(task.duration_minutes, Some(45));
+
+        let moved = update(&state, &task.id, patch(r#"{"dueTime":"10:00"}"#)).expect("retime");
+        assert_eq!(moved.duration_minutes, Some(45));
+
+        let longer = update(&state, &task.id, patch(r#"{"durationMinutes":90}"#)).expect("longer");
+        assert_eq!(longer.duration_minutes, Some(90));
+
+        assert_eq!(
+            code_of(update(&state, &task.id, patch(r#"{"dueTime":"23:00"}"#))),
+            "VALIDATION: la tarea tiene que terminar antes de medianoche"
+        );
+        assert_eq!(
+            update(&state, &task.id, patch(r#"{}"#))
+                .expect("noop")
+                .duration_minutes,
+            Some(90)
+        );
+
+        let cleared =
+            update(&state, &task.id, patch(r#"{"durationMinutes":null}"#)).expect("clear");
+        assert_eq!(cleared.duration_minutes, None);
+
+        update(&state, &task.id, patch(r#"{"durationMinutes":30}"#)).expect("again");
+        let untimed = update(&state, &task.id, patch(r#"{"dueTime":null}"#)).expect("no time");
+        assert_eq!((untimed.due_time, untimed.duration_minutes), (None, None));
+    }
+
+    #[test]
+    fn a_duration_without_a_time_is_rejected_on_create() {
+        let state = state();
+        let result = create(
+            &state,
+            TaskCreateInput {
+                due_date: Some("2026-03-12".into()),
+                duration_minutes: Some(30),
+                ..TaskCreateInput::default()
+            },
+        );
+        assert_eq!(
+            code_of(result),
+            "VALIDATION: una duración requiere una hora"
+        );
     }
 
     #[test]

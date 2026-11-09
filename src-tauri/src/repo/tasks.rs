@@ -31,7 +31,8 @@ macro_rules! task_sql {
                                                             'until', r.repeat_until,
                                                             'occurrence', r.occurrence) END))
                                 ORDER BY r.notify_at, r.id)
-                       FROM reminders r WHERE r.task_id = t.id)
+                       FROM reminders r WHERE r.task_id = t.id),
+                    t.duration_minutes
              FROM tasks t ",
             $suffix
         )
@@ -70,6 +71,7 @@ fn map_task(row: &Row<'_>) -> rusqlite::Result<Task> {
         updated_at: row.get(9)?,
         tag_ids: json_column(row, 10)?,
         reminders: json_column(row, 11)?,
+        duration_minutes: row.get(12)?,
     })
 }
 
@@ -129,8 +131,8 @@ pub fn create(tx: &Transaction<'_>, new: &NewTask) -> rusqlite::Result<Task> {
     let position = next_position(tx, new.due_date.as_deref())?;
     tx.prepare_cached(
         "INSERT INTO tasks (id, title, content_json, content_text, due_date, due_time,
-                            position, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)",
+                            duration_minutes, position, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)",
     )?
     .execute(params![
         new.id,
@@ -139,6 +141,7 @@ pub fn create(tx: &Transaction<'_>, new: &NewTask) -> rusqlite::Result<Task> {
         new.content_text,
         new.due_date,
         new.due_time,
+        new.duration_minutes,
         position,
         new.now
     ])?;
@@ -172,6 +175,7 @@ pub fn update(
              due_date = CASE WHEN ?5 THEN ?6 ELSE due_date END,
              due_time = CASE WHEN ?7 THEN ?8 ELSE due_time END,
              position = COALESCE(?9, position),
+             duration_minutes = CASE WHEN ?11 THEN ?12 ELSE duration_minutes END,
              updated_at = ?10
          WHERE id = ?1",
     )?
@@ -185,7 +189,9 @@ pub fn update(
         patch.due_time.is_some(),
         patch.due_time.clone().flatten(),
         new_position,
-        now
+        now,
+        patch.duration_minutes.is_some(),
+        patch.duration_minutes.flatten()
     ])?;
 
     if patch.title.is_some() || patch.content_text.is_some() {
@@ -1025,6 +1031,7 @@ mod tests {
                 "createdAt",
                 "dueDate",
                 "dueTime",
+                "durationMinutes",
                 "id",
                 "isCompleted",
                 "position",

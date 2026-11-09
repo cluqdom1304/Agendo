@@ -2,12 +2,14 @@
   import { onMount, tick } from "svelte";
 
   import { onReminderFired } from "$lib/api";
-  import NewTaskDialog from "$lib/features/todo/NewTaskDialog.svelte";
+  import TaskDialog from "$lib/features/todo/TaskDialog.svelte";
   import SettingsDialog from "$lib/features/settings/SettingsDialog.svelte";
+  import TaskDetailDialog from "$lib/features/todo/TaskDetailDialog.svelte";
   import TodoView from "$lib/features/todo/TodoView.svelte";
   import { t } from "$lib/i18n";
   import { findShortcut, focusContextOf, ROW_ATTRIBUTE } from "$lib/keymap";
   import SegmentedControl from "$lib/shell/SegmentedControl.svelte";
+  import Toast from "$lib/shell/Toast.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
   import { tasksStore } from "$lib/stores/tasks.svelte";
   import { viewStore } from "$lib/stores/view.svelte";
@@ -17,6 +19,13 @@
 
   let settingsOpen = $state(false);
   let newTaskOpen = $state(false);
+  /** The task whose view is open (opened from the calendar). */
+  let detailId = $state<string | null>(null);
+  /** The task being edited in the creation dialog; the view comes back when it closes. */
+  let editing = $state.raw<Task | null>(null);
+
+  // The list shows its own deletion notices; elsewhere they are shown here.
+  const lastDeletion = $derived(tasksStore.undoStack.at(-1));
 
   const SECTION_OPTIONS: { value: Section; label: string }[] = [
     { value: "list", label: t.views.list },
@@ -53,6 +62,7 @@
   }
 
   async function openInList(task: Task) {
+    detailId = null;
     viewStore.setMode("list");
     if (!tasksStore.reveal(task.id)) return;
     await tick();
@@ -150,7 +160,7 @@
           <module.default
             store={tasksStore}
             view={viewStore}
-            onOpenTask={openInList}
+            onOpenTask={(task: Task) => (detailId = task.id)}
           />
         {:catch}
           <p class="status">{t.calendar.loadFailed}</p>
@@ -161,11 +171,48 @@
 </div>
 
 {#if newTaskOpen}
-  <NewTaskDialog
+  <TaskDialog
     store={tasksStore}
     defaultDate={viewStore.mode === "list" ? null : viewStore.anchor}
     onClose={() => (newTaskOpen = false)}
   />
+{/if}
+
+{#if detailId && !editing}
+  <TaskDetailDialog
+    store={tasksStore}
+    taskId={detailId}
+    onEdit={(task) => (editing = task)}
+    onShowInList={(task) => void openInList(task)}
+    onClose={() => (detailId = null)}
+  />
+{/if}
+
+{#if editing}
+  <TaskDialog
+    store={tasksStore}
+    task={editing}
+    onClose={() => (editing = null)}
+  />
+{/if}
+
+{#if viewStore.mode !== "list"}
+  {#if lastDeletion}
+    <Toast
+      message={t.tasks.deleted}
+      actionLabel={t.tasks.undo}
+      closeLabel={t.tasks.dismiss}
+      onAction={() => void tasksStore.undoDelete()}
+      onClose={() => (tasksStore.undoStack = [])}
+    />
+  {:else if tasksStore.notice}
+    <Toast
+      kind={tasksStore.notice.kind}
+      message={tasksStore.notice.message}
+      closeLabel={t.tasks.dismiss}
+      onClose={() => tasksStore.dismissNotice()}
+    />
+  {/if}
 {/if}
 
 {#if settingsOpen}

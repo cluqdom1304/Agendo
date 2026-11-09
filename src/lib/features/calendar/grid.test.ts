@@ -198,6 +198,38 @@ describe("layoutDay", () => {
     expect(byId.d).toMatchObject({ lane: 0, lanes: 1 });
   });
 
+  it("sizes blocks by duration and frees the lane when a short one ends", () => {
+    const timed = (id: string, time: string, durationMinutes: number | null) =>
+      makeTask({ id, dueDate: "2026-03-10", dueTime: time, durationMinutes });
+    const placed = layoutDay([
+      timed("long", "09:00", 120),
+      timed("inside", "10:30", 15),
+      timed("short", "09:00", 15),
+      timed("plain", "13:00", null),
+    ]);
+    const byId = Object.fromEntries(placed.map((p) => [p.task.id, p]));
+    expect(byId.long.span).toBe(120);
+    expect(byId.plain.span).toBe(30);
+    // "inside" starts while "long" still runs, so they share the width.
+    expect(byId.inside.lanes).toBe(2);
+    expect(byId.plain.lanes).toBe(1);
+  });
+
+  it("sizes blocks by duration and shares the width while a long one runs", () => {
+    const timed = (id: string, time: string, durationMinutes: number | null) =>
+      makeTask({ id, dueDate: "2026-03-10", dueTime: time, durationMinutes });
+    const placed = layoutDay([
+      timed("long", "09:00", 120),
+      timed("inside", "10:30", 15),
+      timed("plain", "13:00", null),
+    ]);
+    const byId = Object.fromEntries(placed.map((p) => [p.task.id, p]));
+    expect(byId.long.span).toBe(120);
+    expect(byId.plain.span).toBe(30);
+    expect(byId.inside.lanes).toBe(2);
+    expect(byId.plain.lanes).toBe(1);
+  });
+
   it("reuses a lane once its block has ended", () => {
     const placed = layoutDay([at("a", "09:00"), at("b", "09:30")]);
     expect(placed.map((p) => [p.lane, p.lanes])).toEqual([

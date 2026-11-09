@@ -66,8 +66,8 @@ El agente registra aquí cualquier bloqueo, ambigüedad de producto o test que n
   1. Guardar solo la hora de inicio del tramo; el arrastre sirve para elegirla y los bloques ocupan 30 min visuales.
   2. Migración nueva (`due_end_time` o duración) y bloques con su altura real; afecta a validación, DTO, ordenación y recordatorios.
 - **Recomendación del agente:** opción 1 en v1 (no toca el modelo de datos); pasar a la 2 si se necesitan eventos con duración.
-- **Estado:** ABIERTO
-- **Resolución humana:**
+- **Estado:** RESUELTO
+- **Resolución humana:** 2026-11-09, a petición del usuario: opción 2 (duración, ver D-33).
 
 ---
 

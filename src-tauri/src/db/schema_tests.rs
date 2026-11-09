@@ -44,8 +44,8 @@ fn count(conn: &Connection, sql: &str) -> i64 {
 #[test]
 fn migrating_an_empty_database_reaches_the_latest_version() {
     let conn = database();
-    assert_eq!(migrate::current_version(&conn).expect("version"), 2);
-    assert_eq!(migrate::latest_version(&MIGRATIONS), 2);
+    assert_eq!(migrate::current_version(&conn).expect("version"), 3);
+    assert_eq!(migrate::latest_version(&MIGRATIONS), 3);
 }
 
 #[test]

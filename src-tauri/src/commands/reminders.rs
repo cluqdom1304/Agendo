@@ -51,6 +51,11 @@ pub fn set<Tz: TimeZone>(
     let task = state.db.write(|tx| {
         let task = tasks::get(tx, task_id)?
             .ok_or_else(|| AppError::NotFound(format!("tarea {task_id} no encontrada")))?;
+        if task.is_completed && !inputs.is_empty() {
+            return Err(AppError::Validation(
+                "una tarea hecha no avisa: reábrela para añadir recordatorios".into(),
+            ));
+        }
 
         let mut rows: Vec<NewReminder> = Vec::new();
         for input in inputs {
@@ -319,6 +324,22 @@ mod tests {
             .expect("read");
         assert_eq!(kept.len(), 1);
         assert_eq!(kept[0].offset_minutes, Some(15));
+    }
+
+    #[test]
+    fn a_completed_task_accepts_no_reminders_but_can_be_cleared() {
+        let (state, _) = test_state();
+        let created = task(&state, Some("2026-03-11"), Some("09:00"));
+        set(&state, &created.id, &[offset(15)], &zone()).expect("reminder");
+        crate::commands::tasks::set_completed(&state, &created.id, true).expect("complete");
+
+        let refused = set(&state, &created.id, &[offset(30)], &zone());
+        assert_eq!(
+            refused.expect_err("refused").code(),
+            "VALIDATION",
+            "a done task does not notify"
+        );
+        assert!(set(&state, &created.id, &[], &zone()).is_ok());
     }
 
     #[test]

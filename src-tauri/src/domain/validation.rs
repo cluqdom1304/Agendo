@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use chrono::{NaiveDate, NaiveTime};
+use chrono::{NaiveDate, NaiveTime, Timelike};
 
 use super::dates::{self, DateError};
 
@@ -146,6 +146,32 @@ pub fn validate_schedule(
     Ok((date, time))
 }
 
+/// A duration needs a start time, lasts at least a minute and ends before midnight (D-33).
+pub fn validate_duration(
+    due_time: Option<&str>,
+    duration_minutes: Option<i64>,
+) -> Result<(), ValidationError> {
+    let Some(duration) = duration_minutes else {
+        return Ok(());
+    };
+    let Some(time) = due_time else {
+        return Err(ValidationError::new("una duración requiere una hora"));
+    };
+    if !(1..=24 * 60).contains(&duration) {
+        return Err(ValidationError::new(
+            "la duración debe estar entre 1 minuto y 24 horas",
+        ));
+    }
+    let start = dates::parse_time(time)?;
+    let start_minutes = i64::from(start.hour()) * 60 + i64::from(start.minute());
+    if start_minutes + duration > 24 * 60 {
+        return Err(ValidationError::new(
+            "la tarea tiene que terminar antes de medianoche",
+        ));
+    }
+    Ok(())
+}
+
 /// The tag a tag is being attached to as a child.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ParentTag<'a> {
@@ -189,6 +215,18 @@ mod tests {
 
     fn message<T: fmt::Debug>(result: Result<T, ValidationError>) -> String {
         result.expect_err("must be rejected").to_string()
+    }
+
+    #[test]
+    fn a_duration_needs_a_time_and_ends_before_midnight() {
+        assert!(validate_duration(None, None).is_ok());
+        assert!(validate_duration(Some("09:00"), Some(60)).is_ok());
+        assert!(validate_duration(Some("00:00"), Some(1440)).is_ok());
+        assert!(validate_duration(Some("23:30"), Some(30)).is_ok());
+        assert!(validate_duration(None, Some(30)).is_err());
+        assert!(validate_duration(Some("09:00"), Some(0)).is_err());
+        assert!(validate_duration(Some("09:00"), Some(1441)).is_err());
+        assert!(validate_duration(Some("23:30"), Some(31)).is_err());
     }
 
     #[test]

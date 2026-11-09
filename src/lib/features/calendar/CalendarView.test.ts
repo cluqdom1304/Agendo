@@ -157,6 +157,76 @@ describe("quick creation by dragging (F-11)", () => {
     );
   });
 
+  it("saves a dragged span as the task's duration, but not a plain click", async () => {
+    const { store } = await mount("week");
+    await drag("2026-03-11", at(9), at(10, 30));
+    let input = screen.getByLabelText("Título de la nueva tarea");
+    await fireEvent.input(input, { target: { value: "Tutoría" } });
+    await fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(store.tasks).toHaveLength(1));
+    expect(store.tasks[0].durationMinutes).toBe(105);
+
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Título de la nueva tarea")).toBeNull(),
+    );
+    await drag("2026-03-12", at(16, 5), at(16, 5));
+    input = screen.getByLabelText("Título de la nueva tarea");
+    await fireEvent.input(input, { target: { value: "Rápida" } });
+    await fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(store.tasks).toHaveLength(2));
+    expect(store.tasks[1].durationMinutes).toBeNull();
+  });
+
+  it("draws a task as tall as its duration", async () => {
+    await mount("day", [
+      makeTask({
+        id: "t",
+        title: "Clase",
+        dueDate: "2026-03-10",
+        dueTime: "09:00",
+        durationMinutes: 120,
+      }),
+    ]);
+    const block = document.querySelector<HTMLElement>("[data-block]");
+    expect(block?.style.height).toBe(`${2 * HOUR_PX - 2}px`);
+    expect(block?.textContent).toContain("09:00–11:00");
+  });
+
+  it("saves a dragged span as the duration of the task, but not a plain click", async () => {
+    const { store } = await mount("week");
+    await drag("2026-03-11", at(9), at(10, 30));
+    let input = screen.getByLabelText("Título de la nueva tarea");
+    await fireEvent.input(input, { target: { value: "Tutoría" } });
+    await fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(store.tasks).toHaveLength(1));
+    expect(store.tasks[0].durationMinutes).toBe(105);
+
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Título de la nueva tarea")).toBeNull(),
+    );
+    await drag("2026-03-12", at(16, 5), at(16, 5));
+    input = screen.getByLabelText("Título de la nueva tarea");
+    await fireEvent.input(input, { target: { value: "Rápida" } });
+    await fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(store.tasks).toHaveLength(2));
+    expect(store.tasks[1].durationMinutes).toBeNull();
+  });
+
+  it("draws a task as tall as its duration", async () => {
+    await mount("day", [
+      makeTask({
+        id: "t",
+        title: "Clase",
+        dueDate: "2026-03-10",
+        dueTime: "09:00",
+        durationMinutes: 120,
+      }),
+    ]);
+    const block = document.querySelector<HTMLElement>("[data-block]");
+    expect(block?.style.height).toBe(`${2 * HOUR_PX - 2}px`);
+    expect(block?.textContent).toContain("09:00–11:00");
+  });
+
   it("works dragging upwards and snaps to quarter hours", async () => {
     const { api } = await mount("week");
     await drag("2026-03-09", at(14, 40), at(13, 20));

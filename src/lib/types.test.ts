@@ -38,6 +38,7 @@ const taskKeys: Record<keyof Task, true> = {
   contentJson: true,
   dueDate: true,
   dueTime: true,
+  durationMinutes: true,
   isCompleted: true,
   completedAt: true,
   position: true,

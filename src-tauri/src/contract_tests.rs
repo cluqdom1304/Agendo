@@ -33,6 +33,7 @@ fn task(with_values: bool) -> Task {
         content_json: r#"{"type":"doc","content":[]}"#.into(),
         due_date: with_values.then(|| "2026-03-12".to_string()),
         due_time: with_values.then(|| "09:30".to_string()),
+        duration_minutes: with_values.then_some(45),
         is_completed: with_values,
         completed_at: with_values.then(|| "2026-03-12T08:00:00Z".to_string()),
         position: 3,

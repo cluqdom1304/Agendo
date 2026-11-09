@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from "../../i18n";
+  import { timeRange } from "../../schedule";
   import Checkbox from "./Checkbox.svelte";
   import InlineTitle from "./InlineTitle.svelte";
 
@@ -10,6 +11,7 @@
     title: string;
     isCompleted: boolean;
     dueTime: string | null;
+    durationMinutes?: number | null;
     dueDate?: string | null;
     onDateChange?: (date: string | null) => void;
     onDelete?: () => void;
@@ -36,6 +38,7 @@
     title,
     isCompleted,
     dueTime,
+    durationMinutes = null,
     dueDate = null,
     onDateChange,
     onDelete,
@@ -62,6 +65,7 @@
 
 <div
   class="row"
+  class:done={checked}
   class:settling
   role="row"
   tabindex="0"
@@ -107,7 +111,7 @@
       </svg>
     </button>
   {/if}
-  {#if !draft}
+  {#if !draft && !checked}
     <button
       type="button"
       class="notes-toggle"
@@ -146,7 +150,7 @@
         <circle cx="8" cy="8" r="6" />
         <path d="M8 4.5V8l2.5 1.5" />
       </svg>
-      {dueTime}
+      {timeRange(dueTime, durationMinutes)}
     </span>
   {/if}
 </div>
@@ -167,6 +171,16 @@
 
   .row:hover {
     background: var(--bg-hover);
+  }
+
+  /* Done tasks recede so the pending ones of the day stand out. */
+  .row.done {
+    opacity: 0.6;
+  }
+
+  .row.done:hover,
+  .row.done:focus-within {
+    opacity: 1;
   }
 
   .row:focus-visible {

@@ -20,6 +20,7 @@ export interface TasksApi {
     title?: string;
     dueDate?: string;
     dueTime?: string;
+    durationMinutes?: number;
     contentJson?: string;
   }): Promise<Task>;
   taskUpdate(id: string, patch: TaskPatch): Promise<Task>;
@@ -257,6 +258,7 @@ export class TasksStore {
     rawTitle: string,
     dueDate: string,
     dueTime?: string,
+    durationMinutes?: number,
   ): Promise<boolean> {
     const title = rawTitle.trim();
     if (!title || this.#creating) return false;
@@ -266,6 +268,7 @@ export class TasksStore {
         title,
         dueDate,
         ...(dueTime ? { dueTime } : {}),
+        ...(dueTime && durationMinutes ? { durationMinutes } : {}),
       });
       this.tasks = [...this.tasks, created];
       return true;
@@ -286,6 +289,7 @@ export class TasksStore {
     title: string;
     dueDate?: string;
     dueTime?: string;
+    durationMinutes?: number;
     contentJson?: string;
     reminders?: ReminderInput[];
   }): Promise<boolean> {
@@ -297,6 +301,9 @@ export class TasksStore {
         title,
         ...(input.dueDate ? { dueDate: input.dueDate } : {}),
         ...(input.dueDate && input.dueTime ? { dueTime: input.dueTime } : {}),
+        ...(input.dueDate && input.dueTime && input.durationMinutes
+          ? { durationMinutes: input.durationMinutes }
+          : {}),
         ...(input.contentJson ? { contentJson: input.contentJson } : {}),
       });
       this.tasks = [...this.tasks, created];
@@ -318,6 +325,46 @@ export class TasksStore {
   }
 
   // ---- editing --------------------------------------------------------------------------
+
+  /**
+   * Saves what the edit dialog collects. Not optimistic: the dialog stays open until the
+   * backend accepts the change. A task that is done takes no reminders, so `reminders` is
+   * ignored for it. Returns whether everything was saved.
+   */
+  async saveDetails(
+    id: string,
+    input: {
+      title: string;
+      dueDate: string | null;
+      dueTime: string | null;
+      durationMinutes: number | null;
+      reminders?: ReminderInput[];
+    },
+  ): Promise<boolean> {
+    const before = this.find(id);
+    const title = input.title.trim();
+    if (!before || !title) return false;
+    const patch: TaskPatch = {};
+    if (title !== before.title) patch.title = title;
+    if (input.dueDate !== before.dueDate) patch.dueDate = input.dueDate;
+    const dueTime = input.dueDate ? input.dueTime : null;
+    const duration = dueTime ? input.durationMinutes : null;
+    if (dueTime !== before.dueTime) patch.dueTime = dueTime;
+    if (duration !== before.durationMinutes) patch.durationMinutes = duration;
+    if (this.notesOpenId === id) this.notesOpenId = null;
+    try {
+      if (Object.keys(patch).length > 0) {
+        this.#replace(await this.#api.taskUpdate(id, patch));
+      }
+      if (input.reminders && !before.isCompleted) {
+        this.#replace(await this.#api.remindersSet(id, input.reminders));
+      }
+      return true;
+    } catch (error) {
+      this.#report(error);
+      return false;
+    }
+  }
 
   /** Optimistic: the new title shows at once and is restored if the backend refuses it. */
   async rename(id: string, rawTitle: string): Promise<void> {

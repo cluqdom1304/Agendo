@@ -14,6 +14,8 @@ pub struct Task {
     pub content_json: String,
     pub due_date: Option<String>,
     pub due_time: Option<String>,
+    /// Minutes the task lasts from `due_time`, within the same day (D-33).
+    pub duration_minutes: Option<i64>,
     pub is_completed: bool,
     pub completed_at: Option<String>,
     pub position: i64,
@@ -85,6 +87,7 @@ pub struct NewTask {
     pub content_text: String,
     pub due_date: Option<String>,
     pub due_time: Option<String>,
+    pub duration_minutes: Option<i64>,
     pub tag_ids: Vec<String>,
     pub now: String,
 }
@@ -97,6 +100,7 @@ pub struct TaskPatch {
     pub content_text: Option<String>,
     pub due_date: Option<Option<String>>,
     pub due_time: Option<Option<String>>,
+    pub duration_minutes: Option<Option<i64>>,
 }
 
 /// Data to create or update a tag. `now` is used only when the tag is created.

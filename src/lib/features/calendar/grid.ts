@@ -128,12 +128,19 @@ export function snapSpan(
 
 // ---- layout of one day's timed tasks ---------------------------------------------------
 
-/** Minutes a timed task occupies on the grid: tasks have a start time but no duration. */
+/** Minutes a timed task without a duration occupies on the grid. */
 export const BLOCK_MINUTES = 30;
+
+/** Minutes a task occupies on the grid: its duration, or [`BLOCK_MINUTES`] if it has none. */
+export function spanOf(task: Task): number {
+  return task.durationMinutes ?? BLOCK_MINUTES;
+}
 
 export interface PlacedTask {
   task: Task;
   start: number;
+  /** Minutes the block lasts. */
+  span: number;
   lane: number;
   lanes: number;
 }
@@ -160,9 +167,10 @@ export function layoutDay(tasks: readonly Task[]): PlacedTask[] {
     if (start >= clusterEnd) closeCluster();
     let lane = laneEnds.findIndex((end) => end <= start);
     if (lane < 0) lane = laneEnds.length;
-    laneEnds[lane] = start + BLOCK_MINUTES;
-    clusterEnd = Math.max(clusterEnd, start + BLOCK_MINUTES);
-    const item: PlacedTask = { task, start, lane, lanes: 1 };
+    const span = spanOf(task);
+    laneEnds[lane] = start + span;
+    clusterEnd = Math.max(clusterEnd, start + span);
+    const item: PlacedTask = { task, start, span, lane, lanes: 1 };
     cluster.push(item);
     placed.push(item);
   }

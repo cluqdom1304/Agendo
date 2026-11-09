@@ -285,6 +285,15 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-33 — Duración de las tareas con hora (migración 003) y vista de detalle
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-09
+- **Contexto:** petición del usuario: poder fijar el fin de una tarea (o su duración) y que arrastrar un tramo en el calendario lo guarde. Resuelve B-04 con la opción 2.
+- **Decisión:** migración `003_task_duration.sql` con `tasks.duration_minutes` (1–1440, nullable). El fin no se guarda: es `due_time` + duración y **siempre dentro del mismo día** (validación `validate_duration`; no hay tareas que crucen medianoche). Sin hora no hay duración: quitar la hora o la fecha la borra, y cambiar la hora la conserva mientras quepa en el día. Arrastrar un tramo de más de un paso (15 min) guarda su longitud; un clic simple solo elige la hora de inicio. Sin duración un bloque ocupa 30 min visuales. `reminders_set` rechaza (`VALIDATION`) añadir avisos a una tarea hecha; los pendientes se conservan y vuelven a valer al reabrirla (el planificador ya ignoraba las tareas hechas). El diálogo de «Nueva tarea» sirve también para editar (sin descripción: las notas con formato se editan en la vista de detalle) y desde el calendario una tarea abre su vista de detalle (hecha/reabrir, editar, eliminar con botón y Supr).
+- **Consecuencias:** `Task` gana `durationMinutes` en el contrato IPC (fixture y tipos actualizados). Copias de seguridad anteriores se migran al restaurarse.
+- **Alternativas descartadas:** `due_end_time` (permite fin anterior al inicio y obliga a mantener dos campos coherentes); tareas de varios días (bloques partidos en el calendario, recordatorios ambiguos).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

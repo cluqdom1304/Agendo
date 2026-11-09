@@ -15,6 +15,7 @@ export function makeTask(overrides: Partial<Task> & { id: string }): Task {
     contentJson: "",
     dueDate: null,
     dueTime: null,
+    durationMinutes: null,
     isCompleted: false,
     completedAt: null,
     position: 0,
@@ -75,6 +76,7 @@ export class FakeApi implements TasksApi {
     title?: string;
     dueDate?: string;
     dueTime?: string;
+    durationMinutes?: number;
     contentJson?: string;
   }): Promise<Task> {
     await this.#enter(
@@ -88,6 +90,7 @@ export class FakeApi implements TasksApi {
       title: input.title ?? "",
       dueDate: input.dueDate ?? null,
       dueTime: input.dueTime ?? null,
+      durationMinutes: input.durationMinutes ?? null,
       contentJson: input.contentJson ?? "",
       position: 1000 + this.#created,
     });
@@ -109,6 +112,10 @@ export class FakeApi implements TasksApi {
       contentJson: patch.contentJson ?? before.contentJson,
       dueDate: patch.dueDate === undefined ? before.dueDate : patch.dueDate,
       dueTime: patch.dueTime === undefined ? before.dueTime : patch.dueTime,
+      durationMinutes:
+        patch.durationMinutes === undefined
+          ? before.durationMinutes
+          : patch.durationMinutes,
     });
   }
 

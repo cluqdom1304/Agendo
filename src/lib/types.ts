@@ -50,6 +50,8 @@ export interface Task {
   contentJson: string;
   dueDate: string | null;
   dueTime: string | null;
+  /** Minutes from `dueTime` to the end, within the same day; `null` = no duration (D-33). */
+  durationMinutes: number | null;
   isCompleted: boolean;
   completedAt: string | null;
   position: number;
@@ -95,6 +97,7 @@ export interface TaskCreateInput {
   title?: string;
   dueDate?: string;
   dueTime?: string;
+  durationMinutes?: number;
   tagIds?: string[];
   contentJson?: string;
 }
@@ -105,6 +108,7 @@ export interface TaskPatch {
   contentJson?: string;
   dueDate?: string | null;
   dueTime?: string | null;
+  durationMinutes?: number | null;
 }
 
 export interface TagUpsertInput {

@@ -42,8 +42,12 @@
   });
   const week = $derived(weekDates(view.anchor, view.firstDay));
 
-  const create = (title: string, date: string, time: string) =>
-    store.createScheduled(title, date, time);
+  const create = (
+    title: string,
+    date: string,
+    time: string,
+    duration?: number,
+  ) => store.createScheduled(title, date, time, duration);
 </script>
 
 <section class="calendar">
