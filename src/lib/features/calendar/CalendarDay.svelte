@@ -5,6 +5,7 @@
   interface Props {
     date: string;
     today: string;
+    nowMinutes: number;
     tasksByDate: Map<string, Task[]>;
     label: string;
     onCreate: (title: string, date: string, time: string) => Promise<boolean>;

@@ -14,14 +14,23 @@
     /** The columns: seven dates for a week, one for a day. */
     dates: string[];
     today: string;
+    /** Minutes since midnight of the current time, for the "now" line. */
+    nowMinutes: number;
     tasksByDate: Map<string, Task[]>;
     label: string;
     onCreate: (title: string, date: string, time: string) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
   }
 
-  let { dates, today, tasksByDate, label, onCreate, onOpenTask }: Props =
-    $props();
+  let {
+    dates,
+    today,
+    nowMinutes,
+    tasksByDate,
+    label,
+    onCreate,
+    onOpenTask,
+  }: Props = $props();
 
   interface Drag {
     date: string;
@@ -41,6 +50,7 @@
   let dragColumn: HTMLElement | null = null;
   let committing = false;
 
+  const showNow = $derived(dates.includes(today));
   const dragSpan = $derived(
     drag ? { date: drag.date, ...snapSpan(drag.anchor, drag.current) } : null,
   );
@@ -52,6 +62,9 @@
       return {
         date,
         isToday: date === today,
+        // The line starts on today's column and runs to the end of the week; the days
+        // before it only get a faint trace.
+        nowLine: today < date ? "full" : date === today ? "start" : "faint",
         allDay: tasks.filter((task) => task.dueTime === null),
         placed: layoutDay(tasks),
       };
@@ -213,6 +226,14 @@
               {item.task.title || t.calendar.untitled}
             </button>
           {/each}
+
+          {#if showNow}
+            <div
+              class="now {column.nowLine}"
+              data-now-line={column.nowLine}
+              style:top="{top(nowMinutes)}px"
+            ></div>
+          {/if}
 
           {#if selection && selection.date === column.date}
             <div
@@ -388,6 +409,33 @@
   .block .time {
     color: var(--text-secondary);
     margin-right: 4px;
+  }
+
+  .now {
+    position: absolute;
+    inset-inline: 0;
+    z-index: 3;
+    height: 2px;
+    margin-top: -1px;
+    border-radius: 1px;
+    background: var(--danger);
+    pointer-events: none;
+  }
+
+  .now.faint {
+    opacity: 0.3;
+  }
+
+  .now.start::before {
+    content: "";
+    position: absolute;
+    left: -5px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--danger);
+    box-shadow: 0 0 0 2px var(--bg-window-solid);
   }
 
   .selection {

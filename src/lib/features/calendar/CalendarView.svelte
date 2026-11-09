@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
+  import { toLocalIsoDate } from "../../dates";
   import { t } from "../../i18n";
   import SegmentedControl from "../../shell/SegmentedControl.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
@@ -27,7 +30,16 @@
 
   const byDate = $derived(tasksByDate(store.tasks));
   const heading = $derived(periodLabel(view.mode, view.anchor, view.firstDay));
-  const today = $derived(view.today());
+  // The clock ticks every 30 s so the "now" line moves and midnight changes "today".
+  let current = $state.raw(new Date());
+  const today = $derived(toLocalIsoDate(current));
+  const nowMinutes = $derived(current.getHours() * 60 + current.getMinutes());
+
+  onMount(() => {
+    current = view.now();
+    const timer = setInterval(() => (current = view.now()), 30_000);
+    return () => clearInterval(timer);
+  });
   const week = $derived(weekDates(view.anchor, view.firstDay));
 
   const create = (title: string, date: string, time: string) =>
@@ -73,6 +85,7 @@
       <CalendarWeek
         dates={week}
         {today}
+        {nowMinutes}
         tasksByDate={byDate}
         label={t.calendar.weekGrid}
         onCreate={create}
@@ -82,6 +95,7 @@
       <CalendarDay
         date={view.anchor}
         {today}
+        {nowMinutes}
         tasksByDate={byDate}
         label={t.calendar.dayGrid}
         onCreate={create}

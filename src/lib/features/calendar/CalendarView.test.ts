@@ -238,6 +238,47 @@ describe("scale selector", () => {
   });
 });
 
+describe("current time line", () => {
+  const lines = () =>
+    [...document.querySelectorAll<HTMLElement>("[data-now-line]")].map(
+      (line) => [
+        line.closest<HTMLElement>(".column")?.dataset.date,
+        line.dataset.nowLine,
+        line.style.top,
+      ],
+    );
+
+  it("starts on today's column in the week and runs to the end, faint before it", async () => {
+    await mount("week");
+    // Tuesday 10:00: Monday faint, Tuesday with the dot, Wednesday to Sunday solid.
+    expect(lines()).toEqual([
+      ["2026-03-09", "faint", `${at(10)}px`],
+      ["2026-03-10", "start", `${at(10)}px`],
+      ["2026-03-11", "full", `${at(10)}px`],
+      ["2026-03-12", "full", `${at(10)}px`],
+      ["2026-03-13", "full", `${at(10)}px`],
+      ["2026-03-14", "full", `${at(10)}px`],
+      ["2026-03-15", "full", `${at(10)}px`],
+    ]);
+  });
+
+  it("shows one line with its dot in the day view, only when the day is today", async () => {
+    const { view } = await mount("day");
+    expect(lines()).toEqual([["2026-03-10", "start", `${at(10)}px`]]);
+    view.anchor = "2026-03-11";
+    await waitFor(() => expect(lines()).toEqual([]));
+  });
+
+  it("is absent in a week that does not contain today and in the month view", async () => {
+    const { view } = await mount("week");
+    view.anchor = "2026-03-24";
+    await waitFor(() => expect(lines()).toEqual([]));
+    view.mode = "month";
+    await waitFor(() => expect(document.querySelector(".month")).toBeTruthy());
+    expect(lines()).toEqual([]);
+  });
+});
+
 describe("day view", () => {
   it("shows a single column for the anchor day", async () => {
     await mount("day");

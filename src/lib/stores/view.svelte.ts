@@ -49,6 +49,10 @@ export class ViewStore {
     this.anchor = this.today();
   }
 
+  now(): Date {
+    return this.#now();
+  }
+
   today(): string {
     return toLocalIsoDate(this.#now());
   }

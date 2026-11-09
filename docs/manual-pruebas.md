@@ -81,6 +81,7 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] Los cambios de hora de verano/invierno no desplazan tareas de día.
 - [ ] La vista elegida se recuerda al cerrar y volver a abrir la app, y `Ctrl+1/2/3/4` cambian de vista.
 - [ ] Al pulsar una tarea del calendario se vuelve a la lista con esa tarea seleccionada; el número de un día del mes abre la vista Día.
+- [ ] La línea roja de la hora actual aparece en Día y Semana (bolita en la columna de hoy, la línea sigue hasta el final de la semana), avanza sola con el reloj y no aparece en Mes.
 - [ ] Abrir una vista de calendario por primera vez no produce parpadeos ni retraso apreciable (carga diferida).
 
 ---
