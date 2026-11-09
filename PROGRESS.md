@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** — (Versión 1.0.0 cerrada)
+**Fase activa:** — (Versión 1.0.1 cerrada)
 **Estado:** DONE   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
 **Siguiente tarea:** ninguna. Para 1.0.1: validar los ítems `[H]` de `docs/manual-pruebas.md` y ejecutar F6-06 (E2E) en un equipo con `tauri-driver`
-**Última actualización:** 2026-11-09 (cierre de la V1.0.0, etiqueta `v1.0.0`)
+**Última actualización:** 2026-11-09 (cierre de la V1.0.1, etiqueta `v1.0.1`)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -227,3 +227,4 @@
 - 2026-10-31: `PROGRESS.md` tenía F0-01 sin marcar aunque estaba commiteada (`c62a00e`); marcada en la sesión de F0-02.
 - 2026-11-09: cambios 1.0.1 (D-35): hora por defecto de avisos en Ajustes, aviso 1 semana antes, avisos por días/semanas para tareas sin hora (sin colocarlas en el calendario), botón guardar de la edición de etiquetas contenido en su cuadro y alineación de columnas de la semana con la cabecera fija (compensa el ancho del scrollbar). Las tareas sin hora ya aparecían en «Todo el día». Batería `[A]` en verde (cargo fmt/clippy/test 263; npm lint/check/test 340/build/size 187 KB). Pendiente `[H]`: manual-pruebas § «Versión 1.0.1».
 - 2026-11-09: tema claro opaco (D-36): sin Mica/Acrílico en claro, fondos opacos y borde más marcado; se reaplica al cambiar el tema del sistema. Batería `[A]`: lint, check, Vitest 341, build y size en verde; Rust sin cambios. Apariencia real `[H]`.
+- 2026-11-09: **Versión 1.0.1 lanzada** (D-35, D-36). Versión fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y los dos lockfiles. El usuario revisó la interfaz con `tauri dev` (tema claro opaco, hora de aviso por defecto, semana alineada). Instaladores con `npx tauri build`. Los ítems `[H]` de la 1.0.1 siguen sin marcar en `docs/manual-pruebas.md` hasta su validación formal.
