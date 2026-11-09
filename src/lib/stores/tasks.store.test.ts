@@ -427,6 +427,7 @@ describe("reminders", () => {
           notifyAt: "2026-03-10T10:00:00Z",
           offsetMinutes: 0,
           isSent: true,
+          repeat: null,
         },
       ],
     }));

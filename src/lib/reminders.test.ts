@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   customToInstant,
+  describeRepeat,
+  draftReminders,
   dueInstant,
   offsetIsAhead,
   offsetLabel,
   pending,
+  sent,
+  toInput,
   togglePreset,
   withCustom,
   withoutReminder,
@@ -16,6 +20,7 @@ const reminder = (overrides: Partial<Reminder> & { id: string }): Reminder => ({
   notifyAt: "2026-03-11T08:00:00Z",
   offsetMinutes: null,
   isSent: false,
+  repeat: null,
   ...overrides,
 });
 
@@ -91,5 +96,88 @@ describe("time", () => {
     );
     expect(customToInstant("")).toBeNull();
     expect(customToInstant("nope")).toBeNull();
+  });
+});
+
+describe("repeating reminders", () => {
+  const rule = {
+    every: 2,
+    unit: "week" as const,
+    count: 5,
+    until: null,
+    occurrence: 3,
+  };
+
+  it("describes the interval and how it ends", () => {
+    expect(
+      describeRepeat({ every: 1, unit: "day", count: null, until: null }),
+    ).toBe("Cada día");
+    expect(describeRepeat(rule)).toBe("Cada 2 semanas, 5 veces");
+    expect(
+      describeRepeat({
+        every: 1,
+        unit: "month",
+        count: null,
+        until: "2026-04-10",
+      }),
+    ).toBe("Cada mes, hasta el 10/04/2026");
+    expect(
+      describeRepeat({ every: 3, unit: "hour", count: null, until: null }),
+    ).toBe("Cada 3 horas");
+  });
+
+  it("keeps the rule, with its occurrence, when a reminder is sent back", () => {
+    const r = reminder({ id: "a", repeat: rule });
+    expect(toInput(r)).toEqual({ notifyAt: r.notifyAt, repeat: rule });
+    expect(toInput(reminder({ id: "b" }))).toEqual({ notifyAt: r.notifyAt });
+  });
+
+  it("adds a custom reminder with its rule and leaves history out", () => {
+    const current = [
+      reminder({ id: "old", isSent: true }),
+      reminder({ id: "keep", repeat: rule }),
+    ];
+    const next = withCustom(current, "2026-03-20T08:00:00Z", {
+      every: 1,
+      unit: "day",
+      count: null,
+      until: null,
+    });
+    expect(next).toHaveLength(2);
+    expect(next[1]).toEqual({
+      notifyAt: "2026-03-20T08:00:00Z",
+      repeat: { every: 1, unit: "day", count: null, until: null },
+    });
+  });
+
+  it("separates sounded reminders from pending ones", () => {
+    const all = [reminder({ id: "s", isSent: true }), reminder({ id: "p" })];
+    expect(sent(all).map((r) => r.id)).toEqual(["s"]);
+    expect(pending(all).map((r) => r.id)).toEqual(["p"]);
+  });
+});
+
+describe("draftReminders", () => {
+  it("resolves offsets against the draft date and time", () => {
+    const [draft] = draftReminders(
+      [{ offsetMinutes: 60 }],
+      "2026-03-12",
+      "10:00",
+    );
+    expect(new Date(draft.notifyAt).getTime()).toBe(
+      new Date("2026-03-12T09:00").getTime(),
+    );
+    expect(draft).toMatchObject({ offsetMinutes: 60, isSent: false });
+  });
+
+  it("keeps custom instants and rules as they are", () => {
+    const repeat = { every: 1, unit: "day" as const, count: 3, until: null };
+    const [draft] = draftReminders(
+      [{ notifyAt: "2026-03-12T08:00:00Z", repeat }],
+      null,
+      null,
+    );
+    expect(draft.notifyAt).toBe("2026-03-12T08:00:00Z");
+    expect(draft.repeat).toEqual({ ...repeat, occurrence: 1 });
   });
 });

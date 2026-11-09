@@ -17,8 +17,13 @@
 
   onMount(() => {
     const opener = document.activeElement;
-    const first = dialog?.querySelector<HTMLElement>(FOCUSABLE);
-    (first ?? dialog)?.focus();
+    // The field that wants the focus, else the first control that is not the close button.
+    const target =
+      dialog?.querySelector<HTMLElement>("[data-autofocus]") ??
+      [...(dialog?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])].find(
+        (element) => !element.classList.contains("close"),
+      );
+    (target ?? dialog)?.focus();
     return () => {
       if (opener instanceof HTMLElement) opener.focus();
     };

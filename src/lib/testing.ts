@@ -75,6 +75,7 @@ export class FakeApi implements TasksApi {
     title?: string;
     dueDate?: string;
     dueTime?: string;
+    contentJson?: string;
   }): Promise<Task> {
     await this.#enter(
       "taskCreate",
@@ -87,6 +88,7 @@ export class FakeApi implements TasksApi {
       title: input.title ?? "",
       dueDate: input.dueDate ?? null,
       dueTime: input.dueTime ?? null,
+      contentJson: input.contentJson ?? "",
       position: 1000 + this.#created,
     });
     this.tasks = [...this.tasks, task];
@@ -159,6 +161,7 @@ export class FakeApi implements TasksApi {
         notifyAt: reminder.notifyAt ?? "2026-03-11T08:00:00Z",
         offsetMinutes: reminder.offsetMinutes ?? null,
         isSent: false,
+        repeat: reminder.repeat ? { occurrence: 1, ...reminder.repeat } : null,
       })),
     });
   }

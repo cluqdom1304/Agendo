@@ -2,6 +2,7 @@
   import { onMount, tick } from "svelte";
 
   import { onReminderFired } from "$lib/api";
+  import NewTaskDialog from "$lib/features/todo/NewTaskDialog.svelte";
   import SettingsDialog from "$lib/features/settings/SettingsDialog.svelte";
   import TodoView from "$lib/features/todo/TodoView.svelte";
   import { t } from "$lib/i18n";
@@ -15,6 +16,7 @@
   type Section = "list" | "calendar";
 
   let settingsOpen = $state(false);
+  let newTaskOpen = $state(false);
 
   const SECTION_OPTIONS: { value: Section; label: string }[] = [
     { value: "list", label: t.views.list },
@@ -74,6 +76,24 @@
 
 <div class="page">
   <div class="toolbar">
+    <button
+      type="button"
+      class="new-task"
+      title={t.newTask.buttonHint}
+      aria-haspopup="dialog"
+      onclick={() => (newTaskOpen = true)}
+    >
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path
+          d="M8 3v10M3 8h10"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+      </svg>
+      {t.newTask.button}
+    </button>
     <SegmentedControl
       label={t.views.label}
       options={SECTION_OPTIONS}
@@ -140,6 +160,14 @@
   {/if}
 </div>
 
+{#if newTaskOpen}
+  <NewTaskDialog
+    store={tasksStore}
+    defaultDate={viewStore.mode === "list" ? null : viewStore.anchor}
+    onClose={() => (newTaskOpen = false)}
+  />
+{/if}
+
 {#if settingsOpen}
   <SettingsDialog
     store={settingsStore}
@@ -161,6 +189,33 @@
     justify-content: center;
     flex: none;
     padding: var(--space-2) var(--space-4) 0;
+  }
+
+  .new-task {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-4);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: var(--accent);
+    color: var(--on-accent);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .new-task:hover {
+    filter: brightness(1.08);
+  }
+
+  .new-task:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   .settings-button {

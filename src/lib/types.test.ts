@@ -6,6 +6,7 @@ import type {
   DayGroup,
   EffectApplied,
   Reminder,
+  Repeat,
   SearchHit,
   Tag,
   TagWithCount,
@@ -50,6 +51,14 @@ const reminderKeys: Record<keyof Reminder, true> = {
   notifyAt: true,
   offsetMinutes: true,
   isSent: true,
+  repeat: true,
+};
+const repeatKeys: Record<keyof Repeat, true> = {
+  every: true,
+  unit: true,
+  count: true,
+  until: true,
+  occurrence: true,
 };
 const tagKeys: Record<keyof Tag, true> = {
   id: true,
@@ -94,6 +103,9 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
       expect(keys(task)).toEqual(keys(taskKeys));
       for (const reminder of task.reminders) {
         expect(keys(reminder)).toEqual(keys(reminderKeys));
+        if (reminder.repeat) {
+          expect(keys(reminder.repeat)).toEqual(keys(repeatKeys));
+        }
       }
     }
   });

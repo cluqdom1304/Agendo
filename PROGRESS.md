@@ -177,6 +177,13 @@
 
 **Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 6
 
+**Mejoras posteriores a la Fase 6 (2026-11-09, a petición del usuario):**
+- Botón «Nueva tarea» (Ctrl+N sigue creando la fila en línea) que abre `NewTaskDialog`: título, fecha, hora, descripción (texto → párrafos) y recordatorios con el mismo `ReminderEditor` que el popover de cada fila. Si la creación va bien pero los avisos fallan, la tarea queda y se informa del error.
+- Los avisos ya sonados se muestran en gris («Avisado», bajo «Ya avisados», últimos 5) en vez de desaparecer.
+- Avisos periódicos (D-32, migración 002): cada N horas/días/semanas/meses; termina nunca / tras N veces / en una fecha. Solo para avisos de hora concreta.
+- UX: el diálogo enfoca el título, Intro envía, Ctrl+Intro envía desde cualquier campo, la hora se desactiva sin fecha, el calendario propone el día que se está viendo, avisos pasados se detectan antes de guardar y los botones llevan ayuda con el atajo.
+- Verificación [A]: `cargo test` 256+4+1+4, `npm run test` 284, lint/check/build/size en verde (JS 177,1 KB gzip). [H] nuevos en `docs/manual-pruebas.md` § Mejoras posteriores.
+
 ---
 
 ## Métricas

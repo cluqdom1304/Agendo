@@ -8,17 +8,34 @@ export interface EffectApplied {
   applied: EffectMode;
 }
 
+export type RepeatUnit = "hour" | "day" | "week" | "month";
+
+/** How a custom-time reminder repeats (D-32). `count` and `until` are never both set. */
+export interface Repeat {
+  every: number;
+  unit: RepeatUnit;
+  /** Total number of soundings, first included. */
+  count: number | null;
+  /** Last local date, `YYYY-MM-DD`, inclusive. */
+  until: string | null;
+  /** Which sounding of the series this reminder is, starting at 1. */
+  occurrence: number;
+}
+
 export interface Reminder {
   id: string;
   notifyAt: string;
   offsetMinutes: number | null;
   isSent: boolean;
+  repeat: Repeat | null;
 }
 
 /** One entry of `reminders_set`: minutes before the task's date and time, or a UTC instant. */
 export interface ReminderInput {
   offsetMinutes?: number;
   notifyAt?: string;
+  /** Only together with `notifyAt`. */
+  repeat?: Omit<Repeat, "occurrence"> & { occurrence?: number };
 }
 
 /** Payload of the `reminder:fired` event (SPEC §7.4). */

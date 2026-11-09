@@ -20,6 +20,7 @@ export interface TasksApi {
     title?: string;
     dueDate?: string;
     dueTime?: string;
+    contentJson?: string;
   }): Promise<Task>;
   taskUpdate(id: string, patch: TaskPatch): Promise<Task>;
   search(query: string): Promise<SearchHit[]>;
@@ -267,6 +268,46 @@ export class TasksStore {
         ...(dueTime ? { dueTime } : {}),
       });
       this.tasks = [...this.tasks, created];
+      return true;
+    } catch (error) {
+      this.#report(error);
+      return false;
+    } finally {
+      this.#creating = false;
+    }
+  }
+
+  /**
+   * Creates a task with everything the creation dialog collects. The task is saved first; if
+   * its reminders are then refused the task stays and the error is reported, so nothing typed
+   * is lost twice. Returns whether the task was created.
+   */
+  async createDetailed(input: {
+    title: string;
+    dueDate?: string;
+    dueTime?: string;
+    contentJson?: string;
+    reminders?: ReminderInput[];
+  }): Promise<boolean> {
+    const title = input.title.trim();
+    if (!title || this.#creating) return false;
+    this.#creating = true;
+    try {
+      let created = await this.#api.taskCreate({
+        title,
+        ...(input.dueDate ? { dueDate: input.dueDate } : {}),
+        ...(input.dueDate && input.dueTime ? { dueTime: input.dueTime } : {}),
+        ...(input.contentJson ? { contentJson: input.contentJson } : {}),
+      });
+      this.tasks = [...this.tasks, created];
+      if (input.reminders && input.reminders.length > 0) {
+        try {
+          created = await this.#api.remindersSet(created.id, input.reminders);
+          this.#replace(created);
+        } catch (error) {
+          this.#report(error);
+        }
+      }
       return true;
     } catch (error) {
       this.#report(error);

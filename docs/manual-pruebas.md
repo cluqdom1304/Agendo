@@ -110,6 +110,17 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 
 ---
 
+## Mejoras posteriores a la Fase 6
+
+- [ ] El botón «Nueva tarea» abre el diálogo; Ctrl+N sigue creando una fila en línea.
+- [ ] En el diálogo se crea una tarea con fecha, hora, descripción y recordatorios (preestablecidos y a hora concreta) y todo queda guardado.
+- [ ] Un aviso periódico (p. ej. cada hora, 3 veces) suena, se queda en gris como «Avisado» y aparece el siguiente hasta completar la serie.
+- [ ] Una serie «hasta una fecha» no suena después de esa fecha.
+- [ ] Con la app cerrada durante varias repeticiones, al abrirla no llegan avisos atrasados en tromba.
+- [ ] Una serie sigue tras reiniciar la aplicación.
+
+---
+
 ## Registro de sesiones de prueba
 
 | Fecha | Build / commit | Equipo | Fase | Resultado | Responsable |
