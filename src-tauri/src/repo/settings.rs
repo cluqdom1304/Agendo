@@ -3,6 +3,16 @@
 
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
+/// Hour at which reminders of tasks without a time sound.
+pub const NOTIFY_TIME_KEY: &str = "default_notify_time";
+
+/// The chosen default notification time, or the built-in one if none was saved (or it is damaged).
+pub fn notify_time(conn: &Connection) -> rusqlite::Result<String> {
+    Ok(get(conn, NOTIFY_TIME_KEY)?
+        .filter(|text| crate::domain::dates::parse_time(text).is_ok())
+        .unwrap_or_else(|| crate::domain::reminders::DEFAULT_NOTIFY_TIME.to_string()))
+}
+
 pub fn get(conn: &Connection, key: &str) -> rusqlite::Result<Option<String>> {
     conn.query_row(
         "SELECT value FROM settings WHERE key = ?1",

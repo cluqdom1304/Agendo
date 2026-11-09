@@ -16,8 +16,10 @@ export interface SettingsApi {
 
 export interface EffectRequester {
   readonly applied: EffectMode;
-  request(mode: EffectMode): Promise<void>;
+  request(mode: EffectMode, theme?: ThemeMode): Promise<void>;
 }
+
+export const DEFAULT_NOTIFY_TIME = "09:00";
 
 const EFFECTS: readonly EffectMode[] = ["mica", "acrylic", "none"];
 
@@ -49,6 +51,8 @@ export class SettingsStore {
   theme = $state<ThemeMode>("system");
   effect = $state<EffectMode>("mica");
   autostart = $state(false);
+  /** `HH:MM` at which reminders of tasks without a time sound (D-35). */
+  notifyTime = $state(DEFAULT_NOTIFY_TIME);
   busy = $state(false);
   notice = $state<SettingsNotice | null>(null);
 
@@ -69,14 +73,19 @@ export class SettingsStore {
 
   /** Reads the saved theme and window effect and applies both. Runs at startup. */
   async load(): Promise<void> {
-    const [theme, effect] = await Promise.all([
+    const [theme, effect, notifyTime] = await Promise.all([
       this.#api.settingsGet("theme").catch(() => null),
       this.#api.settingsGet("window_effect").catch(() => null),
+      this.#api.settingsGet("default_notify_time").catch(() => null),
     ]);
     this.theme = parseTheme(theme);
+    this.notifyTime =
+      notifyTime && /^\d{2}:\d{2}$/.test(notifyTime)
+        ? notifyTime
+        : DEFAULT_NOTIFY_TIME;
     this.effect = parseEffect(effect);
     this.#apply(this.theme);
-    await this.#effects.request(this.effect);
+    await this.#effects.request(this.effect, this.theme);
   }
 
   async loadAutostart(): Promise<void> {
@@ -90,13 +99,31 @@ export class SettingsStore {
   async setTheme(theme: ThemeMode): Promise<void> {
     this.theme = theme;
     this.#apply(theme);
+    // Mica has its own light and dark variant, chosen when it is applied.
+    await this.#effects.request(this.effect, theme);
     await this.#save("theme", theme);
   }
 
   async setEffect(effect: EffectMode): Promise<void> {
     this.effect = effect;
-    await this.#effects.request(effect);
+    await this.#effects.request(effect, this.theme);
     await this.#save("window_effect", effect);
+  }
+
+  /** The reminders already saved move too, so tasks must be read again by the caller. */
+  async setNotifyTime(time: string): Promise<boolean> {
+    if (!/^\d{2}:\d{2}$/.test(time)) return false;
+    const previous = this.notifyTime;
+    this.notifyTime = time;
+    try {
+      await this.#api.settingsSet("default_notify_time", time);
+      this.notice = null;
+      return true;
+    } catch (error) {
+      this.notifyTime = previous;
+      this.#fail(error);
+      return false;
+    }
   }
 
   async setAutostart(enabled: boolean): Promise<void> {

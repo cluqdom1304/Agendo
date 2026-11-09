@@ -18,6 +18,7 @@ import type {
   TaskPatch,
   TasksListQuery,
   TasksSections,
+  ThemeMode,
 } from "./types";
 
 export type * from "./types";
@@ -53,8 +54,11 @@ export function startupMark(label: string): Promise<void> {
   return invoke<void>("startup_mark", { label });
 }
 
-export function windowSetEffect(mode: EffectMode): Promise<EffectApplied> {
-  return invoke<EffectApplied>("window_set_effect", { mode });
+export function windowSetEffect(
+  mode: EffectMode,
+  theme?: ThemeMode,
+): Promise<EffectApplied> {
+  return invoke<EffectApplied>("window_set_effect", { mode, theme });
 }
 
 /** Section views return both sections; the range view returns a flat list. */

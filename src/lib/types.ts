@@ -131,7 +131,8 @@ export interface SearchHit {
 }
 
 /** Settings the backend accepts (`settings_get` / `settings_set`). */
-export type SettingKey = "view_mode" | "theme" | "window_effect";
+export type SettingKey =
+  "view_mode" | "theme" | "window_effect" | "default_notify_time";
 
 /** Colour theme: follow the system or force one (F6-05). */
 export type ThemeMode = "system" | "light" | "dark";

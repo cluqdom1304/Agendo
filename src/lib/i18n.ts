@@ -36,6 +36,11 @@ export const t = {
       "Pon fecha y hora a la tarea para avisar con antelación, o añade un aviso a una hora concreta.",
     needsTime: "Pon una hora a la tarea para avisar con antelación.",
     atTime: "En el momento",
+    sameDay: "El mismo día",
+    weeksBefore: (weeks: number) =>
+      weeks === 1 ? "1 semana antes" : `${weeks} semanas antes`,
+    untimedHint: (time: string) =>
+      `Sin hora, el aviso suena a las ${time} (se cambia en Ajustes).`,
     minutesBefore: (minutes: number) => `${minutes} min antes`,
     hoursBefore: (hours: number) =>
       hours === 1 ? "1 hora antes" : `${hours} horas antes`,
@@ -241,6 +246,10 @@ export const t = {
     effectNone: "Ninguno",
     effectFallback: (applied: string) =>
       `Este equipo no admite el efecto elegido; se usa «${applied}».`,
+    reminders: "Avisos",
+    notifyTime: "Hora de aviso por defecto",
+    notifyTimeHint:
+      "Para tareas con fecha y sin hora, cuando el aviso es del mismo día, de días o de semanas antes.",
     system: "Sistema",
     autostart: "Iniciar con Windows",
     autostartHint:

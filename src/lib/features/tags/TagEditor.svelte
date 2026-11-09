@@ -156,6 +156,9 @@
 
 <style>
   .editor {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -259,6 +262,7 @@
 
   .actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 6px;
   }
@@ -268,6 +272,7 @@
   }
 
   .actions button {
+    flex: none;
     padding: 4px 10px;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-control);

@@ -67,6 +67,15 @@
   }
 
   let scroller: HTMLElement | undefined = $state();
+  // The body scrolls and its scrollbar narrows the columns; the fixed rows above get the same
+  // width taken away so every column line stays on the same x.
+  let scrollbarWidth = $state(0);
+
+  function measureScrollbar() {
+    if (scroller) {
+      scrollbarWidth = Math.max(0, scroller.offsetWidth - scroller.clientWidth);
+    }
+  }
   let drag = $state.raw<Drag | null>(null);
   let compose = $state.raw<Compose | null>(null);
   let title = $state("");
@@ -96,6 +105,7 @@
 
   onMount(() => {
     if (scroller) scroller.scrollTop = FIRST_VISIBLE_HOUR * HOUR_PX;
+    measureScrollbar();
   });
 
   const minutesAt = (event: MouseEvent, element: HTMLElement) =>
@@ -206,9 +216,19 @@
   const hours = Array.from({ length: 24 }, (_, hour) => hour);
 </script>
 
-<svelte:window onpointermove={onPointerMove} onpointerup={onPointerUp} />
+<svelte:window
+  onpointermove={onPointerMove}
+  onpointerup={onPointerUp}
+  onresize={measureScrollbar}
+/>
 
-<div class="grid" role="grid" aria-label={label} style:--columns={dates.length}>
+<div
+  class="grid"
+  role="grid"
+  aria-label={label}
+  style:--columns={dates.length}
+  style:--scrollbar-gap="{scrollbarWidth}px"
+>
   <div class="row head" role="row">
     <div class="gutter"></div>
     {#each columns as column (column.date)}
@@ -341,7 +361,8 @@
 
   .row {
     display: grid;
-    grid-template-columns: 52px repeat(var(--columns, 1), 1fr);
+    grid-template-columns: 52px repeat(var(--columns, 1), minmax(0, 1fr));
+    padding-right: var(--scrollbar-gap, 0px);
     flex: none;
   }
 
@@ -425,7 +446,7 @@
   .body {
     position: relative;
     display: grid;
-    grid-template-columns: 52px repeat(var(--columns, 1), 1fr);
+    grid-template-columns: 52px repeat(var(--columns, 1), minmax(0, 1fr));
   }
 
   .hours {

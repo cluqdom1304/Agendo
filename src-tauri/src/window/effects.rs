@@ -63,21 +63,30 @@ mod native {
 
     pub struct NativeBackend<'a, R: tauri::Runtime> {
         window: &'a tauri::WebviewWindow<R>,
+        dark: Option<bool>,
     }
 
     impl<'a, R: tauri::Runtime> NativeBackend<'a, R> {
-        pub fn new(window: &'a tauri::WebviewWindow<R>) -> Self {
-            Self { window }
+        /// `dark` forces the material's light or dark variant; `None` follows the system.
+        pub fn new(window: &'a tauri::WebviewWindow<R>, dark: Option<bool>) -> Self {
+            Self { window, dark }
         }
     }
 
     impl<R: tauri::Runtime> EffectBackend for NativeBackend<'_, R> {
         fn apply_mica(&self) -> Result<(), String> {
-            window_vibrancy::apply_mica(self.window, None).map_err(|error| error.to_string())
+            window_vibrancy::apply_mica(self.window, self.dark).map_err(|error| error.to_string())
         }
 
         fn apply_acrylic(&self) -> Result<(), String> {
-            window_vibrancy::apply_acrylic(self.window, None).map_err(|error| error.to_string())
+            let tint = self.dark.map(|dark| {
+                if dark {
+                    (22, 22, 26, 125)
+                } else {
+                    (246, 246, 248, 125)
+                }
+            });
+            window_vibrancy::apply_acrylic(self.window, tint).map_err(|error| error.to_string())
         }
 
         fn clear(&self) -> Result<(), String> {
@@ -97,7 +106,7 @@ mod native {
     }
 
     impl<'a, R: tauri::Runtime> NativeBackend<'a, R> {
-        pub fn new(window: &'a tauri::WebviewWindow<R>) -> Self {
+        pub fn new(window: &'a tauri::WebviewWindow<R>, _dark: Option<bool>) -> Self {
             Self { _window: window }
         }
     }

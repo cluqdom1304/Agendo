@@ -4,7 +4,7 @@
 use chrono::TimeZone;
 use rusqlite::{Connection, Transaction, params, types::Type};
 
-use super::{model::Reminder, tasks};
+use super::{model::Reminder, settings, tasks};
 use crate::domain::{
     dates,
     reminders::{self as rules, Repeat, RepeatUnit},
@@ -250,8 +250,9 @@ pub fn for_task(conn: &Connection, task_id: &str) -> rusqlite::Result<Vec<Remind
 }
 
 /// Recomputes the unsent reminders that are relative to the task's date and time, after either
-/// changed (SPEC §5.3). Without a date and a time they have no meaning and are deleted
-/// (D-26). Custom reminders and sent ones are left alone.
+/// changed (SPEC §5.3). A task with a date but no time uses the default notification time, and
+/// then only whole-day offsets make sense. Without a date, or with an offset that does not fit,
+/// they are deleted (D-26, D-35). Custom reminders and sent ones are left alone.
 pub fn recalculate<Tz: TimeZone>(
     tx: &Transaction<'_>,
     task_id: &str,
@@ -267,9 +268,16 @@ pub fn recalculate<Tz: TimeZone>(
         )?
         .query_map(params![task_id], |row| Ok((row.get(0)?, row.get(1)?)))?
         .collect::<rusqlite::Result<_>>()?;
+    if relative.is_empty() {
+        return Ok(());
+    }
+    let default_time = settings::notify_time(tx)?;
     for (id, offset) in relative {
         let notify_at = match (&task.due_date, &task.due_time) {
             (Some(date), Some(time)) => rules::offset_notify_at(zone, date, time, offset).ok(),
+            (Some(date), None) if rules::validate_untimed_offset(offset).is_ok() => {
+                rules::offset_notify_at(zone, date, &default_time, offset).ok()
+            }
             _ => None,
         };
         match notify_at {
@@ -282,6 +290,23 @@ pub fn recalculate<Tz: TimeZone>(
                     .execute(params![id])?;
             }
         }
+    }
+    Ok(())
+}
+
+/// After the default notification time changed: moves the unsent relative reminders of the
+/// tasks that have a date but no time.
+pub fn recalculate_untimed<Tz: TimeZone>(tx: &Transaction<'_>, zone: &Tz) -> rusqlite::Result<()> {
+    let task_ids: Vec<String> = tx
+        .prepare_cached(
+            "SELECT DISTINCT r.task_id FROM reminders r JOIN tasks t ON t.id = r.task_id
+             WHERE r.is_sent = 0 AND r.offset_minutes IS NOT NULL
+               AND t.due_date IS NOT NULL AND t.due_time IS NULL",
+        )?
+        .query_map([], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    for task_id in task_ids {
+        recalculate(tx, &task_id, zone)?;
     }
     Ok(())
 }

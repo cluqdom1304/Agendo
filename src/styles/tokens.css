@@ -54,7 +54,7 @@
     color-scheme: light;
     --bg-window: rgba(246, 246, 248, 0.72);
     --bg-window-native: rgba(246, 246, 248, 0.35);
-    --bg-window-solid: rgba(246, 246, 248, 0.92);
+    --bg-window-solid: rgb(246, 246, 248);
     --bg-elevated: rgba(255, 255, 255, 0.8);
     --bg-hover: rgba(0, 0, 0, 0.05);
     --text-primary: #1d1d1f;
@@ -81,7 +81,7 @@
   color-scheme: light;
   --bg-window: rgba(246, 246, 248, 0.72);
   --bg-window-native: rgba(246, 246, 248, 0.35);
-  --bg-window-solid: rgba(246, 246, 248, 0.92);
+  --bg-window-solid: rgb(246, 246, 248);
   --bg-elevated: rgba(255, 255, 255, 0.8);
   --bg-hover: rgba(0, 0, 0, 0.05);
   --text-primary: #1d1d1f;

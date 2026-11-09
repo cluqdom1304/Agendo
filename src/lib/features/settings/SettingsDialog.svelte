@@ -109,6 +109,25 @@
     {/if}
   </section>
 
+  <section aria-labelledby="settings-reminders">
+    <h3 id="settings-reminders">{t.settings.reminders}</h3>
+    <label class="row">
+      <span>
+        {t.settings.notifyTime}
+        <small class="hint">{t.settings.notifyTimeHint}</small>
+      </span>
+      <input
+        type="time"
+        required
+        value={store.notifyTime}
+        onchange={(event) => {
+          if (event.currentTarget.value)
+            void store.setNotifyTime(event.currentTarget.value);
+        }}
+      />
+    </label>
+  </section>
+
   <section aria-labelledby="settings-system">
     <h3 id="settings-system">{t.settings.system}</h3>
     <label class="row">

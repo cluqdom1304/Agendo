@@ -32,6 +32,9 @@ describe("offsetLabel", () => {
     expect(offsetLabel(120)).toBe("2 horas antes");
     expect(offsetLabel(1440)).toBe("1 día antes");
     expect(offsetLabel(2880)).toBe("2 días antes");
+    expect(offsetLabel(10080)).toBe("1 semana antes");
+    expect(offsetLabel(20160)).toBe("2 semanas antes");
+    expect(offsetLabel(0, true)).toBe("El mismo día");
   });
 });
 

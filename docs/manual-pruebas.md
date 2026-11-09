@@ -148,6 +148,17 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 
 ---
 
+## Versión 1.0.1
+
+- [ ] Editar una etiqueta en la barra lateral: el botón «Guardar» queda dentro del cuadro de edición, también con la barra lateral estrecha.
+- [ ] Ajustes → hora por defecto de avisos: se puede elegir y se conserva al reiniciar.
+- [ ] Tarea con fecha y sin hora, aviso «1 día antes»: la notificación llega a la hora por defecto del día anterior. Con «1 semana antes», una semana antes. Las opciones en minutos u horas no aparecen.
+- [ ] La misma tarea sigue en «Todo el día» del calendario, no a la hora por defecto.
+- [ ] Cambiar la hora por defecto mueve los avisos pendientes de tareas sin hora, pero no los de tareas con hora.
+- [ ] Vista de semana: las líneas entre días coinciden con la cabecera fija en todas las columnas, con y sin scroll, y al redimensionar la ventana.
+
+---
+
 ## Registro de sesiones de prueba
 
 | Fecha | Build / commit | Equipo | Fase | Resultado | Responsable |

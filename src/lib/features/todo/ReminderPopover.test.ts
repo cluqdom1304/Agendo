@@ -62,11 +62,16 @@ describe("ReminderPopover", () => {
     expect(onChange).toHaveBeenCalledWith([]);
   });
 
-  it("disables relative options without a time and explains why", () => {
-    mount({ dueTime: null });
-    const chip = screen.getByRole("button", { name: "En el momento" });
-    expect((chip as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText(/Pon una hora a la tarea/)).toBeTruthy();
+  it("offers only days and weeks ahead without a time, at the default time", async () => {
+    const { onChange } = mount({ dueTime: null });
+    expect(screen.queryByRole("button", { name: "15 min antes" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "1 hora antes" })).toBeNull();
+    expect(screen.getByRole("button", { name: "El mismo día" })).toBeTruthy();
+    expect(screen.getByText(/el aviso suena a las 09:00/)).toBeTruthy();
+    await fireEvent.click(
+      screen.getByRole("button", { name: "1 semana antes" }),
+    );
+    expect(onChange).toHaveBeenCalledWith([{ offsetMinutes: 10080 }]);
   });
 
   it("disables options whose moment has passed", () => {

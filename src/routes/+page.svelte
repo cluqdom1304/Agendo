@@ -272,7 +272,11 @@
 {#if settingsOpen}
   <SettingsDialog
     store={settingsStore}
-    onClose={() => (settingsOpen = false)}
+    onClose={() => {
+      settingsOpen = false;
+      // The default notification time moves saved reminders, which tasks hold a copy of.
+      void tasksStore.load();
+    }}
     {onRestored}
   />
 {/if}

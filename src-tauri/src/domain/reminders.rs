@@ -24,6 +24,21 @@ pub fn validate_offset(minutes: i64) -> Result<(), ValidationError> {
     }
 }
 
+/// Hour at which reminders of tasks without a time sound until the user picks another one.
+pub const DEFAULT_NOTIFY_TIME: &str = "09:00";
+
+/// A task with a date but no time can only be warned about whole days ahead: the reminder sounds
+/// at the user's default time of that earlier day.
+pub fn validate_untimed_offset(minutes: i64) -> Result<(), ValidationError> {
+    if minutes % (24 * 60) == 0 {
+        Ok(())
+    } else {
+        Err(ValidationError::new(
+            "sin hora, la tarea solo admite avisos de días o semanas antes",
+        ))
+    }
+}
+
 /// UTC instant of "`offset_minutes` before the task's local date and time".
 pub fn offset_notify_at<Tz: TimeZone>(
     zone: &Tz,

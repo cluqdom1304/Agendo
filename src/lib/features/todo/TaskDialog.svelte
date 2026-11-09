@@ -9,6 +9,7 @@
     maxDuration,
   } from "../../schedule";
   import Modal from "../../shell/Modal.svelte";
+  import { settingsStore } from "../../stores/settings.svelte";
   import { tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ReminderInput, Task } from "../../types";
@@ -71,11 +72,18 @@
   // A reminder "before the task" needs the task's date and time; without them it is dropped.
   const usable = $derived(
     inputs.filter(
-      (input) => input.offsetMinutes === undefined || (dueDate && dueTime),
+      (input) =>
+        input.offsetMinutes === undefined ||
+        (dueDate && (dueTime || input.offsetMinutes % 1440 === 0)),
     ),
   );
   const drafts = $derived(
-    draftReminders(usable, dueDate || null, dueTime || null),
+    draftReminders(
+      usable,
+      dueDate || null,
+      dueTime || null,
+      settingsStore.notifyTime,
+    ),
   );
   const pastReminder = $derived(
     drafts.some(

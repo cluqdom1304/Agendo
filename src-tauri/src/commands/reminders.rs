@@ -15,7 +15,7 @@ use crate::{
     repo::{
         model::Task,
         reminders::{self, NewReminder},
-        tasks,
+        settings, tasks,
     },
     state::{AppState, run_blocking},
 };
@@ -68,13 +68,20 @@ pub fn set<Tz: TimeZone>(
                 match (input.offset_minutes, input.notify_at.as_deref()) {
                     (Some(offset), None) => {
                         rules::validate_offset(offset)?;
-                        let (Some(date), Some(time)) = (&task.due_date, &task.due_time) else {
+                        let Some(date) = &task.due_date else {
                             return Err(AppError::Validation(
-                                "para avisar con antelación la tarea necesita fecha y hora".into(),
+                                "para avisar con antelación la tarea necesita fecha".into(),
                             ));
                         };
+                        let time = match &task.due_time {
+                            Some(time) => time.clone(),
+                            None => {
+                                rules::validate_untimed_offset(offset)?;
+                                settings::notify_time(tx)?
+                            }
+                        };
                         (
-                            rules::offset_notify_at(zone, date, time, offset)?,
+                            rules::offset_notify_at(zone, date, &time, offset)?,
                             Some(offset),
                         )
                     }
@@ -245,6 +252,72 @@ mod tests {
         assert_eq!(second.reminders.iter().filter(|r| !r.is_sent).count(), 1);
         let cleared = set(&state, &created.id, &[], &zone()).expect("clear");
         assert_eq!(cleared.reminders.len(), 1);
+    }
+
+    #[test]
+    fn a_task_without_time_warns_days_ahead_at_the_default_time() {
+        let (state, _) = test_state();
+        let created = task(&state, Some("2026-03-20"), None);
+
+        let updated = set(
+            &state,
+            &created.id,
+            &[offset(0), offset(1440), offset(10080)],
+            &zone(),
+        )
+        .expect("set");
+
+        // 09:00 by default, which is 08:00 UTC in the test zone.
+        assert_eq!(
+            notify_ats(&updated),
+            [
+                "2026-03-13T08:00:00Z",
+                "2026-03-19T08:00:00Z",
+                "2026-03-20T08:00:00Z"
+            ]
+        );
+        assert_eq!(updated.due_time, None);
+    }
+
+    #[test]
+    fn a_task_without_time_refuses_offsets_in_minutes_or_hours() {
+        let (state, _) = test_state();
+        let created = task(&state, Some("2026-03-20"), None);
+        for minutes in [15, 60, 1500] {
+            let error =
+                set(&state, &created.id, &[offset(minutes)], &zone()).expect_err("not whole days");
+            assert_eq!(error.code(), "VALIDATION");
+        }
+    }
+
+    #[test]
+    fn changing_the_default_time_moves_the_reminders_of_untimed_tasks_only() {
+        use crate::commands::settings::{DEFAULT_NOTIFY_TIME, set as set_setting};
+        let (state, _) = test_state();
+        let untimed = task(&state, Some("2026-03-20"), None);
+        let timed = task(&state, Some("2026-03-20"), Some("18:00"));
+        set(&state, &untimed.id, &[offset(1440)], &zone()).expect("untimed");
+        set(&state, &timed.id, &[offset(1440)], &zone()).expect("timed");
+
+        set_setting(&state, DEFAULT_NOTIFY_TIME, "07:30").expect("setting");
+
+        let read = |id: &str| {
+            state
+                .db
+                .read(|conn| Ok(crate::repo::tasks::get(conn, id)?.expect("task")))
+                .expect("read")
+        };
+        // Reminders are recomputed with the machine's zone, so compare against it.
+        let expected =
+            rules::offset_notify_at(&chrono::Local, "2026-03-20", "07:30", 1440).expect("expected");
+        assert_eq!(
+            read(&untimed.id).reminders[0].notify_at,
+            dates::format_instant(expected)
+        );
+        assert_eq!(
+            read(&timed.id).reminders[0].notify_at,
+            notify_ats(&read(&timed.id))[0]
+        );
     }
 
     #[test]

@@ -2,7 +2,6 @@
   import { toLocalIsoDate } from "../../dates";
   import { t } from "../../i18n";
   import {
-    PRESET_OFFSETS,
     customToInstant,
     describeRepeat,
     dueInstant,
@@ -10,11 +9,13 @@
     offsetIsAhead,
     offsetLabel,
     pending,
+    presetOffsets,
     sent,
     togglePreset,
     withCustom,
     withoutReminder,
   } from "../../reminders";
+  import { settingsStore } from "../../stores/settings.svelte";
   import type {
     Reminder,
     ReminderInput,
@@ -73,7 +74,8 @@
   const history = $derived(sent(reminders));
   const hiddenHistory = $derived(Math.max(0, history.length - HISTORY_SHOWN));
   const shownHistory = $derived(history.slice(hiddenHistory));
-  const due = $derived(dueInstant(dueDate, dueTime));
+  const due = $derived(dueInstant(dueDate, dueTime, settingsStore.notifyTime));
+  const presets = $derived(presetOffsets(dueTime !== null));
   const customInstant = $derived(customToInstant(custom));
   const customAhead = $derived(
     customInstant !== null && new Date(customInstant) > now(),
@@ -82,7 +84,7 @@
     dueDate === null
       ? t.reminders.needsSchedule
       : dueTime === null
-        ? t.reminders.needsTime
+        ? t.reminders.untimedHint(settingsStore.notifyTime)
         : null,
   );
 
@@ -152,7 +154,7 @@
 {/if}
 
 <div class="presets">
-  {#each PRESET_OFFSETS as minutes (minutes)}
+  {#each presets as minutes (minutes)}
     {@const ahead = offsetIsAhead(due, minutes, now())}
     <button
       type="button"
@@ -164,7 +166,7 @@
         : undefined}
       onclick={() => onChange(togglePreset(reminders, minutes))}
     >
-      {offsetLabel(minutes)}
+      {offsetLabel(minutes, dueTime === null)}
     </button>
   {/each}
 </div>

@@ -2,11 +2,13 @@
 
 use std::sync::Arc;
 
+use chrono::Local;
 use tauri::State;
 
 use crate::{
+    domain::dates,
     error::{AppError, AppResult},
-    repo::settings,
+    repo::{reminders, settings},
     state::{AppState, run_blocking},
 };
 
@@ -17,6 +19,9 @@ pub const THEME: &str = "theme";
 /// Native window material requested at startup (F6-05); the OS may still fall back.
 pub const WINDOW_EFFECT: &str = "window_effect";
 
+/// Hour (`HH:MM`) at which reminders of tasks without a time sound (D-35).
+pub const DEFAULT_NOTIFY_TIME: &str = settings::NOTIFY_TIME_KEY;
+
 /// Whitelist: every setting with the values it accepts.
 const ALLOWED: [(&str, &[&str]); 3] = [
     (VIEW_MODE, &["list", "day", "week", "month"]),
@@ -25,6 +30,9 @@ const ALLOWED: [(&str, &[&str]); 3] = [
 ];
 
 fn allowed_values(key: &str) -> AppResult<&'static [&'static str]> {
+    if key == DEFAULT_NOTIFY_TIME {
+        return Ok(&[]);
+    }
     ALLOWED
         .iter()
         .find(|(name, _)| *name == key)
@@ -33,7 +41,12 @@ fn allowed_values(key: &str) -> AppResult<&'static [&'static str]> {
 }
 
 fn validate(key: &str, value: &str) -> AppResult<()> {
-    if allowed_values(key)?.contains(&value) {
+    let valid = if key == DEFAULT_NOTIFY_TIME {
+        dates::parse_time(value).is_ok()
+    } else {
+        allowed_values(key)?.contains(&value)
+    };
+    if valid {
         Ok(())
     } else {
         Err(AppError::Validation(format!(
@@ -49,7 +62,17 @@ pub fn get(state: &AppState, key: &str) -> AppResult<Option<String>> {
 
 pub fn set(state: &AppState, key: &str, value: &str) -> AppResult<()> {
     validate(key, value)?;
-    state.db.write(|tx| Ok(settings::set(tx, key, value)?))
+    state.db.write(|tx| {
+        settings::set(tx, key, value)?;
+        if key == DEFAULT_NOTIFY_TIME {
+            reminders::recalculate_untimed(tx, &Local)?;
+        }
+        Ok(())
+    })?;
+    if key == DEFAULT_NOTIFY_TIME {
+        state.wake.notify_one();
+    }
+    Ok(())
 }
 
 #[tauri::command]

@@ -41,14 +41,14 @@ describe("SettingsStore", () => {
     expect(store.theme).toBe("system");
     expect(store.effect).toBe("mica");
     expect(applied).toEqual(["system"]);
-    expect(effects.request).toHaveBeenCalledWith("mica");
+    expect(effects.request).toHaveBeenCalledWith("mica", "system");
   });
 
   it("applies the saved theme and effect at startup, ignoring invalid values", async () => {
     const saved = setup({ theme: "dark", window_effect: "acrylic" });
     await saved.store.load();
     expect(saved.applied).toEqual(["dark"]);
-    expect(saved.effects.request).toHaveBeenCalledWith("acrylic");
+    expect(saved.effects.request).toHaveBeenCalledWith("acrylic", "dark");
 
     const invalid = setup({ theme: "neon", window_effect: "glass" });
     await invalid.store.load();
@@ -61,6 +61,23 @@ describe("SettingsStore", () => {
     api.settingsGet.mockRejectedValue("DB: fallo");
     await store.load();
     expect(applied).toEqual(["system"]);
+  });
+
+  it("reads and saves the default notification time, 09:00 when none is saved", async () => {
+    const { store, api, stored } = setup();
+    await store.load();
+    expect(store.notifyTime).toBe("09:00");
+
+    expect(await store.setNotifyTime("07:45")).toBe(true);
+    expect(store.notifyTime).toBe("07:45");
+    expect(stored.get("default_notify_time")).toBe("07:45");
+
+    expect(await store.setNotifyTime("7:45")).toBe(false);
+    expect(api.settingsSet).toHaveBeenCalledTimes(1);
+
+    const reloaded = setup({ default_notify_time: "18:30" });
+    await reloaded.store.load();
+    expect(reloaded.store.notifyTime).toBe("18:30");
   });
 
   it("applies a theme change at once and saves it", async () => {

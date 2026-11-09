@@ -304,6 +304,15 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-35 — Hora por defecto de los avisos y avisos de una semana
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-09
+- **Contexto:** petición del usuario para la 1.0.1. Sustituye la alternativa descartada de D-26 («asumir una hora por defecto»), que entonces no estaba pedida. **No hay migración.**
+- **Decisión:** ajuste `default_notify_time` (`HH:MM`, 09:00 si no existe) en Ajustes. Una tarea con fecha pero sin hora solo admite avisos de **días o semanas antes** (múltiplos de 1440 min; «El mismo día» = 0) y suena a esa hora por defecto del día resultante; los avisos en minutos u horas se rechazan (`VALIDATION:`). La hora supuesta solo sirve para calcular `notify_at`: la tarea sigue sin hora y en el calendario permanece en «Todo el día». Nuevo preset de una semana antes (10080 min, también con hora). Al cambiar el ajuste se recalculan los avisos relativos pendientes de las tareas sin hora.
+- **Consecuencias:** `validate_untimed_offset` en `domain/reminders.rs`, `repo::reminders::recalculate_untimed`; la lista blanca de `settings` admite la nueva clave.
+- **Alternativas descartadas:** guardar la hora supuesta en la tarea (la colocaría en el calendario); permitir avisos en horas sin hora de tarea (sin sentido).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

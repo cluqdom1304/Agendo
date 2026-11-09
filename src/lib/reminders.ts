@@ -3,10 +3,18 @@ import { formatDisplayDate } from "./dates";
 import type { Reminder, ReminderInput, Repeat } from "./types";
 
 /** The "before" options of F-12, in minutes. 0 is "En el momento". */
-export const PRESET_OFFSETS = [0, 15, 60, 1440] as const;
+export const PRESET_OFFSETS = [0, 15, 60, 1440, 10080] as const;
 
-export function offsetLabel(minutes: number): string {
-  if (minutes === 0) return t.reminders.atTime;
+/** A task without a time can only be warned about whole days ahead. */
+export function presetOffsets(hasTime: boolean): readonly number[] {
+  return hasTime
+    ? PRESET_OFFSETS
+    : PRESET_OFFSETS.filter((minutes) => minutes % 1440 === 0);
+}
+
+export function offsetLabel(minutes: number, untimed = false): string {
+  if (minutes === 0) return untimed ? t.reminders.sameDay : t.reminders.atTime;
+  if (minutes % 10080 === 0) return t.reminders.weeksBefore(minutes / 10080);
   if (minutes % 1440 === 0) return t.reminders.daysBefore(minutes / 1440);
   if (minutes % 60 === 0) return t.reminders.hoursBefore(minutes / 60);
   return t.reminders.minutesBefore(minutes);
@@ -48,13 +56,18 @@ export function describeRepeat(repeat: Omit<Repeat, "occurrence">): string {
   return `${every}${end}`;
 }
 
-/** The task's local date and time as an instant, or `null` if it has no time. */
+/**
+ * The task's local date and time as an instant. Without a time the default notification time
+ * stands in (only to place reminders, never the task), or `null` if there is none.
+ */
 export function dueInstant(
   dueDate: string | null,
   dueTime: string | null,
+  defaultTime: string | null = null,
 ): Date | null {
-  if (!dueDate || !dueTime) return null;
-  const instant = new Date(`${dueDate}T${dueTime}`);
+  const time = dueTime ?? defaultTime;
+  if (!dueDate || !time) return null;
+  const instant = new Date(`${dueDate}T${time}`);
   return Number.isNaN(instant.getTime()) ? null : instant;
 }
 
@@ -120,8 +133,9 @@ export function draftReminders(
   inputs: ReminderInput[],
   dueDate: string | null,
   dueTime: string | null,
+  defaultTime: string | null = null,
 ): Reminder[] {
-  const due = dueInstant(dueDate, dueTime);
+  const due = dueInstant(dueDate, dueTime, defaultTime);
   return inputs.map((input, index) => {
     const offset = input.offsetMinutes ?? null;
     const at =
