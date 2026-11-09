@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** 4
+**Fase activa:** 5
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F5-01 (tras confirmación humana)
-**Última actualización:** 2026-11-07 (F4-08, fin de Fase 4)
+**Siguiente tarea:** F6-01 (tras confirmación humana)
+**Última actualización:** 2026-11-09 (F5-05, fin de Fase 5)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -134,14 +134,23 @@
 ---
 
 ## Fase 5 — Vistas de calendario
-- [ ] F5-01 `SegmentedControl` (Lista / Día / Semana / Mes), persistido en `settings`
-- [ ] F5-02 `CalendarMonth`, `CalendarWeek`, `CalendarDay`
-- [ ] F5-03 Creación rápida arrastrando un tramo horario (F-11)
-- [ ] F5-04 Carga diferida del módulo de calendario (`import()`)
-- [ ] F5-05 Primer día de semana según sistema (`Intl.Locale`)
+- [x] F5-01 `SegmentedControl` (Lista / Día / Semana / Mes), persistido en `settings`
+- [x] F5-02 `CalendarMonth`, `CalendarWeek`, `CalendarDay`
+- [x] F5-03 Creación rápida arrastrando un tramo horario (F-11)
+- [x] F5-04 Carga diferida del módulo de calendario (`import()`)
+- [x] F5-05 Primer día de semana según sistema (`Intl.Locale`)
 
-**Verificaciones [A]:** (pendiente)
-**Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 5
+**Verificaciones [A]:**
+- Fase 5 completa (F5-01…F5-05, un commit: las vistas comparten store, cuadrícula y creación). Backend: `repo/settings.rs` y `commands/settings.rs` (`settings_get`/`settings_set`, SPEC §7.3) con lista blanca: solo `view_mode` (`list|day|week|month`); clave o valor desconocido → `VALIDATION:` sin guardar nada. 3 tests de Rust (233 de lib en total).
+- Frontend: `shell/SegmentedControl.svelte`, `stores/view.svelte.ts` (`ViewStore`: modo persistido, fecha ancla, `shift`, `showDay`; no pinta hasta leer el ajuste para evitar el parpadeo de la lista; si falla leer o guardar sigue funcionando), `features/calendar/{grid.ts,labels.ts,CalendarMonth,CalendarWeek,CalendarDay,CalendarView}`. `CalendarDay` es `CalendarWeek` con una columna. Atajos `Ctrl+1…4` (SPEC §9) en `keymap.ts`. Clic en una tarea del calendario vuelve a la lista y la selecciona; clic en el número de un día (o «+N más») abre la vista Día.
+- F5-03: arrastrar en una columna de Día/Semana (saltos de 15 min, también hacia arriba, o un simple clic) muestra el tramo y un campo de título; Intro (o perder el foco con texto) crea la tarea con `dueDate` y `dueTime` = inicio del tramo; Esc o título vacío no crea nada; si el backend falla, el texto se conserva. `store.createScheduled`.
+- F5-04: `+page.svelte` carga `CalendarView` con `import()`; en `build/` el calendario es un chunk aparte (≈3,5 KB gzip) que `nodes/2` solo precarga bajo demanda. Lo único que crece en el bundle inicial es el store de vista, el control segmentado y los textos (JS total 162,2 → 169,4 KB de 250).
+- F5-05: `systemFirstDay` lee `Intl.Locale(navigator.language).getWeekInfo()` (o `weekInfo`) y cae a lunes si no existe; fechas `DD/MM/YYYY` vía `formatDisplayDate`.
+- Tests (DoD de F5): Vitest 173 (antes 133): `grid.test.ts` (días, meses con recorte de día, semanas con distinto primer día, 60 meses × 3 primeros días sin huecos ni repetidos, **DST** en Europe/Madrid, America/New_York y Pacific/Auckland alrededor de los cambios de hora, `Intl` y valor por defecto, trazado de bloques solapados), `view.store.test.ts` y `CalendarView.test.ts` (semana/día/mes, bloques en su hora, creación por arrastre en ambos sentidos, clic, Esc, título vacío, fallo del backend, navegación).
+- Batería: `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test`, `npm run lint`, `npm run check` (0/0), `npm run test` (173), `npm run build` y `npm run size` (169,4 KB gzip de 250) en verde. `cargo check` de Windows cubierto (el equipo es Windows); la fase no toca `window/` ni `notify/`.
+- Desviaciones: (1) las tareas no tienen hora de fin en el esquema, así que el tramo arrastrado solo fija la hora de inicio y los bloques ocupan 30 min visuales → B-04. (2) «Los bloques de cada asignatura usan su color» (manual-pruebas) no es posible todavía: no existe almacén ni interfaz de etiquetas (Sidebar); los bloques usan el color de acento. Llegará con la tarea que cargue etiquetas. (3) Con un calendario visible no hay buscador (Ctrl+K vive en `TodoView`); no se movió para no ampliar el alcance. (4) Sin componentes fuera del inventario de SPEC §8.6.
+
+**Ítems [H]:** ver `docs/manual-pruebas.md` § Fase 5 (los ítems originales más 3 nuevos; ninguno verificado por el agente)
 
 ---
 

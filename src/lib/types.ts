@@ -108,3 +108,9 @@ export interface SearchHit {
   dueDate: string | null;
   isCompleted: boolean;
 }
+
+/** Settings the backend accepts (`settings_get` / `settings_set`). */
+export type SettingKey = "view_mode";
+
+/** What the main area shows (F-10). */
+export type ViewMode = "list" | "day" | "week" | "month";

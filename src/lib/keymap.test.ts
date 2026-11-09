@@ -17,6 +17,18 @@ describe("findShortcut", () => {
     );
   });
 
+  it("switches views with Ctrl+1…4 from anywhere", () => {
+    const ids = ["viewList", "viewDay", "viewWeek", "viewMonth"];
+    ["1", "2", "3", "4"].forEach((key, index) => {
+      for (const context of ["list", "title", "other"] as const) {
+        expect(findShortcut(press({ key, ctrlKey: true }), context)).toBe(
+          ids[index],
+        );
+      }
+    });
+    expect(findShortcut(press({ key: "1" }), "list")).toBeNull();
+  });
+
   it("tells Ctrl+N from Ctrl+Shift+N, with either letter case", () => {
     expect(findShortcut(press({ key: "n", ctrlKey: true }), "list")).toBe(
       "newTask",

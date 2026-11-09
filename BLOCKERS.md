@@ -57,6 +57,18 @@ El agente registra aquí cualquier bloqueo, ambigüedad de producto o test que n
 - **Estado:** RESUELTO
 - **Resolución humana:** Cuando una tarea sin fecha se complete, ajustar la fecha (y hora si procede) al momento que se ha marcado como completada, añadiendola como completada en el día correspondiente.
 
+## B-04 — Hora de fin al crear arrastrando un tramo
+- **Fecha:** 2026-11-09
+- **Tarea afectada:** F5-03 (implementada con la opción 1)
+- **Tipo:** DECISION_PRODUCTO
+- **Causa:** F-11 habla de arrastrar un «tramo horario», pero el esquema (SPEC §5.2) solo tiene `due_time`; no hay hora de fin ni duración.
+- **Opciones:**
+  1. Guardar solo la hora de inicio del tramo; el arrastre sirve para elegirla y los bloques ocupan 30 min visuales.
+  2. Migración nueva (`due_end_time` o duración) y bloques con su altura real; afecta a validación, DTO, ordenación y recordatorios.
+- **Recomendación del agente:** opción 1 en v1 (no toca el modelo de datos); pasar a la 2 si se necesitan eventos con duración.
+- **Estado:** ABIERTO
+- **Resolución humana:**
+
 ---
 
 ## Resueltos

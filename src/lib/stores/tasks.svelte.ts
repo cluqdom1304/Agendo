@@ -16,7 +16,11 @@ import type {
 /** The slice of `api.ts` the store uses; tests pass a fake. */
 export interface TasksApi {
   tasksList(query: { view: "todo" | "agenda" }): Promise<TasksSections>;
-  taskCreate(input: { title?: string; dueDate?: string }): Promise<Task>;
+  taskCreate(input: {
+    title?: string;
+    dueDate?: string;
+    dueTime?: string;
+  }): Promise<Task>;
   taskUpdate(id: string, patch: TaskPatch): Promise<Task>;
   search(query: string): Promise<SearchHit[]>;
   taskSetCompleted(
@@ -242,6 +246,31 @@ export class TasksStore {
       this.draft = advance ? { target: draft.target, key: ++this.#keys } : null;
     } catch (error) {
       this.#report(error);
+    } finally {
+      this.#creating = false;
+    }
+  }
+
+  /** Creates a task already placed on a day and, optionally, a time (calendar quick creation). */
+  async createScheduled(
+    rawTitle: string,
+    dueDate: string,
+    dueTime?: string,
+  ): Promise<boolean> {
+    const title = rawTitle.trim();
+    if (!title || this.#creating) return false;
+    this.#creating = true;
+    try {
+      const created = await this.#api.taskCreate({
+        title,
+        dueDate,
+        ...(dueTime ? { dueTime } : {}),
+      });
+      this.tasks = [...this.tasks, created];
+      return true;
+    } catch (error) {
+      this.#report(error);
+      return false;
     } finally {
       this.#creating = false;
     }

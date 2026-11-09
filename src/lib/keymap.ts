@@ -11,7 +11,11 @@ export type ShortcutId =
   | "deleteTask"
   | "undo"
   | "selectPrevious"
-  | "selectNext";
+  | "selectNext"
+  | "viewList"
+  | "viewDay"
+  | "viewWeek"
+  | "viewMonth";
 
 /** Where the keyboard focus is: a title input, the list itself (body or a row), or elsewhere. */
 export type FocusContext = "title" | "list" | "other";
@@ -37,6 +41,10 @@ export const BINDINGS: readonly Binding[] = [
   { id: "undo", key: "z", ctrl: true, scope: "list" },
   { id: "selectPrevious", key: "ArrowUp", scope: "list" },
   { id: "selectNext", key: "ArrowDown", scope: "list" },
+  { id: "viewList", key: "1", ctrl: true, scope: "anywhere" },
+  { id: "viewDay", key: "2", ctrl: true, scope: "anywhere" },
+  { id: "viewWeek", key: "3", ctrl: true, scope: "anywhere" },
+  { id: "viewMonth", key: "4", ctrl: true, scope: "anywhere" },
 ];
 
 export const ROW_ATTRIBUTE = "data-task-row";

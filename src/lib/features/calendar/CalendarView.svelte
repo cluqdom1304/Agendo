@@ -1,0 +1,132 @@
+<script lang="ts">
+  import { t } from "../../i18n";
+  import type { TasksStore } from "../../stores/tasks.svelte";
+  import type { ViewStore } from "../../stores/view.svelte";
+  import type { Task } from "../../types";
+  import CalendarDay from "./CalendarDay.svelte";
+  import CalendarMonth from "./CalendarMonth.svelte";
+  import CalendarWeek from "./CalendarWeek.svelte";
+  import { tasksByDate, weekDates } from "./grid";
+  import { periodLabel } from "./labels";
+
+  interface Props {
+    store: TasksStore;
+    view: ViewStore;
+    /** Leaves the calendar and shows the task in the list. */
+    onOpenTask: (task: Task) => void;
+  }
+
+  let { store, view, onOpenTask }: Props = $props();
+
+  const byDate = $derived(tasksByDate(store.tasks));
+  const heading = $derived(periodLabel(view.mode, view.anchor, view.firstDay));
+  const today = $derived(view.today());
+  const week = $derived(weekDates(view.anchor, view.firstDay));
+
+  const create = (title: string, date: string, time: string) =>
+    store.createScheduled(title, date, time);
+</script>
+
+<section class="calendar">
+  <div class="nav">
+    <h2>{heading}</h2>
+    <div class="buttons">
+      <button type="button" onclick={() => view.shift(-1)}>
+        {t.calendar.previous}
+      </button>
+      <button type="button" onclick={() => view.goToToday()}>
+        {t.calendar.today}
+      </button>
+      <button type="button" onclick={() => view.shift(1)}>
+        {t.calendar.next}
+      </button>
+    </div>
+  </div>
+
+  <div class="surface">
+    {#if view.mode === "month"}
+      <CalendarMonth
+        anchor={view.anchor}
+        firstDay={view.firstDay}
+        {today}
+        tasksByDate={byDate}
+        label={t.calendar.monthGrid}
+        onShowDay={(date) => view.showDay(date)}
+        {onOpenTask}
+      />
+    {:else if view.mode === "week"}
+      <CalendarWeek
+        dates={week}
+        {today}
+        tasksByDate={byDate}
+        label={t.calendar.weekGrid}
+        onCreate={create}
+        {onOpenTask}
+      />
+    {:else}
+      <CalendarDay
+        date={view.anchor}
+        {today}
+        tasksByDate={byDate}
+        label={t.calendar.dayGrid}
+        onCreate={create}
+        {onOpenTask}
+      />
+    {/if}
+  </div>
+</section>
+
+<style>
+  .calendar {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: 0 var(--space-4) var(--space-4);
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-2) var(--space-3);
+  }
+
+  h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 4px;
+  }
+
+  .buttons button {
+    padding: 4px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .buttons button:hover {
+    background: var(--bg-hover);
+  }
+
+  .buttons button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .surface {
+    flex: 1;
+    min-height: 0;
+  }
+</style>

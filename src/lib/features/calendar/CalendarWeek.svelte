@@ -1,0 +1,427 @@
+<script lang="ts">
+  import { onMount } from "svelte";
+
+  import { t } from "../../i18n";
+  import type { Task } from "../../types";
+  import { BLOCK_MINUTES, layoutDay, minutesToTime, snapSpan } from "./grid";
+  import { dayNumber, weekdayName } from "./labels";
+
+  /** Pixels per hour. The whole day is 24 of them; the grid scrolls. */
+  const HOUR_PX = 48;
+  const FIRST_VISIBLE_HOUR = 7;
+
+  interface Props {
+    /** The columns: seven dates for a week, one for a day. */
+    dates: string[];
+    today: string;
+    tasksByDate: Map<string, Task[]>;
+    label: string;
+    onCreate: (title: string, date: string, time: string) => Promise<boolean>;
+    onOpenTask: (task: Task) => void;
+  }
+
+  let { dates, today, tasksByDate, label, onCreate, onOpenTask }: Props =
+    $props();
+
+  interface Drag {
+    date: string;
+    anchor: number;
+    current: number;
+  }
+  interface Compose {
+    date: string;
+    start: number;
+    end: number;
+  }
+
+  let scroller: HTMLElement | undefined = $state();
+  let drag = $state.raw<Drag | null>(null);
+  let compose = $state.raw<Compose | null>(null);
+  let title = $state("");
+  let dragColumn: HTMLElement | null = null;
+  let committing = false;
+
+  const dragSpan = $derived(
+    drag ? { date: drag.date, ...snapSpan(drag.anchor, drag.current) } : null,
+  );
+  const selection = $derived(dragSpan ?? compose);
+
+  const columns = $derived(
+    dates.map((date) => {
+      const tasks = tasksByDate.get(date) ?? [];
+      return {
+        date,
+        isToday: date === today,
+        allDay: tasks.filter((task) => task.dueTime === null),
+        placed: layoutDay(tasks),
+      };
+    }),
+  );
+
+  onMount(() => {
+    if (scroller) scroller.scrollTop = FIRST_VISIBLE_HOUR * HOUR_PX;
+  });
+
+  const minutesAt = (event: MouseEvent, element: HTMLElement) =>
+    ((event.clientY - element.getBoundingClientRect().top) / HOUR_PX) * 60;
+
+  const top = (minutes: number) => (minutes / 60) * HOUR_PX;
+
+  function onPointerDown(event: PointerEvent, date: string) {
+    if (event.button !== 0) return;
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest("[data-block], [data-quick-create]")
+    ) {
+      return;
+    }
+    const element = event.currentTarget;
+    if (!(element instanceof HTMLElement)) return;
+    dragColumn = element;
+    const minutes = minutesAt(event, element);
+    compose = null;
+    drag = { date, anchor: minutes, current: minutes };
+    event.preventDefault();
+  }
+
+  function onPointerMove(event: PointerEvent) {
+    if (!drag || !dragColumn) return;
+    drag = { ...drag, current: minutesAt(event, dragColumn) };
+  }
+
+  function onPointerUp(event: PointerEvent) {
+    if (!drag || !dragColumn) return;
+    const finished = { ...drag, current: minutesAt(event, dragColumn) };
+    drag = null;
+    dragColumn = null;
+    compose = {
+      date: finished.date,
+      ...snapSpan(finished.anchor, finished.current),
+    };
+    title = "";
+  }
+
+  function cancelCompose() {
+    compose = null;
+    title = "";
+  }
+
+  async function commit() {
+    const pending = compose;
+    const text = title.trim();
+    if (!pending || committing) return;
+    if (!text) {
+      cancelCompose();
+      return;
+    }
+    committing = true;
+    try {
+      // The task is saved with the span's start; tasks have no end time (B-04).
+      if (await onCreate(text, pending.date, minutesToTime(pending.start))) {
+        cancelCompose();
+      }
+    } finally {
+      committing = false;
+    }
+  }
+
+  function onQuickKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void commit();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      cancelCompose();
+    }
+  }
+
+  function focusOnMount(node: HTMLElement) {
+    node.focus();
+  }
+
+  const hours = Array.from({ length: 24 }, (_, hour) => hour);
+</script>
+
+<svelte:window onpointermove={onPointerMove} onpointerup={onPointerUp} />
+
+<div class="grid" role="grid" aria-label={label} style:--columns={dates.length}>
+  <div class="row head" role="row">
+    <div class="gutter"></div>
+    {#each columns as column (column.date)}
+      <div class="head-cell" class:today={column.isToday} role="columnheader">
+        <span class="weekday">{weekdayName(column.date)}</span>
+        <span class="number">{dayNumber(column.date)}</span>
+      </div>
+    {/each}
+  </div>
+
+  <div class="row allday" role="row">
+    <div class="gutter">{t.calendar.allDay}</div>
+    {#each columns as column (column.date)}
+      <div class="allday-cell" role="gridcell">
+        {#each column.allDay as task (task.id)}
+          <button
+            type="button"
+            class="chip"
+            class:done={task.isCompleted}
+            title={t.calendar.openInList(task.title || t.calendar.untitled)}
+            onclick={() => onOpenTask(task)}
+          >
+            {task.title || t.calendar.untitled}
+          </button>
+        {/each}
+      </div>
+    {/each}
+  </div>
+
+  <div class="scroller" bind:this={scroller}>
+    <div class="body" style:height="{24 * HOUR_PX}px">
+      <div class="gutter hours">
+        {#each hours as hour (hour)}
+          <span style:top="{top(hour * 60)}px">{minutesToTime(hour * 60)}</span>
+        {/each}
+      </div>
+      {#each columns as column (column.date)}
+        <div
+          class="column"
+          class:today={column.isToday}
+          role="gridcell"
+          tabindex="-1"
+          aria-label={t.calendar.createAt(column.date)}
+          data-date={column.date}
+          style:--hour-px="{HOUR_PX}px"
+          onpointerdown={(event) => onPointerDown(event, column.date)}
+        >
+          {#each column.placed as item (item.task.id)}
+            <button
+              type="button"
+              class="block"
+              class:done={item.task.isCompleted}
+              data-block
+              style:top="{top(item.start)}px"
+              style:height="{top(BLOCK_MINUTES) - 2}px"
+              style:left="{(item.lane / item.lanes) * 100}%"
+              style:width="calc({100 / item.lanes}% - 2px)"
+              title={t.calendar.openInList(
+                item.task.title || t.calendar.untitled,
+              )}
+              onclick={() => onOpenTask(item.task)}
+            >
+              <span class="time">{item.task.dueTime}</span>
+              {item.task.title || t.calendar.untitled}
+            </button>
+          {/each}
+
+          {#if selection && selection.date === column.date}
+            <div
+              class="selection"
+              data-selection
+              style:top="{top(selection.start)}px"
+              style:height="{top(selection.end - selection.start)}px"
+            >
+              <span class="span-label">
+                {t.calendar.span(
+                  minutesToTime(selection.start),
+                  minutesToTime(selection.end),
+                )}
+              </span>
+              {#if compose && !drag}
+                <input
+                  class="quick"
+                  data-quick-create
+                  type="text"
+                  autocomplete="off"
+                  aria-label={t.calendar.quickTitleLabel}
+                  placeholder={t.calendar.quickTitlePlaceholder}
+                  bind:value={title}
+                  use:focusOnMount
+                  onkeydown={onQuickKeydown}
+                  onblur={() => void commit()}
+                />
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  </div>
+</div>
+
+<style>
+  .grid {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    user-select: none;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 52px repeat(var(--columns, 1), 1fr);
+    flex: none;
+  }
+
+  .gutter {
+    color: var(--text-secondary);
+    font-size: 11px;
+    padding: 4px 6px 0 0;
+    text-align: right;
+  }
+
+  .head-cell {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    padding: var(--space-2) 0;
+    border-left: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .head-cell .number {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .head-cell.today .number {
+    padding: 0 7px;
+    border-radius: var(--radius-chip);
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .allday {
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    min-height: 28px;
+  }
+
+  .allday-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px;
+    border-left: 1px solid var(--border-subtle);
+    min-width: 0;
+  }
+
+  .chip,
+  .block {
+    border: 0;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chip {
+    padding: 2px 6px;
+  }
+
+  .chip.done,
+  .block.done {
+    opacity: 0.55;
+    text-decoration: line-through;
+  }
+
+  .scroller {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .body {
+    position: relative;
+    display: grid;
+    grid-template-columns: 52px repeat(var(--columns, 1), 1fr);
+  }
+
+  .hours {
+    position: relative;
+    padding: 0;
+  }
+
+  .hours span {
+    position: absolute;
+    right: 6px;
+    transform: translateY(-50%);
+  }
+
+  .hours span:first-child {
+    transform: none;
+  }
+
+  .column {
+    position: relative;
+    border-left: 1px solid var(--border-subtle);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--border-subtle) 0,
+      var(--border-subtle) 1px,
+      transparent 1px,
+      transparent var(--hour-px)
+    );
+    cursor: crosshair;
+  }
+
+  .column.today {
+    background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+  }
+
+  .block {
+    position: absolute;
+    padding: 2px 6px;
+    border-left: 3px solid var(--accent);
+  }
+
+  .block .time {
+    color: var(--text-secondary);
+    margin-right: 4px;
+  }
+
+  .selection {
+    position: absolute;
+    inset-inline: 2px;
+    z-index: 2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+    border: 1px solid var(--accent);
+    font-size: 11px;
+    pointer-events: none;
+  }
+
+  .selection .span-label {
+    color: var(--text-primary);
+  }
+
+  .quick {
+    display: block;
+    width: 100%;
+    margin-top: 2px;
+    padding: 2px 4px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 12px;
+    pointer-events: auto;
+    user-select: text;
+  }
+
+  .quick:focus-visible {
+    outline: 2px solid var(--accent);
+  }
+</style>

@@ -8,6 +8,7 @@ import type {
   ReminderFired,
   ReminderInput,
   SearchHit,
+  SettingKey,
   Section,
   Tag,
   TagUpsertInput,
@@ -139,4 +140,12 @@ export function tagDelete(id: string): Promise<void> {
 
 export function taskTagsSet(taskId: string, tagIds: string[]): Promise<Task> {
   return invoke<Task>("task_tags_set", { taskId, tagIds });
+}
+
+export function settingsGet(key: SettingKey): Promise<string | null> {
+  return invoke<string | null>("settings_get", { key });
+}
+
+export function settingsSet(key: SettingKey, value: string): Promise<void> {
+  return invoke<void>("settings_set", { key, value });
 }

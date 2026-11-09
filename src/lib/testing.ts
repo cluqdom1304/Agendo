@@ -71,12 +71,22 @@ export class FakeApi implements TasksApi {
       : { todo: [], agenda: groupByDay(live) };
   }
 
-  async taskCreate(input: { title?: string; dueDate?: string }): Promise<Task> {
-    await this.#enter("taskCreate", input.title ?? "");
+  async taskCreate(input: {
+    title?: string;
+    dueDate?: string;
+    dueTime?: string;
+  }): Promise<Task> {
+    await this.#enter(
+      "taskCreate",
+      input.dueTime
+        ? `${input.title ?? ""}@${input.dueTime}`
+        : (input.title ?? ""),
+    );
     const task = makeTask({
       id: `new-${++this.#created}`,
       title: input.title ?? "",
       dueDate: input.dueDate ?? null,
+      dueTime: input.dueTime ?? null,
       position: 1000 + this.#created,
     });
     this.tasks = [...this.tasks, task];

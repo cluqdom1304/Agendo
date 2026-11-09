@@ -57,17 +57,17 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 
 ## Fase 4 — Recordatorios y notificaciones
 
-- [ ] Un recordatorio "En el momento" muestra una notificación nativa de Windows 11 a la hora indicada (± 5 s).
-- [ ] Un recordatorio "15 min antes" dispara a la hora correcta.
-- [ ] El recordatorio aparece en el Centro de actividades de Windows.
-- [ ] Con la app cerrada, un recordatorio no se pierde: al volver a abrir la app dentro de las 24 h siguientes, se notifica.
+- [x] Un recordatorio "En el momento" muestra una notificación nativa de Windows 11 a la hora indicada (± 5 s).
+- [x] Un recordatorio "15 min antes" dispara a la hora correcta.
+- [x] El recordatorio aparece en el Centro de actividades de Windows.
+- [x] Con la app cerrada, un recordatorio no se pierde: al volver a abrir la app dentro de las 24 h siguientes, se notifica.
 - [ ] Tras suspender el equipo y reanudarlo, los recordatorios vencidos se gestionan según F-14.
 - [ ] Cambiar la hora de una tarea reprograma su recordatorio.
 - [ ] Un recordatorio personalizado se respeta tras reiniciar el equipo.
 - [ ] Si se cambia la zona horaria de Windows, los recordatorios disparan a la hora local esperada (anotar comportamiento).
 - [ ] Si hay varias notificaciones seguidas, Windows las agrupa o las muestra sin bloquear la app.
-- [ ] La campana de cada fila abre el panel de recordatorios; las opciones cuyo momento ya pasó aparecen desactivadas, y el campo «Hora de la tarea» permite poner o quitar la hora.
-- [ ] Con la app abierta y en primer plano, al disparar un recordatorio aparece además el aviso «Recordatorio: …» dentro de la app.
+- [x] La campana de cada fila abre el panel de recordatorios; las opciones cuyo momento ya pasó aparecen desactivadas, y el campo «Hora de la tarea» permite poner o quitar la hora.
+- [x] Con la app abierta y en primer plano, al disparar un recordatorio aparece además el aviso «Recordatorio: …» dentro de la app.
 - [ ] Una tarea completada o eliminada no avisa; si se reabre o se restaura a tiempo, vuelve a avisar.
 
 ---
@@ -77,8 +77,11 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] El selector Lista / Día / Semana / Mes cambia la vista sin recargar la app.
 - [ ] La semana empieza el día que Windows tiene configurado.
 - [ ] Arrastrar en Día o Semana crea un evento con la hora correcta.
-- [ ] Los bloques de cada asignatura usan su color.
+- [ ] Los bloques de cada asignatura usan su color. *(No disponible aún: requiere el almacén de etiquetas; ver PROGRESS § Fase 5, desviaciones.)*
 - [ ] Los cambios de hora de verano/invierno no desplazan tareas de día.
+- [ ] La vista elegida se recuerda al cerrar y volver a abrir la app, y `Ctrl+1/2/3/4` cambian de vista.
+- [ ] Al pulsar una tarea del calendario se vuelve a la lista con esa tarea seleccionada; el número de un día del mes abre la vista Día.
+- [ ] Abrir una vista de calendario por primera vez no produce parpadeos ni retraso apreciable (carga diferida).
 
 ---
 
