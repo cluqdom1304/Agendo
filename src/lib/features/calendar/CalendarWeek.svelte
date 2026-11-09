@@ -415,9 +415,8 @@
     position: absolute;
     inset-inline: 0;
     z-index: 3;
-    height: 2px;
-    margin-top: -1px;
-    border-radius: 1px;
+    height: 1px;
+    margin-top: -0.5px;
     background: var(--danger);
     pointer-events: none;
   }
@@ -429,10 +428,10 @@
   .now.start::before {
     content: "";
     position: absolute;
-    left: -5px;
-    top: -4px;
-    width: 10px;
-    height: 10px;
+    left: -4px;
+    top: -3.5px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--danger);
     box-shadow: 0 0 0 2px var(--bg-window-solid);
