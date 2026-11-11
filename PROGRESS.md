@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** Rediseño de interfaz (D-39, D-40), sobre la versión 1.0.4
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** validar los ítems `[H]` de `docs/manual-pruebas.md` § «Rediseño de interfaz (D-39)» y § «Notas en la lista (D-40)» con `npm run tauri dev`; si se acepta, subir la versión (propuesta: 1.1.0). Siguen pendientes los `[H]` anteriores y F6-06 (E2E)
-**Última actualización:** 2026-11-11 (notas en la lista, D-40; sin cambio de versión hasta la validación visual)
+**Fase activa:** — (Versión 1.0.5 cerrada)
+**Estado:** DONE   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** ninguna. Validar los ítems `[H]` pendientes de `docs/manual-pruebas.md` (incluidas las secciones 1.0.1 a 1.0.4, «Rediseño de interfaz (D-39)» y «Notas en la lista (D-40)») y ejecutar F6-06 (E2E) en un equipo con `tauri-driver`
+**Última actualización:** 2026-11-11 (cierre de la V1.0.5: rediseño de interfaz D-39 y notas en la lista D-40)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -214,6 +214,7 @@
 - **Actualizar a una versión posterior:** subir la versión, `npx tauri build` y abrir el `.exe` nuevo sobre el instalado; los datos se conservan.
 
 ## Notas de sesión
+- 2026-11-11: **Versión 1.0.5 lanzada** (D-39, D-40): rediseño de la interfaz con estética y movimiento tipo Apple, y notas de las tareas como segunda línea discreta (sin foco al abrir, barra de formato bajo el título, siempre desplegadas al iniciar, sin botón global). Versión fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y los dos lockfiles. Batería `[A]` en verde: `cargo fmt --check`, `clippy -D warnings`, `cargo test` (264 de lib + integración), `npm run lint`, `check` (0/0), `test` (349), `build` y `size` (JS 188,0 KB; CSS 12,5 KB). Instaladores con `npx tauri build`: `MiAgendaApp_1.0.5_x64-setup.exe` (NSIS, 3,20 MiB, el recomendado) y `MiAgendaApp_1.0.5_x64_es-ES.msi` (4,52 MiB) en `src-tauri/target/release/bundle/`; ejecutable `miagendaapp.exe` 12,1 MiB. Sin migraciones: los datos se conservan al instalar sobre la 1.0.4. **No se ha visto la interfaz en ejecución**: aspecto, arrastre de ventana, fluidez, RAM y arranque son `[H]` (manual-pruebas § «Rediseño de interfaz (D-39)» y § «Notas en la lista (D-40)»). Fuera de la versión por decisión del usuario: no hay plan V2 vigente.
 - 2026-11-11: ajustes de D-40 a petición del usuario: la barra de formato deja de flotar y se abre justo debajo del título de la tarea, encima del texto de la nota; todas las notas con texto empiezan desplegadas en cada sesión (ocultar una ya no se recuerda al reiniciar y se borra la clave `agenda.notesCollapsed`; **modifica D-38**). **Retirado el «Plan V2»** de este archivo y las entradas B-05 a B-08 de `BLOCKERS.md`, también a petición del usuario: no hay planificación de V2 vigente. Batería `[A]` en verde (Vitest 349; Rust sin cambios).
 - 2026-11-11: corrección de D-40: la nota de la lista usaba la clase `inline`, que coincide con la utilidad `inline` de Tailwind (`display: inline`) y rompía su caja (márgenes, fondo y barra flotante). Renombrada a `in-list` / `as-field`. Revisado el CSS generado: ninguna otra clase de componente choca de forma dañina (`block` y `grid` ya fijan su propio `display`). **Regla:** no usar nombres de utilidades de Tailwind como clases propias. Lint, check, Vitest 349, build y size en verde; Rust sin cambios.
 - 2026-11-11: **notas en la lista (D-40)**: eliminado el botón «Ocultar/Mostrar todas las notas»; las notas ya no toman el cursor al abrir la app (solo la que el usuario acaba de abrir); se leen como segunda línea gris bajo el título y solo parecen un campo al editarlas; la barra de formato flota bajo la nota sin mover la lista; texto de ayuda «Añadir nota…»; una nota abierta y dejada vacía se recoge sola; casillas redondas. Batería `[A]`: lint, check (0/0), Vitest 349, build, size (JS 188,1 KB; CSS 12,6 KB) y Rust (fmt, clippy, 264 tests) en verde. Sin dependencias nuevas (`Placeholder` viene en `@tiptap/extensions`, ya instalado). Apariencia `[H]`: manual-pruebas § «Notas en la lista (D-40)».
