@@ -171,6 +171,15 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] Lo mismo en la fecha de la fila de la lista: no se mueve la tarea hasta completar el año.
 - [ ] Borrar la fecha sigue funcionando.
 
+## Versión 1.0.4
+
+- [ ] Una tarea con notas muestra sus notas desplegadas al abrir la app, también tras cerrarla y volver a abrirla.
+- [ ] Al ocultar las notas de una tarea con el icono, siguen ocultas tras reiniciar; al volver a pulsarlo se muestran.
+- [ ] Una tarea sin notas no despliega nada; pulsar su icono abre el editor vacío para escribir.
+- [ ] Con más de una tarea con notas aparece «Ocultar todas las notas» / «Mostrar todas las notas» y funciona.
+- [ ] Completar una tarea, cambiarle la fecha o editarla desde el diálogo no pierde lo escrito en sus notas.
+- [ ] Elegir una tarea desde la búsqueda (Ctrl+K) despliega sus notas aunque estuvieran ocultas.
+
 ---
 
 ## Registro de sesiones de prueba

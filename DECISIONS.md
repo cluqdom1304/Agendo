@@ -330,6 +330,15 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-38 — Notas desplegadas por defecto y recordadas
+- **Estado:** ACCEPTED · **Fecha:** 2026-11-11
+- **Contexto:** tras reiniciar, las notas de las tareas aparecían ocultas y había que pulsar el icono en cada una. Solo podía haber una abierta a la vez. **Sin migración ni dependencias nuevas.**
+- **Decisión:** las notas con texto se muestran por defecto; ocultarlas con el icono se recuerda en `localStorage` (`agenda.notesCollapsed`, solo ids). Pueden estar abiertas varias a la vez. Las tareas sin notas siguen cerradas hasta que se pulsa el icono. Un botón «Ocultar/Mostrar todas las notas» aparece cuando hay más de una tarea con notas. Elegir una tarea desde la búsqueda la despliega.
+- **Consecuencias:** al completar, cambiar la fecha o editar una tarea, sus notas se ocultan un instante para que el editor guarde antes de remontarse, y vuelven solas.
+- **Alternativas descartadas:** guardar el estado en SQLite (migración para un detalle de interfaz); mostrar siempre todas sin poder ocultarlas.
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

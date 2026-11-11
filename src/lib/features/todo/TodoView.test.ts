@@ -297,16 +297,10 @@ describe("notes and search", () => {
     ],
   });
 
-  it("opens and closes the notes under a task with its toggle", async () => {
+  it("shows notes with text by default and toggles them", async () => {
     await mount([
       makeTask({ id: "a", title: "Con notas", contentJson: notes }),
     ]);
-    expect(
-      screen.queryByRole("textbox", { name: "Notas de la tarea" }),
-    ).toBeNull();
-    await fireEvent.click(
-      screen.getByRole("button", { name: /Mostrar notas/ }),
-    );
     expect(
       (await screen.findByRole("textbox", { name: "Notas de la tarea" }))
         .textContent,
@@ -317,6 +311,12 @@ describe("notes and search", () => {
     expect(
       screen.queryByRole("textbox", { name: "Notas de la tarea" }),
     ).toBeNull();
+    await fireEvent.click(
+      screen.getByRole("button", { name: /Mostrar notas/ }),
+    );
+    expect(
+      await screen.findByRole("textbox", { name: "Notas de la tarea" }),
+    ).toBeTruthy();
   });
 
   it("saves edited notes through the store", async () => {
@@ -351,7 +351,7 @@ describe("notes and search", () => {
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(store.selectedId).toBe("b");
-    expect(store.notesOpenId).toBe("b");
+    expect(store.isNotesOpen("b")).toBe(true);
     expect(
       await screen.findByRole("textbox", { name: "Notas de la tarea" }),
     ).toBeTruthy();

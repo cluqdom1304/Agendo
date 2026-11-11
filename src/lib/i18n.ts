@@ -85,6 +85,8 @@ export const t = {
   notes: {
     open: (title: string) => `Mostrar notas de «${title}»`,
     close: (title: string) => `Ocultar notas de «${title}»`,
+    showAll: "Mostrar todas las notas",
+    hideAll: "Ocultar todas las notas",
     editorLabel: "Notas de la tarea",
     loading: "Cargando editor…",
     loadFailed: "No se pudo cargar el editor de notas.",

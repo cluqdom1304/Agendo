@@ -109,6 +109,21 @@ function isSameTarget(a: DraftTarget, b: DraftTarget): boolean {
     : b.section === "agenda" && b.date === a.date;
 }
 
+const COLLAPSED_KEY = "agenda.notesCollapsed";
+
+function loadCollapsed(): string[] {
+  try {
+    const parsed: unknown = JSON.parse(
+      localStorage.getItem(COLLAPSED_KEY) ?? "[]",
+    );
+    return Array.isArray(parsed)
+      ? parsed.filter((id): id is string => typeof id === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 export class TasksStore {
   /** Immutable task objects: an update swaps one object, so untouched rows keep their identity. */
   tasks = $state.raw<Task[]>([]);
@@ -117,8 +132,13 @@ export class TasksStore {
   draft = $state.raw<Draft | null>(null);
   undoStack = $state.raw<UndoEntry[]>([]);
   notice = $state.raw<Notice | null>(null);
-  /** The task whose notes are open under its row; one at a time keeps the document short. */
-  notesOpenId = $state<string | null>(null);
+  /** Tasks whose empty notes the user opened to write; tasks with text are open unless collapsed. */
+  readonly #notesOpened = new SvelteSet<string>();
+  /** Tasks with text whose notes the user hid; remembered between sessions. */
+  readonly #notesCollapsed = new SvelteSet<string>(loadCollapsed());
+  /** Notes hidden for an instant so the editor flushes before its row remounts. */
+  readonly #notesSuspended = new SvelteSet<string>();
+  #notesSaving = 0;
   /** The task whose reminder panel is open under its row. */
   remindersOpenId = $state<string | null>(null);
   /** Rows playing their exit animation; per-key reactivity re-renders only the row concerned. */
@@ -368,7 +388,7 @@ export class TasksStore {
     const duration = dueTime ? input.durationMinutes : null;
     if (dueTime !== before.dueTime) patch.dueTime = dueTime;
     if (duration !== before.durationMinutes) patch.durationMinutes = duration;
-    if (this.notesOpenId === id) this.notesOpenId = null;
+    this.#suspendNotes(id);
     try {
       if (Object.keys(patch).length > 0) {
         this.#replace(await this.#api.taskUpdate(id, patch));
@@ -411,7 +431,7 @@ export class TasksStore {
   async setDueDate(id: string, date: string | null): Promise<void> {
     const before = this.find(id);
     if (!before || before.dueDate === date) return;
-    if (this.notesOpenId === id) this.notesOpenId = null;
+    this.#suspendNotes(id);
     this.#replace({
       ...before,
       dueDate: date,
@@ -495,7 +515,7 @@ export class TasksStore {
       return;
     }
     // The row changes place; closing the notes first lets the editor save before it remounts.
-    if (this.notesOpenId === id) this.notesOpenId = null;
+    this.#suspendNotes(id);
     // D-23: a completed task always sits in the "Completadas" of the day it was completed.
     const completedDate = completed ? toLocalIsoDate(this.#now()) : undefined;
     const guess: Task = {
@@ -538,17 +558,83 @@ export class TasksStore {
 
   // ---- notes and search --------------------------------------------------------------
 
+  /** Notes with text show by default (also after a restart); the user can collapse them. */
+  isNotesOpen(id: string): boolean {
+    if (this.#notesSuspended.has(id)) return false;
+    const task = this.find(id);
+    if (!task) return false;
+    return (
+      this.#notesOpened.has(id) ||
+      (hasNotes(task.contentJson) && !this.#notesCollapsed.has(id))
+    );
+  }
+
   toggleNotes(id: string): void {
-    this.notesOpenId = this.notesOpenId === id ? null : id;
+    if (this.isNotesOpen(id)) {
+      this.#notesOpened.delete(id);
+      this.#notesCollapsed.add(id);
+    } else {
+      this.#notesOpened.add(id);
+      this.#notesCollapsed.delete(id);
+    }
+    this.#persistCollapsed();
+  }
+
+  /** Opens or closes every task's notes at once. */
+  setAllNotesOpen(open: boolean): void {
+    this.#notesOpened.clear();
+    this.#notesCollapsed.clear();
+    for (const task of this.tasks) {
+      if (!hasNotes(task.contentJson)) continue;
+      if (!open) this.#notesCollapsed.add(task.id);
+    }
+    this.#persistCollapsed();
+  }
+
+  /** A task with notes. */
+  get notesCount(): number {
+    return this.tasks.filter((task) => hasNotes(task.contentJson)).length;
+  }
+
+  /** True when some task with notes has them hidden. */
+  get someNotesHidden(): boolean {
+    return this.tasks.some(
+      (task) => hasNotes(task.contentJson) && !this.isNotesOpen(task.id),
+    );
+  }
+
+  #persistCollapsed(): void {
+    try {
+      localStorage.setItem(
+        COLLAPSED_KEY,
+        JSON.stringify([...this.#notesCollapsed]),
+      );
+    } catch {
+      // Storage may be unavailable; the state then only lasts for this session.
+    }
+  }
+
+  #suspendNotes(id: string): void {
+    if (!this.isNotesOpen(id)) return;
+    this.#notesSuspended.add(id);
+    setTimeout(() => this.#resumeNotes(), 0);
+  }
+
+  #resumeNotes(): void {
+    if (this.#notesSaving === 0) this.#notesSuspended.clear();
   }
 
   /** Saves the notes document; throws after reporting, so the editor keeps its pending text. */
   async saveNotes(id: string, contentJson: string): Promise<void> {
+    this.#notesSaving++;
     try {
       this.#replace(await this.#api.taskUpdate(id, { contentJson }));
     } catch (error) {
       this.#report(error);
       throw error;
+    } finally {
+      this.#notesSaving--;
+      this.#resumeNotes();
     }
   }
 
@@ -561,7 +647,9 @@ export class TasksStore {
     const task = this.find(id);
     if (!task) return false;
     this.selectedId = id;
-    this.notesOpenId = hasNotes(task.contentJson) ? id : null;
+    if (hasNotes(task.contentJson) && this.#notesCollapsed.delete(id)) {
+      this.#persistCollapsed();
+    }
     return true;
   }
 

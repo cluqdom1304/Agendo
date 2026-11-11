@@ -48,7 +48,7 @@
     onDateChange={(date) => store.setDueDate(task.id, date)}
     onDelete={() => store.remove(task.id)}
     hasNotes={hasNotes(task.contentJson)}
-    notesOpen={store.notesOpenId === task.id}
+    notesOpen={store.isNotesOpen(task.id)}
     onToggleNotes={() => store.toggleNotes(task.id)}
     reminderCount={pending(task.reminders).length}
     remindersOpen={store.remindersOpenId === task.id}
@@ -72,7 +72,7 @@
       onClose={() => (store.remindersOpenId = null)}
     />
   {/if}
-  {#if store.notesOpenId === task.id}
+  {#if store.isNotesOpen(task.id)}
     <NoteEditor
       contentJson={task.contentJson}
       save={(json) => store.saveNotes(task.id, json)}

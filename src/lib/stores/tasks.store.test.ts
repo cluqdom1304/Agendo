@@ -295,36 +295,74 @@ describe("notes", () => {
     expect(store.find("a")?.contentJson).toBe("");
   });
 
-  it("toggleNotes keeps one task open at a time", async () => {
-    const { store } = setup([makeTask({ id: "a" }), makeTask({ id: "b" })]);
+  const memory = new Map<string, string>();
+  beforeEach(() => {
+    memory.clear();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => void memory.set(key, value),
+      clear: () => memory.clear(),
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const withText =
+    '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"hola"}]}]}';
+
+  it("notes with text are open by default and toggleNotes collapses them", async () => {
+    localStorage.clear();
+    const { store } = setup([
+      makeTask({ id: "a", contentJson: withText }),
+      makeTask({ id: "b" }),
+    ]);
     await store.load();
+    expect([store.isNotesOpen("a"), store.isNotesOpen("b")]).toEqual([
+      true,
+      false,
+    ]);
     store.toggleNotes("a");
     store.toggleNotes("b");
-    expect(store.notesOpenId).toBe("b");
-    store.toggleNotes("b");
-    expect(store.notesOpenId).toBeNull();
+    expect([store.isNotesOpen("a"), store.isNotesOpen("b")]).toEqual([
+      false,
+      true,
+    ]);
+    expect(localStorage.getItem("agenda.notesCollapsed")).toBe('["a"]');
   });
 
-  it("completing a task closes its notes", async () => {
-    const { store } = setup();
+  it("a collapsed note stays collapsed in a new session", async () => {
+    localStorage.setItem("agenda.notesCollapsed", '["a"]');
+    const { store } = setup([makeTask({ id: "a", contentJson: withText })]);
     await store.load();
-    store.toggleNotes("a");
-    await store.setCompleted("a", true);
-    expect(store.notesOpenId).toBeNull();
+    expect(store.isNotesOpen("a")).toBe(false);
+    localStorage.clear();
+  });
+
+  it("setAllNotesOpen collapses and expands every task with notes", async () => {
+    localStorage.clear();
+    const { store } = setup([
+      makeTask({ id: "a", contentJson: withText }),
+      makeTask({ id: "b", contentJson: withText }),
+    ]);
+    await store.load();
+    store.setAllNotesOpen(false);
+    expect(store.someNotesHidden).toBe(true);
+    store.setAllNotesOpen(true);
+    expect(store.someNotesHidden).toBe(false);
+    localStorage.clear();
   });
 
   it("reveal selects the task and opens its notes only when it has text", async () => {
-    const withText =
-      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"hola"}]}]}';
+    localStorage.setItem("agenda.notesCollapsed", '["a"]');
     const { store } = setup([
       makeTask({ id: "a", contentJson: withText }),
       makeTask({ id: "b" }),
     ]);
     await store.load();
     expect(store.reveal("a")).toBe(true);
-    expect([store.selectedId, store.notesOpenId]).toEqual(["a", "a"]);
+    expect([store.selectedId, store.isNotesOpen("a")]).toEqual(["a", true]);
     expect(store.reveal("b")).toBe(true);
-    expect([store.selectedId, store.notesOpenId]).toEqual(["b", null]);
+    expect([store.selectedId, store.isNotesOpen("b")]).toEqual(["b", false]);
+    localStorage.clear();
     expect(store.reveal("zzz")).toBe(false);
   });
 });
