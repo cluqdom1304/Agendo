@@ -110,7 +110,9 @@
 </script>
 
 <div
-  class="note {variant}"
+  class="note"
+  class:in-list={variant === "inline"}
+  class:as-field={variant === "field"}
   class:focused
   onfocusin={() => (focused = true)}
   onfocusout={onFocusOut}
@@ -146,12 +148,12 @@
 
   /* In the list the note reads as a quiet second line under the title, aligned with its
      text (row padding + checkbox + gap), and only looks like a field while it is edited. */
-  .inline {
+  .in-list {
     margin: -2px var(--space-3) var(--space-1) 40px;
     padding: 1px 6px 3px;
   }
 
-  .field {
+  .as-field {
     min-height: 72px;
     padding: var(--space-2) 10px;
     background: var(--bg-control);
@@ -161,14 +163,14 @@
     background: var(--bg-control);
   }
 
-  .field.focused {
+  .as-field.focused {
     box-shadow:
       inset 0 0 0 1px var(--accent),
       0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
   }
 
   /* The format bar floats under the note: showing it never pushes the list around. */
-  .inline .tools {
+  .in-list .tools {
     position: absolute;
     top: calc(100% + 4px);
     right: 0;
@@ -208,7 +210,7 @@
   }
 
   .focused .surface :global(.tiptap),
-  .field .surface :global(.tiptap) {
+  .as-field .surface :global(.tiptap) {
     color: var(--text-primary);
   }
 
