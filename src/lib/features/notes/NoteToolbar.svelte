@@ -167,10 +167,10 @@
     display: inline-flex;
     align-items: center;
     gap: 1px;
-    margin: 2px 0 var(--space-1);
+    margin: var(--note-toolbar-margin, 0 0 var(--space-1));
     padding: 2px;
     border-radius: var(--radius-control);
-    background: var(--bg-control);
+    background: var(--note-toolbar-bg, var(--bg-control));
     animation: fade-in var(--motion-fast) linear;
   }
 
@@ -228,7 +228,8 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding-bottom: var(--space-1);
+    min-width: 260px;
+    padding: var(--space-1) 2px 2px;
   }
 
   .link-input {

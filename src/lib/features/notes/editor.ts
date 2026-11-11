@@ -17,7 +17,7 @@ import {
 } from "@tiptap/extension-list";
 import { Paragraph } from "@tiptap/extension-paragraph";
 import { Text } from "@tiptap/extension-text";
-import { UndoRedo } from "@tiptap/extensions";
+import { Placeholder, UndoRedo } from "@tiptap/extensions";
 
 import { sanitizeLink } from "../../links";
 
@@ -49,6 +49,7 @@ export interface NoteEditorHandle {
   undo(): void;
   redo(): void;
   focus(): void;
+  isEmpty(): boolean;
   destroy(): void;
 }
 
@@ -56,6 +57,8 @@ export interface NoteEditorOptions {
   element: HTMLElement;
   contentJson: string;
   label: string;
+  /** Shown while the note has no text. */
+  placeholder: string;
   /** Called with the serialised document after every edit. */
   onChange: (contentJson: string) => void;
   onState: (state: ToolbarState) => void;
@@ -105,6 +108,7 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
       TaskList,
       TaskItem.configure({ nested: false }),
       UndoRedo,
+      Placeholder.configure({ placeholder: options.placeholder }),
       Link.configure({
         openOnClick: false,
         autolink: false,
@@ -196,6 +200,7 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
     undo: () => void editor.chain().focus().undo().run(),
     redo: () => void editor.chain().focus().redo().run(),
     focus: () => void editor.commands.focus("end"),
+    isEmpty: () => editor.isEmpty,
     destroy: () => editor.destroy(),
   };
 }

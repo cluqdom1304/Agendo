@@ -134,6 +134,8 @@ export class TasksStore {
   notice = $state.raw<Notice | null>(null);
   /** Tasks whose empty notes the user opened to write; tasks with text are open unless collapsed. */
   readonly #notesOpened = new SvelteSet<string>();
+  /** The task whose notes the user has just opened: its editor takes the focus once. */
+  notesFocusId = $state<string | null>(null);
   /** Tasks with text whose notes the user hid; remembered between sessions. */
   readonly #notesCollapsed = new SvelteSet<string>(loadCollapsed());
   /** Notes hidden for an instant so the editor flushes before its row remounts. */
@@ -573,34 +575,22 @@ export class TasksStore {
     if (this.isNotesOpen(id)) {
       this.#notesOpened.delete(id);
       this.#notesCollapsed.add(id);
+      this.notesFocusId = null;
     } else {
       this.#notesOpened.add(id);
       this.#notesCollapsed.delete(id);
+      // Only a note the user has just opened takes the cursor; the ones shown at startup
+      // must not.
+      this.notesFocusId = id;
     }
     this.#persistCollapsed();
   }
 
-  /** Opens or closes every task's notes at once. */
-  setAllNotesOpen(open: boolean): void {
-    this.#notesOpened.clear();
-    this.#notesCollapsed.clear();
-    for (const task of this.tasks) {
-      if (!hasNotes(task.contentJson)) continue;
-      if (!open) this.#notesCollapsed.add(task.id);
-    }
-    this.#persistCollapsed();
-  }
-
-  /** A task with notes. */
-  get notesCount(): number {
-    return this.tasks.filter((task) => hasNotes(task.contentJson)).length;
-  }
-
-  /** True when some task with notes has them hidden. */
-  get someNotesHidden(): boolean {
-    return this.tasks.some(
-      (task) => hasNotes(task.contentJson) && !this.isNotesOpen(task.id),
-    );
+  /** Puts away notes that were opened to write and left empty. */
+  closeEmptyNotes(id: string): void {
+    const task = this.find(id);
+    if (task && hasNotes(task.contentJson)) return;
+    this.#notesOpened.delete(id);
   }
 
   #persistCollapsed(): void {

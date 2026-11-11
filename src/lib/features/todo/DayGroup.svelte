@@ -74,8 +74,16 @@
   {/if}
   {#if store.isNotesOpen(task.id)}
     <NoteEditor
+      variant="inline"
       contentJson={task.contentJson}
       save={(json) => store.saveNotes(task.id, json)}
+      autofocus={store.notesFocusId === task.id}
+      onAutofocus={() => (store.notesFocusId = null)}
+      onEmptyBlur={(next) => {
+        // Its own row keeps it open: the notes button there already toggles it.
+        if (!next?.closest(`[data-task-id="${task.id}"]`))
+          store.closeEmptyNotes(task.id);
+      }}
     />
   {/if}
 {/snippet}

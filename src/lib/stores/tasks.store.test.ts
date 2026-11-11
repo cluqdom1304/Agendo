@@ -337,17 +337,25 @@ describe("notes", () => {
     localStorage.clear();
   });
 
-  it("setAllNotesOpen collapses and expands every task with notes", async () => {
+  it("only notes the user opens ask for the focus, and empty ones can be put away", async () => {
     localStorage.clear();
     const { store } = setup([
       makeTask({ id: "a", contentJson: withText }),
-      makeTask({ id: "b", contentJson: withText }),
+      makeTask({ id: "b" }),
     ]);
     await store.load();
-    store.setAllNotesOpen(false);
-    expect(store.someNotesHidden).toBe(true);
-    store.setAllNotesOpen(true);
-    expect(store.someNotesHidden).toBe(false);
+    // Shown by default at startup: nothing asks for the cursor.
+    expect(store.isNotesOpen("a")).toBe(true);
+    expect(store.notesFocusId).toBeNull();
+
+    store.toggleNotes("b");
+    expect(store.notesFocusId).toBe("b");
+    store.closeEmptyNotes("b");
+    expect(store.isNotesOpen("b")).toBe(false);
+
+    // Notes with text are never put away by leaving them.
+    store.closeEmptyNotes("a");
+    expect(store.isNotesOpen("a")).toBe(true);
     localStorage.clear();
   });
 

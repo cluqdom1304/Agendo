@@ -16,8 +16,9 @@ const doc = (text: string) =>
 async function mount(
   contentJson: string,
   save = vi.fn<(json: string) => Promise<void>>(async () => {}),
+  autofocus = true,
 ) {
-  render(NoteEditor, { contentJson, save });
+  render(NoteEditor, { contentJson, save, autofocus });
   const box = await screen.findByRole("textbox");
   return { box, save };
 }
@@ -29,6 +30,28 @@ describe("NoteEditor", () => {
     const { box } = await mount(doc("apuntes de álgebra"));
     expect(box.textContent).toBe("apuntes de álgebra");
     expect(screen.getByRole("toolbar")).toBeTruthy();
+  });
+
+  it("does not take the focus nor show its controls unless asked to", async () => {
+    const { box } = await mount(doc("apuntes"), undefined, false);
+    expect(screen.queryByRole("toolbar")).toBeNull();
+    expect(document.activeElement).not.toBe(box);
+
+    await fireEvent.focusIn(box);
+    expect(screen.getByRole("toolbar")).toBeTruthy();
+  });
+
+  it("reports when the focus leaves a note without text", async () => {
+    const onEmptyBlur = vi.fn();
+    render(NoteEditor, {
+      contentJson: "",
+      save: async () => {},
+      autofocus: true,
+      onEmptyBlur,
+    });
+    const box = await screen.findByRole("textbox");
+    await fireEvent.focusOut(box, { relatedTarget: document.body });
+    expect(onEmptyBlur).toHaveBeenCalledWith(document.body);
   });
 
   it("shows the controls only while the focus is inside the note", async () => {
@@ -120,7 +143,11 @@ describe("NoteEditor", () => {
 
   it("flushes pending text when the editor closes", async () => {
     const save = vi.fn<(json: string) => Promise<void>>(async () => {});
-    const view = render(NoteEditor, { contentJson: doc("x"), save });
+    const view = render(NoteEditor, {
+      contentJson: doc("x"),
+      save,
+      autofocus: true,
+    });
     await screen.findByRole("textbox");
     await fireEvent.click(
       screen.getByRole("button", { name: "Lista numerada" }),

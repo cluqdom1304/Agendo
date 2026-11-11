@@ -1,11 +1,90 @@
 # PROGRESS.md
 
-**Fase activa:** Rediseño de interfaz (D-39), sobre la versión 1.0.4
+**Fase activa:** Rediseño de interfaz (D-39, D-40), sobre la versión 1.0.4 · Plan V2 propuesto (ver abajo)
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** validar los ítems `[H]` de `docs/manual-pruebas.md` § «Rediseño de interfaz (D-39)» con `npm run tauri dev`; si se acepta, subir la versión (propuesta: 1.1.0). Siguen pendientes los `[H]` anteriores y F6-06 (E2E)
-**Última actualización:** 2026-11-11 (rediseño de la interfaz, D-39; sin cambio de versión hasta la validación visual)
+**Siguiente tarea:** (1) validar los ítems `[H]` de `docs/manual-pruebas.md` § «Rediseño de interfaz (D-39)» y § «Notas en la lista (D-40)» con `npm run tauri dev`; (2) aprobar o corregir el «Plan V2» y resolver B-05 a B-08. Siguen pendientes los `[H]` anteriores y F6-06 (E2E)
+**Última actualización:** 2026-11-11 (notas en la lista, D-40; plan V2 propuesto; sin cambio de versión hasta la validación visual)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
+
+---
+
+## Plan V2 — propuesta (pendiente de aprobación humana)
+
+> **Estado:** PROPUESTO. Ninguna tarea de este plan se empieza sin confirmación (CLAUDE.md §3). Las decisiones de producto abiertas están en `BLOCKERS.md` (B-05 a B-08); las dependencias nuevas que se citan necesitan su entrada en `DECISIONS.md` antes de instalarse. `docs/SPEC.md` no se edita: cada fase empieza con un ADR que amplía la especificación.
+
+**Objetivo:** que MiAgendaApp sea la mejor aplicación local de tareas y notas para Windows: captura instantánea, una sección de notas de verdad, tareas con repetición y vistas inteligentes, todo sin cuentas ni red, y **sin ceder rendimiento**.
+
+### Presupuestos de rendimiento (condición de salida de cada fase)
+
+| Medida | Hoy (1.0.4 + rediseño) | Límite V2 | Verificación |
+|--------|------------------------|-----------|--------------|
+| JS inicial (gzip) | 188,1 KB | ≤ 250 KB (N-04); cada sección nueva en su propio chunk diferido | `[A]` `npm run size` |
+| CSS total (gzip) | 12,6 KB | ≤ 20 KB | `[A]` `npm run size` |
+| Arranque en frío hasta primer pintado | medida `[H]` de N-01 | no empeora más de un 10 % | `[H]` marcas de `startup.rs` |
+| RAM en reposo (proceso principal y total WebView2) | medida `[H]` de N-02 | no empeora más de un 10 %; baja tras V2-F0 | `[H]` mismo método que D-02 |
+| Lista con 5 000 tareas y 2 000 notas | sin medir | desplazamiento y escritura sin tirones; consultas < 50 ms | `[A]` banco de pruebas en Rust y store · `[H]` percepción |
+| Animaciones | solo `transform`/`opacity` | igual; nada de `backdrop-filter` (D-01) | `[A]` revisión · `[H]` |
+
+### V2-F0 — Cimientos de rendimiento (antes de añadir funciones) → versión 1.2.0
+- [ ] V2-F0-01 `[A]` Datos de carga: script que genera una base con 5 000 tareas, 2 000 notas y 50 etiquetas (usa `MIAGENDA_DATA_DIR`, D-31); banco de pruebas de las consultas de `repo/` y de las operaciones del store.
+- [ ] V2-F0-02 `[A]` **Notas estáticas en la lista:** dibujar las notas como HTML estático a partir de `content_json` (negrita, cursiva, código, enlaces, listas y casillas marcables) y crear el editor TipTap solo al hacer clic en una. Hoy cada nota visible monta un editor completo: es el mayor coste de RAM y de arranque que queda.
+- [ ] V2-F0-03 `[A]` Menús y popovers en capa superior (`popover` nativo) para poder aplicar `content-visibility: auto` a los bloques de día sin recortarlos; con eso, o con virtualización si no basta, la lista larga solo paga por lo visible.
+- [ ] V2-F0-04 `[A]` Animaciones de salida para diálogos, menús y avisos, con el entorno de pruebas preparado para ello (hoy se cierran al instante, D-39).
+- [ ] V2-F0-05 `[A]` Persistir el filtro de etiquetas entre sesiones (hueco de D-34).
+- [ ] V2-F0-06 `[H]` Ejecutar F6-06 (E2E con `tauri-driver`) y dejarlo como parte del cierre de cada versión.
+- **DoD:** presupuestos de la tabla medidos y anotados; RAM en reposo con 30 notas visibles menor que en 1.0.4; batería en verde.
+
+### V2-F1 — Sección «Notas» → versión 2.0.0-beta.1
+- [ ] V2-F1-01 `[A]` Migración `004_notes.sql`: tabla `notes` (id UUID v7, `title`, `content_json`, `content_text`, `tag_id`, `pinned`, `created_at`, `updated_at`, `deleted_at`) y `notes_fts`; copia de seguridad automática antes de migrar (pendiente desde F1-01, ya posible con `db/backup.rs`). No destructiva.
+- [ ] V2-F1-02 `[A]` `repo/notes.rs` y comandos `notes_list`, `note_create`, `note_update`, `note_set_pinned`, `note_delete`, `note_restore`; papelera compartida de 30 días; DTO sincronizados con test de serialización.
+- [ ] V2-F1-03 `[A]` Vista «Notas» como tercera opción del control segmentado (Lista · Calendario · Notas, atajo propio), en chunk diferido: columna de notas (título, primera línea, fecha; fijadas arriba) y editor a la derecha. El título es la primera línea de la nota.
+- [ ] V2-F1-04 `[A]` Editor ampliado solo en esta sección: encabezados, cita, bloque de código, separador y casillas; guardado diferido con el mismo `NoteSaver`.
+- [ ] V2-F1-05 `[A]` Organización por etiquetas (las mismas de las tareas, B-05) con el filtro de la barra lateral.
+- [ ] V2-F1-06 `[A]` Búsqueda unificada (Ctrl+K) sobre tareas y notas, con resultados agrupados.
+- [ ] V2-F1-07 `[A]` Puentes entre notas y tareas: convertir una casilla de una nota en tarea y enlazar una nota desde una tarea.
+- [ ] V2-F1-08 `[A]` Exportar una nota a Markdown (previsto en D-03).
+- [ ] V2-F1-09 `[H]` Manual de pruebas de la sección y medición de presupuestos con 2 000 notas.
+- **DoD:** crear, editar, fijar, buscar, borrar y restaurar notas sin tocar el ratón; JS inicial sin crecer más de 5 KB; batería en verde.
+
+### V2-F2 — Tareas de primer nivel → versión 2.0.0-beta.2
+- [ ] V2-F2-01 `[A]` Tareas periódicas (levanta D-07; semántica en B-08); migración `005`.
+- [ ] V2-F2-02 `[A]` Vistas inteligentes en la barra lateral: Hoy, Próximos 7 días, Vencidas, Sin fecha; las vencidas se destacan y pueden moverse a hoy de una vez.
+- [ ] V2-F2-03 `[A]` Alta rápida en lenguaje natural, analizada en local por una función pura con tests de tabla: «mañana 10:00 llamar al banco #DORC» fija fecha, hora y etiqueta.
+- [ ] V2-F2-04 `[A]` Arrastrar para reordenar en la lista y entre días; en el calendario, mover y estirar los bloques para cambiar hora y duración.
+- [ ] V2-F2-05 `[A]` Selección múltiple y acciones en bloque (completar, etiquetar, mover de fecha, borrar) con deshacer.
+- [ ] V2-F2-06 `[A]` Paleta de comandos en Ctrl+K: además de buscar, ejecuta acciones (nueva tarea, nueva nota, cambiar de vista, tema).
+- [ ] V2-F2-07 `[A]` Prioridad o marca de «importante» y etiquetas anidadas con interfaz (el modelo `parentId` ya existe, D-06).
+- [ ] V2-F2-08 `[H]` Manual de pruebas y presupuestos con 5 000 tareas.
+
+### V2-F3 — Integración con Windows → versión 2.0.0-rc.1
+- [ ] V2-F3-01 `[H]` Captura rápida global: atajo de sistema que abre una ventana mínima para apuntar una tarea o nota sin abrir la app (plugin de atajos globales: dependencia nueva, requiere ADR y permiso en `capabilities`).
+- [ ] V2-F3-02 `[H]` Icono en la bandeja con las tareas de hoy y cierre a bandeja opcional.
+- [ ] V2-F3-03 `[H]` Acciones en las notificaciones: «Hecha» y «Posponer» (reabre B-01 con las posibilidades actuales del plugin).
+- [ ] V2-F3-04 `[A]` Copias de seguridad automáticas locales con rotación (diaria, se conservan N) además de la manual.
+- [ ] V2-F3-05 `[A]` Importar y exportar: JSON completo, Markdown por nota y `.ics` del calendario (solo archivos locales).
+- [ ] V2-F3-06 `[H]` Firma de los instaladores (pendiente desde la 1.0.0).
+
+### V2-F4 — Pulido y lanzamiento → versión 2.0.0
+- [ ] V2-F4-01 `[A]` Auditoría de accesibilidad (contraste, nombres, teclado) sobre todas las vistas nuevas.
+- [ ] V2-F4-02 `[A]`/`[H]` Auditoría de rendimiento contra la tabla de presupuestos; corregir cualquier regresión antes de publicar.
+- [ ] V2-F4-03 `[A]` Guía de usuario y lista de atajos actualizadas.
+- [ ] V2-F4-04 `[H]` Pasada completa de `docs/manual-pruebas.md` y E2E sobre el instalador final.
+
+### Despliegue
+
+1. **1.1.0** — rediseño de interfaz (D-39, D-40) una vez validado `[H]`. Sin cambios de datos.
+2. **1.2.0** — V2-F0. Sin cambios de esquema: se puede volver a la 1.1.0 sin perder nada.
+3. **2.0.0-beta.1** — V2-F1 (migración 004). **2.0.0-beta.2** — V2-F2 (migración 005). **2.0.0-rc.1** — V2-F3. **2.0.0** — V2-F4.
+4. **En cada versión:** batería completa (CLAUDE.md §4) → subir versión en `package.json`, `Cargo.toml`, `tauri.conf.json` y los dos lockfiles → `npx tauri build` → instalar el `.exe` NSIS sobre la versión anterior con datos reales → sección nueva en `docs/manual-pruebas.md` → métricas de la tabla anotadas aquí.
+5. **Migraciones:** numeradas y no destructivas; antes de aplicar una se guarda una copia con `VACUUM INTO` junto a la base. Una versión antigua rechaza una base más nueva (`SchemaTooNew`), así que **volver atrás desde 2.0.0-beta.1 exige restaurar esa copia** desde Ajustes; se indicará en las notas de cada versión.
+6. **Fuera de la V2** salvo decisión contraria: sincronización entre equipos, app móvil y cualquier función que necesite red (B-07).
+
+### Decisiones que necesito de ti (detalle en `BLOCKERS.md`)
+- **B-05** Organización de las notas: etiquetas compartidas con las tareas (recomendado) o carpetas propias.
+- **B-06** Imágenes y adjuntos en las notas: fuera de la 2.0 (recomendado) o dentro.
+- **B-07** Actualizaciones: manuales como hasta ahora (recomendado) o comprobación automática, que rompe el principio «sin red».
+- **B-08** Tareas periódicas: la siguiente aparece al completar la actual (recomendado) o se generan todas las repeticiones de antemano.
 
 ---
 
@@ -214,6 +293,7 @@
 - **Actualizar a una versión posterior:** subir la versión, `npx tauri build` y abrir el `.exe` nuevo sobre el instalado; los datos se conservan.
 
 ## Notas de sesión
+- 2026-11-11: **notas en la lista (D-40)**: eliminado el botón «Ocultar/Mostrar todas las notas»; las notas ya no toman el cursor al abrir la app (solo la que el usuario acaba de abrir); se leen como segunda línea gris bajo el título y solo parecen un campo al editarlas; la barra de formato flota bajo la nota sin mover la lista; texto de ayuda «Añadir nota…»; una nota abierta y dejada vacía se recoge sola; casillas redondas. Batería `[A]`: lint, check (0/0), Vitest 349, build, size (JS 188,1 KB; CSS 12,6 KB) y Rust (fmt, clippy, 264 tests) en verde. Sin dependencias nuevas (`Placeholder` viene en `@tiptap/extensions`, ya instalado). Apariencia `[H]`: manual-pruebas § «Notas en la lista (D-40)». Además se redactó el «Plan V2» (propuesta) y se abrieron B-05 a B-08.
 - 2026-11-11: **rediseño de la interfaz (D-39)**: barra unificada con zona de arrastre en la barra de herramientas y la cabecera lateral, tokens de superficie/sombra/movimiento nuevos, controles compartidos en `base.css` y todos los componentes restilizados; solo CSS y marcado (ni lógica, ni dependencias, ni Rust). Batería `[A]`: `npm run lint`, `check` (0 errores, 0 avisos), `test` (347), `build` y `size` (JS 187,9 KB; CSS 12,3 KB) en verde; `cargo fmt --check`, `clippy -D warnings` y `cargo test` en verde sin cambios en Rust. `NoteEditor.test.ts` «loads TipTap» volvió a agotar el tiempo una vez en la primera pasada (ya anotado en la 1.0.3) y pasó en dos reejecuciones. Discrepancias con SPEC §8 registradas en D-39. **No se ha visto la interfaz en ejecución**: apariencia, arrastre de ventana y fluidez son `[H]`. La versión no se ha subido.
 - 2026-10-31 (F1-03, para F4): al mover una tarea a la papelera sus `reminders` no se borran (se restauran con ella). El scheduler (F4-02/F4-03) debe ignorar los recordatorios cuyas tareas tengan `deleted_at` y las consultas de recuperación (F4-04) también.
 - 2026-10-31 (F1-03): `TagWithCount` se serializa como `Tag` más `pendingCount` (SPEC §7.3 no define el campo); F1-09 debe reflejarlo en `api.ts`.

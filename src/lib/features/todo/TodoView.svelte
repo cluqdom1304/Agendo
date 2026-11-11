@@ -126,17 +126,6 @@
       onAction={() => store.startDraft({ section: "todo" })}
     />
   {:else}
-    {#if store.notesCount > 1}
-      <div class="notes-bar">
-        <button
-          type="button"
-          class="btn small quiet notes-all"
-          onclick={() => store.setAllNotesOpen(store.someNotesHidden)}
-        >
-          {store.someNotesHidden ? t.notes.showAll : t.notes.hideAll}
-        </button>
-      </div>
-    {/if}
     <SectionHeader
       title={t.tasks.sectionTodo}
       detail={t.tasks.pendingCount(store.todoPendingCount)}
@@ -180,18 +169,6 @@
     max-width: 780px;
     margin: 0 auto;
     padding: 0 var(--space-6) 96px;
-  }
-
-  /* Sits on the line of the first large title instead of taking a row of its own. */
-  .notes-bar {
-    position: relative;
-    height: 0;
-  }
-
-  .notes-all {
-    position: absolute;
-    top: 22px;
-    right: var(--space-3);
   }
 
   .status {
