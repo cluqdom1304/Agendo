@@ -57,8 +57,8 @@
 
 <aside class="sidebar" class:open aria-label={t.tags.sidebar} inert={!open}>
   <div class="inner">
-    <header class="head">
-      <h2>{t.tags.sidebar}</h2>
+    <header class="head" data-tauri-drag-region>
+      <h2 data-tauri-drag-region>{t.tags.sidebar}</h2>
       <button
         type="button"
         class="add"
@@ -138,7 +138,7 @@
     <label class="check" title={t.tags.pending(count)}>
       <input
         type="checkbox"
-        style:accent-color={color || "var(--text-secondary)"}
+        style:--tag={color || "var(--text-secondary)"}
         checked={tags.isChecked(key)}
         aria-label={t.tags.toggleLabel(name)}
         onchange={() => tags.toggle(key)}
@@ -184,41 +184,51 @@
     flex: none;
     width: 0;
     overflow: hidden;
-    border-right: 0 solid var(--border-subtle);
-    transition:
-      width 200ms var(--ease-apple),
-      border-width 200ms var(--ease-apple);
+    background: var(--bg-sidebar);
+    box-shadow: inset -1px 0 0 var(--separator);
+    transition: width var(--motion-base) var(--ease-out);
   }
 
   .sidebar.open {
     width: 224px;
-    border-right-width: 1px;
   }
 
+  /* Fixed width: the list never reflows while the panel slides, only fades and shifts. */
   .inner {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
     width: 224px;
     height: 100%;
-    padding: var(--space-3) var(--space-2);
+    padding: 0 var(--space-2) var(--space-3);
     overflow-y: auto;
+    opacity: 0;
+    transform: translateX(-16px);
+    transition:
+      opacity var(--motion-base) var(--ease-out),
+      transform var(--motion-base) var(--ease-out);
   }
 
+  .open .inner {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* As tall as the toolbar next to it, and part of the same drag region. */
   .head {
     display: flex;
+    flex: none;
     align-items: center;
     justify-content: space-between;
-    padding: 0 var(--space-2);
+    height: 48px;
+    padding: 0 2px 0 var(--space-2);
   }
 
   h2 {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
   .add,
@@ -229,39 +239,49 @@
     height: 24px;
     padding: 0;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
+    transition:
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear,
+      transform var(--motion-instant) var(--ease-out);
   }
 
   .add:hover,
   .edit:hover {
-    background: var(--bg-hover);
+    background: var(--bg-control-hover);
     color: var(--text-primary);
+  }
+
+  .add:active,
+  .edit:active {
+    transform: scale(0.9);
   }
 
   .bulk {
     display: flex;
     gap: var(--space-1);
-    padding: 0 var(--space-2);
+    padding: 0 2px;
   }
 
   .bulk button,
   .only {
     padding: 1px 6px;
     border: 0;
-    border-radius: 4px;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--accent);
     font: inherit;
     font-size: 11px;
     cursor: pointer;
+    transition: background-color var(--motion-instant) linear;
   }
 
   .bulk button:hover,
   .only:hover {
-    background: var(--bg-hover);
+    background: var(--bg-control-hover);
   }
 
   .list {
@@ -276,13 +296,15 @@
   .separator {
     margin-top: var(--space-2);
     padding-top: var(--space-2);
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid var(--separator);
   }
 
   .row {
     display: flex;
     align-items: center;
-    border-radius: 6px;
+    min-height: 30px;
+    border-radius: var(--radius-small);
+    transition: background-color var(--motion-instant) linear;
   }
 
   .row:hover,
@@ -305,12 +327,28 @@
     cursor: pointer;
   }
 
+  /* A dot of the tag's own colour: filled when its tasks are shown, hollow when hidden. */
   .check input {
     flex: none;
+    appearance: none;
     width: 14px;
     height: 14px;
     margin: 0;
+    border: 1.5px solid var(--tag);
+    border-radius: var(--radius-chip);
+    background: transparent;
     cursor: pointer;
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      transform var(--motion-base) var(--ease-bounce);
+  }
+
+  .check input:checked {
+    background: var(--tag);
+  }
+
+  .check input:active {
+    transform: scale(0.8);
   }
 
   .name {
@@ -321,6 +359,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    transition: opacity var(--motion-fast) var(--ease-out);
   }
 
   .name.plain {
@@ -348,7 +387,7 @@
     display: none;
     flex: none;
     align-items: center;
-    padding-right: 2px;
+    padding-right: 3px;
   }
 
   .row:hover .actions,
@@ -368,7 +407,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .sidebar {
+    .sidebar,
+    .inner {
       transition: none;
     }
   }

@@ -164,10 +164,14 @@
 
 <style>
   .toolbar {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 2px;
-    padding: 2px 0 var(--space-1);
+    gap: 1px;
+    margin: 2px 0 var(--space-1);
+    padding: 2px;
+    border-radius: var(--radius-control);
+    background: var(--bg-control);
+    animation: fade-in var(--motion-fast) linear;
   }
 
   .tool {
@@ -175,14 +179,17 @@
     height: 24px;
     padding: 0 6px;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--text-secondary);
     font: inherit;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color var(--motion-fast) var(--ease-apple);
+    transition:
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear,
+      transform var(--motion-instant) var(--ease-out);
   }
 
   .tool:hover:not(:disabled) {
@@ -190,9 +197,14 @@
     color: var(--text-primary);
   }
 
+  .tool:active:not(:disabled) {
+    transform: scale(0.92);
+  }
+
   .tool.active {
-    background: var(--bg-hover);
-    color: var(--accent);
+    background: var(--thumb);
+    box-shadow: var(--shadow-raised);
+    color: var(--text-primary);
   }
 
   .tool:disabled {
@@ -222,11 +234,12 @@
   .link-input {
     flex: 1;
     min-width: 0;
-    height: 24px;
+    height: 26px;
     padding: 0 var(--space-2);
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    background: var(--bg-hover);
+    border: 0;
+    border-radius: var(--radius-small);
+    background: var(--bg-control);
+    box-shadow: inset 0 0 0 0.5px var(--border-subtle);
     color: var(--text-primary);
     font: inherit;
     font-size: 12px;
@@ -234,23 +247,27 @@
   }
 
   .link-input:focus-visible {
-    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
   }
 
   .link-input[aria-invalid="true"] {
-    border-color: var(--danger);
+    box-shadow: inset 0 0 0 1px var(--danger);
   }
 
   .link-action {
     height: 24px;
     padding: 0 var(--space-2);
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--accent);
     font: inherit;
     font-size: 12px;
     cursor: pointer;
+  }
+
+  .link-action:hover {
+    background: var(--bg-hover);
   }
 
   .link-error {

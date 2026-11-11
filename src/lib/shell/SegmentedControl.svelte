@@ -12,9 +12,22 @@
   }
 
   let { options, value, label, onChange }: Props = $props();
+
+  const index = $derived(
+    Math.max(
+      0,
+      options.findIndex((option) => option.value === value),
+    ),
+  );
 </script>
 
-<div class="segmented" role="radiogroup" aria-label={label}>
+<div
+  class="segmented"
+  role="radiogroup"
+  aria-label={label}
+  style:--count={options.length}
+  style:--index={index}
+>
   {#each options as option (option.value)}
     <button
       type="button"
@@ -30,35 +43,55 @@
 
 <style>
   .segmented {
-    display: inline-flex;
+    position: relative;
+    display: inline-grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
     padding: 2px;
-    gap: 2px;
     border-radius: var(--radius-control);
-    background: var(--bg-hover);
+    background: var(--bg-control);
+  }
+
+  /* One thumb that slides between equal columns: only its transform changes. */
+  .segmented::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+    width: calc((100% - 4px) / var(--count));
+    border-radius: var(--radius-small);
+    background: var(--thumb);
+    box-shadow: var(--shadow-raised);
+    transform: translateX(calc(var(--index) * 100%));
+    transition: transform var(--motion-spring) var(--ease-spring);
   }
 
   button {
-    padding: 4px 14px;
+    position: relative;
+    min-height: 24px;
+    padding: 0 14px;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--text-secondary);
     font: inherit;
     font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
     cursor: pointer;
     transition:
-      background var(--motion-fast) var(--ease-apple),
-      color var(--motion-fast) var(--ease-apple);
+      color var(--motion-fast) var(--ease-out),
+      transform var(--motion-instant) var(--ease-out);
   }
 
-  button:hover {
-    color: var(--text-primary);
-  }
-
+  button:hover,
   button.active {
-    background: var(--bg-elevated);
     color: var(--text-primary);
-    font-weight: 600;
+  }
+
+  button:active {
+    transform: scale(0.96);
   }
 
   button:focus-visible {

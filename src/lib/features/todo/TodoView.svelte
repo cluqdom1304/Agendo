@@ -130,7 +130,7 @@
       <div class="notes-bar">
         <button
           type="button"
-          class="notes-all"
+          class="btn small quiet notes-all"
           onclick={() => store.setAllNotesOpen(store.someNotesHidden)}
         >
           {store.someNotesHidden ? t.notes.showAll : t.notes.hideAll}
@@ -177,29 +177,21 @@
 
 <style>
   .document {
-    max-width: 860px;
+    max-width: 780px;
     margin: 0 auto;
-    padding: var(--space-4) var(--space-6) 96px;
+    padding: 0 var(--space-6) 96px;
   }
 
+  /* Sits on the line of the first large title instead of taking a row of its own. */
   .notes-bar {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: var(--space-2);
+    position: relative;
+    height: 0;
   }
 
   .notes-all {
-    padding: 2px var(--space-2);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 12px;
-  }
-
-  .notes-all:hover,
-  .notes-all:focus-visible {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+    position: absolute;
+    top: 22px;
+    right: var(--space-3);
   }
 
   .status {

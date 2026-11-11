@@ -152,11 +152,17 @@
     <p class="hint">{t.settings.backupHint}</p>
 
     <div class="buttons">
-      <button type="button" disabled={store.busy} onclick={createBackup}>
+      <button
+        type="button"
+        class="btn"
+        disabled={store.busy}
+        onclick={createBackup}
+      >
         {t.settings.backupCreate}
       </button>
       <button
         type="button"
+        class="btn"
         disabled={store.busy}
         aria-expanded={confirmingRestore}
         onclick={() => (confirmingRestore = !confirmingRestore)}
@@ -171,13 +177,17 @@
         <div class="buttons">
           <button
             type="button"
-            class="danger"
+            class="btn danger"
             disabled={store.busy}
             onclick={restoreBackup}
           >
             {t.settings.restoreChoose}
           </button>
-          <button type="button" onclick={() => (confirmingRestore = false)}>
+          <button
+            type="button"
+            class="btn"
+            onclick={() => (confirmingRestore = false)}
+          >
             {t.settings.restoreCancel}
           </button>
         </div>
@@ -200,25 +210,33 @@
 
 <style>
   h2 {
-    margin: 0 0 var(--space-3);
-    font-size: 16px;
+    margin: 0 0 var(--space-1);
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   h3 {
-    margin: var(--space-4) 0 var(--space-2);
+    margin: 20px 0 6px;
+    padding-left: 2px;
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
+  /* Each setting is a row card: label on the left, its control on the right. */
   .row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: var(--space-4);
-    padding: var(--space-2) 0;
+    min-height: 44px;
+    margin-bottom: 6px;
+    padding: 6px var(--space-3);
+    border-radius: var(--radius-card);
+    background: var(--bg-control);
+    font-size: 13px;
   }
 
   .hint {
@@ -234,43 +252,49 @@
     margin-top: var(--space-2);
   }
 
-  button {
-    padding: 6px 14px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
-    background: var(--bg-elevated);
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 13px;
+  input[role="switch"] {
+    position: relative;
+    flex: none;
+    appearance: none;
+    width: 36px;
+    height: 22px;
+    margin: 0;
+    border-radius: var(--radius-chip);
+    background: var(--bg-control-hover);
+    box-shadow: inset 0 0 0 1px var(--border-subtle);
     cursor: pointer;
+    transition: background-color var(--motion-base) var(--ease-out);
   }
 
-  button:hover:not(:disabled) {
-    background: var(--bg-hover);
+  input[role="switch"]::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-chip);
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: transform var(--motion-spring) var(--ease-spring);
   }
 
-  button:disabled {
-    opacity: 0.55;
-    cursor: default;
+  input[role="switch"]:checked {
+    background: var(--success);
+    box-shadow: none;
   }
 
-  button:focus-visible,
-  input:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  button.danger {
-    border-color: var(--danger);
-    color: var(--danger);
+  input[role="switch"]:checked::before {
+    transform: translateX(14px);
   }
 
   .confirm {
     margin-top: var(--space-3);
     padding: var(--space-3);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-card);
+    background: var(--bg-control);
     font-size: 13px;
+    animation: rise-in var(--motion-base) var(--ease-out);
   }
 
   .confirm p {

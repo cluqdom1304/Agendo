@@ -228,17 +228,19 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
+    min-height: 34px;
     padding: 3px var(--space-3);
     border-radius: var(--radius-control);
     outline: none;
     transition:
       opacity 220ms var(--ease-apple),
       transform 220ms var(--ease-apple),
-      background-color var(--motion-fast) var(--ease-apple);
+      background-color var(--motion-instant) linear;
   }
 
-  .row:hover {
+  .row:hover,
+  .row:focus-within {
     background: var(--bg-hover);
   }
 
@@ -274,7 +276,7 @@
     opacity: 0;
     cursor: grab;
     touch-action: none;
-    transition: opacity var(--motion-fast) var(--ease-apple);
+    transition: opacity var(--motion-fast) var(--ease-out);
   }
 
   .grip circle {
@@ -297,28 +299,15 @@
     place-items: center;
     padding: 0;
     border: 0;
-    border-radius: 4px;
+    border-radius: var(--radius-chip);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
+    transition: transform var(--motion-instant) var(--ease-out);
   }
 
-  .tag-button.empty {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    opacity: 0;
-    transition: opacity var(--motion-fast) var(--ease-apple);
-  }
-
-  .tag-button.empty:hover {
-    color: var(--text-primary);
-  }
-
-  .row:hover .tag-button.empty,
-  .row:focus-within .tag-button.empty,
-  .tag-button.empty[aria-expanded="true"] {
-    opacity: 1;
+  .tag-button:active {
+    transform: scale(0.94);
   }
 
   .tag-button:focus-visible {
@@ -326,69 +315,79 @@
     outline-offset: 1px;
   }
 
-  .date-input {
-    flex: none;
-    width: 118px;
-    height: 22px;
-    padding: 0 var(--space-1);
-    border: 0;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-secondary);
-    font: inherit;
-    font-size: 12px;
-    opacity: 0;
-    cursor: pointer;
-    transition: opacity var(--motion-fast) var(--ease-apple);
-  }
-
-  .delete {
+  /* Row actions stay out of the way until the row is hovered or focused. */
+  .delete,
+  .notes-toggle,
+  .tag-button.empty {
     display: grid;
     place-items: center;
     flex: none;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--text-secondary);
     opacity: 0;
     cursor: pointer;
-    transition: opacity var(--motion-fast) var(--ease-apple);
+    transition:
+      opacity var(--motion-fast) var(--ease-out),
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear,
+      transform var(--motion-instant) var(--ease-out);
   }
 
-  .row:hover .date-input,
-  .row:focus-within .date-input,
-  .row:hover .delete,
-  .row:focus-within .delete {
-    opacity: 1;
+  .delete:hover,
+  .notes-toggle:hover,
+  .tag-button.empty:hover {
+    background: var(--bg-control);
+    color: var(--text-primary);
+  }
+
+  .delete:active,
+  .notes-toggle:active,
+  .tag-button.empty:active {
+    transform: scale(0.9);
   }
 
   .delete:hover {
     color: var(--danger);
   }
 
-  .notes-toggle {
-    display: grid;
-    place-items: center;
+  .date-input {
     flex: none;
-    width: 22px;
-    height: 22px;
-    padding: 0;
+    width: 118px;
+    height: 24px;
+    padding: 0 var(--space-1);
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--text-secondary);
+    font: inherit;
+    font-size: 12px;
     opacity: 0;
     cursor: pointer;
-    transition: opacity var(--motion-fast) var(--ease-apple);
+    transition:
+      opacity var(--motion-fast) var(--ease-out),
+      background-color var(--motion-instant) linear;
   }
 
+  .date-input:hover {
+    background: var(--bg-control);
+  }
+
+  .row:hover .date-input,
+  .row:focus-within .date-input,
+  .row:hover .delete,
+  .row:focus-within .delete,
   .row:hover .notes-toggle,
   .row:focus-within .notes-toggle,
+  .row:hover .tag-button.empty,
+  .row:focus-within .tag-button.empty,
   .notes-toggle.has-notes,
-  .notes-toggle[aria-expanded="true"] {
+  .notes-toggle[aria-expanded="true"],
+  .tag-button.empty[aria-expanded="true"] {
     opacity: 1;
   }
 

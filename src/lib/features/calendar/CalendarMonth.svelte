@@ -121,8 +121,11 @@
   .weekday {
     padding: var(--space-2) 0;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     text-align: center;
+    text-transform: uppercase;
   }
 
   .cell {
@@ -131,17 +134,24 @@
     gap: 2px;
     min-width: 0;
     padding: 4px;
-    border-top: 1px solid var(--border-subtle);
-    border-left: 1px solid var(--border-subtle);
+    border-top: 1px solid var(--separator);
+    border-left: 1px solid var(--separator);
+  }
+
+  .cell:first-child {
+    border-left: 0;
   }
 
   .cell.outside {
-    opacity: 0.5;
+    opacity: 0.45;
   }
 
   .number {
-    align-self: flex-start;
-    min-width: 22px;
+    display: grid;
+    place-items: center;
+    align-self: flex-end;
+    min-width: 24px;
+    height: 24px;
     padding: 0 6px;
     border: 0;
     border-radius: var(--radius-chip);
@@ -149,11 +159,19 @@
     color: var(--text-primary);
     font: inherit;
     font-size: 12px;
+    font-variant-numeric: tabular-nums;
     cursor: pointer;
+    transition:
+      background-color var(--motion-instant) linear,
+      transform var(--motion-instant) var(--ease-out);
   }
 
   .number:hover {
-    background: var(--bg-hover);
+    background: var(--bg-control-hover);
+  }
+
+  .number:active {
+    transform: scale(0.9);
   }
 
   .cell.today .number {
@@ -165,7 +183,7 @@
   .chip {
     padding: 1px 6px;
     border: 0;
-    border-radius: 4px;
+    border-radius: 5px;
     border-left: 3px solid var(--tag, var(--accent));
     background: color-mix(in srgb, var(--tag, var(--accent)) 22%, transparent);
     color: var(--text-primary);
@@ -176,6 +194,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    transition:
+      background-color var(--motion-instant) linear,
+      transform var(--motion-instant) var(--ease-out);
+  }
+
+  .chip:hover {
+    background: color-mix(in srgb, var(--tag, var(--accent)) 34%, transparent);
+  }
+
+  .chip:active {
+    transform: scale(0.98);
   }
 
   .chip.done {
@@ -186,22 +215,24 @@
   .time {
     color: var(--text-secondary);
     margin-right: 4px;
+    font-variant-numeric: tabular-nums;
   }
 
   .tag-name {
     margin-left: 4px;
-    padding: 0 4px;
-    border-radius: 3px;
+    padding: 0 5px;
+    border-radius: var(--radius-chip);
     background: color-mix(in srgb, var(--tag) 28%, transparent);
     color: color-mix(in srgb, var(--tag) 45%, var(--text-primary));
     font-size: 10px;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .more {
     align-self: flex-start;
     padding: 0 6px;
     border: 0;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--text-secondary);
     font: inherit;

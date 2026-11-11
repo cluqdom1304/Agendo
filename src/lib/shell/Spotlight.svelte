@@ -154,36 +154,43 @@
     justify-content: center;
     align-items: flex-start;
     padding-top: 12vh;
-    background: rgba(0, 0, 0, 0.28);
+    background: var(--backdrop);
+    animation: fade-in var(--motion-fast) linear;
   }
 
   .dialog {
     width: min(600px, calc(100vw - 2 * var(--space-6)));
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    background: var(--bg-window-solid);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+    border-radius: var(--radius-panel);
+    background: var(--bg-popover);
+    box-shadow: var(--shadow-modal);
     overflow: hidden;
-    animation: spotlight-in var(--motion-fast) var(--ease-apple);
+    outline: none;
+    animation: sheet-in var(--motion-spring) var(--ease-spring);
   }
 
   .query {
     width: 100%;
     box-sizing: border-box;
-    padding: var(--space-3) var(--space-4);
+    padding: 14px 18px;
     border: 0;
-    border-bottom: 1px solid var(--border-subtle);
     background: transparent;
     color: var(--text-primary);
     font: inherit;
-    font-size: 16px;
+    font-family: var(--font-display);
+    font-size: 18px;
+    letter-spacing: -0.01em;
     outline: none;
+  }
+
+  .query::placeholder {
+    color: var(--text-secondary);
   }
 
   .results {
     max-height: 320px;
     margin: 0;
-    padding: var(--space-1);
+    padding: 6px;
+    border-top: 1px solid var(--separator);
     list-style: none;
     overflow-y: auto;
   }
@@ -195,15 +202,15 @@
   .hit {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 2px var(--space-3);
-    padding: var(--space-2) var(--space-3);
+    gap: 1px var(--space-3);
+    padding: 6px 10px;
     border-radius: var(--radius-control);
     cursor: pointer;
   }
 
+  /* Solid accent, as in a system launcher: the choice is unmistakable at a glance. */
   .hit.active {
-    background: var(--bg-hover);
-    box-shadow: inset 2px 0 0 var(--accent);
+    background: var(--accent);
   }
 
   .title {
@@ -233,22 +240,22 @@
     font-size: 12px;
   }
 
+  .hit.active .title,
+  .hit.active .date,
+  .hit.active .snippet {
+    color: var(--on-accent);
+  }
+
   .status {
     margin: 0;
-    padding: var(--space-2) var(--space-4);
-    border-top: 1px solid var(--border-subtle);
+    padding: var(--space-2) 18px;
+    border-top: 1px solid var(--separator);
     color: var(--text-secondary);
     font-size: 12px;
   }
 
-  @keyframes spotlight-in {
-    from {
-      opacity: 0;
-      transform: translateY(-6px) scale(0.98);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
+    .backdrop,
     .dialog {
       animation: none;
     }

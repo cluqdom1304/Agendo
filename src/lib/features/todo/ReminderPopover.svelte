@@ -48,7 +48,7 @@
 
 <div
   bind:this={panel}
-  class="popover"
+  class="popover ui-form"
   role="dialog"
   aria-label={t.reminders.open(title)}
   tabindex="-1"
@@ -68,20 +68,18 @@
   .popover {
     display: grid;
     gap: var(--space-2);
-    margin: var(--space-1) var(--space-3) var(--space-2) 36px;
+    margin: var(--space-1) var(--space-3) var(--space-2) 40px;
     padding: var(--space-3);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
-    background: var(--bg-elevated);
+    border-radius: var(--radius-card);
+    background: var(--bg-control);
     outline: none;
+    animation: rise-in var(--motion-base) var(--ease-out);
   }
 
   h5 {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 </style>

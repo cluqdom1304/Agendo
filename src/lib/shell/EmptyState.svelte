@@ -13,7 +13,7 @@
 <div class="empty">
   <h2>{title}</h2>
   <p>{description}</p>
-  <button type="button" onclick={onAction}>
+  <button type="button" class="btn primary" onclick={onAction}>
     {actionLabel}
     {#if shortcut}<kbd>{shortcut}</kbd>{/if}
   </button>
@@ -24,15 +24,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-1);
     padding: 96px var(--space-6);
     text-align: center;
+    animation: rise-in var(--motion-base) var(--ease-out);
   }
 
   h2 {
     margin: 0;
-    font-size: 17px;
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
   p {
@@ -41,24 +44,14 @@
   }
 
   button {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    margin-top: var(--space-3);
-    padding: 6px var(--space-4);
-    border: 0;
-    border-radius: var(--radius-control);
-    background: var(--accent);
-    color: var(--on-accent);
-    font: inherit;
-    cursor: pointer;
+    margin-top: var(--space-4);
   }
 
   kbd {
-    padding: 0 6px;
+    padding: 2px 6px;
     border-radius: 4px;
     background: color-mix(in srgb, currentColor 22%, transparent);
     font: inherit;
-    font-size: 12px;
+    font-size: 11px;
   }
 </style>

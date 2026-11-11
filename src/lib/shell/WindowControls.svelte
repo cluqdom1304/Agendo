@@ -69,7 +69,9 @@
     color: var(--text-primary);
     background: transparent;
     border: 0;
-    transition: background-color var(--motion-fast) var(--ease-apple);
+    transition:
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear;
   }
 
   .control:hover {

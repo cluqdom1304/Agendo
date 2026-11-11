@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** — (Versión 1.0.4 cerrada)
-**Estado:** DONE   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** ninguna. Validar los ítems `[H]` pendientes de `docs/manual-pruebas.md` (incluidas las secciones 1.0.1 a 1.0.4) y ejecutar F6-06 (E2E) en un equipo con `tauri-driver`
-**Última actualización:** 2026-11-11 (cierre de la V1.0.4: notas desplegadas por defecto y recordadas, D-38)
+**Fase activa:** Rediseño de interfaz (D-39), sobre la versión 1.0.4
+**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** validar los ítems `[H]` de `docs/manual-pruebas.md` § «Rediseño de interfaz (D-39)» con `npm run tauri dev`; si se acepta, subir la versión (propuesta: 1.1.0). Siguen pendientes los `[H]` anteriores y F6-06 (E2E)
+**Última actualización:** 2026-11-11 (rediseño de la interfaz, D-39; sin cambio de versión hasta la validación visual)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -214,6 +214,7 @@
 - **Actualizar a una versión posterior:** subir la versión, `npx tauri build` y abrir el `.exe` nuevo sobre el instalado; los datos se conservan.
 
 ## Notas de sesión
+- 2026-11-11: **rediseño de la interfaz (D-39)**: barra unificada con zona de arrastre en la barra de herramientas y la cabecera lateral, tokens de superficie/sombra/movimiento nuevos, controles compartidos en `base.css` y todos los componentes restilizados; solo CSS y marcado (ni lógica, ni dependencias, ni Rust). Batería `[A]`: `npm run lint`, `check` (0 errores, 0 avisos), `test` (347), `build` y `size` (JS 187,9 KB; CSS 12,3 KB) en verde; `cargo fmt --check`, `clippy -D warnings` y `cargo test` en verde sin cambios en Rust. `NoteEditor.test.ts` «loads TipTap» volvió a agotar el tiempo una vez en la primera pasada (ya anotado en la 1.0.3) y pasó en dos reejecuciones. Discrepancias con SPEC §8 registradas en D-39. **No se ha visto la interfaz en ejecución**: apariencia, arrastre de ventana y fluidez son `[H]`. La versión no se ha subido.
 - 2026-10-31 (F1-03, para F4): al mover una tarea a la papelera sus `reminders` no se borran (se restauran con ella). El scheduler (F4-02/F4-03) debe ignorar los recordatorios cuyas tareas tengan `deleted_at` y las consultas de recuperación (F4-04) también.
 - 2026-10-31 (F1-03): `TagWithCount` se serializa como `Tag` más `pendingCount` (SPEC §7.3 no define el campo); F1-09 debe reflejarlo en `api.ts`.
 - 2026-10-31 (F1-01): SPEC §5.3 menciona la "ruta del backup" cuando falla una migración; la copia previa a migrar depende de `db/backup.rs` (F6-04) y aún no existe. Hasta entonces el fallo deja la base intacta (rollback) y el error indica la versión que falló.

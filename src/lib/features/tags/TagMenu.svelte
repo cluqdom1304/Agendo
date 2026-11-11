@@ -68,40 +68,42 @@
 <style>
   .menu {
     position: absolute;
-    top: calc(100% + 4px);
+    top: calc(100% + 6px);
     right: 0;
     z-index: 20;
     display: flex;
     flex-direction: column;
     gap: 1px;
-    min-width: 160px;
+    min-width: 168px;
     max-width: 240px;
     max-height: 260px;
-    padding: 4px;
+    padding: 5px;
     overflow-y: auto;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
-    background: var(--bg-window-solid);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    border-radius: var(--radius-card);
+    background: var(--bg-popover);
+    box-shadow: var(--shadow-popover);
+    transform-origin: top right;
+    animation: pop-in var(--motion-fast) var(--ease-out);
   }
 
   .item {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: 5px var(--space-2);
+    min-height: 26px;
+    padding: 0 var(--space-2);
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--text-primary);
     font: inherit;
-    font-size: 12px;
+    font-size: 13px;
     text-align: left;
     cursor: pointer;
   }
 
   .item:hover {
-    background: var(--bg-hover);
+    background: var(--bg-control-hover);
   }
 
   .item:focus-visible {
@@ -130,6 +132,7 @@
 
   .check {
     color: var(--accent);
+    font-weight: 600;
   }
 
   .hint {

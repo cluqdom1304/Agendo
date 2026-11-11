@@ -86,14 +86,15 @@
   .title {
     flex: 1;
     min-width: 0;
-    padding: 2px 4px;
+    padding: 3px 6px;
     border: 0;
-    border-radius: 4px;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--text-primary);
     font: inherit;
     outline: none;
     text-overflow: ellipsis;
+    transition: background-color var(--motion-instant) linear;
   }
 
   .title::placeholder {
@@ -101,7 +102,7 @@
   }
 
   .title:focus {
-    background: var(--bg-hover);
+    background: var(--bg-control);
   }
 
   .title.completed {

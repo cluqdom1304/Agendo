@@ -182,6 +182,34 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 
 ---
 
+## Rediseño de interfaz (D-39)
+
+Ventana y barra
+- [ ] La ventana se arrastra desde el hueco libre de la barra de herramientas y desde la cabecera «Etiquetas» de la barra lateral; el doble clic maximiza y restaura.
+- [ ] Los botones de la barra (etiquetas, «Nueva tarea», Lista/Calendario, ajustes) responden al clic y **no** arrastran la ventana.
+- [ ] Minimizar, maximizar y cerrar funcionan arriba a la derecha, también con un diálogo abierto, y no tapan el botón de ajustes.
+- [ ] Con la ventana al ancho mínimo (720 px) y la barra lateral abierta, los controles de la barra no se solapan.
+
+Aspecto
+- [ ] Tema oscuro con Mica/Acrílico y tema claro opaco: textos legibles en lista, barra lateral, diálogos, menús y calendario.
+- [ ] Los títulos de sección se leen «Por hacer» y «Agenda» en grande; el botón de ocultar/mostrar notas queda en la línea del primer título sin taparlo.
+- [ ] Diálogos (nueva tarea, detalle, ajustes) y búsqueda (Ctrl+K): superficie opaca, esquinas redondeadas, sombra; los campos muestran un anillo de acento al enfocarlos.
+- [ ] Ajustes: cada opción en su tarjeta; el interruptor «Iniciar con Windows» se ve y cambia de estado.
+- [ ] Barra lateral: el punto de cada etiqueta está relleno si se muestra y hueco si está oculta.
+- [ ] Calendario (día, semana, mes) dentro de su tarjeta: las columnas siguen alineadas con la cabecera y el día de hoy se distingue.
+
+Movimiento y fluidez
+- [ ] El control segmentado desliza su pastilla al cambiar de opción (Lista/Calendario, Día/Semana/Mes, tema).
+- [ ] Marcar una tarea: la casilla rebota y la marca se dibuja; la fila se desplaza a «Completadas» como antes.
+- [ ] Botones e iconos se encogen levemente al pulsarlos; el hover aparece sin retraso.
+- [ ] Abrir diálogos, menú de etiquetas, recordatorios y avisos se siente inmediato, sin tirones; el aviso de «deshacer» aparece centrado abajo.
+- [ ] Abrir y cerrar la barra lateral con muchas tareas en la lista no da tirones.
+- [ ] Arrastrar una tarea hacia una etiqueta: el fantasma sigue al puntero con suavidad.
+- [ ] Con «reducir movimiento» activado en Windows no hay animaciones.
+- [ ] La RAM en reposo y el arranque no empeoran respecto a la 1.0.4 (mismo método de medida que N-01/N-02).
+
+---
+
 ## Registro de sesiones de prueba
 
 | Fecha | Build / commit | Equipo | Fase | Resultado | Responsable |

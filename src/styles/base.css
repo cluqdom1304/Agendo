@@ -12,6 +12,7 @@ body {
 }
 
 .app-root {
+  position: relative;
   height: 100vh;
   overflow: hidden;
   border-radius: var(--radius-window);
@@ -49,9 +50,227 @@ body {
   background: var(--scrollbar-thumb);
 }
 
+/* ---- Shared controls (D-39): one definition instead of a copy per component. ---- */
+
+.btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--bg-control);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-instant) linear,
+    transform var(--motion-instant) var(--ease-out);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--bg-control-hover);
+}
+
+/* The press answers before the action does: that is most of what feels responsive. */
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn.small {
+  min-height: 24px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, var(--text-primary));
+}
+
+.btn.danger {
+  color: var(--danger);
+}
+
+.btn.danger-fill,
+.btn.danger-fill:hover:not(:disabled) {
+  background: var(--danger);
+  color: var(--on-danger);
+}
+
+.btn.quiet {
+  padding: 0 8px;
+  background: transparent;
+  color: var(--accent);
+}
+
+.btn.quiet:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.icon-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-instant) linear,
+    color var(--motion-instant) linear,
+    transform var(--motion-instant) var(--ease-out);
+}
+
+.icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.icon-btn:active {
+  background: var(--bg-active);
+  transform: scale(0.92);
+}
+
+.toggle-chip {
+  min-height: 24px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: var(--bg-control);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out),
+    transform var(--motion-instant) var(--ease-out);
+}
+
+.toggle-chip:hover:not(:disabled) {
+  background: var(--bg-control-hover);
+}
+
+.toggle-chip:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.toggle-chip[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.toggle-chip:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Fields inside dialogs and popovers. :where() keeps the specificity at one class, so a
+   component can still restyle its own field. */
+.ui-form
+  :where(
+    input:not([type="checkbox"], [type="radio"], [type="color"]),
+    select,
+    textarea
+  ) {
+  box-sizing: border-box;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: var(--bg-control);
+  box-shadow: inset 0 0 0 0.5px var(--border-subtle);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: box-shadow var(--motion-fast) var(--ease-out);
+}
+
+.ui-form
+  :where(
+    input:not([type="checkbox"], [type="radio"], [type="color"]),
+    select,
+    textarea
+  ):focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--accent),
+    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.ui-form :where(input, select, textarea)[aria-invalid="true"] {
+  box-shadow:
+    inset 0 0 0 1px var(--danger),
+    0 0 0 3px color-mix(in srgb, var(--danger) 30%, transparent);
+}
+
+.ui-form :where(input, select, textarea):disabled {
+  opacity: 0.45;
+}
+
+.ui-form select option {
+  background: var(--bg-popover);
+  color: var(--text-primary);
+}
+
+/* Entrances animate transform and opacity only, so they never leave the compositor. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --motion-instant: 0ms;
     --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-spring: 0ms;
   }
 
   *,

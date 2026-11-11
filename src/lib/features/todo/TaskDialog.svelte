@@ -229,7 +229,11 @@
             }}
           />
           {#if dueDate}
-            <button type="button" class="link" onclick={() => setDate("")}>
+            <button
+              type="button"
+              class="btn small quiet"
+              onclick={() => setDate("")}
+            >
               {t.newTask.clearDate}
             </button>
           {/if}
@@ -252,7 +256,7 @@
         <div class="durations">
           <button
             type="button"
-            class="chip"
+            class="toggle-chip"
             aria-pressed={duration === null}
             onclick={() => setPreset(null)}
           >
@@ -261,7 +265,7 @@
           {#each DURATION_PRESETS as minutes (minutes)}
             <button
               type="button"
-              class="chip"
+              class="toggle-chip"
               aria-pressed={duration === minutes}
               disabled={minutes > longest}
               onclick={() => setPreset(minutes)}
@@ -325,8 +329,10 @@
     {/if}
 
     <div class="actions">
-      <button type="button" onclick={onClose}>{t.newTask.cancel}</button>
-      <button type="submit" class="primary" disabled={saving}>
+      <button type="button" class="btn" onclick={onClose}>
+        {t.newTask.cancel}
+      </button>
+      <button type="submit" class="btn primary" disabled={saving}>
         {editing ? t.newTask.save : t.newTask.create}
       </button>
     </div>
@@ -336,17 +342,20 @@
 <style>
   .form {
     display: grid;
-    gap: var(--space-3);
+    gap: var(--space-4);
   }
 
   h2 {
     margin: 0;
-    font-size: 16px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   .block {
     display: grid;
-    gap: var(--space-1);
+    gap: 6px;
   }
 
   .row {
@@ -364,19 +373,7 @@
   .label {
     color: var(--text-secondary);
     font-size: 12px;
-    font-weight: 600;
-  }
-
-  input,
-  textarea {
-    box-sizing: border-box;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
-    background: transparent;
-    color: var(--text-primary);
-    font: inherit;
-    padding: 6px var(--space-2);
-    color-scheme: light dark;
+    font-weight: 500;
   }
 
   .text {
@@ -384,27 +381,16 @@
   }
 
   textarea {
+    padding: 6px var(--space-2);
     resize: vertical;
-  }
-
-  input:focus-visible,
-  textarea:focus-visible,
-  button:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
-
-  input[aria-invalid="true"] {
-    border-color: var(--danger);
   }
 
   .reminders {
     display: grid;
     gap: var(--space-2);
     padding: var(--space-3);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
-    background: var(--bg-elevated);
+    border-radius: var(--radius-card);
+    background: var(--bg-control);
   }
 
   .error {
@@ -426,17 +412,6 @@
     gap: var(--space-2);
   }
 
-  .chip {
-    padding: 4px 12px;
-    font-size: 12px;
-  }
-
-  .chip[aria-pressed="true"] {
-    border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 18%, transparent);
-    font-weight: 600;
-  }
-
   .end {
     display: inline-flex;
     align-items: center;
@@ -450,36 +425,6 @@
     display: flex;
     justify-content: flex-end;
     gap: var(--space-2);
-  }
-
-  button {
-    padding: 6px 14px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
-    background: var(--bg-elevated);
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 13px;
-    cursor: pointer;
-  }
-
-  button.primary {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: var(--on-accent);
-    font-weight: 600;
-  }
-
-  button:disabled {
-    opacity: 0.55;
-    cursor: default;
-  }
-
-  .link {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--accent);
-    font-size: 12px;
+    margin-top: var(--space-1);
   }
 </style>

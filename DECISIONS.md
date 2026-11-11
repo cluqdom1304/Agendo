@@ -339,6 +339,21 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-39 — Rediseño de la interfaz: estética y movimiento tipo Apple
+- **Estado:** ACCEPTED (petición del usuario) · **Fecha:** 2026-11-11 · **Validación visual:** pendiente `[H]`
+- **Contexto:** el usuario pide una interfaz moderna, cercana a las guías de diseño de Apple, con respuesta inmediata y animaciones rápidas y fluidas, sin perder ligereza en RAM ni fluidez. **Sin dependencias, migraciones, comandos IPC ni componentes nuevos**; la lógica y los textos no cambian.
+- **Decisión:**
+  - **Barra unificada.** `TitleBar` solo contiene los botones de ventana, flotando arriba a la derecha (32 px, por encima de los fondos de diálogo). La barra de herramientas de la página y la cabecera de la barra lateral (48 px) son la zona de arrastre (`data-tauri-drag-region`); la barra lateral ocupa toda la altura con un tinte propio.
+  - **Tokens nuevos** en `tokens.css` (en los tres bloques de tema): `--bg-popover`, `--bg-sidebar`, `--bg-control`, `--bg-control-hover`, `--bg-active`, `--thumb`, `--separator`, `--backdrop`, `--shadow-raised`, `--shadow-popover`, `--shadow-modal`; radios `--radius-small/card/panel`; `--font-display` para títulos y `--font-ui` con el corte de texto primero. Los colores de D-27 no cambian y el test de contraste sigue en verde.
+  - **Movimiento:** `--motion-instant` (90 ms, hover y pulsación), `--motion-fast` (150), `--motion-base` (260), `--motion-spring` (420) y dos muelles amortiguados muestreados en `linear()` (`--ease-spring`, `--ease-bounce`). Solo se animan `transform` y `opacity` (más el ancho de la barra lateral, cuyo contenido tiene ancho fijo). Todo es CSS: ni JavaScript de animación ni `backdrop-filter` (D-01 sigue vigente). `prefers-reduced-motion` pone todas las duraciones a 0.
+  - **Controles compartidos** en `base.css` (`.btn`, `.icon-btn`, `.toggle-chip`, `.ui-form`) en lugar de una copia por componente; todos responden a la pulsación con una escala breve.
+  - **Componentes:** control segmentado con pastilla deslizante; casilla que dibuja la marca; diálogos y búsqueda con entrada de muelle y superficie opaca; resultado activo de la búsqueda en color de acento; aviso (`Toast`) en cápsula centrada abajo; títulos de sección grandes en tipo oración (el texto sigue siendo «POR HACER» / «AGENDA», se transforma con CSS); ajustes en tarjetas con interruptor; calendario dentro de una tarjeta con esquinas redondeadas; filtro de etiquetas con punto de color relleno/hueco.
+- **Discrepancias con `docs/SPEC.md` §8** (la especificación no se edita): §8.1 «zona de arrastre solo en titlebar» (ahora barra de herramientas y cabecera lateral); §8.3 orden de `--font-ui` y tokens añadidos; §8.4 duración base única de 150 ms (ahora cuatro duraciones y muelles).
+- **Consecuencias:** no hay animaciones de salida (los diálogos y menús se cierran al instante): exigirían `svelte/transition`, que en jsdom rompe las pruebas de componentes, y un cierre inmediato es coherente con el objetivo de respuesta rápida. El CSS crece hasta 12,3 KB gzip; el JS queda en 187,9 KB (presupuesto 250). La apariencia, el arrastre de la ventana y la fluidez reales son `[H]` (manual-pruebas § «Rediseño de interfaz»).
+- **Alternativas descartadas:** `backdrop-filter` para materiales translúcidos (contradice D-01 y cuesta GPU); una librería de animación o de componentes (peso y dependencia); transiciones de Svelte para las salidas (ver consecuencias).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

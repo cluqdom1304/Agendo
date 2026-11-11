@@ -375,31 +375,39 @@
 
   .head-cell {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: var(--space-2) 0;
-    border-left: 1px solid var(--border-subtle);
+    height: 40px;
+    border-left: 1px solid var(--separator);
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .head-cell .number {
+    display: inline-grid;
+    place-items: center;
+    min-width: 26px;
+    height: 26px;
     font-size: 15px;
     font-weight: 600;
+    letter-spacing: 0;
     color: var(--text-primary);
   }
 
   .head-cell.today .number {
-    padding: 0 7px;
+    padding: 0 6px;
     border-radius: var(--radius-chip);
     background: var(--accent);
     color: var(--on-accent);
   }
 
   .allday {
-    border-top: 1px solid var(--border-subtle);
-    border-bottom: 1px solid var(--border-subtle);
+    border-top: 1px solid var(--separator);
+    border-bottom: 1px solid var(--separator);
     min-height: 28px;
   }
 
@@ -408,14 +416,14 @@
     flex-direction: column;
     gap: 2px;
     padding: 2px;
-    border-left: 1px solid var(--border-subtle);
+    border-left: 1px solid var(--separator);
     min-width: 0;
   }
 
   .chip,
   .block {
     border: 0;
-    border-radius: 4px;
+    border-radius: 5px;
     background: color-mix(in srgb, var(--tag, var(--accent)) 22%, transparent);
     color: var(--text-primary);
     font: inherit;
@@ -425,6 +433,19 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    transition:
+      background-color var(--motion-instant) linear,
+      transform var(--motion-instant) var(--ease-out);
+  }
+
+  .chip:hover,
+  .block:hover {
+    background: color-mix(in srgb, var(--tag, var(--accent)) 34%, transparent);
+  }
+
+  .chip:active,
+  .block:active {
+    transform: scale(0.98);
   }
 
   .chip {
@@ -452,6 +473,7 @@
   .hours {
     position: relative;
     padding: 0;
+    font-variant-numeric: tabular-nums;
   }
 
   .hours span {
@@ -466,11 +488,11 @@
 
   .column {
     position: relative;
-    border-left: 1px solid var(--border-subtle);
+    border-left: 1px solid var(--separator);
     background-image: repeating-linear-gradient(
       to bottom,
-      var(--border-subtle) 0,
-      var(--border-subtle) 1px,
+      var(--separator) 0,
+      var(--separator) 1px,
       transparent 1px,
       transparent var(--hour-px)
     );
@@ -491,17 +513,18 @@
 
   .tag-name {
     margin-left: 4px;
-    padding: 0 4px;
-    border-radius: 3px;
+    padding: 0 5px;
+    border-radius: var(--radius-chip);
     background: color-mix(in srgb, var(--tag) 28%, transparent);
     color: color-mix(in srgb, var(--tag) 45%, var(--text-primary));
     font-size: 10px;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .block .time {
     color: var(--text-secondary);
     margin-right: 4px;
+    font-variant-numeric: tabular-nums;
   }
 
   .now {
@@ -535,25 +558,26 @@
     inset-inline: 2px;
     z-index: 2;
     padding: 2px 6px;
-    border-radius: 4px;
+    border-radius: 5px;
     background: color-mix(in srgb, var(--accent) 30%, transparent);
-    border: 1px solid var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
     font-size: 11px;
     pointer-events: none;
   }
 
   .selection .span-label {
     color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
   }
 
   .quick {
     display: block;
     width: 100%;
     margin-top: 2px;
-    padding: 2px 4px;
-    border: 1px solid var(--border-subtle);
+    padding: 2px 6px;
+    border: 0;
     border-radius: 4px;
-    background: var(--bg-elevated);
+    background: var(--bg-popover);
     color: var(--text-primary);
     font: inherit;
     font-size: 12px;

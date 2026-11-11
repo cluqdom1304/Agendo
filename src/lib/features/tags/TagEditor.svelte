@@ -59,7 +59,7 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <form
-  class="editor"
+  class="editor ui-form"
   onsubmit={(event) => {
     event.preventDefault();
     void submit();
@@ -127,10 +127,19 @@
   {#if confirming}
     <p class="confirm">{t.tags.confirmDelete}</p>
     <div class="actions">
-      <button type="button" onclick={() => (confirming = false)}>
+      <button
+        type="button"
+        class="btn small"
+        onclick={() => (confirming = false)}
+      >
         {t.tags.cancel}
       </button>
-      <button type="button" class="danger" disabled={saving} onclick={remove}>
+      <button
+        type="button"
+        class="btn small danger-fill"
+        disabled={saving}
+        onclick={remove}
+      >
         {t.tags.confirmYes}
       </button>
     </div>
@@ -139,15 +148,17 @@
       {#if onDelete}
         <button
           type="button"
-          class="danger-text"
+          class="btn small danger"
           onclick={() => (confirming = true)}
         >
           {t.tags.delete}
         </button>
       {/if}
       <span class="spacer"></span>
-      <button type="button" onclick={onCancel}>{t.tags.cancel}</button>
-      <button type="submit" class="primary" disabled={!canSave}>
+      <button type="button" class="btn small" onclick={onCancel}>
+        {t.tags.cancel}
+      </button>
+      <button type="submit" class="btn small primary" disabled={!canSave}>
         {t.tags.save}
       </button>
     </div>
@@ -161,43 +172,30 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-2);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
-    background: var(--bg-elevated);
+    gap: 10px;
+    padding: 10px;
+    border-radius: var(--radius-card);
+    background: var(--bg-popover);
+    box-shadow: var(--shadow-popover);
+    transform-origin: top center;
+    animation: pop-in var(--motion-base) var(--ease-out);
   }
 
   .field {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
 
   .label {
     color: var(--text-secondary);
     font-size: 11px;
+    font-weight: 500;
   }
 
   .text {
     min-width: 0;
-    padding: 4px 8px;
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-primary);
-    font: inherit;
     font-size: 12px;
-  }
-
-  .text:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 0;
-  }
-
-  .text[aria-invalid="true"] {
-    outline: 2px solid var(--danger);
-    outline-offset: 0;
   }
 
   .hex {
@@ -209,27 +207,37 @@
   .swatches {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    gap: 4px;
+    gap: 6px;
+    padding: 2px;
   }
 
   .swatch {
     aspect-ratio: 1;
     min-width: 0;
     padding: 0;
-    border: 2px solid transparent;
+    border: 0;
     border-radius: var(--radius-chip);
     background: var(--tag);
     cursor: pointer;
+    transition:
+      transform var(--motion-base) var(--ease-bounce),
+      box-shadow var(--motion-fast) var(--ease-out);
   }
 
+  .swatch:hover {
+    transform: scale(1.12);
+  }
+
+  /* A ring of the same colour with a gap of the card's own background. */
   .swatch.selected {
-    border-color: var(--text-primary);
-    box-shadow: inset 0 0 0 2px var(--bg-window-solid);
+    box-shadow:
+      0 0 0 2px var(--bg-popover),
+      0 0 0 3.5px var(--tag);
   }
 
   .swatch:focus-visible {
     outline: 2px solid var(--accent);
-    outline-offset: 1px;
+    outline-offset: 3px;
   }
 
   .custom {
@@ -240,10 +248,10 @@
   .picker {
     flex: none;
     width: 32px;
-    height: 26px;
+    height: 28px;
     padding: 0;
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border: 0;
+    border-radius: var(--radius-small);
     background: transparent;
     cursor: pointer;
   }
@@ -269,49 +277,5 @@
 
   .spacer {
     flex: 1;
-  }
-
-  .actions button {
-    flex: none;
-    padding: 4px 10px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
-    background: transparent;
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .actions button:hover:not(:disabled) {
-    background: var(--bg-hover);
-  }
-
-  .actions button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  .actions .primary {
-    border-color: transparent;
-    background: var(--accent);
-    color: var(--on-accent);
-    font-weight: 600;
-  }
-
-  .actions .danger {
-    border-color: transparent;
-    background: var(--danger);
-    color: var(--on-danger);
-  }
-
-  .actions .danger-text {
-    border-color: transparent;
-    color: var(--danger);
-  }
-
-  .actions button:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
   }
 </style>

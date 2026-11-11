@@ -17,21 +17,28 @@
   .section {
     display: flex;
     align-items: baseline;
-    gap: var(--space-3);
-    padding: var(--space-6) var(--space-3) var(--space-2);
-    border-bottom: 1px solid var(--border-subtle);
+    gap: 10px;
+    padding: 20px var(--space-3) var(--space-1);
   }
 
+  /* The label is stored in capitals; a large title reads better in sentence case. */
   h2 {
     margin: 0;
     color: var(--text-primary);
-    font-size: 12px;
+    font-family: var(--font-display);
+    font-size: 22px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    line-height: 28px;
+    letter-spacing: -0.02em;
+    text-transform: lowercase;
+  }
+
+  h2::first-letter {
+    text-transform: uppercase;
   }
 
   .detail {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: 13px;
   }
 </style>

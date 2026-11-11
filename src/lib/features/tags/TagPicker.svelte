@@ -51,24 +51,36 @@
   .option {
     display: inline-flex;
     align-items: center;
-    padding: 2px 6px;
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    min-height: 24px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: var(--radius-chip);
     background: transparent;
+    box-shadow: inset 0 0 0 1px var(--border-subtle);
     color: var(--text-secondary);
     font: inherit;
     font-size: 11px;
-    line-height: 16px;
     cursor: pointer;
+    transition:
+      background-color var(--motion-instant) linear,
+      box-shadow var(--motion-fast) var(--ease-out),
+      transform var(--motion-instant) var(--ease-out);
+  }
+
+  .option:first-child {
+    padding: 0 10px;
   }
 
   .option:hover {
     background: var(--bg-hover);
   }
 
+  .option:active {
+    transform: scale(0.95);
+  }
+
   .option.selected {
-    border-color: var(--tag, var(--accent));
-    box-shadow: 0 0 0 1px var(--tag, var(--accent));
+    box-shadow: inset 0 0 0 2px var(--tag, var(--accent));
     color: var(--text-primary);
   }
 

@@ -153,19 +153,23 @@
       </section>
 
       <div class="actions">
-        <button type="button" class="danger" onclick={remove}>
+        <button type="button" class="btn danger" onclick={remove}>
           {t.detail.remove}
         </button>
-        <button type="button" class="link" onclick={() => onShowInList(task)}>
+        <button
+          type="button"
+          class="btn quiet"
+          onclick={() => onShowInList(task)}
+        >
           {t.detail.showInList}
         </button>
         <span class="spacer"></span>
-        <button type="button" onclick={() => onEdit(task)}>
+        <button type="button" class="btn" onclick={() => onEdit(task)}>
           {t.detail.edit}
         </button>
         <button
           type="button"
-          class="primary"
+          class="btn primary"
           disabled={busy}
           onclick={() => void toggleDone()}
         >
@@ -184,8 +188,12 @@
 
   h2 {
     margin: 0;
-    padding-right: var(--space-6);
-    font-size: 18px;
+    padding-right: var(--space-8);
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
     overflow-wrap: anywhere;
   }
 
@@ -195,22 +203,30 @@
   }
 
   h3 {
-    margin: 0 0 var(--space-1);
+    margin: 0 0 6px;
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 600;
   }
 
+  /* One grouped card with hairlines between rows, like a settings list. */
   .facts {
     display: grid;
-    gap: var(--space-2);
     margin: 0;
+    border-radius: var(--radius-card);
+    background: var(--bg-control);
   }
 
   .facts div {
     display: grid;
-    grid-template-columns: 90px 1fr;
+    grid-template-columns: 96px 1fr;
+    align-items: center;
     gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .facts div + div {
+    border-top: 1px solid var(--separator);
   }
 
   dt {
@@ -257,45 +273,5 @@
 
   .spacer {
     flex: 1;
-  }
-
-  button {
-    padding: 6px 14px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
-    background: var(--bg-elevated);
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 13px;
-    cursor: pointer;
-  }
-
-  button:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
-
-  button:disabled {
-    opacity: 0.55;
-    cursor: default;
-  }
-
-  button.primary {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: var(--on-accent);
-    font-weight: 600;
-  }
-
-  button.danger {
-    color: var(--danger);
-  }
-
-  button.link {
-    padding: 0 var(--space-2);
-    border: 0;
-    background: transparent;
-    color: var(--accent);
-    font-size: 12px;
   }
 </style>

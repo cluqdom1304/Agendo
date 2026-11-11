@@ -105,11 +105,11 @@
 <div class="shell">
   <TagSidebar tags={tagsStore} tasks={tasksStore} open={sidebarOpen} />
   <div class="page">
-    <div class="toolbar">
-      <div class="lead">
+    <div class="toolbar" data-tauri-drag-region>
+      <div class="lead" data-tauri-drag-region>
         <button
           type="button"
-          class="sidebar-toggle"
+          class="icon-btn sidebar-toggle"
           class:filtered={tagsStore.filtered}
           aria-pressed={sidebarOpen}
           aria-label={tagsStore.filtered
@@ -136,7 +136,7 @@
         </button>
         <button
           type="button"
-          class="new-task"
+          class="btn primary"
           title={t.newTask.buttonHint}
           aria-haspopup="dialog"
           onclick={() => (newTaskOpen = true)}
@@ -162,40 +162,42 @@
             section === "list" ? "list" : viewStore.calendarMode,
           )}
       />
-      <button
-        type="button"
-        class="settings-button"
-        aria-label={t.settings.open}
-        title={t.settings.open}
-        aria-haspopup="dialog"
-        onclick={() => (settingsOpen = true)}
-      >
-        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-          <path
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            d="M4 7h10M18 7h2M4 17h2M10 17h10"
-          />
-          <circle
-            cx="16"
-            cy="7"
-            r="2"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-          />
-          <circle
-            cx="8"
-            cy="17"
-            r="2"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-          />
-        </svg>
-      </button>
+      <div class="trail" data-tauri-drag-region>
+        <button
+          type="button"
+          class="icon-btn"
+          aria-label={t.settings.open}
+          title={t.settings.open}
+          aria-haspopup="dialog"
+          onclick={() => (settingsOpen = true)}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              d="M4 7h10M18 7h2M4 17h2M10 17h10"
+            />
+            <circle
+              cx="16"
+              cy="7"
+              r="2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+            <circle
+              cx="8"
+              cy="17"
+              r="2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+          </svg>
+        </button>
+      </div>
     </div>
 
     {#if viewStore.ready}
@@ -296,44 +298,30 @@
   }
 
   .toolbar {
-    position: relative;
-    display: flex;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
     flex: none;
-    padding: var(--space-2) var(--space-4) 0;
+    height: 48px;
+    padding-left: var(--space-3);
   }
 
-  .lead {
-    position: absolute;
-    top: var(--space-2);
-    left: var(--space-4);
+  .lead,
+  .trail {
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    height: 100%;
+  }
+
+  .trail {
+    justify-content: flex-end;
+    /* Room for the three 46 px caption buttons that float over this bar. */
+    padding-right: 146px;
   }
 
   .sidebar-toggle {
     position: relative;
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--radius-control);
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-  }
-
-  .sidebar-toggle:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-  }
-
-  .sidebar-toggle:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
   }
 
   .sidebar-toggle.filtered::after {
@@ -347,59 +335,10 @@
     background: var(--accent);
   }
 
-  .new-task {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
-    border: 0;
-    border-radius: var(--radius-control);
-    background: var(--accent);
-    color: var(--on-accent);
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .new-task:hover {
-    filter: brightness(1.08);
-  }
-
-  .new-task:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  .settings-button {
-    position: absolute;
-    top: var(--space-2);
-    right: var(--space-4);
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--radius-control);
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-  }
-
-  .settings-button:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-  }
-
-  .settings-button:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
-
   .content {
     flex: 1;
     min-height: 0;
+    animation: rise-in var(--motion-base) var(--ease-out);
   }
 
   .scrolls {

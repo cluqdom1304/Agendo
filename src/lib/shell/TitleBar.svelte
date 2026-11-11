@@ -1,18 +1,20 @@
 <script lang="ts">
-  import { t } from "../i18n";
   import WindowControls from "./WindowControls.svelte";
 </script>
 
-<header
-  class="flex h-9 shrink-0 items-center justify-between select-none"
-  data-tauri-drag-region
->
-  <span class="title pl-3 text-xs" data-tauri-drag-region>{t.app.name}</span>
+<!-- Only the caption buttons live here. The page toolbar and the head of the sidebar are the
+     drag regions, so the window reads as a single bar (D-39). -->
+<header class="titlebar">
   <WindowControls />
 </header>
 
 <style>
-  .title {
-    color: var(--text-secondary);
+  .titlebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    /* Above the dialog backdrops: the window can always be minimised or closed. */
+    z-index: 30;
+    height: 32px;
   }
 </style>

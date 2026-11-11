@@ -59,7 +59,7 @@
 <div class="backdrop" onclick={onClose}>
   <div
     bind:this={dialog}
-    class="dialog"
+    class="dialog ui-form"
     role="dialog"
     aria-modal="true"
     aria-label={label}
@@ -73,7 +73,15 @@
       aria-label={closeLabel}
       onclick={onClose}
     >
-      &times;
+      <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true">
+        <path
+          d="M1.5 1.5l7 7M8.5 1.5l-7 7"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+        />
+      </svg>
     </button>
     {@render children()}
   </div>
@@ -88,7 +96,8 @@
     justify-content: center;
     align-items: flex-start;
     padding-top: 8vh;
-    background: rgba(0, 0, 0, 0.28);
+    background: var(--backdrop);
+    animation: fade-in var(--motion-fast) linear;
   }
 
   .dialog {
@@ -96,44 +105,46 @@
     box-sizing: border-box;
     width: min(520px, calc(100vw - 2 * var(--space-6)));
     max-height: 84vh;
-    padding: var(--space-4) var(--space-6) var(--space-6);
+    padding: 20px var(--space-6) var(--space-6);
     overflow-y: auto;
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    background: var(--bg-window-solid);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
-    animation: modal-in var(--motion-fast) var(--ease-apple);
+    border-radius: var(--radius-panel);
+    background: var(--bg-popover);
+    box-shadow: var(--shadow-modal);
+    outline: none;
+    animation: sheet-in var(--motion-spring) var(--ease-spring);
   }
 
   .close {
     position: absolute;
-    top: var(--space-2);
-    right: var(--space-2);
-    width: 28px;
-    height: 28px;
+    top: var(--space-3);
+    right: var(--space-3);
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
     border: 0;
-    border-radius: var(--radius-control);
-    background: transparent;
+    border-radius: var(--radius-chip);
+    background: var(--bg-control);
     color: var(--text-secondary);
-    font-size: 18px;
-    line-height: 1;
     cursor: pointer;
+    transition:
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear,
+      transform var(--motion-instant) var(--ease-out);
   }
 
   .close:hover {
-    background: var(--bg-hover);
+    background: var(--bg-control-hover);
     color: var(--text-primary);
+  }
+
+  .close:active {
+    transform: scale(0.9);
   }
 
   .close:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
-  }
-
-  @keyframes modal-in {
-    from {
-      opacity: 0;
-      transform: translateY(-6px);
-    }
   }
 </style>

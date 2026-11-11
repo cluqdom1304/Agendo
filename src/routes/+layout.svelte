@@ -15,9 +15,7 @@
   });
 </script>
 
-<div class="app-root flex flex-col" class:native-effect={windowEffect.isNative}>
+<div class="app-root" class:native-effect={windowEffect.isNative}>
   <TitleBar />
-  <div class="min-h-0 flex-1 overflow-auto">
-    {@render children()}
-  </div>
+  {@render children()}
 </div>

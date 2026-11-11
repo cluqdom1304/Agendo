@@ -121,35 +121,37 @@
 
 <style>
   .block {
-    padding-top: var(--space-2);
+    padding-top: var(--space-1);
   }
 
   .day {
-    margin: 0;
-    padding: var(--space-2) var(--space-3) var(--space-1);
+    margin: 14px var(--space-3) var(--space-1);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--separator);
     color: var(--text-primary);
     font-size: 13px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 
+  .day::first-letter {
+    text-transform: uppercase;
+  }
+
   .completed {
-    margin-top: var(--space-3);
-    padding-top: var(--space-1);
-    border-top: 1px solid var(--border-subtle);
+    margin-top: var(--space-2);
   }
 
   .completed-heading {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    margin: var(--space-1) 0 0;
+    gap: 6px;
+    margin: 0;
     padding: var(--space-1) var(--space-3);
     color: var(--text-secondary);
-    opacity: 0.75;
     font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 

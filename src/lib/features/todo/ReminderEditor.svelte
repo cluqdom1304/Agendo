@@ -158,7 +158,7 @@
     {@const ahead = offsetIsAhead(due, minutes, now())}
     <button
       type="button"
-      class="chip"
+      class="toggle-chip"
       aria-pressed={isOn(minutes)}
       disabled={!isOn(minutes) && !ahead}
       title={due !== null && !ahead && !isOn(minutes)
@@ -238,7 +238,12 @@
     </div>
   {/if}
 
-  <button type="button" class="chip" disabled={!canAdd} onclick={addCustom}>
+  <button
+    type="button"
+    class="btn small"
+    disabled={!canAdd}
+    onclick={addCustom}
+  >
     {t.reminders.customAdd}
   </button>
 </div>
@@ -297,10 +302,8 @@
   h6 {
     margin: var(--space-1) 0 0;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
   .field {
@@ -309,23 +312,6 @@
     gap: var(--space-2);
     font-size: 12px;
     color: var(--text-secondary);
-  }
-
-  input,
-  select {
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 12px;
-    padding: 2px var(--space-2);
-    color-scheme: light dark;
-  }
-
-  select option {
-    background: var(--bg-window-solid);
-    color: var(--text-primary);
   }
 
   .number {
@@ -340,27 +326,6 @@
     gap: var(--space-2);
   }
 
-  .chip {
-    padding: 2px var(--space-3);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-chip);
-    background: transparent;
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .chip[aria-pressed="true"] {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .chip:disabled {
-    opacity: 0.45;
-    cursor: default;
-  }
-
   .muted {
     margin: 0;
     color: var(--text-secondary);
@@ -369,7 +334,7 @@
 
   .list {
     display: grid;
-    gap: var(--space-1);
+    gap: 2px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -381,31 +346,41 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
+    min-height: 24px;
   }
 
   /* Already sounded: same rows, visibly set apart from the ones still to come. */
   .done {
     color: var(--text-secondary);
-    opacity: 0.75;
   }
 
   .badge {
     padding: 0 var(--space-2);
-    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-chip);
+    background: var(--bg-control);
     font-size: 11px;
   }
 
   .remove {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 22px;
+    height: 22px;
     border: 0;
+    border-radius: var(--radius-chip);
     background: transparent;
     color: var(--text-secondary);
     font-size: 16px;
     line-height: 1;
     cursor: pointer;
+    transition:
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear;
   }
 
   .remove:hover {
+    background: var(--bg-control);
     color: var(--danger);
   }
 </style>

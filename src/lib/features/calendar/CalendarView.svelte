@@ -69,13 +69,13 @@
       <h2>{heading}</h2>
     </div>
     <div class="buttons">
-      <button type="button" onclick={() => view.shift(-1)}>
+      <button type="button" class="btn small" onclick={() => view.shift(-1)}>
         {t.calendar.previous}
       </button>
-      <button type="button" onclick={() => view.goToToday()}>
+      <button type="button" class="btn small" onclick={() => view.goToToday()}>
         {t.calendar.today}
       </button>
-      <button type="button" onclick={() => view.shift(1)}>
+      <button type="button" class="btn small" onclick={() => view.shift(1)}>
         {t.calendar.next}
       </button>
     </div>
@@ -136,49 +136,44 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
-    padding: var(--space-2) var(--space-2) var(--space-3);
+    padding: var(--space-1) var(--space-1) var(--space-3);
   }
 
   .title {
     display: flex;
     align-items: center;
     gap: var(--space-4);
+    min-width: 0;
   }
 
   h2 {
     margin: 0;
+    overflow: hidden;
     color: var(--text-primary);
-    font-size: 15px;
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  h2::first-letter {
+    text-transform: uppercase;
   }
 
   .buttons {
     display: flex;
-    gap: 4px;
+    flex: none;
+    gap: var(--space-1);
   }
 
-  .buttons button {
-    padding: 4px 12px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-control);
-    background: transparent;
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .buttons button:hover {
-    background: var(--bg-hover);
-  }
-
-  .buttons button:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
-
+  /* The grid sits on its own card, clipped to the rounded corners. */
   .surface {
     flex: 1;
     min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-card);
   }
 </style>
