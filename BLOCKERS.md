@@ -71,50 +71,6 @@ El agente registra aquí cualquier bloqueo, ambigüedad de producto o test que n
 
 ---
 
-## B-05 — Organización de las notas de la sección «Notas»
-- **Fecha:** 2026-11-11
-- **Tarea afectada:** V2-F1-01, V2-F1-05
-- **Tipo:** DECISION_PRODUCTO
-- **Causa:** la sección de notas pedida para la V2 necesita una forma de ordenarlas y el modelo depende de ella.
-- **Opciones:**
-  1. Las mismas etiquetas de las tareas (una por nota, mismo filtro lateral).
-  2. Carpetas propias de las notas, independientes de las etiquetas.
-- **Recomendación del agente:** opción 1: un solo concepto que aprender, la barra lateral ya existe y una asignatura agrupa sus tareas y sus apuntes.
-- **Estado:** ABIERTO
-
-## B-06 — Imágenes y adjuntos en las notas
-- **Fecha:** 2026-11-11
-- **Tarea afectada:** V2-F1-04
-- **Tipo:** DECISION_PRODUCTO
-- **Causa:** un editor de notas completo suele admitir imágenes; guardarlas afecta al tamaño de la base, a las copias de seguridad y a la RAM.
-- **Opciones:**
-  1. Solo texto con formato en la 2.0; adjuntos en una versión posterior.
-  2. Imágenes en la 2.0, guardadas como archivos junto a la base y referenciadas desde la nota.
-- **Recomendación del agente:** opción 1: protege los presupuestos de rendimiento y deja la 2.0 centrada en escribir rápido.
-- **Estado:** ABIERTO
-
-## B-07 — Actualizaciones de la aplicación
-- **Fecha:** 2026-11-11
-- **Tarea afectada:** despliegue de la V2
-- **Tipo:** DECISION_PRODUCTO
-- **Causa:** con varias versiones previstas, instalar cada una a mano es más trabajo; comprobar actualizaciones exige red, que el proyecto prohíbe en ejecución.
-- **Opciones:**
-  1. Seguir con instalación manual del `.exe` sobre la versión anterior.
-  2. Comprobación automática de actualizaciones (plugin updater, servidor de versiones y firma): introduce llamadas de red.
-- **Recomendación del agente:** opción 1: mantiene «100 % local, sin red».
-- **Estado:** ABIERTO
-
-## B-08 — Semántica de las tareas periódicas
-- **Fecha:** 2026-11-11
-- **Tarea afectada:** V2-F2-01
-- **Tipo:** DECISION_PRODUCTO
-- **Causa:** D-07 dejó la recurrencia fuera de la v1; hay dos modelos habituales y cambian el esquema.
-- **Opciones:**
-  1. Una sola tarea con regla de repetición: al completarla aparece la siguiente.
-  2. Generar de antemano todas las repeticiones como tareas independientes (visibles en el calendario futuro).
-- **Recomendación del agente:** opción 1, mostrando en el calendario las repeticiones futuras calculadas al vuelo, sin guardarlas.
-- **Estado:** ABIERTO
-
 ## Resueltos
 
 (ninguno)

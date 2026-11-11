@@ -169,20 +169,9 @@
       0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
   }
 
-  /* The format bar floats under the note: showing it never pushes the list around. */
+  /* The format bar opens right under the task title, above the text it formats. */
   .in-list .tools {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    z-index: 5;
-    padding: 3px;
-    border-radius: var(--radius-card);
-    background: var(--bg-popover);
-    box-shadow: var(--shadow-popover);
-    transform-origin: top right;
-    animation: pop-in var(--motion-fast) var(--ease-out);
-    --note-toolbar-bg: transparent;
-    --note-toolbar-margin: 0;
+    padding-top: 3px;
   }
 
   .status {

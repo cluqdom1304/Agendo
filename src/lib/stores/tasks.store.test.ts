@@ -301,6 +301,7 @@ describe("notes", () => {
     vi.stubGlobal("localStorage", {
       getItem: (key: string) => memory.get(key) ?? null,
       setItem: (key: string, value: string) => void memory.set(key, value),
+      removeItem: (key: string) => void memory.delete(key),
       clear: () => memory.clear(),
     });
   });
@@ -326,15 +327,18 @@ describe("notes", () => {
       false,
       true,
     ]);
-    expect(localStorage.getItem("agenda.notesCollapsed")).toBe('["a"]');
   });
 
-  it("a collapsed note stays collapsed in a new session", async () => {
+  it("every session starts with the notes shown, whatever was hidden before", async () => {
     localStorage.setItem("agenda.notesCollapsed", '["a"]');
     const { store } = setup([makeTask({ id: "a", contentJson: withText })]);
     await store.load();
+    expect(store.isNotesOpen("a")).toBe(true);
+    expect(localStorage.getItem("agenda.notesCollapsed")).toBeNull();
+
+    store.toggleNotes("a");
     expect(store.isNotesOpen("a")).toBe(false);
-    localStorage.clear();
+    expect(localStorage.getItem("agenda.notesCollapsed")).toBeNull();
   });
 
   it("only notes the user opens ask for the focus, and empty ones can be put away", async () => {
@@ -360,12 +364,13 @@ describe("notes", () => {
   });
 
   it("reveal selects the task and opens its notes only when it has text", async () => {
-    localStorage.setItem("agenda.notesCollapsed", '["a"]');
     const { store } = setup([
       makeTask({ id: "a", contentJson: withText }),
       makeTask({ id: "b" }),
     ]);
     await store.load();
+    store.toggleNotes("a");
+    expect(store.isNotesOpen("a")).toBe(false);
     expect(store.reveal("a")).toBe(true);
     expect([store.selectedId, store.isNotesOpen("a")]).toEqual(["a", true]);
     expect(store.reveal("b")).toBe(true);

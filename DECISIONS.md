@@ -358,14 +358,15 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Estado:** ACCEPTED (petición del usuario) · **Fecha:** 2026-11-11 · **Validación visual:** pendiente `[H]`
 - **Contexto:** con las notas desplegadas por defecto (D-38), al abrir la app el cursor aparecía dentro de la nota de una tarea, porque cada editor tomaba el foco al montarse; además todas mostraban su barra de formato. El usuario pide quitar el botón «Ocultar/Mostrar todas las notas» y una experiencia lo más parecida posible a la de Apple.
 - **Decisión:**
-  - Se elimina el botón global y su código (`setAllNotesOpen`, `notesCount`, `someNotesHidden`). **Modifica D-38:** el resto de D-38 sigue igual (desplegadas por defecto, ocultar por tarea recordado).
+  - Se elimina el botón global y su código (`setAllNotesOpen`, `notesCount`, `someNotesHidden`).
+  - **Modifica D-38:** todas las notas con texto empiezan desplegadas en cada sesión. Ocultar una con su icono sigue siendo posible, pero ya no se recuerda al reiniciar; la clave `agenda.notesCollapsed` de `localStorage` se borra al arrancar.
   - Un editor solo toma el foco cuando el usuario acaba de abrir esa nota con su icono (`notesFocusId` en el store, de un solo uso). La barra de formato solo aparece con el foco dentro.
-  - En la lista (`variant="inline"`) la nota es una segunda línea gris de 13 px alineada con el texto del título, sin borde lateral; al editarla pasa a texto primario con fondo de campo. La barra de formato flota bajo la nota, a la derecha, y no desplaza la lista. En el detalle de la tarea (`variant="field"`) es un campo de formulario.
+  - En la lista (`variant="inline"`) la nota es una segunda línea gris de 13 px alineada con el texto del título, sin borde lateral; al editarla pasa a texto primario con fondo de campo. La barra de formato se abre justo debajo del título de la tarea, encima del texto de la nota. En el detalle de la tarea (`variant="field"`) es un campo de formulario.
   - Texto de ayuda «Añadir nota…» en las notas vacías (`Placeholder` de `@tiptap/extensions`, paquete ya instalado por D-22: no es dependencia nueva). Una nota abierta para escribir y dejada vacía se recoge sola al salir de ella.
   - El aviso «Cargando editor…» solo se muestra si el módulo tarda más de medio segundo. Las casillas de las notas son redondas, como la de la tarea.
 - **Discrepancia con `docs/SPEC.md` §8.7:** la nota ya no va sangrada 24 px con borde, sino alineada con el título.
-- **Consecuencias:** mientras se edita una nota, la barra flotante tapa el extremo derecho de la fila siguiente. Cada nota visible sigue montando un editor TipTap; el dibujo estático queda planificado (Plan V2, V2-F0-02).
-- **Alternativas descartadas:** barra de formato fija encima de la nota (desplaza la lista al enfocar); quitar el foco con un `blur` tras montar (parpadeo y lectores de pantalla confundidos).
+- **Consecuencias:** al enfocar una nota, su texto y las tareas de debajo bajan la altura de la barra de formato. Cada nota visible sigue montando un editor TipTap.
+- **Alternativas descartadas:** barra de formato flotante bajo la nota (se probó y el usuario la prefiere bajo el título); quitar el foco con un `blur` tras montar (parpadeo y lectores de pantalla confundidos).
 
 ---
 

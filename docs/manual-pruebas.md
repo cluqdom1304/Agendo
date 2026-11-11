@@ -215,10 +215,11 @@ Movimiento y fluidez
 - [ ] Al abrir la app con tareas que tienen notas, el cursor **no** está en ninguna nota y no se ve ninguna barra de formato.
 - [ ] Ya no existe el botón «Ocultar/Mostrar todas las notas».
 - [ ] Las notas se leen como una segunda línea gris bajo el título, alineada con su texto, sin borde lateral.
-- [ ] Al hacer clic en una nota pasa a texto normal con fondo de campo y aparece la barra de formato flotando debajo, a la derecha, sin mover las tareas de alrededor; al salir desaparece.
+- [ ] Al hacer clic en una nota pasa a texto normal con fondo de campo y la barra de formato aparece justo debajo del título de la tarea, encima del texto; al salir desaparece.
+- [ ] Todas las tareas con notas las muestran desplegadas al abrir la app, también las que se ocultaron en la sesión anterior (sustituye al segundo ítem de «Versión 1.0.4»).
 - [ ] El icono de notas de una tarea sin notas abre el editor con el cursor dentro y el texto «Añadir nota…»; si se sale sin escribir, se recoge solo.
 - [ ] El icono de notas de una tarea con notas las oculta y las vuelve a mostrar (con el cursor dentro al mostrarlas).
-- [ ] El campo de enlace (Ctrl+L) cabe y funciona dentro de la barra flotante.
+- [ ] El campo de enlace (Ctrl+L) aparece bajo la barra de formato y funciona.
 - [ ] Las casillas de las notas son redondas, se marcan con un clic y el texto queda tachado.
 - [ ] En el detalle de una tarea (desde el calendario) las notas son un campo con anillo de acento al enfocarlo.
 

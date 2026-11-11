@@ -109,18 +109,14 @@ function isSameTarget(a: DraftTarget, b: DraftTarget): boolean {
     : b.section === "agenda" && b.date === a.date;
 }
 
-const COLLAPSED_KEY = "agenda.notesCollapsed";
+/** Where earlier versions remembered hidden notes; cleared so they cannot stay hidden. */
+const LEGACY_COLLAPSED_KEY = "agenda.notesCollapsed";
 
-function loadCollapsed(): string[] {
+function forgetStoredCollapse(): void {
   try {
-    const parsed: unknown = JSON.parse(
-      localStorage.getItem(COLLAPSED_KEY) ?? "[]",
-    );
-    return Array.isArray(parsed)
-      ? parsed.filter((id): id is string => typeof id === "string")
-      : [];
+    localStorage.removeItem(LEGACY_COLLAPSED_KEY);
   } catch {
-    return [];
+    // Storage may be unavailable; there is nothing to forget then.
   }
 }
 
@@ -136,8 +132,8 @@ export class TasksStore {
   readonly #notesOpened = new SvelteSet<string>();
   /** The task whose notes the user has just opened: its editor takes the focus once. */
   notesFocusId = $state<string | null>(null);
-  /** Tasks with text whose notes the user hid; remembered between sessions. */
-  readonly #notesCollapsed = new SvelteSet<string>(loadCollapsed());
+  /** Tasks with text whose notes the user hid; every session starts with all of them shown. */
+  readonly #notesCollapsed = new SvelteSet<string>();
   /** Notes hidden for an instant so the editor flushes before its row remounts. */
   readonly #notesSuspended = new SvelteSet<string>();
   #notesSaving = 0;
@@ -193,6 +189,7 @@ export class TasksStore {
 
   constructor(options: TasksStoreOptions = {}) {
     this.#api = options.api ?? realApi;
+    forgetStoredCollapse();
     // A clock reading, not reactive state.
     // eslint-disable-next-line svelte/prefer-svelte-reactivity
     this.#now = options.now ?? (() => new Date());
@@ -583,7 +580,6 @@ export class TasksStore {
       // must not.
       this.notesFocusId = id;
     }
-    this.#persistCollapsed();
   }
 
   /** Puts away notes that were opened to write and left empty. */
@@ -591,17 +587,6 @@ export class TasksStore {
     const task = this.find(id);
     if (task && hasNotes(task.contentJson)) return;
     this.#notesOpened.delete(id);
-  }
-
-  #persistCollapsed(): void {
-    try {
-      localStorage.setItem(
-        COLLAPSED_KEY,
-        JSON.stringify([...this.#notesCollapsed]),
-      );
-    } catch {
-      // Storage may be unavailable; the state then only lasts for this session.
-    }
   }
 
   #suspendNotes(id: string): void {
@@ -637,9 +622,7 @@ export class TasksStore {
     const task = this.find(id);
     if (!task) return false;
     this.selectedId = id;
-    if (hasNotes(task.contentJson) && this.#notesCollapsed.delete(id)) {
-      this.#persistCollapsed();
-    }
+    if (hasNotes(task.contentJson)) this.#notesCollapsed.delete(id);
     return true;
   }
 
