@@ -105,6 +105,13 @@ pub fn get(conn: &Connection, id: &str) -> rusqlite::Result<Option<Note>> {
         .optional()
 }
 
+/// A note that sits in the trash, to show it before it is restored.
+pub fn get_trashed(conn: &Connection, id: &str) -> rusqlite::Result<Option<Note>> {
+    conn.prepare_cached(note_sql!("WHERE n.id = ?1 AND n.deleted_at IS NOT NULL"))?
+        .query_row([id], map_note)
+        .optional()
+}
+
 /// Live notes of `scope`, optionally with one tag, pinned ones first, then by `sort`.
 pub fn list(
     conn: &Connection,
@@ -432,6 +439,18 @@ mod tests {
         with_tx(&mut conn, |tx| soft_delete(tx, "n1", T1)).expect("trash");
         assert_eq!(get(&conn, "n1").expect("get"), None);
         assert_eq!(get(&conn, "ghost").expect("get"), None);
+    }
+
+    #[test]
+    fn get_trashed_only_finds_notes_in_the_trash() {
+        let mut conn = database();
+        add_in(&mut conn, "n1", "Una", None);
+        add_in(&mut conn, "n2", "Otra", None);
+        with_tx(&mut conn, |tx| soft_delete(tx, "n1", T1)).expect("trash");
+        let found = get_trashed(&conn, "n1").expect("get").expect("note");
+        assert_eq!(found.title, "Una");
+        assert_eq!(get_trashed(&conn, "n2").expect("get"), None);
+        assert_eq!(get_trashed(&conn, "ghost").expect("get"), None);
     }
 
     #[test]

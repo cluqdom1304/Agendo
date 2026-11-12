@@ -1,6 +1,9 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import { t } from "../../i18n";
   import EmptyState from "../../shell/EmptyState.svelte";
+  import Menu, { type MenuItem } from "../../shell/Menu.svelte";
   import type { NotesSortKey, NotesStore } from "../../stores/notes.svelte";
   import { folderDrag } from "../../stores/tagDrag.svelte";
   import type { TagsStore } from "../../stores/tags.svelte";
@@ -14,20 +17,35 @@
     tags: TagsStore;
     onCreate: () => void;
     now?: () => Date;
+    /** Drawn between the header and the list (the tabs of a tag). */
+    subheader?: Snippet;
+    /** Shown instead of the notes, under the same header (the tasks of a tag). */
+    body?: Snippet;
+    /** Replaces the "n notas" line when the column shows something else. */
+    countLabel?: string;
   }
 
-  const ROW_HEIGHT = 78;
+  const ROW_HEIGHT = 80;
+  const MAX_CHIPS = 2;
 
-  let { notes, tags, onCreate, now = () => new Date() }: Props = $props();
+  let {
+    notes,
+    tags,
+    onCreate,
+    now = () => new Date(),
+    subheader,
+    body,
+    countLabel,
+  }: Props = $props();
 
   let scroller = $state<HTMLDivElement>();
   let scrollTop = $state(0);
   let viewport = $state(600);
+  let sortOpen = $state(false);
 
   const range = $derived(
     virtualRange(scrollTop, viewport, ROW_HEIGHT, notes.notes.length),
   );
-  const visible = $derived(notes.notes.slice(range.start, range.end));
   const inTrash = $derived(notes.scope === "trash");
   const title = $derived(
     notes.scopeTagId
@@ -35,11 +53,43 @@
       : notes.scopeTitle,
   );
 
-  const SORTS: { value: NotesSortKey; label: string }[] = [
-    { value: "updated", label: t.notesApp.sortUpdated },
-    { value: "created", label: t.notesApp.sortCreated },
-    { value: "title", label: t.notesApp.sortTitle },
-  ];
+  // Everything a row draws is worked out here, once per change, not in the template.
+  const rows = $derived.by(() => {
+    const today = now();
+    const openId = notes.open?.id;
+    return notes.notes.slice(range.start, range.end).map((note) => {
+      const own = note.tagIds
+        .map((id) => tags.byId.get(id))
+        .filter((tag) => tag !== undefined);
+      return {
+        note,
+        title: note.title || t.notesApp.untitled,
+        date: formatNoteDate(note.updatedAt, today),
+        excerpt: note.excerpt || t.notesApp.noText,
+        chips: own.slice(0, MAX_CHIPS),
+        extra: Math.max(0, own.length - MAX_CHIPS),
+        selected: note.id === openId,
+      };
+    });
+  });
+
+  const sortItems = $derived<MenuItem[]>([
+    {
+      id: "updated",
+      label: t.notesApp.sortUpdated,
+      checked: notes.sort === "updated",
+    },
+    {
+      id: "created",
+      label: t.notesApp.sortCreated,
+      checked: notes.sort === "created",
+    },
+    {
+      id: "title",
+      label: t.notesApp.sortTitle,
+      checked: notes.sort === "title",
+    },
+  ]);
 
   const empty = $derived(
     inTrash
@@ -58,19 +108,17 @@
           },
   );
 
-  function chips(note: NoteSummary) {
-    return note.tagIds
-      .map((id) => tags.byId.get(id))
-      .filter((tag) => tag !== undefined)
-      .slice(0, 2);
-  }
-
   function press(event: PointerEvent, note: NoteSummary) {
     if (inTrash) return;
     folderDrag.begin(
       event,
       { id: `note:${note.id}`, title: note.title || t.notesApp.untitled },
-      (key) => void notes.moveNote(note.id, key === "inbox" ? null : key),
+      (key) => {
+        // "root" is where folders go to reach the top level: a note has no such place.
+        if (key === "root") return;
+        const target = key === "inbox" ? null : key;
+        if (target !== note.folderId) void notes.moveNote(note.id, target);
+      },
     );
   }
 
@@ -108,24 +156,48 @@
   <header class="head" data-tauri-drag-region>
     <div class="titles" data-tauri-drag-region>
       <h2 data-tauri-drag-region>{title}</h2>
-      <span class="count">{t.notesApp.count(notes.notes.length)}</span>
+      <span class="count" data-tauri-drag-region>
+        {countLabel ?? t.notesApp.count(notes.notes.length)}
+      </span>
     </div>
     {#if !inTrash}
-      <label class="sort">
-        <span class="visually-hidden">{t.notesApp.sort}</span>
-        <select
-          value={notes.sort}
-          onchange={(event) =>
-            void notes.setSort(event.currentTarget.value as NotesSortKey)}
-        >
-          {#each SORTS as option (option.value)}
-            <option value={option.value}>{option.label}</option>
-          {/each}
-        </select>
-      </label>
+      {#if !body}
+        <div class="anchor">
+          <button
+            type="button"
+            class="icon-btn"
+            class:open={sortOpen}
+            data-menu-toggle
+            aria-haspopup="menu"
+            aria-expanded={sortOpen}
+            aria-label={t.notesApp.sort}
+            title={t.notesApp.sort}
+            onclick={() => (sortOpen = !sortOpen)}
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path
+                d="M4.5 3v10M4.5 13l-2.3-2.4M4.5 13l2.3-2.4M9 4.5h5M9 8h3.6M9 11.5h2.2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          {#if sortOpen}
+            <Menu
+              label={t.notesApp.sort}
+              items={sortItems}
+              onSelect={(sort) => void notes.setSort(sort as NotesSortKey)}
+              onClose={() => (sortOpen = false)}
+            />
+          {/if}
+        </div>
+      {/if}
       <button
         type="button"
-        class="icon-btn new"
+        class="icon-btn"
         aria-label={t.notesApp.newNote}
         title={t.notesApp.newNoteHint}
         onclick={onCreate}
@@ -144,7 +216,11 @@
     {/if}
   </header>
 
-  {#if notes.notes.length === 0}
+  {@render subheader?.()}
+
+  {#if body}
+    {@render body()}
+  {:else if notes.notes.length === 0}
     <EmptyState
       title={empty.title}
       description={empty.description}
@@ -166,25 +242,29 @@
       aria-label={t.notesApp.list}
     >
       <div style:height="{range.before}px" aria-hidden="true"></div>
-      {#each visible as note (note.id)}
-        {@const selected = notes.open?.id === note.id}
+      {#each rows as row (row.note.id)}
         <div class="slot" style:height="{ROW_HEIGHT}px" role="presentation">
-          <div class="item" class:selected role="presentation">
+          <div
+            class="item"
+            class:selected={row.selected}
+            class:in-trash={inTrash}
+            role="presentation"
+          >
             <button
               type="button"
               class="card"
               role="option"
-              aria-selected={selected}
-              data-note-id={note.id}
-              aria-label={t.notesApp.open(note.title || t.notesApp.untitled)}
-              onclick={() => void notes.openNote(note.id)}
-              onpointerdown={(event) => press(event, note)}
+              aria-selected={row.selected}
+              data-note-id={row.note.id}
+              aria-label={t.notesApp.open(row.title)}
+              onclick={() => void notes.openNote(row.note.id)}
+              onpointerdown={(event) => press(event, row.note)}
             >
               <span class="line">
-                <span class="title" class:placeholder={!note.title}>
-                  {note.title || t.notesApp.untitled}
+                <span class="title" class:placeholder={!row.note.title}>
+                  {row.title}
                 </span>
-                {#if note.isPinned}
+                {#if row.note.isPinned}
                   <svg
                     class="pin"
                     viewBox="0 0 16 16"
@@ -203,24 +283,27 @@
                   </svg>
                 {/if}
               </span>
-              <span class="meta">
-                <span class="date">{formatNoteDate(note.updatedAt, now())}</span
-                >
-                <span class="excerpt">{note.excerpt || t.notesApp.noText}</span>
+              <!-- Without tags the excerpt takes the line they would use. -->
+              <span class="excerpt" class:two={row.chips.length === 0}>
+                <span class="date">{row.date}</span>
+                {row.excerpt}
               </span>
-              {#if note.tagIds.length > 0}
+              {#if row.chips.length > 0}
                 <span class="tags">
-                  {#each chips(note) as tag (tag.id)}
+                  {#each row.chips as tag (tag.id)}
                     <TagChip name={tag.name} color={tag.colorHex} />
                   {/each}
+                  {#if row.extra > 0}
+                    <span class="extra">+{row.extra}</span>
+                  {/if}
                 </span>
               {/if}
             </button>
             {#if inTrash}
               <button
                 type="button"
-                class="restore"
-                onclick={() => void notes.restoreNote(note.id)}
+                class="btn small restore"
+                onclick={() => void notes.restoreNote(row.note.id)}
               >
                 {t.notesApp.restore}
               </button>
@@ -245,9 +328,9 @@
     display: flex;
     flex: none;
     align-items: center;
-    gap: var(--space-2);
+    gap: 2px;
     height: 44px;
-    padding: 0 var(--space-3);
+    padding: 0 var(--space-2) 0 var(--space-4);
   }
 
   .titles {
@@ -255,6 +338,7 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
+    margin-right: var(--space-1);
   }
 
   h2 {
@@ -264,6 +348,7 @@
     font-size: 15px;
     font-weight: 700;
     letter-spacing: -0.01em;
+    line-height: 1.3;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -271,49 +356,35 @@
   .count {
     color: var(--text-secondary);
     font-size: 11px;
+    line-height: 1.3;
   }
 
-  .sort select {
-    height: 26px;
-    padding: 0 var(--space-2);
-    border: 0;
-    border-radius: var(--radius-small);
-    background: var(--bg-control);
-    color: var(--text-secondary);
-    font: inherit;
-    font-size: 12px;
-    cursor: pointer;
+  .anchor {
+    position: relative;
   }
 
-  .sort select:hover {
-    background: var(--bg-control-hover);
-  }
-
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
+  .icon-btn.open {
+    background: var(--bg-active);
+    color: var(--text-primary);
   }
 
   .scroller {
     flex: 1;
     min-height: 0;
-    padding: 0 var(--space-2);
+    padding: 2px var(--space-2) var(--space-2);
     overflow-y: auto;
     outline: none;
   }
 
   .slot {
     box-sizing: border-box;
-    padding: 2px 0;
+    padding: 1px 0;
   }
 
   .item {
     position: relative;
     height: 100%;
-    border-radius: var(--radius-card);
+    border-radius: var(--radius-control);
     transition: background-color var(--motion-instant) linear;
   }
 
@@ -321,18 +392,19 @@
     background: var(--bg-hover);
   }
 
+  /* A tint of the accent instead of a solid block: the open note is clear at a glance and
+     the text keeps its own colours. */
   .item.selected {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
   }
 
   .card {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    box-sizing: border-box;
     width: 100%;
     height: 100%;
-    padding: 9px var(--space-3);
+    padding: 10px var(--space-3);
     border: 0;
     border-radius: inherit;
     background: transparent;
@@ -345,8 +417,14 @@
 
   .line {
     display: flex;
+    flex: none;
     align-items: center;
     gap: var(--space-1);
+    height: 18px;
+  }
+
+  .in-trash .line {
+    padding-right: 84px;
   }
 
   .title {
@@ -355,76 +433,77 @@
     overflow: hidden;
     font-size: 13px;
     font-weight: 600;
+    line-height: 18px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .title.placeholder {
-    opacity: 0.6;
+    color: var(--text-secondary);
   }
 
   .pin {
     flex: none;
-    opacity: 0.7;
+    color: var(--text-secondary);
   }
 
-  .meta {
-    display: flex;
-    gap: var(--space-2);
-    min-width: 0;
-    font-size: 12px;
-  }
-
-  .date {
-    flex: none;
-    font-variant-numeric: tabular-nums;
+  .selected .pin {
+    color: var(--accent);
   }
 
   .excerpt {
-    min-width: 0;
+    display: block;
+    flex: none;
+    margin-top: 2px;
     overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 17px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .date,
-  .excerpt {
-    color: var(--text-secondary);
+  .excerpt.two {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 
-  .selected .date,
-  .selected .excerpt {
-    color: color-mix(in srgb, var(--on-accent) 80%, transparent);
+  .date {
+    margin-right: 4px;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
   }
 
   .tags {
     display: flex;
+    flex: none;
+    align-items: center;
     gap: var(--space-1);
-    margin-top: 2px;
+    min-width: 0;
+    margin-top: 3px;
+    overflow: hidden;
+  }
+
+  .extra {
+    flex: none;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
   }
 
   .restore {
     position: absolute;
-    top: 8px;
+    top: 7px;
     right: 8px;
-    padding: 2px 10px;
-    border: 0;
-    border-radius: var(--radius-chip);
-    background: var(--accent);
-    color: var(--on-accent);
-    font: inherit;
-    font-size: 12px;
-    cursor: pointer;
+    color: var(--accent);
   }
 
-  .card:focus-visible,
-  .restore:focus-visible,
-  select:focus-visible {
+  .card:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: -2px;
-  }
-
-  .selected .card:focus-visible {
-    outline-color: var(--on-accent);
   }
 </style>

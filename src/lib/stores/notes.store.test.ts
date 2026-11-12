@@ -142,6 +142,59 @@ describe("NotesStore", () => {
     expect(store.undoStack).toEqual([]);
   });
 
+  it("opens a note of the trash read-only and closes it when leaving the trash", async () => {
+    const { store } = await loaded((api) => {
+      api.notes = [note("n1")];
+      api.trash = [note("old", { title: "Vieja" })];
+    });
+    await store.openNote("n1");
+    await store.selectScope("trash");
+    // A live note stays open, and editable, while the trash is looked at.
+    expect(store.open?.id).toBe("n1");
+    expect(store.openInTrash).toBe(false);
+
+    await store.openNote("old");
+    expect(store.open?.title).toBe("Vieja");
+    expect(store.openInTrash).toBe(true);
+
+    await store.selectScope("all");
+    expect(store.open).toBeNull();
+    expect(store.openInTrash).toBe(false);
+  });
+
+  it("restoring the open note of the trash keeps it open and editable", async () => {
+    const { store } = await loaded((api) => {
+      api.trash = [note("old")];
+    });
+    await store.selectScope("trash");
+    await store.openNote("old");
+    await store.restoreNote("old");
+    expect(store.open?.id).toBe("old");
+    expect(store.openInTrash).toBe(false);
+    expect(store.notes).toHaveLength(0);
+  });
+
+  it("lists every folder in tree order for menus, whatever is expanded", async () => {
+    const { store } = await loaded((api) => {
+      api.folders = [folder("Grado"), folder("Mates", "Grado"), folder("Ocio")];
+    });
+    expect(store.rows.map((row) => row.folder.name)).toEqual(["Grado", "Ocio"]);
+    expect(store.tree.map((row) => `${row.depth}:${row.folder.name}`)).toEqual([
+      "0:Grado",
+      "1:Mates",
+      "0:Ocio",
+    ]);
+  });
+
+  it("reports a list that fails to load instead of throwing", async () => {
+    const { api, store } = await loaded();
+    api.notesList = async () => {
+      throw "DB: roto";
+    };
+    await store.selectScope("inbox");
+    expect(store.notice?.kind).toBe("error");
+  });
+
   it("flattens the tree honouring what is expanded", async () => {
     const { store } = await loaded((api) => {
       api.folders = [

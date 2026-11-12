@@ -140,6 +140,11 @@ export class FakeNotesApi implements NotesApi {
     this.notes = [found, ...this.notes];
     return found;
   }
+  async noteTrashGet(id: string) {
+    const found = this.trash.find((n) => n.id === id);
+    if (!found) throw "NOT_FOUND: no existe";
+    return found;
+  }
   async notesTrashList() {
     return this.trash.map(summary);
   }

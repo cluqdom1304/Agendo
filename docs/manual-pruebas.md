@@ -246,8 +246,8 @@ Movimiento y fluidez
 - [ ] Pulsar «Notas» en la barra superior (o `Ctrl+Mayús+2`) cambia de sección con una transición suave; `Ctrl+Mayús+1` vuelve a la Agenda. La sección, carpeta y nota abiertas se recuerdan al reiniciar.
 - [ ] Crear carpeta, subcarpeta, renombrar y eliminar (con confirmación): los contadores y el árbol se actualizan; no deja crear más de 5 niveles ni dos hermanas con el mismo nombre.
 - [ ] Arrastrar una nota o una carpeta sobre una carpeta, la Bandeja o «Carpetas» la mueve; Esc cancela el arrastre.
-- [ ] Escribir en una nota: título y cuerpo se guardan solos; al cambiar de nota no se pierde nada; la barra de formato siempre visible.
-- [ ] Fijar, duplicar, mover (menú), eliminar con «Deshacer» y restaurar desde la Papelera.
+- [ ] Escribir en una nota: título y cuerpo se guardan solos; al cambiar de nota no se pierde nada; la barra de formato siempre visible en la cabecera.
+- [ ] Fijar, mover (menú de carpeta), duplicar y eliminar (menú «···») con «Deshacer», y restaurar desde la Papelera.
 - [ ] Lista con unas miles de notas: el desplazamiento es fluido; flechas arriba/abajo cambian de nota.
 - [ ] Aspecto: tema claro y oscuro, animaciones suaves y sin parpadeos, foco visible con teclado y lector de pantalla.
 - [ ] (F9) Asignar varias etiquetas a una tarea desde el menú de la fila y desde el diálogo; la fila muestra dos y `+N`; filtrar por una etiqueta en la barra muestra las tareas que la tengan aunque tengan otras.
@@ -259,3 +259,13 @@ Movimiento y fluidez
 - [ ] (F10) «Convertir casillas en tareas» sobre una lista con casillas marcadas y sin marcar: se crean las tareas (las marcadas, hechas) y la lista pasa a ser referencias. El panel «Tareas de esta nota» muestra el progreso.
 - [ ] (F10) En el detalle de una tarea: «Crear nota para esta tarea» y «Convertir en nota» (con Deshacer); el chip de origen de la fila y del detalle abre la nota.
 - [ ] (F10) Aspecto: las filas de tarea dentro de la nota en tema claro y oscuro, animación de la casilla y del progreso.
+
+## Repaso de diseño de Notas (`[H]`, pendiente de validar en Windows 11)
+- [ ] Cabecera de la nota: los iconos de formato se ven nítidos y alineados en claro y oscuro, sin franja de otro color al desplazar el texto (con y sin Mica); al estrechar la ventana desaparecen deshacer/rehacer y nada se monta sobre los botones de la derecha.
+- [ ] Menús «Ordenar por», «Mover a…» (con subcarpetas sangradas) y «···»: se abren bajo su botón sin recortarse, se cierran con Esc, con clic fuera y al elegir; flechas arriba/abajo recorren las opciones. Solo hay uno abierto a la vez (también con el de etiquetas).
+- [ ] Enlace (`Ctrl+L` o el botón): el campo aparece flotando bajo la barra, se cierra al aplicar, con Esc o al pulsar en el texto.
+- [ ] Papelera: pulsar una nota la muestra completa y no deja escribir ni en el título ni en el texto; «Restaurar» (en la fila o en la cabecera) la devuelve y, si estaba abierta, pasa a ser editable. Con la papelera a la vista, una nota normal abierta antes sigue editable.
+- [ ] Arrastre: una nota sobre «Carpetas» y una carpeta sobre la Bandeja no se iluminan ni dan error.
+- [ ] Lista: la nota abierta se distingue bien con el tinte de acento en claro y oscuro; las filas con etiquetas no se cortan; sin etiquetas el extracto ocupa dos líneas. Pasar el ratón por una etiqueta de la barra no oculta su contador.
+- [ ] Nota larga y nota vacía: el texto se lee en una columna centrada en ventanas anchas; pulsar bajo el último párrafo coloca el cursor; «Tareas de esta nota» solo aparece cuando hay tareas.
+- [ ] Barra de formato de la descripción de una tarea (agenda): mismos iconos nuevos, sin cambios de comportamiento.

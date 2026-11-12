@@ -20,7 +20,16 @@
   let draft = $state("");
   let confirmingDelete = $state<string | null>(null);
 
-  const drop = $derived(folderDrag.active?.overKey ?? null);
+  // Where the thing being dragged may land: a note goes to the inbox or a folder, a folder
+  // to the top level or another folder. Anything else is not lit up.
+  const drop = $derived.by(() => {
+    const drag = folderDrag.active;
+    if (!drag?.overKey) return null;
+    const isNote = drag.id.startsWith("note:");
+    if (drag.overKey === (isNote ? "root" : "inbox")) return null;
+    if (drag.id === `folder:${drag.overKey}`) return null;
+    return drag.overKey;
+  });
 
   function select(scope: ScopeKey) {
     void notes.selectScope(scope);
@@ -65,6 +74,8 @@
       event,
       { id: `folder:${folder.id}`, title: folder.name },
       (key) => {
+        // The inbox holds notes, not folders.
+        if (key === "inbox") return;
         const target = key === "root" ? null : key;
         if (target !== folder.id) void notes.moveFolder(folder.id, target);
       },
@@ -111,7 +122,7 @@
       </button>
     </header>
 
-    <nav class="smart" aria-label={t.notesApp.foldersHeading}>
+    <nav class="smart" aria-label={t.notesApp.smartFolders}>
       {@render smart("all", t.notesApp.all, "M3 4h10M3 8h10M3 12h6")}
       <div
         class="row-wrap"
@@ -166,19 +177,24 @@
               <span class="confirm-actions">
                 <button
                   type="button"
-                  class="danger"
+                  class="btn small"
+                  onclick={() => (confirmingDelete = null)}
+                >
+                  {t.notesApp.cancel}
+                </button>
+                <button
+                  type="button"
+                  class="btn small danger-fill"
+                  aria-label={t.notesApp.deleteFolder(folder.name)}
                   onclick={() => void remove(folder.id)}
                 >
-                  {t.notesApp.deleteFolder(folder.name)}
-                </button>
-                <button type="button" onclick={() => (confirmingDelete = null)}>
-                  {t.notesApp.cancel}
+                  {t.notesApp.delete}
                 </button>
               </span>
             </div>
           {:else}
             <div
-              class="row"
+              class="row has-actions"
               class:active={notes.scope === key}
               class:drop-target={drop === folder.id}
               data-folder-drop={folder.id}
@@ -236,7 +252,9 @@
                 </svg>
                 <span class="label">{folder.name}</span>
               </button>
-              <span class="count">{folder.noteCount}</span>
+              <span class="count" class:zero={folder.noteCount === 0}>
+                {folder.noteCount}
+              </span>
               <span class="actions">
                 <button
                   type="button"
@@ -247,7 +265,20 @@
                     begin(`new:${folder.id}`);
                   }}
                 >
-                  +
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="11"
+                    height="11"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M8 3v10M3 8h10"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                  </svg>
                 </button>
                 <button
                   type="button"
@@ -312,9 +343,9 @@
         <span class="section-title">{t.notesApp.tags}</span>
       </div>
       <ul class="tag-list">
-        {#each tags.tags as tag (tag.id)}
+        {#each tags.ordered as tag (tag.id)}
           {@const key = `tag:${tag.id}` as ScopeKey}
-          <li>
+          <li class:child={!!tag.parentId}>
             <button
               type="button"
               class="row smart-row"
@@ -328,7 +359,9 @@
             >
               <span class="dot" style:background={tag.colorHex}></span>
               <span class="label">{tag.name}</span>
-              <span class="count">{tag.noteCount}</span>
+              <span class="count" class:zero={tag.noteCount === 0}>
+                {tag.noteCount}
+              </span>
             </button>
           </li>
         {/each}
@@ -441,14 +474,16 @@
     border-radius: var(--radius-small);
     background: transparent;
     color: var(--text-secondary);
-    font: inherit;
-    font-size: 15px;
-    line-height: 1;
     cursor: pointer;
     transition:
       background-color var(--motion-instant) linear,
       color var(--motion-instant) linear,
       transform var(--motion-instant) var(--ease-out);
+  }
+
+  /* The icons of the rows are tinted; the ones of their buttons are not. */
+  .row .actions svg {
+    color: inherit;
   }
 
   .icon:hover,
@@ -475,10 +510,11 @@
 
   .section-title {
     display: block;
+    margin: 0 calc(var(--space-2) * -1);
+    padding: 3px var(--space-2);
     color: var(--text-secondary);
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.02em;
     border-radius: var(--radius-small);
   }
 
@@ -512,6 +548,10 @@
     background: var(--bg-active);
   }
 
+  .row.active .label {
+    font-weight: 600;
+  }
+
   .drop-target {
     background: color-mix(in srgb, var(--accent) 18%, transparent);
     box-shadow: inset 0 0 0 1.5px var(--accent);
@@ -540,10 +580,6 @@
 
   .row svg {
     flex: none;
-    color: var(--accent);
-  }
-
-  .active svg {
     color: var(--accent);
   }
 
@@ -592,6 +628,15 @@
     text-align: right;
   }
 
+  .count.zero {
+    opacity: 0.5;
+  }
+
+  /* Inside a button the padding of the button already keeps the number off the edge. */
+  .smart-row .count {
+    margin-right: 0;
+  }
+
   .actions {
     display: none;
     flex: none;
@@ -604,8 +649,9 @@
     display: flex;
   }
 
-  .row:hover .count,
-  .row:focus-within .count {
+  /* The number only makes room where there are buttons to show instead. */
+  .has-actions:hover .count,
+  .has-actions:focus-within .count {
     display: none;
   }
 
@@ -633,8 +679,8 @@
   .confirm {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
-    padding: 6px 4px 6px 12px;
+    gap: 6px;
+    padding: 6px 4px 8px 12px;
     color: var(--text-secondary);
     font-size: 12px;
     animation: rise-in var(--motion-fast) var(--ease-out);
@@ -645,22 +691,6 @@
     gap: var(--space-1);
   }
 
-  .confirm button {
-    padding: 2px 8px;
-    border: 0;
-    border-radius: var(--radius-small);
-    background: var(--bg-control);
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .confirm button.danger {
-    background: var(--danger);
-    color: var(--on-danger);
-  }
-
   .tag-list {
     display: flex;
     flex-direction: column;
@@ -668,6 +698,10 @@
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+
+  .child {
+    padding-left: 14px;
   }
 
   .dot {
@@ -680,8 +714,15 @@
 
   .bottom {
     margin-top: auto;
-    padding-top: var(--space-2);
-    border-top: 1px solid var(--separator);
+    padding-top: var(--space-3);
+  }
+
+  .bottom::before {
+    content: "";
+    display: block;
+    height: 1px;
+    margin: 0 var(--space-2) var(--space-2);
+    background: var(--separator);
   }
 
   button:focus-visible,

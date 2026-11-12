@@ -239,7 +239,7 @@ describe("NoteTasksPanel", () => {
     expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ id: "b" }));
   });
 
-  it("explains how to start when the note has no tasks", async () => {
+  it("stays out of the way when the note has no tasks", async () => {
     const tasks = await setup();
     render(NoteTasksPanel, {
       tasks,
@@ -247,7 +247,8 @@ describe("NoteTasksPanel", () => {
       contentJson: doc(),
       onOpen: () => {},
     });
-    expect(screen.getByText(/\/tarea/)).toBeTruthy();
+    expect(screen.queryByRole("region")).toBeNull();
+    expect(screen.queryByRole("progressbar")).toBeNull();
   });
 });
 

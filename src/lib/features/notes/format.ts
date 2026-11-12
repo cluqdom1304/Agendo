@@ -13,6 +13,17 @@ const DAY_YEAR = new Intl.DateTimeFormat("es", {
   year: "numeric",
 });
 
+const STAMP = new Intl.DateTimeFormat("es", {
+  dateStyle: "long",
+  timeStyle: "short",
+});
+
+/** The full date and time of the last edit, as shown at the top of a note. */
+export function formatNoteStamp(iso: string): string {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "" : STAMP.format(date);
+}
+
 function sameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&

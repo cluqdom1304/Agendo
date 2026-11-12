@@ -101,6 +101,7 @@ pub fn run() {
             commands::notes::note_tags_set,
             commands::notes::note_delete,
             commands::notes::note_restore,
+            commands::notes::note_trash_get,
             commands::notes::notes_trash_list,
             commands::reminders::reminders_set,
             commands::settings::settings_get,

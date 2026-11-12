@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatNoteDate } from "./format";
+import { formatNoteDate, formatNoteStamp } from "./format";
 
 const now = new Date("2026-03-10T15:00:00");
 
@@ -20,5 +20,17 @@ describe("formatNoteDate", () => {
 
   it("returns an empty text for an invalid date", () => {
     expect(formatNoteDate("nope", now)).toBe("");
+  });
+});
+
+describe("formatNoteStamp", () => {
+  it("shows the whole date and the time", () => {
+    const stamp = formatNoteStamp("2026-03-10T09:05:00");
+    expect(stamp).toMatch(/10 de marzo de 2026/);
+    expect(stamp).toMatch(/9:05/);
+  });
+
+  it("returns an empty text for an invalid date", () => {
+    expect(formatNoteStamp("nope")).toBe("");
   });
 });

@@ -198,6 +198,13 @@ pub fn trash(state: &AppState) -> AppResult<Vec<NoteSummary>> {
     state.db.read(|conn| Ok(notes::list_trash(conn)?))
 }
 
+/// A note of the trash with its document, to read it before restoring it.
+pub fn trashed(state: &AppState, id: &str) -> AppResult<Note> {
+    state
+        .db
+        .read(|conn| notes::get_trashed(conn, id)?.ok_or_else(|| note_not_found(id)))
+}
+
 #[tauri::command]
 pub async fn notes_list(
     state: State<'_, Arc<AppState>>,
@@ -293,6 +300,11 @@ pub async fn note_delete(state: State<'_, Arc<AppState>>, id: String) -> Result<
 #[tauri::command]
 pub async fn note_restore(state: State<'_, Arc<AppState>>, id: String) -> Result<Note, String> {
     run_blocking(state.inner().clone(), move |state| restore(state, &id)).await
+}
+
+#[tauri::command]
+pub async fn note_trash_get(state: State<'_, Arc<AppState>>, id: String) -> Result<Note, String> {
+    run_blocking(state.inner().clone(), move |state| trashed(state, &id)).await
 }
 
 #[tauri::command]
@@ -692,6 +704,7 @@ mod tests {
             code_of(get(&state, &note.id)),
             format!("NOT_FOUND: nota {} no encontrada", note.id)
         );
+        assert_eq!(trashed(&state, &note.id).expect("trashed").title, "Una");
         assert_eq!(
             code_of(delete(&state, &note.id)),
             format!("NOT_FOUND: nota {} no encontrada", note.id)
@@ -702,6 +715,10 @@ mod tests {
         assert_eq!(restored.updated_at, "2026-03-10T10:01:00Z");
         assert_eq!(all(&state).len(), 1);
         assert!(trash(&state).expect("trash").is_empty());
+        assert_eq!(
+            code_of(trashed(&state, &note.id)),
+            format!("NOT_FOUND: nota {} no encontrada", note.id)
+        );
         assert_eq!(
             code_of(restore(&state, &note.id)),
             format!("NOT_FOUND: nota {} no encontrada", note.id)

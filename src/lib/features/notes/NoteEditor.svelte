@@ -14,6 +14,7 @@
   import { matchTags } from "./tagQuery";
   import NoteToolbar from "./NoteToolbar.svelte";
   import { NoteSaver } from "./noteSaver";
+  import { IDLE_TOOLBAR } from "./toolbarState";
 
   interface Props {
     /** Notes as they are when the editor opens; later changes come from the editor itself. */
@@ -21,8 +22,13 @@
     /** Saves the document; rejects when the backend refuses it. */
     save: (contentJson: string) => Promise<void>;
     /** `inline` sits under a task row of the list; `field` is a form field (the default);
-     * `page` is the body of a note, with the format bar always showing. */
+     * `page` is the body of a note: it draws no format bar of its own, whoever holds it shows
+     * one in its header and drives it through the exported functions. */
     variant?: "inline" | "field" | "page";
+    /** Shows the note without letting it be edited. */
+    readonly?: boolean;
+    /** Accessible name of the text box. */
+    label?: string;
     placeholder?: string;
     /** Takes the cursor when it opens: only for a note the user has just opened. */
     autofocus?: boolean;
@@ -43,6 +49,8 @@
     contentJson,
     save,
     variant = "field",
+    readonly = false,
+    label = t.notes.editorLabel,
     placeholder = t.notes.placeholder,
     autofocus = false,
     onAutofocus,
@@ -53,22 +61,9 @@
     onTaskRequest,
   }: Props = $props();
 
-  const idleState: ToolbarState = {
-    bold: false,
-    italic: false,
-    code: false,
-    bulletList: false,
-    orderedList: false,
-    taskList: false,
-    link: false,
-    linkHref: "",
-    canUndo: false,
-    canRedo: false,
-  };
-
   let host = $state<HTMLDivElement>();
   let handle = $state.raw<NoteEditorHandle | null>(null);
-  let toolbar = $state.raw<ToolbarState>(idleState);
+  let toolbar = $state.raw<ToolbarState>(IDLE_TOOLBAR);
   let linkRequest = $state(0);
   let failed = $state(false);
   // The controls only show while the focus is inside the note (editor or toolbar).
@@ -143,8 +138,9 @@
         created = createNoteEditor({
           element: host,
           contentJson,
-          label: t.notes.editorLabel,
+          label,
           placeholder,
+          editable: !readonly,
           onChange: (json) => saver.schedule(json),
           onState: (state) => (toolbar = state),
           onLinkShortcut: () => (linkRequest += 1),
@@ -206,8 +202,36 @@
     return (handle?.checklistItems().length ?? 0) > 0;
   }
 
-  const toggle = (name: ToggleName) => handle?.toggle(name);
-  const setLink = (href: string | null) => handle?.setLink(href) ?? false;
+  /** What a format bar outside the editor has to draw. Reactive: read it where it is shown. */
+  export function formats(): ToolbarState {
+    return toolbar;
+  }
+
+  /** Grows each time the note asks for the link field (Ctrl+L). */
+  export function linkRequests(): number {
+    return linkRequest;
+  }
+
+  export function toggle(name: ToggleName): void {
+    handle?.toggle(name);
+  }
+
+  /** Sets the link on the selection, or removes it with `null`. False if it is refused. */
+  export function setLink(href: string | null): boolean {
+    return handle?.setLink(href) ?? false;
+  }
+
+  export function undo(): void {
+    handle?.undo();
+  }
+
+  export function redo(): void {
+    handle?.redo();
+  }
+
+  export function focus(position: "start" | "end" = "end"): void {
+    handle?.focus(position);
+  }
 </script>
 
 <div
@@ -222,15 +246,15 @@
   {#if failed}
     <p class="status" role="alert">{t.notes.loadFailed}</p>
   {:else}
-    {#if focused || variant === "page"}
+    {#if focused && variant !== "page"}
       <div class="tools">
         <NoteToolbar
           formats={toolbar}
           {linkRequest}
           onToggle={toggle}
           onSetLink={setLink}
-          onUndo={() => handle?.undo()}
-          onRedo={() => handle?.redo()}
+          onUndo={undo}
+          onRedo={redo}
         />
       </div>
     {/if}
@@ -294,23 +318,16 @@
     background: var(--bg-control);
   }
 
-  /* The body of a note: no field chrome, reading-size text. */
-  .as-page {
+  /* The body of a note: no field chrome, reading-size text, and as tall as the room it is
+     given so a click anywhere under the text lands in it. */
+  .as-page,
+  .as-page .surface {
     display: flex;
+    flex: 1;
     flex-direction: column;
-    min-height: 100%;
-  }
-
-  .as-page .tools {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding-bottom: var(--space-2);
-    background: var(--bg-window-solid);
   }
 
   .as-page .surface {
-    flex: 1;
     cursor: text;
   }
 
@@ -392,9 +409,29 @@
   }
 
   .as-page .surface :global(.tiptap) {
-    min-height: 50vh;
+    flex: 1;
+    min-height: 160px;
+    padding-bottom: var(--space-6);
     font-size: 15px;
     line-height: 1.6;
+  }
+
+  .as-page .surface :global(.tiptap[contenteditable="false"]) {
+    cursor: default;
+  }
+
+  /* Lists breathe a little at reading size. */
+  .as-page .surface :global(.tiptap > ul),
+  .as-page .surface :global(.tiptap > ol) {
+    margin: 2px 0;
+  }
+
+  .as-page .surface :global(.tiptap ul[data-type="taskList"] li) {
+    padding: 2px 0;
+  }
+
+  .as-page .surface :global(.tiptap ul[data-type="taskList"] li > label) {
+    padding-top: 4.5px;
   }
 
   .focused .surface :global(.tiptap),
@@ -506,8 +543,8 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    margin: 3px 0;
-    padding: 5px var(--space-2);
+    margin: 4px 0;
+    padding: 6px 10px;
     border-radius: var(--radius-control);
     background: var(--bg-control);
     font-size: 14px;
@@ -623,13 +660,17 @@
     border-style: dashed;
   }
 
-  .surface :global(.tr-restore) {
+  .surface :global(.task-ref .tr-restore) {
     flex: none;
-    padding: 1px 10px;
-    border-radius: var(--radius-chip);
-    background: var(--accent);
-    color: var(--on-accent);
+    padding: 2px 8px;
+    border-radius: var(--radius-small);
+    color: var(--accent);
     font-size: 12px;
+    font-weight: 500;
+  }
+
+  .surface :global(.task-ref .tr-restore:hover) {
+    background: var(--bg-hover);
   }
 
   .surface :global(.tiptap li > p) {

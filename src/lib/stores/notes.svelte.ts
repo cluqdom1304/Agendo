@@ -27,6 +27,7 @@ export interface NotesApi {
   noteTagsSet(noteId: string, tagIds: string[]): Promise<Note>;
   noteDelete(id: string): Promise<void>;
   noteRestore(id: string): Promise<Note>;
+  noteTrashGet(id: string): Promise<Note>;
   notesTrashList(): Promise<NoteSummary[]>;
   settingsGet(
     key: "app_section" | "notes_scope" | "notes_open",
@@ -84,6 +85,8 @@ export class NotesStore {
   sort = $state<NotesSortKey>("updated");
   /** The open note, with its document; `null` while none is chosen. */
   open = $state.raw<Note | null>(null);
+  /** The open note sits in the trash: it is shown, but cannot be edited. */
+  openInTrash = $state(false);
   status = $state<"idle" | "ready" | "error">("idle");
   notice = $state.raw<Notice | null>(null);
   /** Notes sent to the trash in this session, newest last, to bring them back. */
@@ -102,26 +105,11 @@ export class NotesStore {
   // eslint-disable-next-line svelte/prefer-svelte-reactivity
   byId = $derived(new Map(this.folders.map((folder) => [folder.id, folder])));
 
-  rows = $derived.by<FolderRow[]>(() => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const children = new Map<string | null, FolderWithCount[]>();
-    for (const folder of this.folders) {
-      const list = children.get(folder.parentId) ?? [];
-      list.push(folder);
-      children.set(folder.parentId, list);
-    }
-    const result: FolderRow[] = [];
-    const walk = (parent: string | null, depth: number) => {
-      for (const folder of children.get(parent) ?? []) {
-        const hasChildren = children.has(folder.id);
-        const expanded = hasChildren && this.expanded.has(folder.id);
-        result.push({ folder, depth, hasChildren, expanded });
-        if (expanded) walk(folder.id, depth + 1);
-      }
-    };
-    walk(null, 0);
-    return result;
-  });
+  /** The rows of the folder panel: children only under an expanded folder. */
+  rows = $derived.by<FolderRow[]>(() => this.#walk(false));
+
+  /** Every folder in tree order, whatever is expanded: for the "move to" menu. */
+  tree = $derived.by<FolderRow[]>(() => this.#walk(true));
 
   /** Id of the folder the scope points at, if it is one. */
   scopeFolderId = $derived(
@@ -147,6 +135,27 @@ export class NotesStore {
 
   constructor(api: NotesApi = backend) {
     this.#api = api;
+  }
+
+  #walk(all: boolean): FolderRow[] {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const children = new Map<string | null, FolderWithCount[]>();
+    for (const folder of this.folders) {
+      const list = children.get(folder.parentId) ?? [];
+      list.push(folder);
+      children.set(folder.parentId, list);
+    }
+    const result: FolderRow[] = [];
+    const walk = (parent: string | null, depth: number) => {
+      for (const folder of children.get(parent) ?? []) {
+        const hasChildren = children.has(folder.id);
+        const expanded = hasChildren && this.expanded.has(folder.id);
+        result.push({ folder, depth, hasChildren, expanded });
+        if (all || expanded) walk(folder.id, depth + 1);
+      }
+    };
+    walk(null, 0);
+    return result;
   }
 
   /** Loads once at a time: callers that arrive while it runs share the same work. */
@@ -189,8 +198,7 @@ export class NotesStore {
       const note = await this.#api.noteCreate(input);
       this.titles.set(note.id, note.title);
       await this.#refreshAll();
-      this.open = note;
-      this.#remember("notes_open", note.id);
+      this.#show(note);
       return note;
     } catch {
       this.#fail(t.notesApp.createFailed);
@@ -223,14 +231,16 @@ export class NotesStore {
 
   async selectScope(scope: ScopeKey): Promise<void> {
     if (scope === this.scope) return;
+    // A note of the trash only makes sense next to the trash list.
+    if (this.openInTrash) await this.openNote(null);
     this.scope = scope;
     this.#remember("notes_scope", scope);
-    await this.#refreshList();
+    await this.#tryRefreshList();
   }
 
-  setSort(sort: NotesSortKey): Promise<void> {
+  async setSort(sort: NotesSortKey): Promise<void> {
     this.sort = sort;
-    return this.#refreshList();
+    await this.#tryRefreshList();
   }
 
   toggleExpanded(id: string): void {
@@ -244,15 +254,24 @@ export class NotesStore {
   ): Promise<void> {
     if (id === null) {
       this.open = null;
+      this.openInTrash = false;
       if (options.remember !== false) this.#remember("notes_open", "");
       return;
     }
     try {
-      this.open = await this.#api.noteGet(id);
+      // Only the trash list shows deleted notes, so being in it is what tells them apart.
+      const trashed =
+        this.scope === "trash" && this.notes.some((item) => item.id === id);
+      const note = trashed
+        ? await this.#api.noteTrashGet(id)
+        : await this.#api.noteGet(id);
+      this.open = note;
+      this.openInTrash = trashed;
       if (options.remember !== false) this.#remember("notes_open", id);
     } catch {
       // A note that no longer exists (purged, or restored from another backup).
       this.open = null;
+      this.openInTrash = false;
       this.#remember("notes_open", "");
     }
   }
@@ -269,8 +288,7 @@ export class NotesStore {
         ...(tagId ? { tagIds: [tagId] } : {}),
       });
       await this.#refreshAll();
-      this.open = note;
-      this.#remember("notes_open", note.id);
+      this.#show(note);
       return note;
     } catch {
       this.#fail(t.notesApp.createFailed);
@@ -282,14 +300,15 @@ export class NotesStore {
   async saveContent(id: string, contentJson: string): Promise<void> {
     const saved = await this.#api.noteUpdate(id, { contentJson });
     this.#adopt(saved);
-    await this.#refreshList();
+    // The text is saved: a list that fails to refresh must not make the saver retry it.
+    await this.#refreshList().catch(() => undefined);
   }
 
   async saveTitle(id: string, title: string): Promise<void> {
     const saved = await this.#api.noteUpdate(id, { title });
     this.titles.set(id, saved.title);
     this.#adopt(saved);
-    await this.#refreshList();
+    await this.#refreshList().catch(() => undefined);
   }
 
   async setPinned(id: string, pinned: boolean): Promise<void> {
@@ -330,8 +349,7 @@ export class NotesStore {
         tagIds: source.tagIds,
       });
       await this.#refreshAll();
-      this.open = copy;
-      this.#remember("notes_open", copy.id);
+      this.#show(copy);
       return copy;
     } catch {
       this.#fail(t.notesApp.actionFailed);
@@ -359,7 +377,11 @@ export class NotesStore {
 
   async restoreNote(id: string): Promise<void> {
     try {
-      await this.#api.noteRestore(id);
+      const restored = await this.#api.noteRestore(id);
+      if (this.open?.id === id) {
+        this.open = restored;
+        this.openInTrash = false;
+      }
       await this.#refreshAll();
     } catch {
       this.#fail(t.notesApp.actionFailed);
@@ -456,6 +478,20 @@ export class NotesStore {
       at = this.byId.get(at)?.parentId
     ) {
       this.expanded.add(at);
+    }
+  }
+
+  #show(note: Note): void {
+    this.open = note;
+    this.openInTrash = false;
+    this.#remember("notes_open", note.id);
+  }
+
+  async #tryRefreshList(): Promise<void> {
+    try {
+      await this.#refreshList();
+    } catch {
+      this.#fail(t.notesApp.actionFailed);
     }
   }
 

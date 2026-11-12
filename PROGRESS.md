@@ -2,8 +2,8 @@
 
 **Fase activa:** Fase 10 de la V2.0.0 (tareas dentro de las notas)
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F10 cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8, 9 y 10» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 11.
-**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8, 9 y 10 implementadas, pendientes de validación humana)
+**Siguiente tarea:** F10 cerrada en lo `[A]`, más un repaso de fallos y diseño de la sección Notas (ver «Repaso de la sección Notas»). Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8, 9 y 10» y de «Repaso de diseño de Notas» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 11.
+**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8, 9 y 10 implementadas y repasadas, pendientes de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -272,6 +272,33 @@
 - F10-07: en el detalle de la tarea, «Crear nota para esta tarea» (nota con título y una referencia) y «Convertir en nota» (nota con su descripción y etiquetas; la tarea va a la papelera con el aviso de deshacer de la agenda).
 - Bug cazado por los tests: `restoreById` no volvía a meter la tarea en la lista (`#replace` solo sustituye).
 - `NotesStore.load` comparte una sola carga entre llamadas simultáneas, porque abrir una nota de origen desde la agenda puede cruzarse con la carga inicial.
+
+### Repaso de la sección Notas (fallos y línea de diseño, 2026-11-12)
+A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de F8–F10 y unificar el aspecto de Notas con el resto de la app (ligero, estilo Apple).
+
+**Fallos corregidos:**
+- Las notas de la papelera no se podían abrir: `note_get` solo devuelve notas vivas, así que pulsar una dejaba el panel vacío. Comando nuevo de solo lectura `note_trash_get` (`repo::notes::get_trashed`, sin DTO nuevo) y `NotesStore.openInTrash`: la nota se muestra **sin poder editarla** (antes solo se bloqueaba el título) con «Restaurar»; al restaurarla sigue abierta y ya editable; al salir de la papelera se cierra.
+- Con la papelera a la vista, una nota viva abierta se trataba como eliminada (título bloqueado y un «Restaurar» que fallaba): «en la papelera» dependía del ámbito, no de la nota.
+- Soltar una nota sobre «Carpetas» o una carpeta sobre la Bandeja llamaba al backend con un id inventado («No se pudo completar la acción»). Ahora no hacen nada ni se iluminan como destino.
+- La barra de formato fija tapaba el texto con una franja de otro color sobre el fondo translúcido (Mica): ahora vive en la cabecera de la nota, fuera de la zona que se desplaza.
+- El contador de una etiqueta desaparecía al pasar el ratón (regla pensada para las carpetas, que muestran botones en su lugar).
+- En la lista, las etiquetas de una fila se cortaban por abajo (la fila medía menos que su contenido).
+- El menú de etiquetas de la nota se abría hacia fuera del panel y quedaba recortado.
+- `Ctrl+N` creaba una nota aunque hubiera un diálogo abierto encima.
+- El texto de la nota se anunciaba como «Notas de la tarea» al lector de pantalla; ahora «Texto de la nota».
+- El punto de «filtro activo» y el nombre del botón de la barra lateral hablaban de las etiquetas de la agenda también en Notas.
+- Un fallo al recargar la lista ya no deja una promesa rechazada sin tratar (cambiar de carpeta u orden) ni hace reintentar un guardado que sí se hizo.
+
+**Diseño y uso:**
+- `shell/Menu.svelte`: menú emergente común (teclado, Esc, clic fuera, vuelta del foco) para «Ordenar por», «Mover a…» y «Más acciones». Sustituye al `<select>` nativo y al menú propio de mover; «Mover a…» lista también las subcarpetas, sangradas (`NotesStore.tree`).
+- Cabecera de la nota: formato a la izquierda (iconos SVG en vez de letras y emoji; también en las descripciones de las tareas) y a la derecha solo nueva tarea, fijar, mover y «···» (duplicar, convertir casillas, eliminar). En un panel estrecho se ocultan deshacer/rehacer. El campo de enlace flota bajo la barra.
+- Nota: fecha completa de la última edición centrada sobre el título, columna de lectura de 760 px como máximo, el texto ocupa todo el alto (clic en cualquier parte), Intro o flecha abajo en el título pasan al texto. «Tareas de esta nota» solo aparece si hay tareas y es un pie con una línea, no una caja.
+- Lista: selección con un tinte del color de acento (antes un bloque sólido), fila de 80 px (antes 78) con la fecha delante del extracto, dos líneas de extracto si la nota no tiene etiquetas y `+N` si tiene más de dos. En una etiqueta, las pestañas Notas/Tareas van bajo la cabecera, que ya no desaparece en «Tareas».
+- Barra de carpetas: subetiquetas sangradas como en la agenda, contadores a cero atenuados, confirmación de borrado con los botones comunes, la columna de la lista se estrecha en ventanas pequeñas.
+
+**Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (326 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (434 en 36 archivos), `npm run build` y `npm run size` (207,1 KB gzip de 250) en verde. Sin dependencias nuevas. `cargo check --target x86_64-pc-windows-msvc` no aplica: no se toca `window/` ni `notify/`.
+
+**Discrepancia anotada:** `note_trash_get` es un comando añadido al contrato de F7-06 (lectura, sin migración). Si se prefiere que `note_get` devuelva también notas eliminadas, es un cambio pequeño; se eligió un comando aparte para que una nota eliminada no vuelva a aparecer como «nota de origen» de una tarea.
 
 ## Fase 11 — Enlaces, búsqueda y navegación rápida
 - [ ] F11-01 Enlaces `[[nota]]` con autocompletado, creación al vuelo y renombrado seguro

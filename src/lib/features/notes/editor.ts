@@ -70,7 +70,8 @@ export interface NoteEditorHandle {
   setLink(href: string | null): boolean;
   undo(): void;
   redo(): void;
-  focus(): void;
+  /** Takes the cursor, at the end of the text unless told otherwise. */
+  focus(position?: "start" | "end"): void;
   isEmpty(): boolean;
   destroy(): void;
 }
@@ -81,6 +82,8 @@ export interface NoteEditorOptions {
   label: string;
   /** Shown while the note has no text. */
   placeholder: string;
+  /** `false` shows the note without letting it be edited (a note in the trash). */
+  editable?: boolean;
   /** Called with the serialised document after every edit. */
   onChange: (contentJson: string) => void;
   onState: (state: ToolbarState) => void;
@@ -182,6 +185,7 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
   const editor = new Editor({
     element: options.element,
     content: parseContent(options.contentJson),
+    editable: options.editable ?? true,
     extensions: [
       Document,
       Paragraph,
@@ -404,7 +408,7 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
     },
     undo: () => void editor.chain().focus().undo().run(),
     redo: () => void editor.chain().focus().redo().run(),
-    focus: () => void editor.commands.focus("end"),
+    focus: (position = "end") => void editor.commands.focus(position),
     isEmpty: () => editor.isEmpty,
     destroy: () => editor.destroy(),
   };

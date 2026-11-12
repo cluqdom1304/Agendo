@@ -6,7 +6,7 @@
   import { taskRefIds } from "./content";
 
   // "Tareas de esta nota" (F10-04): the tasks the note points at plus the ones created from
-  // it, with how many are done.
+  // it, with how many are done. A note without tasks shows no panel at all.
   interface Props {
     tasks: TasksStore;
     noteId: string;
@@ -35,39 +35,37 @@
   const share = $derived(own.length === 0 ? 0 : done / own.length);
 </script>
 
-<section class="panel" aria-label={t.notesApp.notesTasks}>
-  <button
-    type="button"
-    class="head"
-    aria-expanded={!collapsed}
-    onclick={() => (collapsed = !collapsed)}
-  >
-    <svg
-      class="chevron"
-      class:turned={!collapsed}
-      viewBox="0 0 12 12"
-      width="10"
-      height="10"
-      aria-hidden="true"
+{#if own.length > 0}
+  <section class="panel" aria-label={t.notesApp.notesTasks}>
+    <button
+      type="button"
+      class="head"
+      aria-expanded={!collapsed}
+      onclick={() => (collapsed = !collapsed)}
     >
-      <path
-        d="M4 2.5l3.5 3.5L4 9.5"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.6"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
-    <span class="title">{t.notesApp.notesTasks}</span>
-    {#if own.length > 0}
+      <svg
+        class="chevron"
+        class:turned={!collapsed}
+        viewBox="0 0 12 12"
+        width="10"
+        height="10"
+        aria-hidden="true"
+      >
+        <path
+          d="M4 2.5l3.5 3.5L4 9.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span class="title">{t.notesApp.notesTasks}</span>
       <span class="progress-text">
         {t.notesApp.tasksProgress(done, own.length)}
       </span>
-    {/if}
-  </button>
+    </button>
 
-  {#if own.length > 0}
     <div
       class="bar"
       role="progressbar"
@@ -78,12 +76,8 @@
     >
       <span class="fill" style:transform="scaleX({share})"></span>
     </div>
-  {/if}
 
-  {#if !collapsed}
-    {#if own.length === 0}
-      <p class="empty">{t.notesApp.noNoteTasks}</p>
-    {:else}
+    {#if !collapsed}
       <ul class="rows">
         {#each own as task (task.id)}
           <li class="row" class:done={task.isCompleted}>
@@ -113,16 +107,17 @@
         {/each}
       </ul>
     {/if}
-  {/if}
-</section>
+  </section>
+{/if}
 
 <style>
+  /* A footer of the note, set apart by a hairline instead of a box. */
   .panel {
     flex: none;
     margin-top: var(--space-4);
-    padding: var(--space-2) var(--space-3) var(--space-3);
-    border-radius: var(--radius-card);
-    background: var(--bg-control);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--separator);
+    animation: fade-in var(--motion-base) var(--ease-out);
   }
 
   .head {
@@ -132,8 +127,9 @@
     width: 100%;
     padding: 4px 0;
     border: 0;
+    border-radius: var(--radius-small);
     background: transparent;
-    color: var(--text-primary);
+    color: var(--text-secondary);
     font: inherit;
     text-align: left;
     cursor: pointer;
@@ -151,7 +147,7 @@
 
   .title {
     flex: 1;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
   }
 
@@ -162,7 +158,7 @@
   }
 
   .bar {
-    height: 4px;
+    height: 3px;
     margin: 4px 0 var(--space-2);
     overflow: hidden;
     border-radius: var(--radius-chip);
@@ -188,7 +184,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: 3px 0;
+    min-height: 28px;
   }
 
   .check {
@@ -244,6 +240,10 @@
     cursor: pointer;
   }
 
+  .name:hover {
+    color: var(--accent);
+  }
+
   .done .name {
     color: var(--text-secondary);
     text-decoration: line-through;
@@ -254,13 +254,6 @@
     color: var(--text-secondary);
     font-size: 12px;
     font-variant-numeric: tabular-nums;
-  }
-
-  .empty {
-    margin: 0;
-    padding: 2px 0 0;
-    color: var(--text-secondary);
-    font-size: 12px;
   }
 
   button:focus-visible {

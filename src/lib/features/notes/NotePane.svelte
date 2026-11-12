@@ -2,18 +2,21 @@
   import { onMount } from "svelte";
 
   import { t } from "../../i18n";
+  import Menu, { type MenuItem } from "../../shell/Menu.svelte";
   import { tagsStore } from "../../stores/tags.svelte";
   import TagChip from "../tags/TagChip.svelte";
   import TagMenu from "../tags/TagMenu.svelte";
   import type { NotesStore } from "../../stores/notes.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { Note } from "../../types";
-  import { formatNoteDate } from "./format";
+  import { formatNoteStamp } from "./format";
   import NoteEditor from "./NoteEditor.svelte";
   import { NoteSaver } from "./noteSaver";
   import NoteTaskDialog from "./NoteTaskDialog.svelte";
   import NoteTasksPanel from "./NoteTasksPanel.svelte";
+  import NoteToolbar from "./NoteToolbar.svelte";
   import { createTaskHost } from "./taskHost";
+  import { IDLE_TOOLBAR } from "./toolbarState";
 
   interface Props {
     notes: NotesStore;
@@ -22,24 +25,19 @@
     tasks: TasksStore;
     /** Shows the details of a task (the dialog of the agenda). */
     onPreviewTask: (taskId: string) => void;
-    now?: () => Date;
   }
 
-  let {
-    notes,
-    note,
-    tasks,
-    onPreviewTask,
-    now = () => new Date(),
-  }: Props = $props();
+  let { notes, note, tasks, onPreviewTask }: Props = $props();
+
+  type OpenMenu = "move" | "more" | "tags" | null;
 
   // The pane is created per note, so these read the opening values on purpose.
   // svelte-ignore state_referenced_locally
   const id = note.id;
   // svelte-ignore state_referenced_locally
   let title = $state(note.title);
-  let moveOpen = $state(false);
-  let tagsOpen = $state(false);
+  /** Only one popover at a time. */
+  let menu = $state<OpenMenu>(null);
   let titleInput = $state<HTMLInputElement>();
   let editor = $state<NoteEditor>();
   /** Text to start the new task with while its dialog is open; `null` when it is closed. */
@@ -52,29 +50,59 @@
   );
 
   const titleSaver = new NoteSaver((value) => notes.saveTitle(id, value));
-  const inTrash = $derived(notes.scope === "trash");
 
-  // Title and body are kept in step with the list while typing; a fresh note takes the cursor.
+  /** The note as the store has it now: saves, pins and moves land there. */
+  const current = $derived(notes.open?.id === id ? notes.open : note);
+  const inTrash = $derived(notes.openInTrash);
+  const stamp = $derived(formatNoteStamp(current.updatedAt));
+  const noteTags = $derived(
+    current.tagIds
+      .map((tagId) => tagsStore.byId.get(tagId))
+      .filter((tag) => tag !== undefined),
+  );
+
+  const moveItems = $derived<MenuItem[]>([
+    {
+      id: "",
+      label: t.notesApp.inbox,
+      checked: current.folderId === null,
+    },
+    ...notes.tree.map((row, index) => ({
+      id: row.folder.id,
+      label: row.folder.name,
+      depth: row.depth,
+      checked: current.folderId === row.folder.id,
+      separated: index === 0,
+    })),
+  ]);
+
+  const MORE_ITEMS: MenuItem[] = [
+    { id: "duplicate", label: t.notesApp.duplicate },
+    { id: "convert", label: t.notesApp.convertChecklists },
+    { id: "delete", label: t.notesApp.delete, danger: true, separated: true },
+  ];
+
+  // A fresh note takes the cursor in its title.
   onMount(() => {
     if (note.title === "" && note.contentJson.length < 60) titleInput?.focus();
     return () => void titleSaver.flush();
   });
 
+  function toggleMenu(which: Exclude<OpenMenu, null>) {
+    menu = menu === which ? null : which;
+  }
+
   function onTitleInput() {
     titleSaver.schedule(title);
   }
 
+  // Enter and the down arrow carry on into the text, as if the title were its first line.
   function onTitleKey(event: KeyboardEvent) {
-    if (event.key !== "Enter") return;
+    if (event.key !== "Enter" && event.key !== "ArrowDown") return;
+    if (event.isComposing) return;
     event.preventDefault();
-    document.querySelector<HTMLElement>(".note-pane .tiptap")?.focus();
+    editor?.focus("start");
   }
-
-  const noteTags = $derived(
-    (notes.open?.tagIds ?? [])
-      .map((tagId) => tagsStore.byId.get(tagId))
-      .filter((tag) => tag !== undefined),
-  );
 
   async function setTags(ids: string[]) {
     await notes.setTags(id, ids);
@@ -83,8 +111,9 @@
 
   // Choosing a suggestion from the `#` list adds the tag to the note.
   function addTag(tag: { id: string }) {
-    const current = notes.open?.tagIds ?? [];
-    if (!current.includes(tag.id)) void setTags([...current, tag.id]);
+    if (!current.tagIds.includes(tag.id)) {
+      void setTags([...current.tagIds, tag.id]);
+    }
   }
 
   function requestTask(prefill = editor?.selectedText() ?? "") {
@@ -97,15 +126,14 @@
       notes.notice = { kind: "info", message: t.notesApp.noChecklists };
       return;
     }
+    const tagIds = current.tagIds;
     const converted = await editor.convertChecklists(async (items) => {
       const ids: string[] = [];
       for (const item of items) {
         const created = await tasks.create({
           title: item.text || t.notesApp.untitledTask,
           sourceNoteId: id,
-          ...((notes.open?.tagIds.length ?? 0) > 0
-            ? { tagIds: notes.open?.tagIds ?? [] }
-            : {}),
+          ...(tagIds.length > 0 ? { tagIds } : {}),
         });
         if (!created) {
           notes.notice = { kind: "error", message: t.notesApp.convertFailed };
@@ -135,31 +163,37 @@
   const saveContent = (contentJson: string) =>
     notes.saveContent(id, contentJson);
 
-  async function moveTo(folderId: string | null) {
-    moveOpen = false;
-    await notes.moveNote(id, folderId);
-  }
-
-  function onMoveKey(event: KeyboardEvent) {
-    if (event.key === "Escape") {
-      event.stopPropagation();
-      moveOpen = false;
-    }
+  function onMore(action: string) {
+    if (action === "duplicate") void notes.duplicateNote(id);
+    else if (action === "convert") void convertChecklists();
+    else if (action === "delete") void notes.trashNote(id);
   }
 </script>
 
-<article class="note-pane" aria-label={t.notesApp.titleLabel}>
+<article class="note-pane" aria-label={t.notesApp.noteLabel}>
   <header class="bar" data-tauri-drag-region>
-    <span class="edited" data-tauri-drag-region>
-      {t.notesApp.editedAt(
-        formatNoteDate(notes.open?.updatedAt ?? note.updatedAt, now()),
-      )}
-    </span>
+    <div class="format" data-tauri-drag-region>
+      {#if inTrash}
+        <span class="trash-note" data-tauri-drag-region>
+          {t.notesApp.inTrash}
+        </span>
+      {:else}
+        <NoteToolbar
+          floating
+          formats={editor?.formats() ?? IDLE_TOOLBAR}
+          linkRequest={editor?.linkRequests() ?? 0}
+          onToggle={(name) => editor?.toggle(name)}
+          onSetLink={(href) => editor?.setLink(href) ?? false}
+          onUndo={() => editor?.undo()}
+          onRedo={() => editor?.redo()}
+        />
+      {/if}
+    </div>
     <div class="actions">
       {#if inTrash}
         <button
           type="button"
-          class="text-btn"
+          class="btn small primary"
           onclick={() => void notes.restoreNote(id)}
         >
           {t.notesApp.restore}
@@ -170,6 +204,7 @@
           class="icon-btn"
           aria-label={t.notesApp.newTaskFromNote}
           title={t.notesApp.newTaskFromNote}
+          aria-haspopup="dialog"
           onclick={() => requestTask()}
         >
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -192,34 +227,16 @@
         <button
           type="button"
           class="icon-btn"
-          aria-label={t.notesApp.convertChecklists}
-          title={t.notesApp.convertChecklists}
-          onclick={() => void convertChecklists()}
-        >
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-            <path
-              d="M2.5 4.2l1.2 1.2 2-2.2M2.5 10.2l1.2 1.2 2-2.2M8 4.5h5.5M8 10.5h5.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <button
-          type="button"
-          class="icon-btn"
-          class:on={notes.open?.isPinned}
-          aria-pressed={notes.open?.isPinned ?? false}
-          aria-label={notes.open?.isPinned ? t.notesApp.unpin : t.notesApp.pin}
-          title={notes.open?.isPinned ? t.notesApp.unpin : t.notesApp.pin}
-          onclick={() => void notes.setPinned(id, !notes.open?.isPinned)}
+          class:on={current.isPinned}
+          aria-pressed={current.isPinned}
+          aria-label={current.isPinned ? t.notesApp.unpin : t.notesApp.pin}
+          title={current.isPinned ? t.notesApp.unpin : t.notesApp.pin}
+          onclick={() => void notes.setPinned(id, !current.isPinned)}
         >
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
             <path
               d="M9.8 2.5l3.7 3.7-1.6.5-2.3 2.3.2 3-.9.9-2.7-2.7-3.5 3.5M6.4 5.2l.9-.9 3 .2"
-              fill={notes.open?.isPinned ? "currentColor" : "none"}
+              fill={current.isPinned ? "currentColor" : "none"}
               stroke="currentColor"
               stroke-width="1.4"
               stroke-linecap="round"
@@ -227,42 +244,17 @@
             />
           </svg>
         </button>
-        <button
-          type="button"
-          class="icon-btn"
-          aria-label={t.notesApp.duplicate}
-          title={t.notesApp.duplicate}
-          onclick={() => void notes.duplicateNote(id)}
-        >
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-            <rect
-              x="5.5"
-              y="5.5"
-              width="8"
-              height="8"
-              rx="1.6"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-            />
-            <path
-              d="M10.5 5.5v-1c0-.8-.7-1.5-1.5-1.5H4.5C3.7 3 3 3.7 3 4.5V9c0 .8.7 1.5 1.5 1.5h1"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
-        <div class="move" onkeydown={onMoveKey} role="presentation">
+        <div class="anchor">
           <button
             type="button"
             class="icon-btn"
+            class:open={menu === "move"}
+            data-menu-toggle
             aria-haspopup="menu"
-            aria-expanded={moveOpen}
+            aria-expanded={menu === "move"}
             aria-label={t.notesApp.moveTo}
             title={t.notesApp.moveTo}
-            onclick={() => (moveOpen = !moveOpen)}
+            onclick={() => toggleMenu("move")}
           >
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
               <path
@@ -274,132 +266,133 @@
               />
             </svg>
           </button>
-          {#if moveOpen}
-            <button
-              type="button"
-              class="scrim"
-              tabindex="-1"
-              aria-hidden="true"
-              onclick={() => (moveOpen = false)}
-            ></button>
-            <ul class="menu" role="menu" aria-label={t.notesApp.moveMenu}>
-              <li role="none">
-                <button
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={notes.open?.folderId === null}
-                  onclick={() => void moveTo(null)}
-                >
-                  {t.notesApp.inbox}
-                </button>
-              </li>
-              {#each notes.folders as folder (folder.id)}
-                <li role="none">
-                  <button
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={notes.open?.folderId === folder.id}
-                    onclick={() => void moveTo(folder.id)}
-                  >
-                    {folder.name}
-                  </button>
-                </li>
-              {/each}
-            </ul>
+          {#if menu === "move"}
+            <Menu
+              label={t.notesApp.moveMenu}
+              items={moveItems}
+              onSelect={(folderId) =>
+                void notes.moveNote(id, folderId === "" ? null : folderId)}
+              onClose={() => (menu = null)}
+            />
           {/if}
         </div>
-        <button
-          type="button"
-          class="icon-btn danger"
-          aria-label={t.notesApp.delete}
-          title={t.notesApp.delete}
-          onclick={() => void notes.trashNote(id)}
-        >
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-            <path
-              d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8h5.8l.6-8"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+        <div class="anchor">
+          <button
+            type="button"
+            class="icon-btn"
+            class:open={menu === "more"}
+            data-menu-toggle
+            aria-haspopup="menu"
+            aria-expanded={menu === "more"}
+            aria-label={t.notesApp.more}
+            title={t.notesApp.more}
+            onclick={() => toggleMenu("more")}
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path
+                d="M3.5 8h.01M8 8h.01M12.5 8h.01"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+          {#if menu === "more"}
+            <Menu
+              label={t.notesApp.more}
+              items={MORE_ITEMS}
+              onSelect={onMore}
+              onClose={() => (menu = null)}
             />
-          </svg>
-        </button>
+          {/if}
+        </div>
       {/if}
     </div>
   </header>
 
   <div class="body">
-    <input
-      class="title"
-      bind:this={titleInput}
-      bind:value={title}
-      aria-label={t.notesApp.titleLabel}
-      placeholder={t.notesApp.titlePlaceholder}
-      maxlength="200"
-      readonly={inTrash}
-      oninput={onTitleInput}
-      onkeydown={onTitleKey}
-    />
-    <div class="tag-row">
-      {#each noteTags as tag (tag.id)}
-        <TagChip name={tag.name} color={tag.colorHex} />
-      {/each}
-      {#if !inTrash}
-        <span class="tag-slot">
-          <button
-            type="button"
-            class="add-tags"
-            data-tag-toggle
-            aria-haspopup="menu"
-            aria-expanded={tagsOpen}
-            aria-label={t.notesApp.noteTags}
-            title={t.notesApp.noteTags}
-            onclick={() => (tagsOpen = !tagsOpen)}
-          >
-            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-              <path
-                d="M2.5 8.5V3h5.5l5.5 5.5-5.5 5.5z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.4"
-                stroke-linejoin="round"
-              />
-              <circle cx="5.5" cy="6" r="0.9" fill="currentColor" />
-            </svg>
-            {#if noteTags.length === 0}{t.notesApp.addTags}{/if}
-          </button>
-          {#if tagsOpen}
-            <TagMenu
-              values={notes.open?.tagIds ?? []}
-              onChange={(ids) => void setTags(ids)}
-              onClose={() => (tagsOpen = false)}
-            />
+    <div class="sheet">
+      <p class="stamp" title={t.notesApp.editedAt(stamp)}>{stamp}</p>
+      <input
+        class="title"
+        bind:this={titleInput}
+        bind:value={title}
+        aria-label={t.notesApp.titleLabel}
+        placeholder={t.notesApp.titlePlaceholder}
+        maxlength="200"
+        readonly={inTrash}
+        oninput={onTitleInput}
+        onkeydown={onTitleKey}
+      />
+      {#if !inTrash || noteTags.length > 0}
+        <div class="tag-row">
+          {#each noteTags as tag (tag.id)}
+            <TagChip name={tag.name} color={tag.colorHex} />
+          {/each}
+          {#if !inTrash}
+            <span class="tag-slot">
+              <button
+                type="button"
+                class="add-tags"
+                class:open={menu === "tags"}
+                class:compact={noteTags.length > 0}
+                data-tag-toggle
+                aria-haspopup="menu"
+                aria-expanded={menu === "tags"}
+                aria-label={t.notesApp.noteTags}
+                title={t.notesApp.noteTags}
+                onclick={() => toggleMenu("tags")}
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="13"
+                  height="13"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M2.5 8.5V3h5.5l5.5 5.5-5.5 5.5z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linejoin="round"
+                  />
+                  <circle cx="5.5" cy="6" r="0.9" fill="currentColor" />
+                </svg>
+                {#if noteTags.length === 0}{t.notesApp.addTags}{/if}
+              </button>
+              {#if menu === "tags"}
+                <TagMenu
+                  values={current.tagIds}
+                  onChange={(ids) => void setTags(ids)}
+                  onClose={() => (menu = null)}
+                />
+              {/if}
+            </span>
           {/if}
-        </span>
+        </div>
       {/if}
+      <NoteEditor
+        bind:this={editor}
+        contentJson={note.contentJson}
+        save={saveContent}
+        variant="page"
+        readonly={inTrash}
+        label={t.notesApp.bodyLabel}
+        {taskHost}
+        taskTrack={taskHost.track}
+        onTaskRequest={inTrash ? undefined : requestTask}
+        tagSuggest={inTrash
+          ? undefined
+          : { tags: tagsStore.tags, onPick: addTag }}
+        placeholder={t.notesApp.bodyPlaceholder}
+      />
+      <NoteTasksPanel
+        {tasks}
+        noteId={id}
+        contentJson={current.contentJson}
+        onOpen={(task) => onPreviewTask(task.id)}
+      />
     </div>
-    {#if inTrash}
-      <p class="trash-note">{t.notesApp.inTrash}</p>
-    {/if}
-    <NoteEditor
-      bind:this={editor}
-      contentJson={note.contentJson}
-      save={saveContent}
-      variant="page"
-      {taskHost}
-      taskTrack={taskHost.track}
-      onTaskRequest={inTrash ? undefined : requestTask}
-      tagSuggest={{ tags: tagsStore.tags, onPick: addTag }}
-      placeholder={t.notesApp.bodyPlaceholder}
-    />
-    <NoteTasksPanel
-      {tasks}
-      noteId={id}
-      contentJson={notes.open?.contentJson ?? note.contentJson}
-      onOpen={(task) => onPreviewTask(task.id)}
-    />
   </div>
 </article>
 
@@ -408,7 +401,7 @@
     {tasks}
     noteId={id}
     prefill={taskPrefill}
-    tagIds={notes.open?.tagIds ?? []}
+    tagIds={current.tagIds}
     onCreated={(task) => editor?.insertTaskRef(task.id)}
     onClose={() => (taskPrefill = null)}
   />
@@ -424,125 +417,115 @@
     animation: fade-in var(--motion-base) var(--ease-out);
   }
 
+  /* Format on the left, the note's own actions on the right: one quiet row of icons, as
+     tall as the header of the list next to it. */
   .bar {
+    position: relative;
     display: flex;
     flex: none;
     align-items: center;
-    justify-content: space-between;
+    gap: var(--space-2);
+    /* Above the text, so the menus that hang from it are never covered. */
+    z-index: 2;
     height: 44px;
-    padding: 0 var(--space-4);
+    padding: 0 var(--space-3);
+    container-type: inline-size;
   }
 
-  .edited {
+  .format {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    --note-toolbar-bg: transparent;
+    --note-toolbar-margin: 0;
+    --note-tool-size: 28px;
+  }
+
+  /* A narrow pane keeps the formats and lets go of undo and redo (Ctrl+Z still works). */
+  @container (max-width: 430px) {
+    .format :global(.history) {
+      display: none;
+    }
+  }
+
+  .trash-note {
+    padding-left: var(--space-2);
+    overflow: hidden;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .actions {
     display: flex;
+    flex: none;
     align-items: center;
     gap: 2px;
+  }
+
+  .anchor {
+    position: relative;
   }
 
   .icon-btn.on {
     color: var(--accent);
   }
 
-  .icon-btn.danger:hover {
-    color: var(--danger);
-  }
-
-  .text-btn {
-    padding: 3px 12px;
-    border: 0;
-    border-radius: var(--radius-chip);
-    background: var(--accent);
-    color: var(--on-accent);
-    font: inherit;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .move {
-    position: relative;
-  }
-
-  .scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 9;
-    border: 0;
-    background: transparent;
-    cursor: default;
-  }
-
-  .menu {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    z-index: 10;
-    min-width: 180px;
-    max-height: 280px;
-    margin: 0;
-    padding: 4px;
-    overflow-y: auto;
-    border-radius: var(--radius-card);
-    background: var(--bg-popover);
-    box-shadow: var(--shadow-popover);
-    list-style: none;
-    transform-origin: top right;
-    animation: pop-in var(--motion-fast) var(--ease-out);
-  }
-
-  .menu button {
-    display: block;
-    width: 100%;
-    padding: 6px var(--space-3);
-    border: 0;
-    border-radius: var(--radius-small);
-    background: transparent;
+  .icon-btn.open {
+    background: var(--bg-active);
     color: var(--text-primary);
-    font: inherit;
-    font-size: 13px;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .menu button:hover {
-    background: var(--bg-hover);
-  }
-
-  .menu button[aria-checked="true"] {
-    color: var(--accent);
-    font-weight: 600;
   }
 
   .body {
-    display: flex;
     flex: 1;
-    flex-direction: column;
     min-height: 0;
-    padding: 0 var(--space-6) var(--space-4);
     overflow-y: auto;
+  }
+
+  /* A column of comfortable reading width, centred when the window is wide. */
+  .sheet {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 760px;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: var(--space-1) var(--space-8) var(--space-6);
+  }
+
+  .stamp {
+    flex: none;
+    margin: 0 0 var(--space-3);
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-align: center;
+    user-select: none;
   }
 
   .title {
     flex: none;
     width: 100%;
-    padding: 0 0 var(--space-2);
+    padding: 0;
     border: 0;
     background: transparent;
     color: var(--text-primary);
     font-family: var(--font-display);
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.022em;
+    line-height: 1.2;
+    text-overflow: ellipsis;
     outline: none;
   }
 
   .title::placeholder {
     color: var(--text-secondary);
-    opacity: 0.6;
+    opacity: 0.55;
   }
 
   .tag-row {
@@ -551,12 +534,19 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-1);
-    min-height: 26px;
-    margin-bottom: var(--space-2);
+    min-height: 22px;
+    margin-top: var(--space-2);
   }
 
   .tag-slot {
     position: relative;
+  }
+
+  /* The tag menu opens towards the text, not over the edge of the pane. */
+  .tag-slot :global(.menu) {
+    right: auto;
+    left: 0;
+    transform-origin: top left;
   }
 
   .add-tags {
@@ -564,7 +554,8 @@
     align-items: center;
     gap: 5px;
     height: 22px;
-    padding: 0 8px;
+    margin-left: -6px;
+    padding: 0 8px 0 6px;
     border: 0;
     border-radius: var(--radius-chip);
     background: transparent;
@@ -572,23 +563,35 @@
     font: inherit;
     font-size: 12px;
     cursor: pointer;
-    transition: background-color var(--motion-instant) linear;
+    transition:
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear;
+  }
+
+  .add-tags.compact {
+    margin-left: 0;
+    padding: 0 6px;
   }
 
   .add-tags:hover,
-  .add-tags[aria-expanded="true"] {
+  .add-tags.open {
     background: var(--bg-control-hover);
     color: var(--text-primary);
   }
 
-  .trash-note {
-    margin: 0 0 var(--space-2);
-    color: var(--text-secondary);
-    font-size: 12px;
+  .sheet :global(.note) {
+    margin-top: var(--space-3);
   }
 
   button:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
+  }
+
+  @media (max-width: 860px) {
+    .sheet {
+      padding-right: var(--space-6);
+      padding-left: var(--space-6);
+    }
   }
 </style>

@@ -29,6 +29,7 @@
 
   const lastTrashed = $derived(notes.undoStack.at(-1));
   const tagId = $derived(notes.scopeTagId);
+  const showTasks = $derived(tagId !== null && tab === "tasks");
 
   // Pending tasks first, then the finished ones; each group keeps the store's order.
   const tagTasks = $derived.by(() => {
@@ -59,9 +60,16 @@
     void notes.createNote();
   }
 
+  const TABS: { value: Tab; label: string }[] = [
+    { value: "notes", label: t.notesApp.tabNotes },
+    { value: "tasks", label: t.notesApp.tabTasks },
+  ];
+
   // Ctrl+N is the section's own "new": the agenda's handler is not mounted here.
   function onKeydown(event: KeyboardEvent) {
     if (findShortcut(event, "other") !== "newTask") return;
+    // A dialog on top (settings, a new task) owns the keyboard.
+    if (document.querySelector('[aria-modal="true"]')) return;
     event.preventDefault();
     create();
   }
@@ -74,34 +82,21 @@
     <p class="status" role="alert">{t.notesApp.loadFailed}</p>
   {:else}
     <div class="column">
-      {#if tagId}
-        <div class="tabs">
-          <SegmentedControl
-            label={t.notesApp.tagTabs}
-            options={[
-              {
-                value: "notes",
-                label: t.notesApp.tabNotes(notes.notes.length),
-              },
-              {
-                value: "tasks",
-                label: t.notesApp.tabTasks(tagTasks.length),
-              },
-            ]}
-            value={tab}
-            onChange={(next) => (tab = next as Tab)}
-          />
-        </div>
-      {/if}
-      {#if tagId && tab === "tasks"}
-        <TagTasks tasks={tagTasks} onOpen={onOpenTask} />
-      {:else}
-        <NoteList {notes} {tags} onCreate={create} />
-      {/if}
+      <NoteList
+        {notes}
+        {tags}
+        onCreate={create}
+        subheader={tagId ? tabs : undefined}
+        body={showTasks ? tagTaskList : undefined}
+        countLabel={showTasks
+          ? t.notesApp.taskCount(tagTasks.length)
+          : undefined}
+      />
     </div>
     <div class="pane">
       {#if notes.open}
-        {#key notes.open.id}
+        <!-- Restoring the open note of the trash rebuilds the pane, now editable. -->
+        {#key `${notes.open.id}:${notes.openInTrash}`}
           <NotePane {notes} note={notes.open} {tasks} {onPreviewTask} />
         {/key}
       {:else}
@@ -113,6 +108,21 @@
     </div>
   {/if}
 </div>
+
+{#snippet tabs()}
+  <div class="tabs">
+    <SegmentedControl
+      label={t.notesApp.tagTabs}
+      options={TABS}
+      value={tab}
+      onChange={(next) => (tab = next)}
+    />
+  </div>
+{/snippet}
+
+{#snippet tagTaskList()}
+  <TagTasks tasks={tagTasks} onOpen={onOpenTask} />
+{/snippet}
 
 {#if lastTrashed}
   <Toast
@@ -137,21 +147,21 @@
     height: 100%;
   }
 
+  /* Narrower in a small window, so the note keeps the room. */
   .column {
     display: flex;
     flex: none;
     flex-direction: column;
-    width: 300px;
+    width: clamp(232px, 28%, 320px);
     min-height: 0;
     height: 100%;
     box-shadow: inset -1px 0 0 var(--separator);
   }
 
   .tabs {
-    display: flex;
+    display: grid;
     flex: none;
-    justify-content: center;
-    padding: var(--space-2) var(--space-3) var(--space-1);
+    padding: var(--space-1) var(--space-3) var(--space-2);
   }
 
   .pane {
@@ -163,6 +173,7 @@
   }
 
   .status {
+    margin: 0;
     padding: var(--space-6);
     color: var(--text-secondary);
   }

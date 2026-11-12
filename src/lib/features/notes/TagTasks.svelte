@@ -10,32 +10,37 @@
   }
 
   let { tasks, onOpen }: Props = $props();
+
+  const rows = $derived(
+    tasks.map((task) => ({
+      task,
+      title: task.title || t.notesApp.untitled,
+      meta: task.isCompleted
+        ? t.notesApp.done
+        : task.dueDate
+          ? formatDisplayDate(task.dueDate)
+          : t.detail.noDate,
+    })),
+  );
 </script>
 
-{#if tasks.length === 0}
+{#if rows.length === 0}
   <p class="empty">{t.notesApp.noTasks}</p>
 {:else}
   <ul class="tasks">
-    {#each tasks as task (task.id)}
+    {#each rows as row (row.task.id)}
       <li>
         <button
           type="button"
           class="task"
-          class:done={task.isCompleted}
-          aria-label={t.notesApp.openTask(task.title || t.notesApp.untitled)}
-          onclick={() => onOpen(task)}
+          class:done={row.task.isCompleted}
+          aria-label={t.notesApp.openTask(row.title)}
+          onclick={() => onOpen(row.task)}
         >
-          <span class="mark" aria-hidden="true">
-            {#if task.isCompleted}✓{/if}
-          </span>
+          <span class="mark" aria-hidden="true"></span>
           <span class="text">
-            <span class="title">{task.title || t.notesApp.untitled}</span>
-            <span class="meta">
-              {#if task.isCompleted}{t.notesApp
-                  .done}{:else if task.dueDate}{formatDisplayDate(
-                  task.dueDate,
-                )}{:else}{t.detail.noDate}{/if}
-            </span>
+            <span class="title">{row.title}</span>
+            <span class="meta">{row.meta}</span>
           </span>
         </button>
       </li>
@@ -44,11 +49,15 @@
 {/if}
 
 <style>
+  /* Same rhythm as the note list it swaps with: rounded rows, two lines of text. */
   .tasks {
+    display: flex;
     flex: 1;
+    flex-direction: column;
+    gap: 2px;
     min-height: 0;
     margin: 0;
-    padding: 0 var(--space-2);
+    padding: 2px var(--space-2) var(--space-2);
     overflow-y: auto;
     list-style: none;
   }
@@ -60,7 +69,7 @@
     width: 100%;
     padding: 8px var(--space-3);
     border: 0;
-    border-radius: var(--radius-card);
+    border-radius: var(--radius-control);
     background: transparent;
     color: var(--text-primary);
     font: inherit;
@@ -78,22 +87,32 @@
     outline-offset: -2px;
   }
 
+  /* The round checkbox of the agenda, here only as a sign of the state. */
   .mark {
-    display: grid;
+    position: relative;
+    box-sizing: border-box;
     flex: none;
-    place-items: center;
     width: 16px;
     height: 16px;
     border: 1.5px solid var(--text-secondary);
     border-radius: var(--radius-chip);
-    color: var(--on-accent);
-    font-size: 10px;
-    line-height: 1;
   }
 
   .done .mark {
     border-color: var(--accent);
     background: var(--accent);
+  }
+
+  .done .mark::after {
+    content: "";
+    position: absolute;
+    top: 1.5px;
+    left: 4.5px;
+    width: 4px;
+    height: 7px;
+    border: solid var(--on-accent);
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
   }
 
   .text {
@@ -106,6 +125,7 @@
     overflow: hidden;
     font-size: 13px;
     font-weight: 600;
+    line-height: 18px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -118,11 +138,12 @@
   .meta {
     color: var(--text-secondary);
     font-size: 12px;
+    line-height: 17px;
   }
 
   .empty {
     margin: 0;
-    padding: var(--space-6) var(--space-4);
+    padding: var(--space-8) var(--space-4);
     color: var(--text-secondary);
     font-size: 13px;
     text-align: center;

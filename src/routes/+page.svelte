@@ -35,6 +35,17 @@
   /** The task being edited in the creation dialog; the view comes back when it closes. */
   let editing = $state.raw<Task | null>(null);
 
+  // The tag filter only hides tasks: in the notes there is nothing to warn about.
+  const filterShown = $derived(
+    tagsStore.filtered && viewStore.section === "agenda",
+  );
+
+  const sidebarLabel = $derived(
+    viewStore.section === "notes"
+      ? t.notesApp.toggleSidebar
+      : t.tags.toggleSidebar,
+  );
+
   // The list shows its own deletion notices; elsewhere they are shown here.
   const lastDeletion = $derived(tasksStore.undoStack.at(-1));
 
@@ -150,14 +161,12 @@
         <button
           type="button"
           class="icon-btn sidebar-toggle"
-          class:filtered={tagsStore.filtered}
+          class:filtered={filterShown}
           aria-pressed={sidebarOpen}
-          aria-label={tagsStore.filtered
-            ? `${t.tags.toggleSidebar}. ${t.tags.filterActive}`
-            : t.tags.toggleSidebar}
-          title={tagsStore.filtered
-            ? t.tags.filterActive
-            : t.tags.toggleSidebar}
+          aria-label={filterShown
+            ? `${sidebarLabel}. ${t.tags.filterActive}`
+            : sidebarLabel}
+          title={filterShown ? t.tags.filterActive : sidebarLabel}
           onclick={() => (sidebarOpen = !sidebarOpen)}
         >
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">

@@ -210,6 +210,11 @@ export function noteRestore(id: string): Promise<Note> {
   return invoke<Note>("note_restore", { id });
 }
 
+/** A note of the trash with its document; `note_get` only knows live notes. */
+export function noteTrashGet(id: string): Promise<Note> {
+  return invoke<Note>("note_trash_get", { id });
+}
+
 export function notesTrashList(): Promise<NoteSummary[]> {
   return invoke<NoteSummary[]>("notes_trash_list");
 }

@@ -2,10 +2,15 @@
   import { t } from "../../i18n";
   import type { ToggleName, ToolbarState } from "./editor";
 
+  type Icon = ToggleName | "link" | "undo" | "redo";
+
   interface Props {
     formats: ToolbarState;
     /** Changes every time the editor asks for the link field (Ctrl+L). */
     linkRequest: number;
+    /** The link field floats under the bar instead of pushing the text down: for a bar that
+     * lives in a header. The holder of the bar must be positioned. */
+    floating?: boolean;
     onToggle: (name: ToggleName) => void;
     /** Returns false when the address is refused. `null` removes the link. */
     onSetLink: (href: string | null) => boolean;
@@ -13,14 +18,23 @@
     onRedo: () => void;
   }
 
-  let { formats, linkRequest, onToggle, onSetLink, onUndo, onRedo }: Props =
-    $props();
+  let {
+    formats,
+    linkRequest,
+    floating = false,
+    onToggle,
+    onSetLink,
+    onUndo,
+    onRedo,
+  }: Props = $props();
 
   let linkOpen = $state(false);
   let linkText = $state("");
   let linkError = $state(false);
   let linkInput = $state<HTMLInputElement>();
-  let handledRequest = 0;
+  // The requests made before the bar existed are not for it.
+  // svelte-ignore state_referenced_locally
+  let handledRequest = linkRequest;
 
   $effect(() => {
     if (linkRequest !== handledRequest) {
@@ -33,7 +47,10 @@
     linkText = formats.linkHref;
     linkError = false;
     linkOpen = true;
-    queueMicrotask(() => linkInput?.select());
+    queueMicrotask(() => {
+      linkInput?.focus();
+      linkInput?.select();
+    });
   }
 
   function applyLink() {
@@ -61,16 +78,57 @@
     }
   }
 
+  // A floating field is a popover: it goes away when the focus moves on.
+  function onLinkFocusOut(event: FocusEvent) {
+    if (!floating) return;
+    const next = event.relatedTarget;
+    if (
+      next instanceof Node &&
+      (event.currentTarget as HTMLElement).contains(next)
+    )
+      return;
+    linkOpen = false;
+  }
+
   // A toolbar button must not take the focus on mouse down: the editor keeps its selection.
   const keepFocus = (event: MouseEvent) => event.preventDefault();
 </script>
 
-{#snippet toggle(
-  name: ToggleName,
-  label: string,
-  active: boolean,
-  glyph: string,
-)}
+{#snippet icon(kind: Icon)}
+  {#if kind === "bold"}
+    <span class="glyph bold" aria-hidden="true">B</span>
+  {:else if kind === "italic"}
+    <span class="glyph italic" aria-hidden="true">I</span>
+  {:else}
+    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+      {#if kind === "code"}
+        <path d="M5.5 4.5L2 8l3.5 3.5M10.5 4.5L14 8l-3.5 3.5" />
+      {:else if kind === "link"}
+        <path
+          d="M6.9 9.1a2.5 2.5 0 0 0 3.6 0l2.2-2.2a2.5 2.5 0 0 0-3.6-3.6l-.9.9M9.1 6.9a2.5 2.5 0 0 0-3.6 0L3.3 9.1a2.5 2.5 0 0 0 3.6 3.6l.9-.9"
+        />
+      {:else if kind === "bulletList"}
+        <path d="M6.5 4.5h7M6.5 8h7M6.5 11.5h7" />
+        <path class="dots" d="M3 4.5h.01M3 8h.01M3 11.5h.01" />
+      {:else if kind === "orderedList"}
+        <path d="M7 4.5h6.5M7 8h6.5M7 11.5h6.5" />
+        <text x="2" y="6.3">1</text>
+        <text x="2" y="9.8">2</text>
+        <text x="2" y="13.3">3</text>
+      {:else if kind === "taskList"}
+        <path
+          d="M2.5 4.2l1.2 1.2 2-2.2M2.5 10.2l1.2 1.2 2-2.2M8 4.5h5.5M8 10.5h5.5"
+        />
+      {:else if kind === "undo"}
+        <path d="M5.5 3l-3 3 3 3M2.5 6H9a3.5 3.5 0 0 1 0 7H6.5" />
+      {:else if kind === "redo"}
+        <path d="M10.5 3l3 3-3 3M13.5 6H7a3.5 3.5 0 0 0 0 7h2.5" />
+      {/if}
+    </svg>
+  {/if}
+{/snippet}
+
+{#snippet toggle(name: ToggleName, label: string, active: boolean)}
   <button
     type="button"
     class="tool"
@@ -81,14 +139,14 @@
     onmousedown={keepFocus}
     onclick={() => onToggle(name)}
   >
-    {glyph}
+    {@render icon(name)}
   </button>
 {/snippet}
 
 <div class="toolbar" role="toolbar" aria-label={t.notes.toolbar}>
-  {@render toggle("bold", t.notes.bold, formats.bold, "B")}
-  {@render toggle("italic", t.notes.italic, formats.italic, "I")}
-  {@render toggle("code", t.notes.code, formats.code, "</>")}
+  {@render toggle("bold", t.notes.bold, formats.bold)}
+  {@render toggle("italic", t.notes.italic, formats.italic)}
+  {@render toggle("code", t.notes.code, formats.code)}
   <button
     type="button"
     class="tool"
@@ -97,46 +155,41 @@
     title={t.notes.link}
     aria-pressed={formats.link}
     onmousedown={keepFocus}
-    onclick={openLink}
+    onclick={() => (linkOpen ? (linkOpen = false) : openLink())}
   >
-    &#128279;
+    {@render icon("link")}
   </button>
   <span class="separator" aria-hidden="true"></span>
-  {@render toggle("bulletList", t.notes.bulletList, formats.bulletList, "•")}
-  {@render toggle(
-    "orderedList",
-    t.notes.orderedList,
-    formats.orderedList,
-    "1.",
-  )}
-  {@render toggle("taskList", t.notes.taskList, formats.taskList, "☑")}
-  <span class="separator" aria-hidden="true"></span>
+  {@render toggle("bulletList", t.notes.bulletList, formats.bulletList)}
+  {@render toggle("orderedList", t.notes.orderedList, formats.orderedList)}
+  {@render toggle("taskList", t.notes.taskList, formats.taskList)}
+  <span class="separator history" aria-hidden="true"></span>
   <button
     type="button"
-    class="tool"
+    class="tool history"
     aria-label={t.notes.undo}
     title={t.notes.undo}
     disabled={!formats.canUndo}
     onmousedown={keepFocus}
     onclick={onUndo}
   >
-    &#8630;
+    {@render icon("undo")}
   </button>
   <button
     type="button"
-    class="tool"
+    class="tool history"
     aria-label={t.notes.redo}
     title={t.notes.redo}
     disabled={!formats.canRedo}
     onmousedown={keepFocus}
     onclick={onRedo}
   >
-    &#8631;
+    {@render icon("redo")}
   </button>
 </div>
 
 {#if linkOpen}
-  <div class="link-bar">
+  <div class="link-bar" class:floating onfocusout={onLinkFocusOut}>
     <input
       bind:this={linkInput}
       bind:value={linkText}
@@ -175,9 +228,12 @@
   }
 
   .tool {
-    min-width: 26px;
-    height: 24px;
-    padding: 0 6px;
+    display: grid;
+    flex: none;
+    place-items: center;
+    min-width: var(--note-tool-size, 26px);
+    height: var(--note-tool-size, 24px);
+    padding: 0 5px;
     border: 0;
     border-radius: var(--radius-small);
     background: transparent;
@@ -212,6 +268,43 @@
     cursor: default;
   }
 
+  .glyph {
+    font-family: var(--font-display);
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .glyph.bold {
+    font-weight: 700;
+  }
+
+  .glyph.italic {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 14px;
+    font-style: italic;
+    font-weight: 500;
+  }
+
+  .tool svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tool svg .dots {
+    stroke-width: 2.2;
+  }
+
+  .tool svg text {
+    fill: currentColor;
+    stroke: none;
+    font-family: var(--font-ui);
+    font-size: 4.6px;
+    font-weight: 700;
+  }
+
   .tool:focus-visible,
   .link-action:focus-visible {
     outline: 1.5px solid var(--accent);
@@ -230,6 +323,24 @@
     gap: var(--space-2);
     min-width: 260px;
     padding: var(--space-1) 2px 2px;
+  }
+
+  /* In a header the field hangs under the bar, like the menus next to it. */
+  .link-bar.floating {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: var(--space-3);
+    z-index: 20;
+    flex-wrap: wrap;
+    width: min(340px, calc(100% - var(--space-6)));
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 6px;
+    border-radius: var(--radius-card);
+    background: var(--bg-popover);
+    box-shadow: var(--shadow-popover);
+    transform-origin: top left;
+    animation: pop-in var(--motion-fast) var(--ease-out);
   }
 
   .link-input {
