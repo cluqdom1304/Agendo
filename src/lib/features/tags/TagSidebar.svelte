@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from "../../i18n";
+  import { contextMenu } from "../context/context.svelte";
   import { tagDrag } from "../../stores/tagDrag.svelte";
   import type { TagsStore } from "../../stores/tags.svelte";
   import { NO_TAG } from "../../stores/tags.svelte";
@@ -32,6 +33,12 @@
       }
     }
     return result;
+  });
+
+  // The context menu (D-50) opens the editor of a tag.
+  $effect(() => {
+    const intent = contextMenu.take("tag-edit");
+    if (intent) editing = intent.id;
   });
 
   const editedTag = $derived(
@@ -161,6 +168,7 @@
     class:unchecked={!tags.isChecked(key)}
     class:drop-target={tagDrag.active?.overKey === key}
     data-tag-drop={key}
+    data-tag-id={tag?.id}
   >
     <label class="check" title={t.tags.pending(count)}>
       <input

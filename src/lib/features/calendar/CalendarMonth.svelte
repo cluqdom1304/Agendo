@@ -82,6 +82,7 @@
             <button
               type="button"
               class="chip"
+              data-task-id={task.id}
               class:done={task.isCompleted}
               style:--tag={tag?.colorHex}
               onpointerdown={(event) => dragTask?.(event, task)}

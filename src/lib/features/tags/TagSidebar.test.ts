@@ -6,6 +6,7 @@ import { TagsStore, type TagsApi } from "../../stores/tags.svelte";
 import { TasksStore } from "../../stores/tasks.svelte";
 import { FakeApi, makeTask } from "../../testing";
 import type { Tag, TagUpsertInput } from "../../types";
+import { contextMenu } from "../context/context.svelte";
 import TagPicker from "./TagPicker.svelte";
 import TagSidebar from "./TagSidebar.svelte";
 
@@ -58,6 +59,14 @@ const box = (name: string) =>
   screen.getByRole("checkbox", { name: `Mostrar tareas de ${name}` });
 
 describe("TagSidebar", () => {
+  it("opens the editor of a tag when the context menu asks for it", async () => {
+    await mount();
+    contextMenu.request({ kind: "tag-edit", id: "fis" });
+    const field = await screen.findByDisplayValue("Física");
+    expect(field).toBeTruthy();
+    expect(contextMenu.intent).toBeNull();
+  });
+
   it("lists every tag in order, then the untagged group, with pending counts", async () => {
     await mount();
     const names = screen

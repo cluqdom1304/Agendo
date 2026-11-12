@@ -2,7 +2,13 @@
   import { onMount, tick } from "svelte";
 
   import { onReminderFired } from "$lib/api";
+  import ContextMenu from "$lib/features/context/ContextMenu.svelte";
   import FolderSidebar from "$lib/features/notes/FolderSidebar.svelte";
+  import {
+    convertTaskToNote,
+    createNoteForTask,
+    showNote,
+  } from "$lib/features/notes/navigation";
   import NotesView from "$lib/features/notes/NotesView.svelte";
   import PaletteHost from "$lib/features/palette/PaletteHost.svelte";
   import type { PaletteMode } from "$lib/features/palette/palette";
@@ -28,6 +34,13 @@
 
   let settingsOpen = $state(false);
   let newTaskOpen = $state(false);
+  /** The day the creation dialog starts on, when it was opened from a day of the calendar. */
+  let newTaskDate = $state<string | null>(null);
+  function openNewTask(date: string | null = null) {
+    newTaskDate = date;
+    newTaskOpen = true;
+  }
+
   // Narrow windows start with the sidebar folded so the content keeps its room.
   let sidebarOpen = $state(
     typeof window === "undefined" || window.innerWidth >= 900,
@@ -207,26 +220,6 @@
           value={viewStore.section}
           onChange={(section) => viewStore.setSection(section)}
         />
-        {#if viewStore.section === "agenda"}
-          <button
-            type="button"
-            class="btn primary"
-            title={t.newTask.buttonHint}
-            aria-haspopup="dialog"
-            onclick={() => (newTaskOpen = true)}
-          >
-            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-              <path
-                d="M8 3v10M3 8h10"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-              />
-            </svg>
-            {t.newTask.button}
-          </button>
-        {/if}
       </div>
       {#if viewStore.section === "agenda"}
         <SegmentedControl
@@ -281,7 +274,7 @@
 
     {#if viewStore.ready}
       {#if viewStore.section === "notes"}
-        <div class="content">
+        <div class="content" data-menu-area="notes">
           <NotesView
             notes={notesStore}
             tags={tagsStore}
@@ -294,11 +287,11 @@
           />
         </div>
       {:else if viewStore.mode === "list"}
-        <div class="content scrolls">
+        <div class="content scrolls" data-menu-area="agenda">
           <TodoView store={tasksStore} />
         </div>
       {:else}
-        <div class="content">
+        <div class="content" data-menu-area="agenda">
           {#await loadCalendar()}
             <p class="status">{t.calendar.loading}</p>
           {:then module}
@@ -324,13 +317,50 @@
   />
 {/if}
 
+<ContextMenu
+  deps={{
+    view: viewStore,
+    tasks: tasksStore,
+    tags: tagsStore,
+    notes: notesStore,
+    newTask: openNewTask,
+    editTask: (task) => (editing = task),
+    openTask: (taskId) => (detailId = taskId),
+    showNote,
+    noteForTask: createNoteForTask,
+    taskToNote: convertTaskToNote,
+  }}
+/>
+
+{#if viewStore.section === "agenda"}
+  <button
+    type="button"
+    class="fab"
+    title={t.newTask.buttonHint}
+    aria-label={t.newTask.button}
+    aria-haspopup="dialog"
+    onclick={() => openNewTask()}
+  >
+    <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
+      <path
+        d="M8 3v10M3 8h10"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      />
+    </svg>
+  </button>
+{/if}
+
 <TagDragGhost drag={tagDrag} />
 <TagDragGhost drag={folderDrag} hint={t.notesApp.dragHint} />
 
 {#if newTaskOpen}
   <TaskDialog
     store={tasksStore}
-    defaultDate={viewStore.mode === "list" ? null : viewStore.anchor}
+    defaultDate={newTaskDate ??
+      (viewStore.mode === "list" ? null : viewStore.anchor)}
     onClose={() => (newTaskOpen = false)}
   />
 {/if}
@@ -440,6 +470,48 @@
     flex: 1;
     min-height: 0;
     animation: rise-in var(--motion-base) var(--ease-out);
+  }
+
+  /* The round button of the agenda: bottom right, above the content but below the dialogs and
+     the undo notice. */
+  .fab {
+    position: fixed;
+    right: var(--space-6);
+    bottom: var(--space-6);
+    z-index: 15;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: var(--shadow-popover);
+    cursor: pointer;
+    transition:
+      transform var(--motion-fast) var(--ease-out),
+      filter var(--motion-fast) linear;
+  }
+
+  .fab:hover {
+    filter: brightness(1.08);
+  }
+
+  .fab:active {
+    transform: scale(0.94);
+  }
+
+  .fab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fab {
+      transition: none;
+    }
   }
 
   .scrolls {

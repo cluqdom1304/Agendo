@@ -5,6 +5,7 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 
 import { t } from "../../i18n";
+import { nodeRemovers } from "../context/nodeRemovers";
 
 /** What a reference shows about its task. */
 export interface TaskRefInfo {
@@ -82,7 +83,7 @@ export const TaskRef = Node.create<TaskRefOptions>({
 
   addNodeView() {
     const { host, registry } = this.options;
-    return ({ node }) => {
+    return ({ node, getPos, editor }) => {
       const id = String(node.attrs.taskId ?? "");
       const dom = element("div", "task-ref");
       dom.contentEditable = "false";
@@ -133,6 +134,15 @@ export const TaskRef = Node.create<TaskRefOptions>({
       };
 
       draw();
+      nodeRemovers.set(dom, () => {
+        const at = getPos();
+        if (typeof at !== "number") return;
+        editor
+          .chain()
+          .focus()
+          .deleteRange({ from: at, to: at + node.nodeSize })
+          .run();
+      });
       registry.add(draw);
       return {
         dom,

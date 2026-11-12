@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from "../../i18n";
+  import { contextMenu } from "../context/context.svelte";
   import { folderDrag } from "../../stores/tagDrag.svelte";
   import type { NotesStore, ScopeKey } from "../../stores/notes.svelte";
   import type { TagsStore } from "../../stores/tags.svelte";
@@ -29,6 +30,19 @@
     if (drag.overKey === (isNote ? "root" : "inbox")) return null;
     if (drag.id === `folder:${drag.overKey}`) return null;
     return drag.overKey;
+  });
+
+  // The context menu (D-50) asks for the fields that live here.
+  $effect(() => {
+    const intent = contextMenu.take("folder");
+    if (!intent) return;
+    if (intent.mode === "delete") confirmingDelete = intent.id;
+    else if (intent.mode === "rename") {
+      begin(`rename:${intent.id}`, notes.byId.get(intent.id)?.name ?? "");
+    } else {
+      notes.expanded.add(intent.id);
+      begin(`new:${intent.id}`);
+    }
   });
 
   function select(scope: ScopeKey) {
@@ -203,6 +217,7 @@
               class:active={notes.scope === key}
               class:drop-target={drop === folder.id}
               data-folder-drop={folder.id}
+              data-folder-id={folder.id}
               style:padding-left="{4 + row.depth * 14}px"
             >
               {#if row.hasChildren}
@@ -354,6 +369,7 @@
             <button
               type="button"
               class="row smart-row"
+              data-note-tag-id={tag.id}
               class:active={notes.scope === key}
               aria-current={notes.scope === key ? "page" : undefined}
               title={t.notesApp.tagTotals(

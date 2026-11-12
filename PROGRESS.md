@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 11 de la V2.0.0 (enlaces, búsqueda y navegación rápida)
+**Fase activa:** Fase 11B de la V2.0.0 (menús contextuales y botón flotante de nueva tarea)
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F11 cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8 a 11» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 12.
-**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 a 11 implementadas, pendientes de validación humana)
+**Siguiente tarea:** F11B cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8 a 11B» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 12.
+**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 a 11B implementadas, pendientes de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -308,12 +308,20 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F11-05 Notas recientes e «Ir a…» (`Ctrl+P`) — las 8 últimas notas abiertas se guardan en el ajuste `notes_recent` (límite de 480 caracteres, el resto de ajustes libres sigue en 64)
 
 ## Fase 11B — Menús contextuales y botón flotante de nueva tarea (añadida a petición del usuario, D-50)
-- [ ] F11B-01 Componente único de menú contextual (clic derecho y tecla Menú / Mayús+F10): posición sin salirse de la ventana, flechas, Esc, submenús (etiquetas, mover a, fecha), reutilizando `shell/Menu.svelte`; el menú del navegador queda desactivado salvo en campos de texto
-- [ ] F11B-02 Tareas (lista, calendario, detalle): hecha/reabrir, editar, fecha de hoy/mañana/elegir, aviso, etiquetas (marcar varias), duplicar, crear nota para la tarea, convertir en nota, borrar con Deshacer
-- [ ] F11B-03 Notas (lista y cabecera): abrir, fijar, mover a…, etiquetas, duplicar, nueva tarea desde la nota, copiar enlace `[[…]]`, borrar; en la papelera: restaurar. Carpetas: nueva nota aquí, subcarpeta, renombrar, borrar. Etiquetas (barras laterales): renombrar, color, subetiqueta, fusionar, borrar
-- [ ] F11B-04 Fondo de cada sección: Agenda → nueva tarea (con la fecha del día pulsado en el calendario); Notas → nueva nota (en la carpeta actual). Editor: cortar/copiar/pegar, formato y enlace; clic derecho sobre un enlace `[[…]]` o una referencia de tarea → abrir, quitar
-- [ ] F11B-05 Botón «Nueva tarea» flotante en la esquina inferior derecha de la Agenda (redondo, sombra, sin tapar contenido ni el aviso de Deshacer, `Ctrl+N` intacto, desaparece en Notas); se retira de la barra superior
-- [ ] F11B-06 Tests de cada menú (acciones disponibles según el elemento, accesibilidad por teclado) y `[H]` en `docs/manual-pruebas.md`
+- [x] F11B-01 Componente único de menú contextual (clic derecho y tecla Menú / Mayús+F10): posición sin salirse de la ventana, flechas, Esc, submenús (etiquetas, mover a, fecha), reutilizando `shell/Menu.svelte`; el menú del navegador queda desactivado salvo en campos de texto
+- [x] F11B-02 Tareas (lista, calendario, detalle): hecha/reabrir, editar, fecha de hoy/mañana/elegir, aviso, etiquetas (marcar varias), duplicar, crear nota para la tarea, convertir en nota, borrar con Deshacer
+- [x] F11B-03 Notas (lista y cabecera): abrir, fijar, mover a…, etiquetas, duplicar, nueva tarea desde la nota, copiar enlace `[[…]]`, borrar; en la papelera: restaurar. Carpetas: nueva nota aquí, subcarpeta, renombrar, borrar. Etiquetas (barras laterales): renombrar, color, subetiqueta, fusionar, borrar
+- [x] F11B-04 Fondo de cada sección: Agenda → nueva tarea (con la fecha del día pulsado en el calendario); Notas → nueva nota (en la carpeta actual). Editor: cortar/copiar/pegar, formato y enlace; clic derecho sobre un enlace `[[…]]` o una referencia de tarea → abrir, quitar
+- [x] F11B-05 Botón «Nueva tarea» flotante en la esquina inferior derecha de la Agenda (redondo, sombra, sin tapar contenido ni el aviso de Deshacer, `Ctrl+N` intacto, desaparece en Notas); se retira de la barra superior
+- [x] F11B-06 Tests de cada menú (acciones disponibles según el elemento, accesibilidad por teclado) y `[H]` en `docs/manual-pruebas.md`
+
+### Resultado de la Fase 11B
+- **Diseño (D-50, aceptado):** un único menú dibujado por la aplicación (`features/context/`). Los componentes solo llevan atributos `data-*` (`data-task-id`, `data-note-id`, `data-folder-id`, `data-tag-id`, `data-note-tag-id`, `data-menu-area`, `data-date`); `target.ts` resuelve el elemento señalado y `entries.ts` construye las acciones como función pura de los stores, de modo que las casillas y las etiquetas se actualizan solas. El menú del navegador solo se conserva en campos de texto; el resto de clics derechos lo ocultan, también donde no hay nada que ofrecer.
+- **Teclado:** tecla Menú o Mayús+F10 sobre el elemento con foco; flechas, Inicio/Fin, → abre el submenú, ← lo cierra, Esc y Tab cierran, el foco vuelve al origen. Los submenús se abren a la derecha o a la izquierda según el espacio.
+- **Qué ofrece cada cosa:** tareas (hecha/reabrir, abrir, editar, fecha hoy/mañana/elegir/quitar, aviso, etiquetas con varias casillas, duplicar, nota de origen o crear/convertir en nota, borrar con Deshacer); notas (abrir, fijar, mover a…, etiquetas, duplicar, borrar; en la papelera, restaurar); carpetas (nueva nota aquí, subcarpeta, renombrar, eliminar); etiquetas de la Agenda (mostrar solo esta, mostrar/ocultar, editar, fusionar) y de Notas (ver notas, nueva nota con la etiqueta, fusionar); fondo de la Agenda (nueva tarea en el día pulsado, ir a ese día, ir a hoy, vista) y de Notas (nueva nota); editor (cortar, copiar, pegar, seleccionar todo) y, sobre un enlace `[[…]]` o una referencia de tarea, abrir y quitar.
+- **Desviaciones de lo planeado (anotadas, sin ADR porque no tocan la especificación):** (1) renombrar, subcarpeta, eliminar carpeta y editar etiqueta no tienen campos propios: el menú pide a la barra lateral que abra los suyos (`contextMenu.intent`), así que la confirmación de borrado y el editor de etiquetas son los de siempre; borrar etiqueta y cambiar color/jerarquía están dentro de «Editar etiqueta…». (2) «Copiar enlace `[[…]]`» y «Nueva tarea desde la nota» no se han añadido: un `[[título]]` pegado no se convertiría en enlace, y la tarea desde la nota ya tiene su botón en la nota. (3) «Formato» del editor no está en el menú (la barra de herramientas y los atajos ya lo cubren). (4) El botón flotante no aparece en Notas.
+- **Botón flotante:** círculo de 48 px en la esquina inferior derecha de la Agenda (Lista y Calendario), sobre el contenido y bajo los diálogos y el aviso de Deshacer, que va centrado; se retira de la barra superior. `Ctrl+N` no cambia. En el calendario abre el diálogo en el día de referencia.
+- **Verificaciones [A]:** `cargo fmt --check` (Rust sin cambios), `npm run lint`, `npm run check` (0/0), `npm run test` (491 en 42 archivos: 21 del menú, 5 de `target`, intents de ambas barras laterales), `npm run build` y `npm run size` (215,7 KB gzip de 250) en verde. Sin dependencias nuevas.
 
 ## Fase 12 — Editor avanzado y adjuntos
 - [ ] F12-01 Almacén de adjuntos con hash, deduplicación y limpieza de huérfanos (D-47)

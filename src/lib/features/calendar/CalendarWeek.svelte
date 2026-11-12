@@ -251,6 +251,7 @@
           <button
             type="button"
             class="chip"
+            data-task-id={task.id}
             class:done={task.isCompleted}
             style:--tag={tag?.colorHex}
             onpointerdown={(event) => dragTask?.(event, task)}
@@ -296,6 +297,7 @@
               style:--tag={tag?.colorHex}
               onpointerdown={(event) => dragTask?.(event, item.task)}
               data-block
+              data-task-id={item.task.id}
               style:top="{top(item.start)}px"
               style:height="{top(item.span) - 2}px"
               style:left="{(item.lane / item.lanes) * 100}%"

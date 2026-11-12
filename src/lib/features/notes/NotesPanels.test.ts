@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { NotesStore } from "../../stores/notes.svelte";
 import { TagsStore } from "../../stores/tags.svelte";
+import { contextMenu } from "../context/context.svelte";
 import FolderSidebar from "./FolderSidebar.svelte";
 import NoteList from "./NoteList.svelte";
 import { FakeNotesApi, folder, note } from "./testing";
@@ -85,6 +86,35 @@ describe("FolderSidebar", () => {
     await waitFor(() =>
       expect(notes.folders.map((f) => f.name)).toEqual(["Ideas"]),
     );
+  });
+
+  it("answers the context menu: rename, new subfolder and delete ask for their fields", async () => {
+    const { notes } = await mount((api) => {
+      api.folders = [folder("Grado")];
+    });
+    render(FolderSidebar, {
+      notes,
+      tags: new TagsStore(emptyTags),
+      open: true,
+    });
+    contextMenu.request({ kind: "folder", mode: "rename", id: "Grado" });
+    const rename = await screen.findByRole("textbox", {
+      name: "Nombre de la carpeta",
+    });
+    expect((rename as HTMLInputElement).value).toBe("Grado");
+    expect(contextMenu.intent).toBeNull();
+    await fireEvent.keyDown(rename, { key: "Escape" });
+
+    contextMenu.request({ kind: "folder", mode: "new", id: "Grado" });
+    await screen.findByRole("textbox", { name: "Nombre de la carpeta" });
+    expect(notes.expanded.has("Grado")).toBe(true);
+    await fireEvent.keyDown(
+      screen.getByRole("textbox", { name: "Nombre de la carpeta" }),
+      { key: "Escape" },
+    );
+
+    contextMenu.request({ kind: "folder", mode: "delete", id: "Grado" });
+    await screen.findByRole("button", { name: "Eliminar «Grado»" });
   });
 
   it("asks before deleting a folder and then deletes it", async () => {

@@ -420,7 +420,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Decisión:** se mantiene N-04 (250 KB gzip de JS). Notas y editor en carga diferida (D-10); si se supera, ADR nuevo antes de subir el límite.
 
 ## D-50 — Menús contextuales propios y botón flotante de nueva tarea
-- **Estado:** PROPOSED (a confirmar por el usuario) · **Fecha:** 2026-11-12
+- **Estado:** ACCEPTED (el usuario pidió continuar con la Fase 11B; «archivar» queda fuera) · **Fecha:** 2026-11-12
 - **Decisión:** el clic derecho abre un menú dibujado por la aplicación (mismo componente y estética que los menús actuales), no un menú nativo de Windows. Cada elemento (tarea, nota, carpeta, etiqueta, enlace) y el fondo de cada sección ofrecen sus acciones; el menú del navegador solo se conserva en campos de texto. «Nueva tarea» pasa a un botón flotante en la esquina inferior derecha de la Agenda.
 - **Motivo:** un menú nativo de Tauri no admite el aspecto ni las animaciones del resto de la interfaz, ni submenús con casillas (etiquetas), y su comportamiento en WebView2 no se puede comprobar aquí. El menú propio se prueba con jsdom.
 - **Archivar:** no se incluye. No existe ese estado en el modelo (tareas ni notas) y exigiría una migración y una vista nueva; los equivalentes actuales son «hecha» (tareas) y «fijar» / papelera (notas). Si se quiere, ADR aparte.

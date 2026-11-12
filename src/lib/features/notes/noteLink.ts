@@ -4,6 +4,7 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 
 import { t } from "../../i18n";
+import { nodeRemovers } from "../context/nodeRemovers";
 
 /** What a link needs from the app to draw itself and open its note. */
 export interface NoteLinkHost {
@@ -54,7 +55,7 @@ export const NoteLink = Node.create<NoteLinkOptions>({
 
   addNodeView() {
     const { host, registry } = this.options;
-    return ({ node }) => {
+    return ({ node, getPos, editor }) => {
       const id = String(node.attrs.noteId ?? "");
       const dom = document.createElement("span");
       dom.className = "note-link";
@@ -90,6 +91,15 @@ export const NoteLink = Node.create<NoteLinkOptions>({
       });
 
       draw();
+      nodeRemovers.set(dom, () => {
+        const at = getPos();
+        if (typeof at !== "number") return;
+        editor
+          .chain()
+          .focus()
+          .deleteRange({ from: at, to: at + node.nodeSize })
+          .run();
+      });
       registry.add(draw);
       return {
         dom,
