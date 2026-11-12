@@ -19,7 +19,10 @@
     now?: () => Date;
   }
 
-  const filters = [{ name: t.settings.backupFilter, extensions: ["sqlite"] }];
+  const filters = [
+    { name: t.settings.backupFilter, extensions: ["agendo"] },
+    { name: t.settings.backupFilterLegacy, extensions: ["sqlite"] },
+  ];
 
   let {
     store,

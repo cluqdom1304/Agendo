@@ -523,11 +523,12 @@ export const t = {
       "La aplicación se abrirá al iniciar sesión. Desactivado por defecto.",
     backups: "Copias de seguridad",
     backupHint:
-      "Guarda todos tus datos en un archivo .sqlite o recupéralos desde uno.",
+      "Guarda tus tareas, notas e imágenes en un archivo .agendo o recupéralos desde uno (también acepta las copias .sqlite de versiones anteriores).",
     backupCreate: "Crear copia…",
     backupRestore: "Restaurar copia…",
-    backupFileName: (date: string) => `Agendo-${date}.sqlite`,
-    backupFilter: "Base de datos SQLite",
+    backupFileName: (date: string) => `Agendo-${date}.agendo`,
+    backupFilter: "Copia de Agendo (datos e imágenes)",
+    backupFilterLegacy: "Base de datos SQLite (copias antiguas)",
     backupCreated: "Copia de seguridad guardada.",
     restoreWarning:
       "Restaurar sustituye todos los datos actuales por los de la copia. Los datos actuales se guardan antes en «agenda.before-restore.sqlite», dentro de la carpeta de datos de la aplicación.",

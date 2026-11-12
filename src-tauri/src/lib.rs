@@ -1,3 +1,4 @@
+pub mod archive;
 pub mod attachments;
 mod commands;
 #[cfg(test)]

@@ -9,7 +9,7 @@ use std::{
 use tauri::{AppHandle, State};
 
 use crate::{
-    DATABASE_FILE,
+    DATABASE_FILE, archive, attachments,
     db::{self, MIGRATIONS},
     error::{AppError, AppResult},
     state::{AppState, run_blocking},
@@ -30,7 +30,17 @@ pub fn protected_files(database: &Path) -> Vec<PathBuf> {
         .collect()
 }
 
+/// Whether `path` asks for the `.agendo` format (database and files) and not a plain `.sqlite`.
+fn wants_archive(path: &Path) -> bool {
+    path.extension()
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("agendo"))
+}
+
 pub fn create(state: &AppState, database: &Path, target: &Path) -> AppResult<()> {
+    if wants_archive(target) {
+        let files = database.with_file_name(attachments::DIR_NAME);
+        return archive::create(state, database, &files, target);
+    }
     // The writer, not the read-only connection: `VACUUM INTO` takes a consistent snapshot there.
     state
         .db
@@ -43,15 +53,21 @@ pub fn restore(
     safety_copy: &Path,
     source: &Path,
 ) -> AppResult<()> {
-    state.db.with_writer(|conn| {
-        db::backup::restore(
-            conn,
-            source,
-            safety_copy,
-            &protected_files(database),
-            &MIGRATIONS,
-        )
-    })?;
+    // `.agendo` copies are recognised by their content, not by the name the user gave them.
+    if archive::is_archive(source) {
+        let files = database.with_file_name(attachments::DIR_NAME);
+        archive::restore(state, database, safety_copy, &files, source)?;
+    } else {
+        state.db.with_writer(|conn| {
+            db::backup::restore(
+                conn,
+                source,
+                safety_copy,
+                &protected_files(database),
+                &MIGRATIONS,
+            )
+        })?;
+    }
     // Reminders came back with the data: the scheduler must look at them again.
     state.wake.notify_one();
     Ok(())

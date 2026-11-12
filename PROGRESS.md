@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 12 de la V2.0.0 (editor avanzado y adjuntos) — en curso
-**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F11B cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8 a 11B» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 12.
-**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 a 11B implementadas, pendientes de validación humana)
+**Fase activa:** Fase 12 de la V2.0.0 (editor avanzado y adjuntos)
+**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F12 cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8 a 12» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 13.
+**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 a 12 implementadas, pendientes de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -328,7 +328,16 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F12-02 Imágenes: pegar, arrastrar, elegir desde la barra, redimensionar (esquina o flechas) y vista previa a pantalla completa. Solo PNG/JPEG/GIF/WebP: «vista previa de ficheros» de otro tipo no se hace (nodo `image` propio, `ImageCache`, `ImagePreview`)
 - [x] F12-03 Tablas (menú contextual para filas y columnas), bloques de código con resaltado propio, citas, separadores, resaltado de texto y títulos; solo en el cuerpo de las notas (`advanced`)
 - [x] F12-04 Atajos Markdown (reglas de entrada de las extensiones: `# `, `> `, ``` ``` ```, `---`, `==texto==`, listas), buscar dentro de la nota (`Ctrl+F`) y contador de palabras
-- [ ] F12-05 Copia `.agendo` (base de datos + adjuntos); restaurar sigue aceptando `.sqlite` (B-02)
+- [x] F12-05 Copia `.agendo` (base de datos + adjuntos); restaurar sigue aceptando `.sqlite` (B-02). `archive.rs`: zip con `agenda.sqlite`, `manifest.json` y `attachments/<sha256>`; se detecta por contenido, no por nombre
+
+### Resultado de la Fase 12
+- **Adjuntos (F12-01):** migración 006, almacén `attachments/<sha256>` con escritura atómica, tipo decidido por la firma de los bytes (PNG, JPEG, GIF, WebP; SVG excluido), máximo 20 MB, ids validados antes de tocar rutas, limpieza de huérfanos al arrancar con 24 h de margen (un deshacer del editor no pierde la imagen). Los bytes viajan como cuerpo binario de IPC. Las referencias se sincronizan al guardar la nota (`note_attachments`), como los enlaces.
+- **Editor (F12-02 a F12-04):** nodo `image` propio (pegar, soltar, elegir; ancho guardado en el documento; esquina o flechas para redimensionar; clic para vista previa grande), tablas, citas, separadores, títulos de 3 niveles, resaltado, bloques de código con tokenizador propio (D-51: sin `lowlight`), búsqueda en la nota con `Ctrl+F` (sin mayúsculas ni acentos) y contador de palabras y caracteres. Todo ello solo en el cuerpo de las notas (`advanced`): los editores de tarea siguen siendo los de siempre, y solo las notas guardan imágenes (los adjuntos se enlazan a notas). Las filas y columnas de una tabla se cambian con el menú contextual (D-50).
+- **Copia `.agendo` (F12-05):** zip con la base de datos y los adjuntos; restaurar valida los nombres de las entradas, limita tamaños al copiar, vuelve a calcular el hash de cada imagen y descarta las que no coincidan o no sean imágenes; la base pasa por las mismas comprobaciones y la misma copia de seguridad previa que un `.sqlite`.
+- **Desviaciones (anotadas, sin ADR porque no tocan la especificación):** (1) «vista previa de ficheros»: solo imágenes; otros tipos de fichero no se adjuntan. (2) Los atajos Markdown son las reglas de entrada de las extensiones de TipTap; no se pueden probar con jsdom y quedan en `[H]`. (3) El test de «resaltar» solo comprueba que la orden existe: sin selección real en jsdom no se puede ver la marca.
+- **Cambio de tests ajeno a la fase:** `restore_rejects_bad_files…` dañaba 2 KB de la mitad del fichero y, al crecer el esquema, caía en una página libre; ahora daña todo lo posterior a la primera página.
+- **Aviso:** F13-05 (tareas recurrentes) pasa a ser la migración 007.
+- **Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (349 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (516 en 44 archivos), `npm run build` y `npm run size` (238,8 KB gzip de 250: **queda poco margen** para las fases 13 a 15). Dependencias nuevas, en D-51: `sha2`, `zip`, y las extensiones `table`, `blockquote`, `horizontal-rule`, `highlight`, `code-block` y `heading` de TipTap 3.33.0.
 
 ## Fase 13 — Productividad
 - [ ] F13-01 Nota diaria enlazada a cada día de la agenda
