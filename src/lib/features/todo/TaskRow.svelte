@@ -112,6 +112,9 @@
     disabled={draft}
     onToggle={() => onToggle?.()}
   />
+  {#if !draft && tagName}
+    {@render tagSlot()}
+  {/if}
   <InlineTitle
     value={title}
     label={draft ? t.tasks.newTaskLabel : t.tasks.titleLabel}
@@ -180,37 +183,8 @@
       </svg>
     </button>
   {/if}
-  {#if !draft}
-    <span class="tag-slot">
-      <button
-        type="button"
-        class="tag-button"
-        class:empty={!tagName}
-        data-tag-toggle
-        aria-haspopup="menu"
-        aria-expanded={tagMenuOpen}
-        aria-label={t.tags.assign(title)}
-        title={t.tags.assign(title)}
-        tabindex="-1"
-        onclick={() => (tagMenuOpen = !tagMenuOpen)}
-      >
-        {#if tagName && tagColor}
-          <TagChip name={tagName} color={tagColor} />
-        {:else}
-          <svg viewBox="0 0 16 16" aria-hidden="true" class="notes-icon">
-            <path d="M2.5 8.5V3h5.5l5.5 5.5-5.5 5.5z" />
-            <circle cx="5.5" cy="6" r="0.8" />
-          </svg>
-        {/if}
-      </button>
-      {#if tagMenuOpen}
-        <TagMenu
-          value={tagId}
-          onSelect={(id) => onTagChange?.(id)}
-          onClose={() => (tagMenuOpen = false)}
-        />
-      {/if}
-    </span>
+  {#if !draft && !tagName}
+    {@render tagSlot()}
   {/if}
   {#if dueTime}
     <span class="time">
@@ -222,6 +196,39 @@
     </span>
   {/if}
 </div>
+
+{#snippet tagSlot()}
+  <span class="tag-slot">
+    <button
+      type="button"
+      class="tag-button"
+      class:empty={!tagName}
+      data-tag-toggle
+      aria-haspopup="menu"
+      aria-expanded={tagMenuOpen}
+      aria-label={t.tags.assign(title)}
+      title={t.tags.assign(title)}
+      tabindex="-1"
+      onclick={() => (tagMenuOpen = !tagMenuOpen)}
+    >
+      {#if tagName && tagColor}
+        <TagChip name={tagName} color={tagColor} />
+      {:else}
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="notes-icon">
+          <path d="M2.5 8.5V3h5.5l5.5 5.5-5.5 5.5z" />
+          <circle cx="5.5" cy="6" r="0.8" />
+        </svg>
+      {/if}
+    </button>
+    {#if tagMenuOpen}
+      <TagMenu
+        value={tagId}
+        onSelect={(id) => onTagChange?.(id)}
+        onClose={() => (tagMenuOpen = false)}
+      />
+    {/if}
+  </span>
+{/snippet}
 
 <style>
   .row {

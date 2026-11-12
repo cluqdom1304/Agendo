@@ -370,6 +370,14 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-41 — Etiqueta antes del título e instalador que reemplaza la versión anterior sin preguntar
+- **Estado:** ACCEPTED (petición del usuario) · **Fecha:** 2026-11-12 · **Validación:** pendiente `[H]`
+- **Decisión:** en la lista, la etiqueta de una tarea se muestra entre la casilla y el título; sin etiqueta no se reserva hueco y el botón de asignar sigue a la derecha, visible al pasar el ratón. El instalador NSIS usa una copia local de la plantilla oficial de `tauri-cli` 2.12.4 (`src-tauri/windows/installer.nsi`, clave `bundle.windows.nsis.template`) con dos cambios: si hay una versión instalada, se activa el modo pasivo (sin páginas ni confirmaciones) y se fuerza «desinstalar antes de instalar». Los datos de usuario se conservan (el desinstalador pasivo no los borra).
+- **Consecuencias:** al subir de versión de `tauri-cli` conviene volver a copiar la plantilla y reaplicar los dos cambios (marcados con «MiAgendaApp»). El MSI ya se actualiza solo por su UpgradeCode. Sin dependencias nuevas.
+- **Alternativas descartadas:** `/P` o `/UPDATE` por línea de comandos (el usuario abre el `.exe` con doble clic); `NSIS_HOOK_PREINSTALL` (se ejecuta después de la pantalla de confirmación).
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

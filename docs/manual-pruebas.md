@@ -230,3 +230,7 @@ Movimiento y fluidez
 | Fecha | Build / commit | Equipo | Fase | Resultado | Responsable |
 |-------|----------------|--------|------|-----------|-------------|
 | | | | | | |
+
+## Versión 1.0.6
+- [H] La etiqueta de cada tarea se ve a la izquierda, entre la casilla y el título; las tareas sin etiqueta no dejan hueco y su botón de asignar aparece al pasar el ratón.
+- [H] Ejecutar `MiAgendaApp_1.0.6_x64-setup.exe` con la 1.0.5 instalada: no pide confirmación, desinstala la anterior, instala la nueva y conserva tareas y ajustes.
