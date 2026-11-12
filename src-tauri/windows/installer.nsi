@@ -281,7 +281,7 @@ Function PageReinstall
   ; of this function because we need to populate some variables
   ; related to current installed version if detected and whether
   ; we are downgrading or not.
-  ; MiAgendaApp: an existing install is always replaced without asking
+  ; Agendo: an existing install is always replaced without asking
   ; (passive mode also hides the remaining wizard pages and the uninstaller prompt).
   StrCpy $PassiveMode 1
   ${If} $PassiveMode = 1

@@ -99,7 +99,7 @@ Checklist de validación humana. El agente lo rellena con los ítems `[H]` de ca
 - [ ] Ajustes → Tema: «Sistema», «Claro» y «Oscuro» cambian la apariencia al instante y se conservan al reiniciar.
 - [ ] Ajustes → Efecto de la ventana: Mica, Acrílico y Ninguno se aplican; si el equipo no admite uno, la app avisa de cuál usa.
 - [ ] Ajustes → Iniciar con Windows está desactivado en una instalación nueva; al activarlo la app arranca al iniciar sesión y al desactivarlo deja de hacerlo (`Administrador de tareas → Inicio`).
-- [ ] Copia de seguridad: el cuadro «Guardar como» propone `MiAgenda-AAAA-MM-DD.sqlite` y sobrescribir pide confirmación de Windows.
+- [ ] Copia de seguridad: el cuadro «Guardar como» propone `Agendo-AAAA-MM-DD.sqlite` y sobrescribir pide confirmación de Windows.
 - [ ] Restaurar: el aviso explica que se sustituyen los datos y que los actuales quedan en `agenda.before-restore.sqlite`; tras restaurar, lista, calendario y recordatorios muestran los datos de la copia sin reiniciar.
 - [ ] Restaurar un `.sqlite` ajeno (otra aplicación) o de una versión más nueva se rechaza con un mensaje claro.
 - [ ] Calendario con teclado: `Tab` llega a cada columna de día, `Intro` abre «Nueva tarea» y la tarea se guarda a la hora indicada.
@@ -234,3 +234,10 @@ Movimiento y fluidez
 ## Versión 1.0.6
 - [H] La etiqueta de cada tarea se ve a la izquierda, entre la casilla y el título; las tareas sin etiqueta no dejan hueco y su botón de asignar aparece al pasar el ratón.
 - [H] Ejecutar `MiAgendaApp_1.0.6_x64-setup.exe` con la 1.0.5 instalada: no pide confirmación, desinstala la anterior, instala la nueva y conserva tareas y ajustes.
+
+## Cambio de nombre a Agendo (D-42)
+
+- [H] Con MiAgendaApp instalada: Ajustes → «Crear copia…» y guardar el `.sqlite`; después desinstalarla.
+- [H] Instalar Agendo: el título de ventana, el acceso directo, «Aplicaciones instaladas» y el ejecutable muestran «Agendo»; arranca con la lista vacía.
+- [H] Ajustes → «Restaurar copia…» con el `.sqlite` guardado: reaparecen todas las tareas, etiquetas, notas y recordatorios.
+- [H] La base nueva está en `%APPDATA%\com.cristian.agendo\agenda.sqlite`.

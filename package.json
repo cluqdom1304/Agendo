@@ -1,7 +1,7 @@
 {
-  "name": "miagendaapp",
-  "version": "1.0.6",
-  "description": "",
+  "name": "agendo",
+  "version": "1.0.7",
+  "description": "Agenda y editor de notas de escritorio para Windows 11. 100 % local, sin cuentas ni telemetría.",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

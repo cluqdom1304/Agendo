@@ -14,7 +14,7 @@ pub struct TempDir(PathBuf);
 impl TempDir {
     pub fn new() -> Self {
         let id = NEXT_DIR.fetch_add(1, Ordering::Relaxed);
-        Self(std::env::temp_dir().join(format!("miagendaapp-test-{}-{id}", std::process::id())))
+        Self(std::env::temp_dir().join(format!("agendo-test-{}-{id}", std::process::id())))
     }
 
     /// `<dir>/nested/agenda.sqlite`; neither the file nor `nested` exist yet.

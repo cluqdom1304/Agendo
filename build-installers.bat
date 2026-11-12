@@ -14,7 +14,7 @@ if errorlevel 1 goto :fail
 
 echo.
 echo === Listo ===
-echo Ejecutable: %~dp0src-tauri\target\release\miagendaapp.exe
+echo Ejecutable: %~dp0src-tauri\target\release\agendo.exe
 echo NSIS:       %~dp0src-tauri\target\release\bundle\nsis\
 echo MSI:        %~dp0src-tauri\target\release\bundle\msi\
 explorer "%~dp0src-tauri\target\release\bundle"

@@ -100,7 +100,7 @@ describe("SettingsDialog", () => {
     await waitFor(() =>
       expect(api.backupCreate).toHaveBeenCalledWith("C:/copias/a.sqlite"),
     );
-    expect(pickSavePath).toHaveBeenCalledWith("MiAgenda-2026-03-09.sqlite");
+    expect(pickSavePath).toHaveBeenCalledWith("Agendo-2026-03-09.sqlite");
     expect((await screen.findByRole("status")).textContent).toContain(
       "Copia de seguridad guardada",
     );

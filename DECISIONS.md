@@ -376,6 +376,13 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Consecuencias:** al subir de versión de `tauri-cli` conviene volver a copiar la plantilla y reaplicar los dos cambios (marcados con «MiAgendaApp»). El MSI ya se actualiza solo por su UpgradeCode. Sin dependencias nuevas.
 - **Alternativas descartadas:** `/P` o `/UPDATE` por línea de comandos (el usuario abre el `.exe` con doble clic); `NSIS_HOOK_PREINSTALL` (se ejecuta después de la pantalla de confirmación).
 
+## D-42 — Nombre oficial de la aplicación: Agendo
+- **Estado:** ACCEPTED (petición del usuario) · **Fecha:** 2026-11-12 · **Validación:** pendiente `[H]`
+- **Decisión:** el producto pasa a llamarse **Agendo** (`productName`, título de ventana, textos de interfaz, crate `agendo` / lib `agendo_lib`, binario `agendo.exe`, paquete npm). Los marcadores «MiAgendaApp» de D-41 en `installer.nsi` pasan a «Agendo».
+- **Identificador:** pasa de `com.cristian.miagendaap` (heredado de F0-01, con una `p` menos) a `com.cristian.agendo`. Cambia la carpeta de datos (`%APPDATA%\com.cristian.agendo`).
+- **Consecuencias:** Agendo arranca con una base vacía. Para conservar las notas: crear una copia en la versión antigua (Ajustes → «Crear copia…»), desinstalarla, instalar Agendo y usar «Restaurar copia…». La clave de desinstalación y la carpeta de instalación también cambian, así que el instalador no reemplaza una instalación previa de MiAgendaApp.
+- **Alternativas descartadas:** mantener el identificador antiguo (arrastra el typo y el nombre viejo en la ruta de datos); migración automática de la carpeta antigua (código para un único usuario, la copia manual basta).
+
 ---
 
 ## Decisiones pendientes de producto

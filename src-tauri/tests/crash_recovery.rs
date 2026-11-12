@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-use miagendaapp_lib::{
+use agendo_lib::{
     repo::{
         model::NewTask,
         reminders::{self, NewReminder},
@@ -42,27 +42,25 @@ fn die_during_write(path: &Path) {
         .db
         .write(|tx| Ok(tasks::create(tx, &new_task("committed"))?))
         .expect("committed write");
-    let _ = state
-        .db
-        .write(|tx| -> miagendaapp_lib::error::AppResult<()> {
-            tasks::create(tx, &new_task("half-written"))?;
-            reminders::replace_unsent(
-                tx,
-                "half-written",
-                &[NewReminder {
-                    id: "r1".into(),
-                    notify_at: "2030-01-01T01:00:00Z".into(),
-                    offset_minutes: None,
-                    repeat: None,
-                }],
-                "2030-01-01T00:00:00Z",
-            )?;
-            std::process::abort()
-        });
+    let _ = state.db.write(|tx| -> agendo_lib::error::AppResult<()> {
+        tasks::create(tx, &new_task("half-written"))?;
+        reminders::replace_unsent(
+            tx,
+            "half-written",
+            &[NewReminder {
+                id: "r1".into(),
+                notify_at: "2030-01-01T01:00:00Z".into(),
+                offset_minutes: None,
+                repeat: None,
+            }],
+            "2030-01-01T00:00:00Z",
+        )?;
+        std::process::abort()
+    });
 }
 
 fn scratch_dir() -> PathBuf {
-    env::temp_dir().join(format!("miagendaapp-crash-{}", std::process::id()))
+    env::temp_dir().join(format!("agendo-crash-{}", std::process::id()))
 }
 
 #[test]

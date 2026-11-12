@@ -2,7 +2,7 @@ describe("tareas", () => {
   it("abre la ventana con la barra de título de la aplicación", async () => {
     const title = await $("header");
     await title.waitForDisplayed();
-    expect(await title.getText()).toContain("MiAgendaApp");
+    expect(await title.getText()).toContain("Agendo");
   });
 
   it("crea una tarea desde el estado vacío y la deja en la lista", async () => {

@@ -1,8 +1,26 @@
-# MiAgendaApp
+# Agendo
 
-Agenda y editor de notas de escritorio para Windows 11. Combina la estructura de un editor plano tipo Notepad++ (secciones "POR HACER" y "AGENDA" con fechas descendentes) con checkboxes, etiquetas por asignatura, vistas de calendario, recordatorios nativos y una estética inspirada en Apple HIG.
+**Tu agenda y tus apuntes en un solo sitio, rápida, bonita y 100 % tuya.**
 
-**Principios:** 100 % local, sin cuentas, sin telemetría, ligera y con recordatorios que no se pierden.
+Agenda y editor de notas de escritorio para Windows 11. Combina la estructura de un editor plano (secciones «POR HACER» y «AGENDA» con fechas descendentes) con checkboxes, etiquetas por asignatura, vistas de calendario, recordatorios nativos y una estética inspirada en Apple HIG.
+
+**Principios:** 100 % local, sin cuentas, sin telemetría, sin red, ligera y con recordatorios que no se pierden.
+
+---
+
+## Características
+
+- **Tareas y notas:** crea, edita, completa y elimina (papelera de 30 días y deshacer de 5 s).
+- **POR HACER y AGENDA:** tareas sin fecha con orden manual y bloques por día con hora opcional.
+- **Etiquetas:** una por asignatura, con color, contador de pendientes y filtro en la barra lateral.
+- **Editor de notas:** negrita, cursiva, código, enlaces y listas, con guardado automático.
+- **Búsqueda instantánea** sobre títulos y notas (SQLite FTS5).
+- **Calendario:** vistas Lista, Día, Semana y Mes; crea eventos arrastrando un tramo horario.
+- **Recordatorios nativos de Windows 11:** varios por tarea; los perdidos con el equipo apagado se recuperan al arrancar.
+- **Atajos de teclado** completos (`Ctrl+K` buscar, `Ctrl+N` nueva tarea, `Ctrl+1/2/3/4` vistas…).
+- **Copia de seguridad y restauración** manual con validación de integridad.
+- **Mica / Acrylic**, tema claro y oscuro.
+- **Privacidad:** tus datos viven en un archivo SQLite local. Nada sale de tu equipo.
 
 ---
 
@@ -36,8 +54,8 @@ Detalle completo en `docs/SPEC.md` (§3) y decisiones en `DECISIONS.md`.
 ## Puesta en marcha
 
 ```bash
-git clone <url-del-repositorio> miagendaapp
-cd miagendaapp
+git clone <url-del-repositorio> agendo
+cd agendo
 npm install
 npm run tauri dev
 ```
@@ -68,10 +86,10 @@ npm run tauri dev
 
 ---
 
-## Estado
+## Contribuir
 
-Fase actual: **0 — Esqueleto** (ver `PROGRESS.md`).
+Las contribuciones son bienvenidas. Antes de abrir un PR ejecuta la batería de verificación: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, `npm run lint`, `npm run check`, `npm run test`, `npm run build` y `npm run size`. Los commits siguen [Conventional Commits](https://www.conventionalcommits.org/es/).
 
 ## Licencia
 
-Pendiente de definir.
+Distribuido bajo la licencia [MIT](LICENSE.md). © 2026 Cristian Luque Domínguez.

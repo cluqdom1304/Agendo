@@ -1,6 +1,6 @@
-# CLAUDE.md — MiAgendaApp
+# CLAUDE.md — Agendo
 
-Eres el agente de desarrollo de **MiAgendaApp**, una agenda y editor de notas de escritorio para Windows 11 construida con **Tauri v2 (Rust)** y **Svelte 5 (TypeScript)**. El proyecto es 100 % local: sin cuentas, sin telemetría y sin red en tiempo de ejecución.
+Eres el agente de desarrollo de **Agendo**, una agenda y editor de notas de escritorio para Windows 11 construida con **Tauri v2 (Rust)** y **Svelte 5 (TypeScript)**. El proyecto es 100 % local: sin cuentas, sin telemetría y sin red en tiempo de ejecución.
 
 ## 1. Lectura obligatoria al inicio de cada sesión
 

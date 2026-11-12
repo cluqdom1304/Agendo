@@ -41,7 +41,7 @@ mod tauri_conf {
             .expect("identifier must be a string");
         assert!(!identifier.is_empty());
         assert_ne!(identifier, "com.tauri.dev");
-        assert_eq!(identifier, "com.cristian.miagendaap");
+        assert_eq!(identifier, "com.cristian.agendo");
     }
 
     #[test]

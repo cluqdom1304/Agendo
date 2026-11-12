@@ -1,6 +1,6 @@
 export const t = {
   app: {
-    name: "MiAgendaApp",
+    name: "Agendo",
   },
   window: {
     minimize: "Minimizar",
@@ -263,7 +263,7 @@ export const t = {
       "Guarda todos tus datos en un archivo .sqlite o recupéralos desde uno.",
     backupCreate: "Crear copia…",
     backupRestore: "Restaurar copia…",
-    backupFileName: (date: string) => `MiAgenda-${date}.sqlite`,
+    backupFileName: (date: string) => `Agendo-${date}.sqlite`,
     backupFilter: "Base de datos SQLite",
     backupCreated: "Copia de seguridad guardada.",
     restoreWarning:
