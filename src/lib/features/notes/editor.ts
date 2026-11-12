@@ -20,6 +20,7 @@ import { Text } from "@tiptap/extension-text";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
 
 import { sanitizeLink } from "../../links";
+import { findTagQuery } from "./tagQuery";
 
 export const EMPTY_NOTE = '{"type":"doc","content":[]}';
 
@@ -44,6 +45,8 @@ export interface ToolbarState {
 export interface NoteEditorHandle {
   state(): ToolbarState;
   toggle(name: ToggleName): void;
+  /** Deletes the `#text` being typed, once its tag has been chosen. */
+  removeTagQuery(): void;
   /** Sets the link on the selection, or removes it with `null`. False if the address is refused. */
   setLink(href: string | null): boolean;
   undo(): void;
@@ -64,6 +67,20 @@ export interface NoteEditorOptions {
   onState: (state: ToolbarState) => void;
   onLinkShortcut: () => void;
   onOpenLink: (href: string) => void;
+  /**
+   * The `#text` being typed at the cursor (without the `#`) and where to draw its suggestions,
+   * or `null` when there is none. Only called when it changes.
+   */
+  onTagQuery?: (query: TagQuery | null) => void;
+  /** First look at a key while a `#text` is open; returns true when it was used. */
+  onTagKey?: (event: KeyboardEvent) => boolean;
+}
+
+export interface TagQuery {
+  query: string;
+  left: number;
+  top: number;
+  bottom: number;
 }
 
 function parseContent(contentJson: string): object | undefined {
@@ -90,7 +107,30 @@ function toolbarState(editor: Editor): ToolbarState {
   };
 }
 
+interface QueryRange {
+  query: string;
+  from: number;
+  to: number;
+}
+
+function queryAtCursor(editor: Editor): QueryRange | null {
+  const { selection } = editor.state;
+  if (!selection.empty) return null;
+  const { $from } = selection;
+  if (!$from.parent.isTextblock) return null;
+  const before = $from.parent.textBetween(
+    0,
+    $from.parentOffset,
+    undefined,
+    "\ufffc",
+  );
+  const query = findTagQuery(before);
+  if (query === null) return null;
+  return { query, from: selection.from - query.length - 1, to: selection.from };
+}
+
 export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
+  let open: QueryRange | null = null;
   const editor = new Editor({
     element: options.element,
     content: parseContent(options.contentJson),
@@ -124,6 +164,10 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
         "aria-label": options.label,
       },
       handleKeyDown: (_view, event) => {
+        if (open && options.onTagKey?.(event)) {
+          event.preventDefault();
+          return true;
+        }
         if (
           (event.ctrlKey || event.metaKey) &&
           event.key.toLowerCase() === "l"
@@ -153,12 +197,37 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
       options.onChange(
         current.isEmpty ? EMPTY_NOTE : JSON.stringify(current.getJSON()),
       ),
-    onTransaction: ({ editor: current }) =>
-      options.onState(toolbarState(current)),
+    onTransaction: ({ editor: current }) => {
+      options.onState(toolbarState(current));
+      if (!options.onTagQuery) return;
+      const next = queryAtCursor(current);
+      if (next?.query === open?.query && next?.from === open?.from) return;
+      open = next;
+      if (!next) {
+        options.onTagQuery(null);
+        return;
+      }
+      const at = current.view.coordsAtPos(next.to);
+      options.onTagQuery({
+        query: next.query,
+        left: at.left,
+        top: at.top,
+        bottom: at.bottom,
+      });
+    },
   });
 
   return {
     state: () => toolbarState(editor),
+    removeTagQuery() {
+      const range = queryAtCursor(editor);
+      if (!range) return;
+      editor
+        .chain()
+        .focus()
+        .deleteRange({ from: range.from, to: range.to })
+        .run();
+    },
     toggle(name) {
       const chain = editor.chain().focus();
       switch (name) {

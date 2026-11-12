@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 8 de la V2.0.0 (sección Notas: interfaz esencial)
+**Fase activa:** Fase 9 de la V2.0.0 (etiquetas unificadas)
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F8 cerrada salvo F8-08 (evento `notes:changed`, pospuesta: ver notas). Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fase 8» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 9.
-**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fase 8 implementada, pendiente de validación humana)
+**Siguiente tarea:** F9 cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8 y 9» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 10 (F8-08 sigue pospuesta a F10).
+**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 y 9 implementadas, pendientes de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -235,11 +235,21 @@
 - Cada nota guarda con retardo (400 ms) y se vuelca al cerrar o cambiar de nota.
 
 ## Fase 9 — Etiquetas unificadas
-- [ ] F9-01 Varias etiquetas por tarea (D-44): selector, chips, calendario
-- [ ] F9-02 Etiquetas en notas (editor y lista)
-- [ ] F9-03 Barra lateral común con contadores de tareas y notas; vista de etiqueta con pestañas Tareas / Notas
-- [ ] F9-04 Renombrar, recolorear, fusionar y subetiquetas con interfaz (D-06)
-- [ ] F9-05 Autocompletado de etiquetas con `#` en el editor
+- [x] F9-01 Varias etiquetas por tarea (D-44): selector, chips, calendario
+- [x] F9-02 Etiquetas en notas (editor y lista)
+- [x] F9-03 Barra lateral común con contadores de tareas y notas; vista de etiqueta con pestañas Tareas / Notas
+- [x] F9-04 Renombrar, recolorear, fusionar y subetiquetas con interfaz (D-06)
+- [x] F9-05 Autocompletado de etiquetas con `#` en el editor
+
+**Verificaciones [A] de F9:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (325 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (399), `npm run build` y `npm run size` (199,9 KB gzip de 250) en verde.
+
+**Notas de la fase 9:**
+- F9-01 (D-44): una tarea admite varias etiquetas. `TagsStore.tagsOf` y `isVisible` (se ve si alguna etiqueta suya está marcada; sin etiqueta sigue a «Sin etiqueta»); `TasksStore.setTags` / `addTag` (soltar sobre una etiqueta de la barra **añade**, soltar sobre «Sin etiqueta» las quita todas); `TagPicker` y `TagMenu` pasan a multiselección (el menú de la fila no se cierra al marcar). La fila muestra dos chips y `+N`; el calendario usa el color de la primera y `+N` en el nombre; el detalle lista todas. Cada tarea cuenta bajo todas sus etiquetas en la barra.
+- Backend: `TagWithCount.noteCount` (notas vivas con la etiqueta; cambia `fixtures/dto.json`) y comando `tag_merge` (`repo::tags::merge`: mueve vínculos de tareas y notas sin duplicar y borra la etiqueta origen; sus subetiquetas quedan en el nivel superior). 3 tests de repo y 1 de comando.
+- F9-02: `NotePane` muestra las etiquetas de la nota y un menú para asignarlas (misma `TagMenu` que las tareas); la lista ya mostraba dos chips. Las etiquetas de la nota se guardan con `note_tags_set`.
+- F9-03: `FolderSidebar` gana la sección «Etiquetas» (contador de notas; el título del botón añade las tareas pendientes) y el ámbito `tag:<id>`. En la vista de una etiqueta hay pestañas **Notas / Tareas**; la pestaña Tareas lista las tareas con esa etiqueta y al pulsar una abre la agenda y la muestra en la lista. Crear una nota dentro de una etiqueta le pone esa etiqueta. Los contadores se refrescan al cambiar las notas.
+- F9-04 (D-06): `TagEditor` suma «Dentro de» (subetiqueta de un solo nivel; bloqueado si ya tiene subetiquetas) y «Fusionar con» con confirmación; la barra de la agenda muestra las subetiquetas sangradas bajo su etiqueta (`TagsStore.ordered`). Marcar una etiqueta no marca sus subetiquetas.
+- F9-05: escribir `#` al principio de línea o tras un espacio abre una lista de etiquetas (sin distinguir mayúsculas ni tildes; flechas, Intro/Tab y Esc). Elegir una **asigna la etiqueta a la nota** y borra el `#texto`; no inserta un nodo en el documento ni añade dependencias. Solo en el cuerpo de las notas, no en las descripciones de tareas.
 
 ## Fase 10 — Tareas dentro de las notas
 - [ ] F10-01 Nodo `taskRef` en TipTap: casilla, título, fecha y etiqueta; marcar completa la tarea real

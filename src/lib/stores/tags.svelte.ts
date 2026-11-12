@@ -9,6 +9,7 @@ export interface TagsApi {
   tagList(): Promise<TagWithCount[]>;
   tagUpsert(input: TagUpsertInput): Promise<Tag>;
   tagDelete(id: string): Promise<void>;
+  tagMerge(sourceId: string, targetId: string): Promise<void>;
 }
 
 /** Filter key of the tasks that have no tag. Tag ids never take this form. */
@@ -19,7 +20,7 @@ export const NO_TAG = "none";
  * A task has several tags (D-44); the first of its `tagIds` gives its colour in the views.
  */
 export class TagsStore {
-  tags = $state.raw<Tag[]>([]);
+  tags = $state.raw<TagWithCount[]>([]);
   /** Filter keys the user has unchecked; empty means everything is shown. */
   readonly hidden = new SvelteSet<string>();
   status = $state<"idle" | "ready" | "error">("idle");
@@ -105,10 +106,15 @@ export class TagsStore {
   async save(input: TagUpsertInput): Promise<"duplicate" | "failed" | null> {
     try {
       const saved = await this.#api.tagUpsert(input);
-      const exists = this.tags.some((tag) => tag.id === saved.id);
-      this.tags = exists
-        ? this.tags.map((tag) => (tag.id === saved.id ? saved : tag))
-        : [...this.tags, saved];
+      const known = this.tags.find((tag) => tag.id === saved.id);
+      const merged = {
+        pendingCount: known?.pendingCount ?? 0,
+        noteCount: known?.noteCount ?? 0,
+        ...saved,
+      };
+      this.tags = known
+        ? this.tags.map((tag) => (tag.id === saved.id ? merged : tag))
+        : [...this.tags, merged];
       return null;
     } catch (error) {
       return backend.parseError(error).code === "CONFLICT"
@@ -116,6 +122,32 @@ export class TagsStore {
         : "failed";
     }
   }
+
+  /**
+   * Folds `sourceId` into `targetId`: whatever carried the first now carries the second. The
+   * caller reloads tasks and notes, whose tags changed. Returns whether it worked.
+   */
+  async merge(sourceId: string, targetId: string): Promise<boolean> {
+    try {
+      await this.#api.tagMerge(sourceId, targetId);
+    } catch {
+      return false;
+    }
+    this.hidden.delete(sourceId);
+    await this.load();
+    return true;
+  }
+
+  /** Top-level tags in order, each followed by its subtags. */
+  ordered = $derived.by(() => {
+    const roots = this.tags.filter(
+      (tag) => !tag.parentId || !this.byId.has(tag.parentId),
+    );
+    return roots.flatMap((root) => [
+      root,
+      ...this.tags.filter((tag) => tag.parentId === root.id),
+    ]);
+  });
 
   /** Deletes the tag. Its tasks lose it, so the caller reloads them. */
   async remove(id: string): Promise<boolean> {

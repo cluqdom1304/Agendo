@@ -123,6 +123,11 @@ export class FakeNotesApi implements NotesApi {
     this.notes = this.notes.map((n) => (n.id === id ? next : n));
     return next;
   }
+  async noteTagsSet(id: string, tagIds: string[]) {
+    const next = { ...(await this.noteGet(id)), tagIds };
+    this.notes = this.notes.map((n) => (n.id === id ? next : n));
+    return next;
+  }
   async noteDelete(id: string) {
     const found = await this.noteGet(id);
     this.trash.push(found);

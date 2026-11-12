@@ -44,6 +44,11 @@ class FakeTagsApi implements TagsApi {
     return saved;
   }
 
+  async tagMerge(source: string, target: string) {
+    void target;
+    this.tags = this.tags.filter((tag) => tag.id !== source);
+  }
+
   async tagDelete(id: string) {
     if (this.failing) throw "DB: fallo simulado";
     this.tags = this.tags.filter((tag) => tag.id !== id);
@@ -254,6 +259,36 @@ describe("TasksStore with a tag filter", () => {
     expect(store.find("b")?.tagIds).toEqual(["fis"]);
     expect(api.calls.filter((call) => call.startsWith("taskTagsSet"))).toEqual([
       "taskTagsSet:b=fis",
+    ]);
+  });
+
+  it("merges a tag into another and forgets the hidden one", async () => {
+    const api = new FakeTagsApi([makeTag("a"), makeTag("b")]);
+    const store = new TagsStore(api);
+    await store.load();
+    store.toggle("a");
+    expect(await store.merge("a", "b")).toBe(true);
+    expect(store.tags.map((tag) => tag.id)).toEqual(["b"]);
+    expect(store.hidden.has("a")).toBe(false);
+  });
+
+  it("lists subtags right after their parent", async () => {
+    const store = new TagsStore(
+      new FakeTagsApi([
+        makeTag("a"),
+        makeTag("k1", { parentId: "a" }),
+        makeTag("b"),
+        makeTag("k2", { parentId: "b" }),
+        makeTag("k3", { parentId: "a" }),
+      ]),
+    );
+    await store.load();
+    expect(store.ordered.map((tag) => tag.id)).toEqual([
+      "a",
+      "k1",
+      "k3",
+      "b",
+      "k2",
     ]);
   });
 });

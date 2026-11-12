@@ -2,6 +2,9 @@
   import { onMount } from "svelte";
 
   import { t } from "../../i18n";
+  import { tagsStore } from "../../stores/tags.svelte";
+  import TagChip from "../tags/TagChip.svelte";
+  import TagMenu from "../tags/TagMenu.svelte";
   import type { NotesStore } from "../../stores/notes.svelte";
   import type { Note } from "../../types";
   import { formatNoteDate } from "./format";
@@ -23,6 +26,7 @@
   // svelte-ignore state_referenced_locally
   let title = $state(note.title);
   let moveOpen = $state(false);
+  let tagsOpen = $state(false);
   let titleInput = $state<HTMLInputElement>();
 
   const titleSaver = new NoteSaver((value) => notes.saveTitle(id, value));
@@ -42,6 +46,23 @@
     if (event.key !== "Enter") return;
     event.preventDefault();
     document.querySelector<HTMLElement>(".note-pane .tiptap")?.focus();
+  }
+
+  const noteTags = $derived(
+    (notes.open?.tagIds ?? [])
+      .map((tagId) => tagsStore.byId.get(tagId))
+      .filter((tag) => tag !== undefined),
+  );
+
+  async function setTags(ids: string[]) {
+    await notes.setTags(id, ids);
+    void tagsStore.load();
+  }
+
+  // Choosing a suggestion from the `#` list adds the tag to the note.
+  function addTag(tag: { id: string }) {
+    const current = notes.open?.tagIds ?? [];
+    if (!current.includes(tag.id)) void setTags([...current, tag.id]);
   }
 
   const saveContent = (contentJson: string) =>
@@ -212,6 +233,44 @@
       oninput={onTitleInput}
       onkeydown={onTitleKey}
     />
+    <div class="tag-row">
+      {#each noteTags as tag (tag.id)}
+        <TagChip name={tag.name} color={tag.colorHex} />
+      {/each}
+      {#if !inTrash}
+        <span class="tag-slot">
+          <button
+            type="button"
+            class="add-tags"
+            data-tag-toggle
+            aria-haspopup="menu"
+            aria-expanded={tagsOpen}
+            aria-label={t.notesApp.noteTags}
+            title={t.notesApp.noteTags}
+            onclick={() => (tagsOpen = !tagsOpen)}
+          >
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+              <path
+                d="M2.5 8.5V3h5.5l5.5 5.5-5.5 5.5z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linejoin="round"
+              />
+              <circle cx="5.5" cy="6" r="0.9" fill="currentColor" />
+            </svg>
+            {#if noteTags.length === 0}{t.notesApp.addTags}{/if}
+          </button>
+          {#if tagsOpen}
+            <TagMenu
+              values={notes.open?.tagIds ?? []}
+              onChange={(ids) => void setTags(ids)}
+              onClose={() => (tagsOpen = false)}
+            />
+          {/if}
+        </span>
+      {/if}
+    </div>
     {#if inTrash}
       <p class="trash-note">{t.notesApp.inTrash}</p>
     {/if}
@@ -219,6 +278,7 @@
       contentJson={note.contentJson}
       save={saveContent}
       variant="page"
+      tagSuggest={{ tags: tagsStore.tags, onPick: addTag }}
       placeholder={t.notesApp.bodyPlaceholder}
     />
   </div>
@@ -353,6 +413,42 @@
   .title::placeholder {
     color: var(--text-secondary);
     opacity: 0.6;
+  }
+
+  .tag-row {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 26px;
+    margin-bottom: var(--space-2);
+  }
+
+  .tag-slot {
+    position: relative;
+  }
+
+  .add-tags {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-chip);
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color var(--motion-instant) linear;
+  }
+
+  .add-tags:hover,
+  .add-tags[aria-expanded="true"] {
+    background: var(--bg-control-hover);
+    color: var(--text-primary);
   }
 
   .trash-note {

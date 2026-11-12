@@ -124,7 +124,15 @@
 
 <div class="shell">
   {#if viewStore.section === "notes"}
-    <FolderSidebar notes={notesStore} open={sidebarOpen} />
+    <FolderSidebar
+      notes={notesStore}
+      tags={tagsStore}
+      pendingOf={(id) =>
+        tasksStore.tasks.filter(
+          (task) => !task.isCompleted && task.tagIds.includes(id),
+        ).length}
+      open={sidebarOpen}
+    />
   {:else}
     <TagSidebar tags={tagsStore} tasks={tasksStore} open={sidebarOpen} />
   {/if}
@@ -239,7 +247,15 @@
     {#if viewStore.ready}
       {#if viewStore.section === "notes"}
         <div class="content">
-          <NotesView notes={notesStore} tags={tagsStore} />
+          <NotesView
+            notes={notesStore}
+            tags={tagsStore}
+            tasks={tasksStore}
+            onOpenTask={(task) => {
+              viewStore.setSection("agenda");
+              void openInList(task);
+            }}
+          />
         </div>
       {:else if viewStore.mode === "list"}
         <div class="content scrolls">

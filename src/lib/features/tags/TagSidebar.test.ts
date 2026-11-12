@@ -30,6 +30,10 @@ class FakeTagsApi implements TagsApi {
   async tagDelete(id: string) {
     this.tags = this.tags.filter((item) => item.id !== id);
   }
+  async tagMerge(source: string, target: string) {
+    void target;
+    this.tags = this.tags.filter((item) => item.id !== source);
+  }
 }
 
 async function mount(open = true) {
@@ -180,7 +184,9 @@ describe("TagMenu", () => {
   it("ticks several tags without closing, and none clears and closes", async () => {
     const { tagsStore } = await import("../../stores/tags.svelte");
     const TagMenu = (await import("./TagMenu.svelte")).default;
-    tagsStore.tags = [tag("mat", "Mates", 0), tag("fis", "Física", 1)];
+    tagsStore.tags = [tag("mat", "Mates", 0), tag("fis", "Física", 1)].map(
+      (item) => ({ ...item, pendingCount: 0, noteCount: 0 }),
+    );
     const chosen: string[][] = [];
     let closed = 0;
     render(TagMenu, {

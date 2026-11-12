@@ -24,6 +24,7 @@ export interface NotesApi {
   noteUpdate(id: string, patch: NotePatch): Promise<Note>;
   noteSetPinned(id: string, pinned: boolean): Promise<Note>;
   noteMove(id: string, folderId: string | null): Promise<Note>;
+  noteTagsSet(noteId: string, tagIds: string[]): Promise<Note>;
   noteDelete(id: string): Promise<void>;
   noteRestore(id: string): Promise<Note>;
   notesTrashList(): Promise<NoteSummary[]>;
@@ -38,7 +39,7 @@ export interface NotesApi {
 
 /** What the list shows. `folder:<id>` is a folder with its subfolders. */
 export type ScopeKey =
-  "all" | "inbox" | "pinned" | "trash" | `folder:${string}`;
+  "all" | "inbox" | "pinned" | "trash" | `folder:${string}` | `tag:${string}`;
 
 export type NotesSortKey = "updated" | "created" | "title";
 
@@ -67,6 +68,9 @@ function parseScope(value: string | null): ScopeKey {
     return value;
   }
   if (value?.startsWith("folder:") && value.length > "folder:".length) {
+    return value as ScopeKey;
+  }
+  if (value?.startsWith("tag:") && value.length > "tag:".length) {
     return value as ScopeKey;
   }
   return "all";
@@ -122,11 +126,18 @@ export class NotesStore {
       : null,
   );
 
+  /** Id of the tag the scope points at, if it is one. */
+  scopeTagId = $derived(
+    this.scope.startsWith("tag:") ? this.scope.slice("tag:".length) : null,
+  );
+
   scopeTitle = $derived.by(() => {
     if (this.scope === "all") return t.notesApp.all;
     if (this.scope === "inbox") return t.notesApp.inbox;
     if (this.scope === "pinned") return t.notesApp.pinned;
     if (this.scope === "trash") return t.notesApp.trash;
+    // A tag has no name here; the list takes it from the tags store.
+    if (this.scopeTagId) return "";
     return this.byId.get(this.scopeFolderId ?? "")?.name ?? t.notesApp.all;
   });
 
@@ -199,7 +210,11 @@ export class NotesStore {
       if (this.scope === "trash" || this.scope === "pinned") {
         await this.selectScope("all");
       }
-      const note = await this.#api.noteCreate(folderId ? { folderId } : {});
+      const tagId = this.scopeTagId;
+      const note = await this.#api.noteCreate({
+        ...(folderId ? { folderId } : {}),
+        ...(tagId ? { tagIds: [tagId] } : {}),
+      });
       await this.#refreshAll();
       this.open = note;
       this.#remember("notes_open", note.id);
@@ -226,6 +241,15 @@ export class NotesStore {
   async setPinned(id: string, pinned: boolean): Promise<void> {
     try {
       this.#adopt(await this.#api.noteSetPinned(id, pinned));
+      await this.#refreshList();
+    } catch {
+      this.#fail(t.notesApp.actionFailed);
+    }
+  }
+
+  async setTags(id: string, tagIds: string[]): Promise<void> {
+    try {
+      this.#adopt(await this.#api.noteTagsSet(id, tagIds));
       await this.#refreshList();
     } catch {
       this.#fail(t.notesApp.actionFailed);
@@ -403,6 +427,8 @@ export class NotesStore {
       else if (scope.startsWith("folder:")) {
         query.scope = "folder";
         query.folderId = scope.slice("folder:".length);
+      } else if (scope.startsWith("tag:")) {
+        query.tagId = scope.slice("tag:".length);
       }
       notes = await this.#api.notesList(query);
     }

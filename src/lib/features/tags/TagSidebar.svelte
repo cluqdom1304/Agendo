@@ -42,10 +42,25 @@
     id: string | undefined,
     name: string,
     colorHex: string,
+    parentId: string | null,
   ): Promise<"duplicate" | "failed" | null> {
-    const failure = await tags.save({ ...(id ? { id } : {}), name, colorHex });
+    const failure = await tags.save({
+      ...(id ? { id } : {}),
+      name,
+      colorHex,
+      ...(parentId ? { parentId } : {}),
+    });
     if (!failure) editing = null;
     return failure;
+  }
+
+  async function merge(source: Tag, targetId: string): Promise<boolean> {
+    const merged = await tags.merge(source.id, targetId);
+    if (merged) {
+      editing = null;
+      await tasks.load();
+    }
+    return merged;
   }
 
   async function remove(tag: Tag): Promise<boolean> {
@@ -91,19 +106,28 @@
     {#if editing === "new"}
       <TagEditor
         color={tags.nextColor()}
-        onSave={(name, color) => save(undefined, name, color)}
+        onSave={(name, color, parent) => save(undefined, name, color, parent)}
+        parentOptions={tags.tags.filter((tag) => !tag.parentId)}
         onCancel={() => (editing = null)}
       />
     {/if}
 
     <ul class="list">
-      {#each tags.tags as tag (tag.id)}
-        <li>
+      {#each tags.ordered as tag (tag.id)}
+        <li class:child={!!tag.parentId}>
           {#if editedTag && editedTag.id === tag.id}
             <TagEditor
               name={tag.name}
               color={tag.colorHex}
-              onSave={(name, color) => save(tag.id, name, color)}
+              parentId={tag.parentId}
+              parentOptions={tags.tags.filter(
+                (other) => !other.parentId && other.id !== tag.id,
+              )}
+              hasChildren={tags.tags.some((other) => other.parentId === tag.id)}
+              mergeTargets={tags.tags.filter((other) => other.id !== tag.id)}
+              onSave={(name, color, parent) =>
+                save(tag.id, name, color, parent)}
+              onMerge={(targetId) => merge(tag, targetId)}
               onDelete={() => remove(tag)}
               onCancel={() => (editing = null)}
             />
@@ -294,6 +318,10 @@
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+
+  .child {
+    padding-left: 14px;
   }
 
   .separator {

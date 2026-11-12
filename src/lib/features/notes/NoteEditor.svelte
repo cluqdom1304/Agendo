@@ -2,7 +2,14 @@
   import { onMount } from "svelte";
 
   import { t } from "../../i18n";
-  import type { NoteEditorHandle, ToggleName, ToolbarState } from "./editor";
+  import type { Tag } from "../../types";
+  import type {
+    NoteEditorHandle,
+    TagQuery,
+    ToggleName,
+    ToolbarState,
+  } from "./editor";
+  import { matchTags } from "./tagQuery";
   import NoteToolbar from "./NoteToolbar.svelte";
   import { NoteSaver } from "./noteSaver";
 
@@ -20,6 +27,8 @@
     onAutofocus?: () => void;
     /** The focus left a note without text, towards `next`. */
     onEmptyBlur?: (next: Element | null) => void;
+    /** Turns on the `#tag` shortcut: the tags to offer and what to do with the chosen one. */
+    tagSuggest?: { tags: Tag[]; onPick: (tag: Tag) => void };
   }
 
   let {
@@ -30,6 +39,7 @@
     autofocus = false,
     onAutofocus,
     onEmptyBlur,
+    tagSuggest,
   }: Props = $props();
 
   const idleState: ToolbarState = {
@@ -65,6 +75,45 @@
   }
 
   // The saver outlives the editor module's loading: edits only exist after it is ready.
+  let query = $state.raw<TagQuery | null>(null);
+  let highlighted = $state(0);
+  // Escape hides the list until the text after the `#` changes.
+  let dismissedFor = $state<string | null>(null);
+
+  const suggestions = $derived(
+    tagSuggest && query && dismissedFor !== query.query
+      ? matchTags(tagSuggest.tags, query.query)
+      : [],
+  );
+
+  function pick(tag: Tag) {
+    handle?.removeTagQuery();
+    tagSuggest?.onPick(tag);
+  }
+
+  function onTagKey(event: KeyboardEvent): boolean {
+    if (suggestions.length === 0 || event.ctrlKey || event.metaKey)
+      return false;
+    if (event.key === "ArrowDown") {
+      highlighted = (highlighted + 1) % suggestions.length;
+      return true;
+    }
+    if (event.key === "ArrowUp") {
+      highlighted = (highlighted - 1 + suggestions.length) % suggestions.length;
+      return true;
+    }
+    if (event.key === "Enter" || event.key === "Tab") {
+      const chosen = suggestions[highlighted];
+      if (chosen) pick(chosen);
+      return true;
+    }
+    if (event.key === "Escape") {
+      dismissedFor = query?.query ?? null;
+      return true;
+    }
+    return false;
+  }
+
   const saver = new NoteSaver((json) => save(json));
 
   async function openLink(href: string) {
@@ -89,6 +138,15 @@
           onState: (state) => (toolbar = state),
           onLinkShortcut: () => (linkRequest += 1),
           onOpenLink: (href) => void openLink(href).catch(() => {}),
+          ...(tagSuggest
+            ? {
+                onTagQuery: (next: TagQuery | null) => {
+                  query = next;
+                  highlighted = 0;
+                },
+                onTagKey,
+              }
+            : {}),
         });
         handle = created;
         toolbar = created.state();
@@ -141,6 +199,35 @@
     {/if}
   {/if}
   <div class="surface" bind:this={host}></div>
+  {#if query && suggestions.length > 0}
+    <ul
+      class="suggest"
+      role="listbox"
+      aria-label={t.notesApp.noteTags}
+      style:left="{query.left}px"
+      style:top="{query.bottom + 6}px"
+    >
+      {#each suggestions as tag, index (tag.id)}
+        <li role="presentation">
+          <button
+            type="button"
+            role="option"
+            class="suggestion"
+            class:active={index === highlighted}
+            aria-selected={index === highlighted}
+            tabindex="-1"
+            onmousedown={(event) => {
+              event.preventDefault();
+              pick(tag);
+            }}
+          >
+            <span class="dot" style:background={tag.colorHex}></span>
+            {tag.name}
+          </button>
+        </li>
+      {/each}
+    </ul>
+  {/if}
 </div>
 
 <style>
@@ -196,6 +283,48 @@
   /* The format bar opens right under the task title, above the text it formats. */
   .in-list .tools {
     padding-top: 3px;
+  }
+
+  .suggest {
+    position: fixed;
+    z-index: 30;
+    min-width: 160px;
+    max-width: 260px;
+    margin: 0;
+    padding: 4px;
+    border-radius: var(--radius-card);
+    background: var(--bg-popover);
+    box-shadow: var(--shadow-popover);
+    list-style: none;
+    animation: pop-in var(--motion-fast) var(--ease-out);
+  }
+
+  .suggestion {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: 5px var(--space-2);
+    border: 0;
+    border-radius: var(--radius-small);
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .suggestion.active {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .dot {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: var(--radius-chip);
   }
 
   .status {

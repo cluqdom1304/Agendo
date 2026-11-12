@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from "../../i18n";
   import { normalizeHex, TAG_PRESETS } from "../../tagColor";
+  import type { Tag } from "../../types";
 
   interface Props {
     /** Current values when editing; the suggested colour when creating. */
@@ -10,18 +11,42 @@
     onSave: (
       name: string,
       color: string,
+      parentId: string | null,
     ) => Promise<"duplicate" | "failed" | null>;
+    /** Top-level tags a tag may go inside; omitted when subtags do not apply. */
+    parentOptions?: Tag[];
+    parentId?: string | null;
+    /** The tag has subtags of its own, so it cannot go inside another one. */
+    hasChildren?: boolean;
+    /** Tags the edited one can be folded into. */
+    mergeTargets?: Tag[];
+    onMerge?: (targetId: string) => Promise<boolean>;
     onDelete?: () => Promise<boolean>;
     onCancel: () => void;
   }
 
-  let { name = "", color, onSave, onDelete, onCancel }: Props = $props();
+  let {
+    name = "",
+    color,
+    onSave,
+    parentOptions = [],
+    parentId = null,
+    hasChildren = false,
+    mergeTargets = [],
+    onMerge,
+    onDelete,
+    onCancel,
+  }: Props = $props();
 
   // The form starts from the props and then owns its state.
   // svelte-ignore state_referenced_locally
   let draftName = $state(name);
   // svelte-ignore state_referenced_locally
   let hexText = $state(color.toUpperCase());
+  // svelte-ignore state_referenced_locally
+  let draftParent = $state<string>(parentId ?? "");
+  let mergeTarget = $state("");
+  let merging = $state(false);
   let error = $state("");
   let saving = $state(false);
   let confirming = $state(false);
@@ -34,11 +59,19 @@
     if (!canSave || hex === null) return;
     saving = true;
     error = "";
-    const failure = await onSave(draftName.trim(), hex);
+    const failure = await onSave(draftName.trim(), hex, draftParent || null);
     saving = false;
     if (failure) {
       error = failure === "duplicate" ? t.tags.duplicate : t.tags.saveFailed;
     }
+  }
+
+  async function merge() {
+    if (!onMerge || mergeTarget === "") return;
+    saving = true;
+    const merged = await onMerge(mergeTarget);
+    saving = false;
+    if (!merged) error = t.tags.mergeFailed;
   }
 
   async function remove() {
@@ -78,6 +111,19 @@
       bind:value={draftName}
     />
   </label>
+
+  {#if parentOptions.length > 0 || draftParent !== ""}
+    <label class="field">
+      <span class="label">{t.tags.parentLabel}</span>
+      <select class="text" bind:value={draftParent} disabled={hasChildren}>
+        <option value="">{t.tags.noParent}</option>
+        {#each parentOptions as option (option.id)}
+          <option value={option.id}>{option.name}</option>
+        {/each}
+      </select>
+      {#if hasChildren}<span class="hint">{t.tags.parentLocked}</span>{/if}
+    </label>
+  {/if}
 
   <div class="field">
     <span class="label" id="tag-color-label">{t.tags.colorLabel}</span>
@@ -119,6 +165,54 @@
       <p class="error" role="alert">{t.tags.hexInvalid}</p>
     {/if}
   </div>
+
+  {#if onMerge && mergeTargets.length > 0}
+    <div class="field">
+      <label class="label" for="tag-merge">{t.tags.mergeLabel}</label>
+      {#if merging}
+        <p class="confirm">
+          {t.tags.mergeConfirm(
+            name,
+            mergeTargets.find((tag) => tag.id === mergeTarget)?.name ?? "",
+          )}
+        </p>
+        <div class="actions">
+          <button
+            type="button"
+            class="btn small"
+            onclick={() => (merging = false)}
+          >
+            {t.tags.cancel}
+          </button>
+          <button
+            type="button"
+            class="btn small danger-fill"
+            disabled={saving}
+            onclick={merge}
+          >
+            {t.tags.mergeAction}
+          </button>
+        </div>
+      {:else}
+        <div class="merge-row">
+          <select id="tag-merge" class="text" bind:value={mergeTarget}>
+            <option value="">{t.tags.mergePlaceholder}</option>
+            {#each mergeTargets as option (option.id)}
+              <option value={option.id}>{option.name}</option>
+            {/each}
+          </select>
+          <button
+            type="button"
+            class="btn small"
+            disabled={mergeTarget === ""}
+            onclick={() => (merging = true)}
+          >
+            {t.tags.mergeAction}
+          </button>
+        </div>
+      {/if}
+    </div>
+  {/if}
 
   {#if error}
     <p class="error" role="alert">{error}</p>
@@ -277,5 +371,19 @@
 
   .spacer {
     flex: 1;
+  }
+  .merge-row {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .merge-row select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .hint {
+    color: var(--text-secondary);
+    font-size: 11px;
   }
 </style>

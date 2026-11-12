@@ -242,7 +242,7 @@ Movimiento y fluidez
 - [H] Ajustes → «Restaurar copia…» con el `.sqlite` guardado: reaparecen todas las tareas, etiquetas, notas y recordatorios.
 - [H] La base nueva está en `%APPDATA%\com.cristian.agendo\agenda.sqlite`.
 
-## Notas V2 — Fase 8 (`[H]`, pendiente de validar en Windows 11)
+## Notas V2 — Fases 8 y 9 (`[H]`, pendientes de validar en Windows 11)
 - [ ] Pulsar «Notas» en la barra superior (o `Ctrl+Mayús+2`) cambia de sección con una transición suave; `Ctrl+Mayús+1` vuelve a la Agenda. La sección, carpeta y nota abiertas se recuerdan al reiniciar.
 - [ ] Crear carpeta, subcarpeta, renombrar y eliminar (con confirmación): los contadores y el árbol se actualizan; no deja crear más de 5 niveles ni dos hermanas con el mismo nombre.
 - [ ] Arrastrar una nota o una carpeta sobre una carpeta, la Bandeja o «Carpetas» la mueve; Esc cancela el arrastre.
@@ -250,3 +250,7 @@ Movimiento y fluidez
 - [ ] Fijar, duplicar, mover (menú), eliminar con «Deshacer» y restaurar desde la Papelera.
 - [ ] Lista con unas miles de notas: el desplazamiento es fluido; flechas arriba/abajo cambian de nota.
 - [ ] Aspecto: tema claro y oscuro, animaciones suaves y sin parpadeos, foco visible con teclado y lector de pantalla.
+- [ ] (F9) Asignar varias etiquetas a una tarea desde el menú de la fila y desde el diálogo; la fila muestra dos y `+N`; filtrar por una etiqueta en la barra muestra las tareas que la tengan aunque tengan otras.
+- [ ] (F9) En una nota: asignar etiquetas con el botón y con `#` (lista bajo el cursor; flechas, Intro, Tab, Esc); la etiqueta aparece en la lista de notas.
+- [ ] (F9) En «Notas», la sección Etiquetas muestra contadores; al elegir una, las pestañas Notas/Tareas cambian de contenido y pulsar una tarea abre la agenda.
+- [ ] (F9) Editar una etiqueta: ponerla dentro de otra, fusionarla con confirmación y comprobar que tareas y notas pasan a la etiqueta destino.

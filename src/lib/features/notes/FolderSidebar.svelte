@@ -2,14 +2,18 @@
   import { t } from "../../i18n";
   import { folderDrag } from "../../stores/tagDrag.svelte";
   import type { NotesStore, ScopeKey } from "../../stores/notes.svelte";
+  import type { TagsStore } from "../../stores/tags.svelte";
   import type { FolderWithCount } from "../../types";
 
   interface Props {
     notes: NotesStore;
+    tags: TagsStore;
+    /** Pending tasks per tag, to show next to the number of notes. */
+    pendingOf?: (tagId: string) => number;
     open: boolean;
   }
 
-  let { notes, open }: Props = $props();
+  let { notes, tags, pendingOf, open }: Props = $props();
 
   /** `"new"` (top level), `"new:<parent>"`, `"rename:<id>"` or nothing. */
   let editing = $state<string | null>(null);
@@ -302,6 +306,34 @@
         </li>
       {/each}
     </ul>
+
+    {#if tags.tags.length > 0}
+      <div class="section">
+        <span class="section-title">{t.notesApp.tags}</span>
+      </div>
+      <ul class="tag-list">
+        {#each tags.tags as tag (tag.id)}
+          {@const key = `tag:${tag.id}` as ScopeKey}
+          <li>
+            <button
+              type="button"
+              class="row smart-row"
+              class:active={notes.scope === key}
+              aria-current={notes.scope === key ? "page" : undefined}
+              title={t.notesApp.tagTotals(
+                pendingOf?.(tag.id) ?? 0,
+                tag.noteCount,
+              )}
+              onclick={() => select(key)}
+            >
+              <span class="dot" style:background={tag.colorHex}></span>
+              <span class="label">{tag.name}</span>
+              <span class="count">{tag.noteCount}</span>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    {/if}
 
     <div class="bottom">
       {@render smart(
@@ -627,6 +659,23 @@
   .confirm button.danger {
     background: var(--danger);
     color: var(--on-danger);
+  }
+
+  .tag-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dot {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    margin: 0 2px;
+    border-radius: var(--radius-chip);
   }
 
   .bottom {

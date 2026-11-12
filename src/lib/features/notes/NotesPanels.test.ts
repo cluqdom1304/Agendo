@@ -15,6 +15,15 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 };
 
+const emptyTags = {
+  tagList: async () => [],
+  tagUpsert: async () => {
+    throw new Error("unused");
+  },
+  tagDelete: async () => undefined,
+  tagMerge: async () => undefined,
+};
+
 async function mount(setup: (api: FakeNotesApi) => void = () => undefined) {
   const api = new FakeNotesApi();
   setup(api);
@@ -28,7 +37,11 @@ describe("FolderSidebar", () => {
     const { notes } = await mount((api) => {
       api.folders = [folder("Grado", null, 3), folder("Mates", "Grado", 1)];
     });
-    render(FolderSidebar, { notes, open: true });
+    render(FolderSidebar, {
+      notes,
+      tags: new TagsStore(emptyTags),
+      open: true,
+    });
     expect(screen.getByText("Todas las notas")).toBeTruthy();
     expect(screen.getByText("Bandeja de entrada")).toBeTruthy();
     expect(screen.getByText("Fijadas")).toBeTruthy();
@@ -45,7 +58,11 @@ describe("FolderSidebar", () => {
     const { notes } = await mount((api) => {
       api.folders = [folder("Grado")];
     });
-    render(FolderSidebar, { notes, open: true });
+    render(FolderSidebar, {
+      notes,
+      tags: new TagsStore(emptyTags),
+      open: true,
+    });
     await fireEvent.click(screen.getByText("Grado"));
     await waitFor(() => expect(notes.scope).toBe("folder:Grado"));
     await fireEvent.click(screen.getByText("Papelera"));
@@ -54,7 +71,11 @@ describe("FolderSidebar", () => {
 
   it("creates a folder from the header with Enter", async () => {
     const { notes } = await mount();
-    render(FolderSidebar, { notes, open: true });
+    render(FolderSidebar, {
+      notes,
+      tags: new TagsStore(emptyTags),
+      open: true,
+    });
     await fireEvent.click(
       screen.getByRole("button", { name: "Nueva carpeta" }),
     );
@@ -70,7 +91,11 @@ describe("FolderSidebar", () => {
     const { notes } = await mount((api) => {
       api.folders = [folder("Grado")];
     });
-    render(FolderSidebar, { notes, open: true });
+    render(FolderSidebar, {
+      notes,
+      tags: new TagsStore(emptyTags),
+      open: true,
+    });
     await fireEvent.click(
       screen.getByRole("button", { name: "Eliminar «Grado»" }),
     );
@@ -83,13 +108,7 @@ describe("FolderSidebar", () => {
 });
 
 describe("NoteList", () => {
-  const tags = new TagsStore({
-    tagList: async () => [],
-    tagUpsert: async () => {
-      throw new Error("unused");
-    },
-    tagDelete: async () => undefined,
-  });
+  const tags = new TagsStore(emptyTags);
 
   it("shows each note with its title and opens it on click", async () => {
     const { notes } = await mount((api) => {

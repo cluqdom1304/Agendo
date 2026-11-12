@@ -226,4 +226,29 @@ describe("NotesStore", () => {
     await store.load();
     expect(store.status).toBe("error");
   });
+
+  it("sets the tags of a note and lists by tag", async () => {
+    const { api, store } = await loaded((fake) => {
+      fake.notes = [note("n1")];
+    });
+    await store.openNote("n1");
+    await store.setTags("n1", ["mat", "fis"]);
+    expect(store.open?.tagIds).toEqual(["mat", "fis"]);
+    await store.selectScope("tag:mat");
+    expect(store.scopeTagId).toBe("mat");
+    expect(api.queries.at(-1)).toEqual({
+      scope: "all",
+      tagId: "mat",
+      sort: "updated",
+    });
+    expect(api.settings.get("notes_scope")).toBe("tag:mat");
+  });
+
+  it("a new note inside a tag view carries that tag", async () => {
+    const { store } = await loaded();
+    await store.selectScope("tag:mat");
+    const created = await store.createNote();
+    expect(created).not.toBeNull();
+    expect(store.scope).toBe("tag:mat");
+  });
 });

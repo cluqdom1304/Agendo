@@ -29,6 +29,11 @@
   );
   const visible = $derived(notes.notes.slice(range.start, range.end));
   const inTrash = $derived(notes.scope === "trash");
+  const title = $derived(
+    notes.scopeTagId
+      ? t.notesApp.tagScopeTitle(tags.byId.get(notes.scopeTagId)?.name ?? "")
+      : notes.scopeTitle,
+  );
 
   const SORTS: { value: NotesSortKey; label: string }[] = [
     { value: "updated", label: t.notesApp.sortUpdated },
@@ -102,7 +107,7 @@
 <section class="list" aria-label={t.notesApp.list}>
   <header class="head" data-tauri-drag-region>
     <div class="titles" data-tauri-drag-region>
-      <h2 data-tauri-drag-region>{notes.scopeTitle}</h2>
+      <h2 data-tauri-drag-region>{title}</h2>
       <span class="count">{t.notesApp.count(notes.notes.length)}</span>
     </div>
     {#if !inTrash}
@@ -231,11 +236,9 @@
 <style>
   .list {
     display: flex;
+    flex: 1;
     flex-direction: column;
-    width: 300px;
     min-height: 0;
-    height: 100%;
-    box-shadow: inset -1px 0 0 var(--separator);
   }
 
   .head {
