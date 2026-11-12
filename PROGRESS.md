@@ -325,9 +325,9 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 
 ## Fase 12 — Editor avanzado y adjuntos
 - [x] F12-01 Almacén de adjuntos con hash, deduplicación y limpieza de huérfanos (D-47). Migración 006 (`attachments`, `note_attachments`), `attachments.rs` (firma de imagen, SHA-256, escritura atómica, limpieza a las 24 h al arrancar), comandos `attachment_add`/`attachment_read` con cuerpo binario, dependencias en D-51. Aviso: F13-05 pasa a ser la migración 007
-- [ ] F12-02 Imágenes: pegar, arrastrar, redimensionar; vista previa de ficheros
-- [ ] F12-03 Tablas, bloques de código con resaltado, citas, separadores, resaltado de texto
-- [ ] F12-04 Atajos Markdown, buscar dentro de la nota (`Ctrl+F`), contador de palabras
+- [x] F12-02 Imágenes: pegar, arrastrar, elegir desde la barra, redimensionar (esquina o flechas) y vista previa a pantalla completa. Solo PNG/JPEG/GIF/WebP: «vista previa de ficheros» de otro tipo no se hace (nodo `image` propio, `ImageCache`, `ImagePreview`)
+- [x] F12-03 Tablas (menú contextual para filas y columnas), bloques de código con resaltado propio, citas, separadores, resaltado de texto y títulos; solo en el cuerpo de las notas (`advanced`)
+- [x] F12-04 Atajos Markdown (reglas de entrada de las extensiones: `# `, `> `, ``` ``` ```, `---`, `==texto==`, listas), buscar dentro de la nota (`Ctrl+F`) y contador de palabras
 - [ ] F12-05 Copia `.agendo` (base de datos + adjuntos); restaurar sigue aceptando `.sqlite` (B-02)
 
 ## Fase 13 — Productividad

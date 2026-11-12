@@ -9,6 +9,8 @@ import type { TagsStore } from "../../stores/tags.svelte";
 import type { TasksStore } from "../../stores/tasks.svelte";
 import type { ViewStore } from "../../stores/view.svelte";
 import type { Note, NoteSummary, Task, ViewMode } from "../../types";
+import type { TableAction } from "../notes/editor";
+import { editorActions } from "./editorActions";
 import { nodeRemovers } from "./nodeRemovers";
 import type { ContextEntry, ContextMenuStore } from "./context.svelte";
 import type { MenuTarget } from "./target";
@@ -71,7 +73,7 @@ export function buildEntries(
         },
       ];
     case "editor":
-      return editorEntries(deps);
+      return editorEntries(deps, target.node, target.inTable);
     case "note-link":
       return [
         {
@@ -458,7 +460,36 @@ function agendaEntries(date: string | null, deps: ContextDeps): ContextEntry[] {
 
 // ── Editor ───────────────────────────────────────────────────────────────
 
-function editorEntries(deps: ContextDeps): ContextEntry[] {
+function tableEntries(node: Element): ContextEntry[] {
+  const actions = editorActions.get(node);
+  if (!actions) return [];
+  const row = (
+    id: TableAction,
+    label: string,
+    extra: Partial<ContextEntry> = {},
+  ): ContextEntry => ({
+    id,
+    label,
+    run: () => actions.tableAction(id),
+    ...extra,
+  });
+  return [
+    row("addRowBefore", t.context.rowBefore, { separated: true }),
+    row("addRowAfter", t.context.rowAfter),
+    row("addColumnBefore", t.context.columnBefore),
+    row("addColumnAfter", t.context.columnAfter),
+    row("toggleHeaderRow", t.context.headerRow),
+    row("deleteRow", t.context.deleteRow, { separated: true }),
+    row("deleteColumn", t.context.deleteColumn),
+    row("deleteTable", t.context.deleteTable, { danger: true }),
+  ];
+}
+
+function editorEntries(
+  deps: ContextDeps,
+  node: Element,
+  inTable: boolean,
+): ContextEntry[] {
   const { clipboard } = deps;
   return [
     { id: "cut", label: t.context.cut, run: () => clipboard.cut() },
@@ -470,6 +501,7 @@ function editorEntries(deps: ContextDeps): ContextEntry[] {
       separated: true,
       run: () => clipboard.selectAll(),
     },
+    ...(inTable ? tableEntries(node) : []),
   ];
 }
 

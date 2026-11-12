@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
 
   import { t } from "../../i18n";
   import Menu, { type MenuItem } from "../../shell/Menu.svelte";
@@ -9,8 +9,12 @@
   import type { NotesStore } from "../../stores/notes.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { Note } from "../../types";
-  import { noteLinkIds } from "./content";
+  import { attachmentAdd, attachmentRead } from "../../api";
+  import { noteLinkIds, wordStats } from "./content";
+  import ImagePreview from "./ImagePreview.svelte";
+  import { ImageCache } from "./imageCache";
   import { formatNoteStamp } from "./format";
+  import NoteFind from "./NoteFind.svelte";
   import NoteBacklinks from "./NoteBacklinks.svelte";
   import NoteEditor from "./NoteEditor.svelte";
   import { NoteSaver } from "./noteSaver";
@@ -51,6 +55,16 @@
     onPreviewTask(taskId),
   );
 
+  /** The picture shown large, while the preview is open. */
+  let preview = $state<{ url: string } | null>(null);
+  const images = new ImageCache({
+    api: { add: attachmentAdd, read: attachmentRead },
+    show: (_id, _mime, url) => (preview = { url }),
+    failed: () =>
+      (notes.notice = { kind: "error", message: t.notesApp.imageRefused }),
+  });
+  onDestroy(() => images.dispose());
+
   // Links to other notes: titles are read from the store each time, so a rename shows at once.
   const links = {
     host: {
@@ -78,6 +92,38 @@
   const current = $derived(notes.open?.id === id ? notes.open : note);
   const inTrash = $derived(notes.openInTrash);
   const stamp = $derived(formatNoteStamp(current.updatedAt));
+  const stats = $derived(wordStats(current.contentJson));
+
+  /** The find bar (Ctrl+F) is open. */
+  let finding = $state(false);
+  let filePicker = $state<HTMLInputElement>();
+
+  function closeFind() {
+    finding = false;
+    editor?.clearFind();
+    editor?.focus();
+  }
+
+  function onPaneKeydown(event: KeyboardEvent) {
+    if (
+      !inTrash &&
+      (event.ctrlKey || event.metaKey) &&
+      !event.shiftKey &&
+      !event.altKey &&
+      event.key.toLowerCase() === "f"
+    ) {
+      event.preventDefault();
+      finding = true;
+    }
+  }
+
+  async function onImagesPicked(
+    event: Event & { currentTarget: HTMLInputElement },
+  ) {
+    const files = Array.from(event.currentTarget.files ?? []);
+    event.currentTarget.value = "";
+    await editor?.insertImages(files);
+  }
   const noteTags = $derived(
     current.tagIds
       .map((tagId) => tagsStore.byId.get(tagId))
@@ -193,7 +239,12 @@
   }
 </script>
 
-<article class="note-pane" aria-label={t.notesApp.noteLabel}>
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<article
+  class="note-pane"
+  aria-label={t.notesApp.noteLabel}
+  onkeydown={onPaneKeydown}
+>
   <header class="bar" data-tauri-drag-region>
     <div class="format" data-tauri-drag-region>
       {#if inTrash}
@@ -203,7 +254,11 @@
       {:else}
         <NoteToolbar
           floating
+          advanced
           formats={editor?.formats() ?? IDLE_TOOLBAR}
+          onInsertRule={() => editor?.insertRule()}
+          onInsertTable={() => editor?.insertTable()}
+          onInsertImage={() => filePicker?.click()}
           linkRequest={editor?.linkRequests() ?? 0}
           onToggle={(name) => editor?.toggle(name)}
           onSetLink={(href) => editor?.setLink(href) ?? false}
@@ -336,6 +391,14 @@
   <div class="body">
     <div class="sheet">
       <p class="stamp" title={t.notesApp.editedAt(stamp)}>{stamp}</p>
+      {#if finding}
+        <NoteFind
+          find={(query) => editor?.find(query) ?? { count: 0, current: -1 }}
+          step={(direction) =>
+            editor?.findStep(direction) ?? { count: 0, current: -1 }}
+          onClose={closeFind}
+        />
+      {/if}
       <input
         class="title"
         bind:this={titleInput}
@@ -402,6 +465,8 @@
         readonly={inTrash}
         label={t.notesApp.bodyLabel}
         links={inTrash ? undefined : links}
+        {images}
+        advanced
         {taskHost}
         taskTrack={taskHost.track}
         onTaskRequest={inTrash ? undefined : requestTask}
@@ -410,6 +475,11 @@
           : { tags: tagsStore.tags, onPick: addTag }}
         placeholder={t.notesApp.bodyPlaceholder}
       />
+      {#if !inTrash}
+        <p class="words" aria-live="off">
+          {t.notesApp.words(stats.words, stats.characters)}
+        </p>
+      {/if}
       <NoteBacklinks {notes} noteId={id} />
       <NoteTasksPanel
         {tasks}
@@ -420,6 +490,21 @@
     </div>
   </div>
 </article>
+
+<input
+  bind:this={filePicker}
+  type="file"
+  class="file-picker"
+  accept="image/png,image/jpeg,image/gif,image/webp"
+  multiple
+  tabindex="-1"
+  aria-label={t.notes.image}
+  onchange={onImagesPicked}
+/>
+
+{#if preview}
+  <ImagePreview url={preview.url} onClose={() => (preview = null)} />
+{/if}
 
 {#if taskPrefill !== null}
   <NoteTaskDialog
@@ -521,6 +606,19 @@
     min-height: 100%;
     margin: 0 auto;
     padding: var(--space-1) var(--space-8) var(--space-6);
+  }
+
+  .file-picker {
+    display: none;
+  }
+
+  .words {
+    margin: var(--space-4) 0 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
   }
 
   .stamp {

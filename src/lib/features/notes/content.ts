@@ -19,6 +19,33 @@ export function textToDoc(text: string): string | null {
   });
 }
 
+/** Words and characters (without line breaks) of a document, counted from its text. */
+export function wordStats(contentJson: string): {
+  words: number;
+  characters: number;
+} {
+  if (!contentJson.trim().startsWith("{")) return { words: 0, characters: 0 };
+  let root: DocNode;
+  try {
+    root = JSON.parse(contentJson) as DocNode;
+  } catch {
+    return { words: 0, characters: 0 };
+  }
+  let words = 0;
+  let characters = 0;
+  const walk = (node: DocNode & { text?: string }) => {
+    if (node.type === "text" && typeof node.text === "string") {
+      characters += node.text.length;
+      // A word ends at a block boundary too, which the text of each node already respects.
+      words +=
+        node.text.match(/[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu)?.length ?? 0;
+    }
+    node.content?.forEach(walk);
+  };
+  walk(root);
+  return { words, characters };
+}
+
 interface DocNode {
   type?: string;
   attrs?: Record<string, unknown>;

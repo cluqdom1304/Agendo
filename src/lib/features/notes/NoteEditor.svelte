@@ -5,6 +5,8 @@
   import type { Tag } from "../../types";
   import type {
     ChecklistItem,
+    FindState,
+    ImageHost,
     NoteEditorHandle,
     NoteLinkHost,
     TagQuery,
@@ -51,6 +53,10 @@
     taskHost?: TaskRefHost;
     /** Reads the reactive state the references depend on, so they are redrawn when it changes. */
     taskTrack?: () => void;
+    /** Headings, quotes, code blocks, tables, highlight and find: the body of a note. */
+    advanced?: boolean;
+    /** Turns on images (D-47): where they are stored and shown. Only for notes. */
+    images?: ImageHost;
     /** The user asked for a task made from the note (`/tarea`, Ctrl+Mayús+T). */
     onTaskRequest?: (prefill: string) => void;
   }
@@ -68,6 +74,8 @@
     tagSuggest,
     links,
     taskHost,
+    advanced = false,
+    images,
     taskTrack,
     onTaskRequest,
   }: Props = $props();
@@ -235,6 +243,8 @@
               }
             : {}),
           ...(taskHost ? { taskHost } : {}),
+          ...(images ? { images } : {}),
+          ...(advanced ? { advanced } : {}),
           ...(onTaskRequest ? { onTaskRequest } : {}),
           ...(tagSuggest
             ? {
@@ -277,6 +287,32 @@
   /** Puts a reference to the task after the cursor. */
   export function insertTaskRef(taskId: string): void {
     handle?.insertTaskRef(taskId);
+  }
+
+  export function insertTable(): void {
+    handle?.insertTable();
+  }
+
+  export function insertRule(): void {
+    handle?.insertRule();
+  }
+
+  /** Marks `query` in the note and moves to the first match. */
+  export function find(query: string): FindState {
+    return handle?.find(query) ?? { count: 0, current: -1 };
+  }
+
+  export function findStep(direction: 1 | -1): FindState {
+    return handle?.findStep(direction) ?? { count: 0, current: -1 };
+  }
+
+  export function clearFind(): void {
+    handle?.clearFind();
+  }
+
+  /** Stores the image files and puts them in the note. */
+  export function insertImages(files: File[]): Promise<void> {
+    return handle?.insertImages(files) ?? Promise.resolve();
   }
 
   /** Text selected in the note, to start a task from it. */
@@ -566,6 +602,67 @@
     cursor: default;
   }
 
+  .surface :global(.note-image) {
+    position: relative;
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin: var(--space-3) 0;
+  }
+
+  .surface :global(.note-image img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-control);
+    cursor: zoom-in;
+  }
+
+  .surface :global(.note-image img.is-loading) {
+    min-width: 120px;
+    min-height: 80px;
+    background: var(--bg-control-hover);
+  }
+
+  .surface :global(.note-image.ProseMirror-selectednode img) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .surface :global(.note-image .image-gone) {
+    display: block;
+    padding: var(--space-4);
+    border: 1px dashed var(--separator);
+    border-radius: var(--radius-control);
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  /* The corner to drag: only on hover or while the image is chosen. */
+  .surface :global(.note-image .image-grip) {
+    position: absolute;
+    right: -5px;
+    bottom: -5px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--bg-popover);
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: nwse-resize;
+    opacity: 0;
+    transition: opacity var(--motion-fast) linear;
+  }
+
+  .surface :global(.note-image:hover .image-grip),
+  .surface :global(.note-image.ProseMirror-selectednode .image-grip),
+  .surface :global(.note-image .image-grip:focus-visible) {
+    opacity: 1;
+  }
+
+  .surface :global(.note-image.is-gone .image-grip) {
+    display: none;
+  }
+
   .surface :global(.note-link.is-loading) {
     color: var(--text-secondary);
   }
@@ -592,6 +689,164 @@
     line-height: 1.45;
     overflow-wrap: anywhere;
     transition: color var(--motion-fast) var(--ease-out);
+  }
+
+  /* The blocks of a note: titles, quotes, code, rules, highlight and tables (F12-03). */
+  .surface :global(.tiptap h1),
+  .surface :global(.tiptap h2),
+  .surface :global(.tiptap h3) {
+    margin: 1.1em 0 0.35em;
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+
+  .surface :global(.tiptap h1) {
+    font-size: 1.7em;
+    font-weight: 700;
+  }
+
+  .surface :global(.tiptap h2) {
+    font-size: 1.35em;
+    font-weight: 650;
+  }
+
+  .surface :global(.tiptap h3) {
+    font-size: 1.12em;
+    font-weight: 600;
+  }
+
+  .surface :global(.tiptap blockquote) {
+    margin: var(--space-3) 0;
+    padding: 2px 0 2px var(--space-4);
+    border-left: 3px solid var(--separator);
+    color: var(--text-secondary);
+  }
+
+  .surface :global(.tiptap hr) {
+    margin: var(--space-4) 0;
+    border: 0;
+    border-top: 1px solid var(--separator);
+  }
+
+  .surface :global(.tiptap hr.ProseMirror-selectednode) {
+    border-top-color: var(--accent);
+  }
+
+  .surface :global(.tiptap mark) {
+    padding: 0 2px;
+    border-radius: 3px;
+    background: color-mix(in srgb, #ffd60a 45%, transparent);
+    color: inherit;
+  }
+
+  .surface :global(.tiptap pre) {
+    margin: var(--space-3) 0;
+    padding: var(--space-3) var(--space-4);
+    overflow-x: auto;
+    border-radius: var(--radius-control);
+    background: var(--bg-control);
+    color: var(--text-primary);
+    font-family: var(
+      --font-mono,
+      ui-monospace,
+      "Cascadia Code",
+      Consolas,
+      monospace
+    );
+    font-size: 0.88em;
+    line-height: 1.5;
+    tab-size: 2;
+  }
+
+  .surface :global(.tiptap pre code) {
+    padding: 0;
+    background: transparent;
+    font: inherit;
+    white-space: pre;
+  }
+
+  .surface :global(.tok-comment) {
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  .surface :global(.tok-string) {
+    color: #1f8f4a;
+  }
+
+  .surface :global(.tok-number) {
+    color: #c26a00;
+  }
+
+  .surface :global(.tok-keyword) {
+    color: #a540c9;
+    font-weight: 600;
+  }
+
+  .surface :global(.tok-type) {
+    color: #0a6ebd;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .surface :global(.tok-string) {
+      color: #6bd68a;
+    }
+
+    .surface :global(.tok-number) {
+      color: #ffb15c;
+    }
+
+    .surface :global(.tok-keyword) {
+      color: #d49bff;
+    }
+
+    .surface :global(.tok-type) {
+      color: #6cb6ff;
+    }
+  }
+
+  .surface :global(.tiptap table) {
+    width: 100%;
+    margin: var(--space-3) 0;
+    border-collapse: collapse;
+    table-layout: fixed;
+    overflow: hidden;
+  }
+
+  .surface :global(.tiptap th),
+  .surface :global(.tiptap td) {
+    position: relative;
+    min-width: 40px;
+    padding: 5px 8px;
+    border: 1px solid var(--separator);
+    vertical-align: top;
+    text-align: left;
+  }
+
+  .surface :global(.tiptap th) {
+    background: var(--bg-control);
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .surface :global(.tiptap .selectedCell::after) {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    pointer-events: none;
+  }
+
+  .surface :global(.find-match) {
+    border-radius: 2px;
+    background: color-mix(in srgb, #ffd60a 40%, transparent);
+  }
+
+  .surface :global(.find-current) {
+    background: #ffd60a;
+    color: #1d1d1f;
   }
 
   .as-page .surface :global(.tiptap) {

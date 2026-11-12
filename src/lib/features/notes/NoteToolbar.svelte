@@ -2,7 +2,8 @@
   import { t } from "../../i18n";
   import type { ToggleName, ToolbarState } from "./editor";
 
-  type Icon = ToggleName | "link" | "undo" | "redo";
+  type Icon =
+    ToggleName | "link" | "undo" | "redo" | "rule" | "table" | "image";
 
   interface Props {
     formats: ToolbarState;
@@ -11,7 +12,13 @@
     /** The link field floats under the bar instead of pushing the text down: for a bar that
      * lives in a header. The holder of the bar must be positioned. */
     floating?: boolean;
+    /** Adds the buttons for headings, quotes, code, highlight, tables and images (notes). */
+    advanced?: boolean;
     onToggle: (name: ToggleName) => void;
+    onInsertRule?: () => void;
+    onInsertTable?: () => void;
+    /** Opens the file picker for an image. */
+    onInsertImage?: () => void;
     /** Returns false when the address is refused. `null` removes the link. */
     onSetLink: (href: string | null) => boolean;
     onUndo: () => void;
@@ -22,7 +29,11 @@
     formats,
     linkRequest,
     floating = false,
+    advanced = false,
     onToggle,
+    onInsertRule,
+    onInsertTable,
+    onInsertImage,
     onSetLink,
     onUndo,
     onRedo,
@@ -99,6 +110,10 @@
     <span class="glyph bold" aria-hidden="true">B</span>
   {:else if kind === "italic"}
     <span class="glyph italic" aria-hidden="true">I</span>
+  {:else if kind === "heading"}
+    <span class="glyph" aria-hidden="true">
+      H{#if formats.heading}<sub>{formats.heading}</sub>{/if}
+    </span>
   {:else}
     <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
       {#if kind === "code"}
@@ -119,6 +134,23 @@
         <path
           d="M2.5 4.2l1.2 1.2 2-2.2M2.5 10.2l1.2 1.2 2-2.2M8 4.5h5.5M8 10.5h5.5"
         />
+      {:else if kind === "blockquote"}
+        <path d="M3 4v8M6.5 5h7M6.5 8h7M6.5 11h5" />
+      {:else if kind === "codeBlock"}
+        <path
+          d="M6 3.5c-1.5 0-1.5 1.5-1.5 3S4 8 3 8c1 0 1.5.5 1.5 1.5s0 3 1.5 3M10 3.5c1.5 0 1.5 1.5 1.5 3S12 8 13 8c-1 0-1.5.5-1.5 1.5s0 3-1.5 3"
+        />
+      {:else if kind === "highlight"}
+        <path d="M3 13h10M5 10.5l5.5-5.5 2 2L7 12.5H5z" />
+      {:else if kind === "rule"}
+        <path d="M2 8h12M5 4.5h6M5 11.5h6" />
+      {:else if kind === "table"}
+        <rect x="2" y="3" width="12" height="10" rx="1.5" />
+        <path d="M2 7h12M2 10h12M6.5 3v10" />
+      {:else if kind === "image"}
+        <rect x="2" y="3" width="12" height="10" rx="1.5" />
+        <path d="M2.5 11.5l3-3 2.5 2.5 2-2 3.5 3.5" />
+        <circle cx="10.5" cy="6.5" r="1" />
       {:else if kind === "undo"}
         <path d="M5.5 3l-3 3 3 3M2.5 6H9a3.5 3.5 0 0 1 0 7H6.5" />
       {:else if kind === "redo"}
@@ -138,6 +170,19 @@
     aria-pressed={active}
     onmousedown={keepFocus}
     onclick={() => onToggle(name)}
+  >
+    {@render icon(name)}
+  </button>
+{/snippet}
+
+{#snippet action(name: Icon, label: string, run: (() => void) | undefined)}
+  <button
+    type="button"
+    class="tool"
+    aria-label={label}
+    title={label}
+    onmousedown={keepFocus}
+    onclick={() => run?.()}
   >
     {@render icon(name)}
   </button>
@@ -163,6 +208,16 @@
   {@render toggle("bulletList", t.notes.bulletList, formats.bulletList)}
   {@render toggle("orderedList", t.notes.orderedList, formats.orderedList)}
   {@render toggle("taskList", t.notes.taskList, formats.taskList)}
+  {#if advanced}
+    <span class="separator" aria-hidden="true"></span>
+    {@render toggle("heading", t.notes.heading, formats.heading > 0)}
+    {@render toggle("blockquote", t.notes.blockquote, formats.blockquote)}
+    {@render toggle("codeBlock", t.notes.codeBlock, formats.codeBlock)}
+    {@render toggle("highlight", t.notes.highlight, formats.highlight)}
+    {@render action("rule", t.notes.rule, onInsertRule)}
+    {@render action("table", t.notes.table, onInsertTable)}
+    {@render action("image", t.notes.image, onInsertImage)}
+  {/if}
   <span class="separator history" aria-hidden="true"></span>
   <button
     type="button"
@@ -224,6 +279,9 @@
     padding: 2px;
     border-radius: var(--radius-control);
     background: var(--note-toolbar-bg, var(--bg-control));
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
     animation: fade-in var(--motion-fast) linear;
   }
 
@@ -272,6 +330,11 @@
     font-family: var(--font-display);
     font-size: 13px;
     line-height: 1;
+  }
+
+  .glyph sub {
+    font-size: 8px;
+    font-weight: 700;
   }
 
   .glyph.bold {

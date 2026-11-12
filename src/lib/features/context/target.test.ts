@@ -51,7 +51,7 @@ describe("resolveTarget", () => {
     );
     expect(at(host, "#a")).toMatchObject({ kind: "note-link", noteId: "n9" });
     expect(at(host, "#b")).toMatchObject({ kind: "task-ref", taskId: "t9" });
-    expect(at(host, "#c")).toEqual({ kind: "editor" });
+    expect(at(host, "#c")).toMatchObject({ kind: "editor", inTable: false });
   });
 
   it("falls back to the section background, with the day under the pointer", () => {

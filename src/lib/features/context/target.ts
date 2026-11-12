@@ -6,7 +6,7 @@ export type MenuTarget =
   | { kind: "field" }
   | { kind: "note-link"; noteId: string; node: Element }
   | { kind: "task-ref"; taskId: string; node: Element }
-  | { kind: "editor" }
+  | { kind: "editor"; node: Element; inTable: boolean }
   | { kind: "task"; taskId: string }
   | { kind: "note"; noteId: string }
   | { kind: "folder"; folderId: string }
@@ -51,8 +51,9 @@ export function resolveTarget(el: Element | null): MenuTarget {
   const referred = ref?.getAttribute("data-task-id");
   if (ref && referred) return { kind: "task-ref", taskId: referred, node: ref };
 
-  if (el.closest(".tiptap, [contenteditable='true']")) {
-    return { kind: "editor" };
+  const editor = el.closest(".tiptap, [contenteditable='true']");
+  if (editor) {
+    return { kind: "editor", node: editor, inTable: !!el.closest("td, th") };
   }
 
   const task = valueOf(el, "[data-task-id]", "data-task-id");

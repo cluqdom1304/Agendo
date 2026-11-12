@@ -66,6 +66,61 @@ describe("NotePane", () => {
     ).toBe("Apuntes");
   });
 
+  it("offers the advanced blocks, a word count and find with Ctrl+F", async () => {
+    const { notes, tasks } = await mount((api) => {
+      api.notes = [
+        note("n1", {
+          title: "Apuntes",
+          contentJson: JSON.stringify({
+            type: "doc",
+            content: [
+              {
+                type: "paragraph",
+                content: [{ type: "text", text: "uno dos uno" }],
+              },
+            ],
+          }),
+        }),
+      ];
+    });
+    await notes.openNote("n1");
+    pane(notes, tasks);
+    const box = await screen.findByRole("textbox", {
+      name: "Texto de la nota",
+    });
+    for (const name of [
+      "Insertar tabla",
+      "Insertar imagen",
+      "Bloque de código",
+      "Cita",
+      "Resaltar texto",
+      "Línea separadora",
+    ]) {
+      expect(screen.getByRole("button", { name })).toBeTruthy();
+    }
+    expect(screen.getByText("3 palabras · 11 caracteres")).toBeTruthy();
+
+    expect(screen.queryByRole("search")).toBeNull();
+    await fireEvent.keyDown(box, { key: "f", ctrlKey: true });
+    const field = await screen.findByRole("textbox", {
+      name: "Texto que buscar en la nota",
+    });
+    expect(document.activeElement).toBe(field);
+    await fireEvent.input(field, { target: { value: "uno" } });
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toBe("1 de 2"),
+    );
+    await fireEvent.keyDown(field, { key: "Enter" });
+    expect(screen.getByRole("status").textContent).toBe("2 de 2");
+    await fireEvent.keyDown(field, { key: "Enter", shiftKey: true });
+    expect(screen.getByRole("status").textContent).toBe("1 de 2");
+    await fireEvent.keyDown(field, { key: "Escape" });
+    expect(screen.queryByRole("search")).toBeNull();
+    await waitFor(() =>
+      expect(box.querySelectorAll(".find-match")).toHaveLength(0),
+    );
+  });
+
   it("moves the note from the folder menu, which lists subfolders too", async () => {
     const { notes, tasks } = await mount((api) => {
       api.folders = [folder("Grado"), folder("Mates", "Grado")];
