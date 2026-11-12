@@ -45,9 +45,11 @@
   const week = $derived(weekDates(view.anchor, view.firstDay));
 
   const tagOf = (task: Task) => tagsStore.tagOf(task);
+  const moreTags = (task: Task) =>
+    Math.max(0, tagsStore.tagsOf(task).length - 1);
   const dragTask = (event: PointerEvent, task: Task) =>
     tagDrag.begin(event, { id: task.id, title: task.title }, (key) =>
-      store.setTag(task.id, key === NO_TAG ? null : key),
+      key === NO_TAG ? store.setTags(task.id, []) : store.addTag(task.id, key),
     );
   const create = (
     title: string,
@@ -92,6 +94,7 @@
         onShowDay={(date) => view.showDay(date)}
         {onOpenTask}
         {tagOf}
+        {moreTags}
         {dragTask}
       />
     {:else if view.mode === "week"}
@@ -104,6 +107,7 @@
         onCreate={create}
         {onOpenTask}
         {tagOf}
+        {moreTags}
         {dragTask}
       />
     {:else}
@@ -116,6 +120,7 @@
         onCreate={create}
         {onOpenTask}
         {tagOf}
+        {moreTags}
         {dragTask}
       />
     {/if}

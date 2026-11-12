@@ -87,6 +87,7 @@ pub fn run() {
             commands::tags::tag_list,
             commands::tags::tag_upsert,
             commands::tags::tag_delete,
+            commands::tags::tag_merge,
             commands::tags::task_tags_set,
             commands::folders::folder_list,
             commands::folders::folder_upsert,

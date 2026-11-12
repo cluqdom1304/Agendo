@@ -73,6 +73,8 @@ export interface Tag {
 
 export interface TagWithCount extends Tag {
   pendingCount: number;
+  /** Live notes with the tag: tags are shared between tasks and notes (D-44). */
+  noteCount: number;
 }
 
 export interface DayGroup {

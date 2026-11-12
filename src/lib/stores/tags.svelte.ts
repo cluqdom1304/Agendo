@@ -16,7 +16,7 @@ export const NO_TAG = "none";
 
 /**
  * The tags (always in the order the backend keeps them) and which of them the views show.
- * A task has at most one tag in the UI (D-34): the first of its `tagIds`.
+ * A task has several tags (D-44); the first of its `tagIds` gives its colour in the views.
  */
 export class TagsStore {
   tags = $state.raw<Tag[]>([]);
@@ -50,9 +50,19 @@ export class TagsStore {
     return id === undefined ? undefined : this.byId.get(id);
   }
 
+  /** The tags of the task that still exist, in the order the task holds them. */
+  tagsOf(task: Pick<Task, "tagIds">): Tag[] {
+    return task.tagIds.flatMap((id) => {
+      const tag = this.byId.get(id);
+      return tag ? [tag] : [];
+    });
+  }
+
+  /** A task shows while any of its tags is checked; an untagged one follows `NO_TAG`. */
   isVisible(task: Pick<Task, "tagIds">): boolean {
-    const tag = this.tagOf(task);
-    return !this.hidden.has(tag ? tag.id : NO_TAG);
+    const own = this.tagsOf(task);
+    if (own.length === 0) return !this.hidden.has(NO_TAG);
+    return own.some((tag) => !this.hidden.has(tag.id));
   }
 
   isChecked(key: string): boolean {

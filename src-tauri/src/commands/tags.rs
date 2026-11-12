@@ -88,6 +88,22 @@ pub fn delete(state: &AppState, id: &str) -> AppResult<()> {
     })
 }
 
+/// Folds `source` into `target`: everything tagged with the first gets the second.
+pub fn merge(state: &AppState, source: &str, target: &str) -> AppResult<()> {
+    if source == target {
+        return Err(AppError::Validation(
+            "no se puede fusionar una etiqueta consigo misma".into(),
+        ));
+    }
+    state.db.write(|tx| {
+        if tags::merge(tx, source, target)? {
+            Ok(())
+        } else {
+            Err(AppError::NotFound("etiqueta no encontrada".into()))
+        }
+    })
+}
+
 /// Replaces the tags of a task with exactly `tag_ids`.
 pub fn set_task_tags(state: &AppState, task_id: &str, tag_ids: &[String]) -> AppResult<Task> {
     let now = state.clock.now_string();
@@ -125,6 +141,18 @@ pub async fn tag_upsert(
 #[tauri::command]
 pub async fn tag_delete(state: State<'_, Arc<AppState>>, id: String) -> Result<(), String> {
     run_blocking(state.inner().clone(), move |state| delete(state, &id)).await
+}
+
+#[tauri::command]
+pub async fn tag_merge(
+    state: State<'_, Arc<AppState>>,
+    source_id: String,
+    target_id: String,
+) -> Result<(), String> {
+    run_blocking(state.inner().clone(), move |state| {
+        merge(state, &source_id, &target_id)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -281,6 +309,28 @@ mod tests {
             code_of(own_parent),
             "VALIDATION: una etiqueta no puede ser su propia etiqueta padre"
         );
+    }
+
+    #[test]
+    fn merge_rejects_the_same_tag_and_unknown_tags() {
+        let (state, _) = test_state();
+        let one = make(&state, "Uno", None);
+        let two = make(&state, "Dos", None);
+        assert_eq!(
+            code_of(merge(&state, &one.id, &one.id)).split(':').next(),
+            Some("VALIDATION")
+        );
+        assert_eq!(
+            code_of(merge(&state, &one.id, "zzz")).split(':').next(),
+            Some("NOT_FOUND")
+        );
+        merge(&state, &one.id, &two.id).expect("merge");
+        let ids: Vec<_> = list(&state)
+            .expect("list")
+            .into_iter()
+            .map(|t| t.tag.id)
+            .collect();
+        assert_eq!(ids, vec![two.id]);
     }
 
     #[test]

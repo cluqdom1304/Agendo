@@ -47,7 +47,7 @@
   // svelte-ignore state_referenced_locally
   let duration = $state<number | null>(task?.durationMinutes ?? null);
   // svelte-ignore state_referenced_locally
-  let tagId = $state<string | null>(task?.tagIds[0] ?? null);
+  let tagIds = $state<string[]>(task?.tagIds ?? []);
   let description = $state("");
   // svelte-ignore state_referenced_locally
   let inputs = $state.raw<ReminderInput[]>(
@@ -137,7 +137,7 @@
         dueDate: dueDate || null,
         dueTime: dueDate && dueTime ? dueTime : null,
         durationMinutes,
-        tagId,
+        tagIds,
         ...(remindersTouched && !isDone ? { reminders: usable } : {}),
       });
     } else {
@@ -147,7 +147,7 @@
         ...(dueDate ? { dueDate } : {}),
         ...(dueDate && dueTime ? { dueTime } : {}),
         ...(durationMinutes ? { durationMinutes } : {}),
-        ...(tagId ? { tagId } : {}),
+        ...(tagIds.length > 0 ? { tagIds } : {}),
         ...(contentJson ? { contentJson } : {}),
         reminders: usable,
       });
@@ -211,8 +211,8 @@
       <span class="label">{t.tags.taskLabel}</span>
       <TagPicker
         tags={tagsStore.tags}
-        value={tagId}
-        onChange={(id) => (tagId = id)}
+        values={tagIds}
+        onChange={(ids) => (tagIds = ids)}
       />
     </div>
 

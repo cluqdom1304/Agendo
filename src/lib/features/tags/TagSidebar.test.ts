@@ -16,7 +16,11 @@ function tag(id: string, name: string, position: number): Tag {
 class FakeTagsApi implements TagsApi {
   tags = [tag("mat", "Mates", 0), tag("fis", "Física", 1)];
   async tagList() {
-    return this.tags.map((item) => ({ ...item, pendingCount: 0 }));
+    return this.tags.map((item) => ({
+      ...item,
+      pendingCount: 0,
+      noteCount: 0,
+    }));
   }
   async tagUpsert(input: TagUpsertInput) {
     const saved = tag(input.id ?? "new", input.name, this.tags.length);
@@ -149,56 +153,59 @@ describe("TagSidebar", () => {
 });
 
 describe("TagPicker", () => {
-  it("selects one tag at a time, or none", async () => {
-    const changes: (string | null)[] = [];
+  it("toggles tags independently, and clears them with none", async () => {
+    const changes: string[][] = [];
     render(TagPicker, {
       tags: [tag("mat", "Mates", 0), tag("fis", "Física", 1)],
-      value: "mat",
-      onChange: (id: string | null) => changes.push(id),
+      values: ["mat"],
+      onChange: (ids: string[]) => changes.push(ids),
     });
-    const radios = screen.getAllByRole("radio");
-    expect(radios.map((radio) => radio.getAttribute("aria-checked"))).toEqual([
-      "false",
-      "true",
-      "false",
-    ]);
-    await fireEvent.click(screen.getByRole("radio", { name: "Física" }));
-    await fireEvent.click(screen.getByRole("radio", { name: "Sin etiqueta" }));
-    expect(changes).toEqual(["fis", null]);
+    const pressed = screen
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-pressed"));
+    expect(pressed).toEqual(["false", "true", "false"]);
+    await fireEvent.click(screen.getByRole("button", { name: "Física" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Mates" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Sin etiqueta" }));
+    expect(changes).toEqual([["mat", "fis"], [], []]);
   });
 
   it("points to the sidebar when there are no tags", () => {
-    render(TagPicker, { tags: [], value: null, onChange: () => {} });
+    render(TagPicker, { tags: [], values: [], onChange: () => {} });
     expect(screen.getByText(/barra lateral/)).toBeTruthy();
   });
 });
 
 describe("TagMenu", () => {
-  it("offers every tag and none, marks the current one and reports the choice", async () => {
+  it("ticks several tags without closing, and none clears and closes", async () => {
     const { tagsStore } = await import("../../stores/tags.svelte");
     const TagMenu = (await import("./TagMenu.svelte")).default;
-    const store = tagsStore;
-    store.tags = [tag("mat", "Mates", 0), tag("fis", "Física", 1)];
-    const chosen: (string | null)[] = [];
+    tagsStore.tags = [tag("mat", "Mates", 0), tag("fis", "Física", 1)];
+    const chosen: string[][] = [];
     let closed = 0;
     render(TagMenu, {
-      value: "fis",
-      onSelect: (id: string | null) => chosen.push(id),
+      values: ["fis"],
+      onChange: (ids: string[]) => chosen.push(ids),
       onClose: () => closed++,
     });
-    const items = screen.getAllByRole("menuitemradio");
-    expect(items.map((item) => item.getAttribute("aria-checked"))).toEqual([
-      "false",
+    const boxes = screen.getAllByRole("menuitemcheckbox");
+    expect(boxes.map((item) => item.getAttribute("aria-checked"))).toEqual([
       "false",
       "true",
     ]);
-    await fireEvent.click(screen.getByRole("menuitemradio", { name: /Mates/ }));
-    expect(chosen).toEqual(["mat"]);
-    expect(closed).toBe(1);
     await fireEvent.click(
-      screen.getByRole("menuitemradio", { name: /Sin etiqueta/ }),
+      screen.getByRole("menuitemcheckbox", { name: /Mates/ }),
     );
-    expect(chosen).toEqual(["mat", null]);
-    store.tags = [];
+    await fireEvent.click(
+      screen.getByRole("menuitemcheckbox", { name: /Física/ }),
+    );
+    expect(chosen).toEqual([["fis", "mat"], []]);
+    expect(closed).toBe(0);
+    await fireEvent.click(
+      screen.getByRole("menuitem", { name: /Sin etiqueta/ }),
+    );
+    expect(chosen.at(-1)).toEqual([]);
+    expect(closed).toBe(1);
+    tagsStore.tags = [];
   });
 });

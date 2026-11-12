@@ -25,8 +25,11 @@
     const result = new Map<string, number>();
     for (const task of tasks.tasks) {
       if (task.isCompleted) continue;
-      const key = tags.tagOf(task)?.id ?? NO_TAG;
-      result.set(key, (result.get(key) ?? 0) + 1);
+      // A task with several tags counts under each of them.
+      const own = tags.tagsOf(task);
+      for (const key of own.length > 0 ? own.map((tag) => tag.id) : [NO_TAG]) {
+        result.set(key, (result.get(key) ?? 0) + 1);
+      }
     }
     return result;
   });

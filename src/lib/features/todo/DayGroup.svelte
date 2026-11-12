@@ -37,13 +37,13 @@
     dueTime={task.dueTime}
     durationMinutes={task.durationMinutes}
     dueDate={task.dueDate}
-    tagId={tagsStore.tagOf(task)?.id}
-    tagName={tagsStore.tagOf(task)?.name}
-    tagColor={tagsStore.tagOf(task)?.colorHex}
-    onTagChange={(tagId) => store.setTag(task.id, tagId)}
+    tags={tagsStore.tagsOf(task)}
+    onTagsChange={(tagIds) => store.setTags(task.id, tagIds)}
     onTagDragStart={(event) =>
       tagDrag.begin(event, { id: task.id, title: task.title }, (key) =>
-        store.setTag(task.id, key === NO_TAG ? null : key),
+        key === NO_TAG
+          ? store.setTags(task.id, [])
+          : store.addTag(task.id, key),
       )}
     onDateChange={(date) => store.setDueDate(task.id, date)}
     onDelete={() => store.remove(task.id)}

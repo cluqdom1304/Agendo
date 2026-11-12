@@ -5,33 +5,39 @@
 
   interface Props {
     tags: Tag[];
-    value: string | null;
-    onChange: (tagId: string | null) => void;
+    /** The chosen tags; any number, including none. */
+    values: string[];
+    onChange: (tagIds: string[]) => void;
   }
 
-  let { tags, value, onChange }: Props = $props();
+  let { tags, values, onChange }: Props = $props();
+
+  function toggle(id: string) {
+    onChange(
+      values.includes(id) ? values.filter((v) => v !== id) : [...values, id],
+    );
+  }
 </script>
 
-<div class="picker" role="radiogroup" aria-label={t.tags.taskLabel}>
+<div class="picker" role="group" aria-label={t.tags.taskLabel}>
   <button
     type="button"
-    role="radio"
     class="option"
-    class:selected={value === null}
-    aria-checked={value === null}
-    onclick={() => onChange(null)}
+    class:selected={values.length === 0}
+    aria-pressed={values.length === 0}
+    onclick={() => onChange([])}
   >
     {t.tags.noneOption}
   </button>
   {#each tags as tag (tag.id)}
     <button
       type="button"
-      role="radio"
       class="option"
-      class:selected={value === tag.id}
-      aria-checked={value === tag.id}
+      class:selected={values.includes(tag.id)}
+      aria-pressed={values.includes(tag.id)}
+      aria-label={tag.name}
       style:--tag={tag.colorHex}
-      onclick={() => onChange(tag.id)}
+      onclick={() => toggle(tag.id)}
     >
       <TagChip name={tag.name} color={tag.colorHex} />
     </button>

@@ -14,6 +14,7 @@ function makeTag(id: string, overrides: Partial<Tag> = {}): TagWithCount {
     parentId: null,
     position: 0,
     pendingCount: 0,
+    noteCount: 0,
     ...overrides,
   };
 }
@@ -194,19 +195,37 @@ describe("TasksStore with a tag filter", () => {
     expect(store.isEmpty).toBe(false);
   });
 
-  it("gives a task its tag, or takes it away", async () => {
+  it("gives a task several tags, or takes them all away", async () => {
     const { api, store } = await tasksSetup();
-    await store.setTag("b", "mat");
+    await store.setTags("b", ["mat"]);
     expect(store.find("b")?.tagIds).toEqual(["mat"]);
     expect(api.calls).toContain("taskTagsSet:b=mat");
-    await store.setTag("b", null);
+    await store.addTag("b", "fis");
+    expect(store.find("b")?.tagIds).toEqual(["mat", "fis"]);
+    await store.addTag("b", "fis");
+    expect(api.calls.filter((c) => c.startsWith("taskTagsSet"))).toHaveLength(
+      2,
+    );
+    await store.setTags("b", []);
     expect(store.find("b")?.tagIds).toEqual([]);
+  });
+
+  it("shows a task while any of its tags is checked", async () => {
+    const { store, tags } = await tasksSetup();
+    await store.setTags("b", ["mat", "fis"]);
+    const task = store.find("b");
+    if (!task) throw new Error("missing task");
+    expect(tags.tagsOf(task).map((tag) => tag.id)).toEqual(["mat", "fis"]);
+    tags.toggle("mat");
+    expect(tags.isVisible(task)).toBe(true);
+    tags.toggle("fis");
+    expect(tags.isVisible(task)).toBe(false);
   });
 
   it("puts the tag back when the backend refuses it", async () => {
     const { api, store } = await tasksSetup();
     api.failing.add("taskTagsSet");
-    await store.setTag("b", "mat");
+    await store.setTags("b", ["mat"]);
     expect(store.find("b")?.tagIds).toEqual([]);
     expect(store.notice?.kind).toBe("error");
   });
@@ -214,9 +233,9 @@ describe("TasksStore with a tag filter", () => {
   it("creates a tagged task and warns when the filter hides it", async () => {
     const { store, tags } = await tasksSetup();
     tags.toggle("fis");
-    expect(await store.createDetailed({ title: "Nueva", tagId: "fis" })).toBe(
-      true,
-    );
+    expect(
+      await store.createDetailed({ title: "Nueva", tagIds: ["fis"] }),
+    ).toBe(true);
     const created = store.tasks.find((task) => task.title === "Nueva");
     expect(created?.tagIds).toEqual(["fis"]);
     expect(store.notice?.message).toContain("filtro");
@@ -229,7 +248,7 @@ describe("TasksStore with a tag filter", () => {
       dueDate: null,
       dueTime: null,
       durationMinutes: null,
-      tagId: "fis",
+      tagIds: ["fis"],
     });
     expect(ok).toBe(true);
     expect(store.find("b")?.tagIds).toEqual(["fis"]);

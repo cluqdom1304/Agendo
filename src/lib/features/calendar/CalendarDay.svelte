@@ -16,6 +16,7 @@
     ) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
     tagOf?: (task: Task) => Tag | undefined;
+    moreTags?: (task: Task) => number;
     /** Pressed on an event: the parent starts dragging it towards a sidebar tag. */
     dragTask?: (event: PointerEvent, task: Task) => void;
   }

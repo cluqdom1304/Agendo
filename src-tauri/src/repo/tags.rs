@@ -24,13 +24,16 @@ pub fn has_children(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
         .query_row([id], |row| row.get(0))
 }
 
-/// All tags with their pending-task counts, in display order.
+/// All tags with their pending-task and live-note counts, in display order.
 pub fn list(conn: &Connection) -> rusqlite::Result<Vec<TagWithCount>> {
     let mut statement = conn.prepare_cached(
         "SELECT g.id, g.name, g.color_hex, g.parent_id, g.position,
                 (SELECT COUNT(*)
                    FROM task_tags tt JOIN tasks t ON t.id = tt.task_id
-                  WHERE tt.tag_id = g.id AND t.deleted_at IS NULL AND t.is_completed = 0)
+                  WHERE tt.tag_id = g.id AND t.deleted_at IS NULL AND t.is_completed = 0),
+                (SELECT COUNT(*)
+                   FROM note_tags nt JOIN notes n ON n.id = nt.note_id
+                  WHERE nt.tag_id = g.id AND n.deleted_at IS NULL)
          FROM tags g
          ORDER BY g.position, g.id",
     )?;
@@ -39,6 +42,7 @@ pub fn list(conn: &Connection) -> rusqlite::Result<Vec<TagWithCount>> {
             Ok(TagWithCount {
                 tag: map_tag(row)?,
                 pending_count: row.get(5)?,
+                note_count: row.get(6)?,
             })
         })?
         .collect()
@@ -72,6 +76,26 @@ pub fn delete(tx: &Transaction<'_>, id: &str) -> rusqlite::Result<bool> {
         .prepare_cached("DELETE FROM tags WHERE id = ?1")?
         .execute([id])?;
     Ok(removed > 0)
+}
+
+/// Moves every task and note of `source` to `target` and deletes `source` (its child tags
+/// become top-level). Items that already had both tags keep one link. Returns `false` if either
+/// tag is missing.
+pub fn merge(tx: &Transaction<'_>, source: &str, target: &str) -> rusqlite::Result<bool> {
+    if get(tx, source)?.is_none() || get(tx, target)?.is_none() {
+        return Ok(false);
+    }
+    tx.prepare_cached(
+        "INSERT OR IGNORE INTO task_tags (task_id, tag_id)
+         SELECT task_id, ?2 FROM task_tags WHERE tag_id = ?1",
+    )?
+    .execute(params![source, target])?;
+    tx.prepare_cached(
+        "INSERT OR IGNORE INTO note_tags (note_id, tag_id)
+         SELECT note_id, ?2 FROM note_tags WHERE tag_id = ?1",
+    )?
+    .execute(params![source, target])?;
+    delete(tx, source)
 }
 
 /// Replaces the tag set of a live task and touches `updated_at`. Returns `false` if the task
@@ -242,6 +266,72 @@ mod tests {
         assert_eq!(tags.len(), 2);
         assert_eq!((tags[0].tag.id.as_str(), tags[0].pending_count), ("a", 1));
         assert_eq!((tags[1].tag.id.as_str(), tags[1].pending_count), ("b", 0));
+    }
+
+    #[test]
+    fn merge_moves_tasks_and_notes_without_duplicating_links() {
+        let mut conn = database();
+        save(&mut conn, &input("a", "Origen", None));
+        save(&mut conn, &input("b", "Destino", None));
+        save(&mut conn, &input("kid", "Hija", Some("a")));
+        for task in ["t1", "t2"] {
+            raw_task(&conn, task, false, false);
+        }
+        link(&conn, "t1", "a");
+        link(&conn, "t1", "b");
+        link(&conn, "t2", "a");
+        for note in ["n1", "n2"] {
+            conn.execute(
+                "INSERT INTO notes (id, created_at, updated_at) VALUES (?1, ?2, ?2)",
+                [note, NOW],
+            )
+            .expect("note");
+        }
+        conn.execute("INSERT INTO note_tags VALUES ('n1', 'a')", [])
+            .expect("link");
+        conn.execute("INSERT INTO note_tags VALUES ('n2', 'a')", [])
+            .expect("link");
+        conn.execute("INSERT INTO note_tags VALUES ('n2', 'b')", [])
+            .expect("link");
+
+        assert!(with_tx(&mut conn, |tx| merge(tx, "a", "b")).expect("merge"));
+
+        assert_eq!(tag_ids_of(&conn, "t1"), vec!["b"]);
+        assert_eq!(tag_ids_of(&conn, "t2"), vec!["b"]);
+        let listed = list(&conn).expect("list");
+        let target = listed.iter().find(|t| t.tag.id == "b").expect("target");
+        assert_eq!((target.pending_count, target.note_count), (2, 2));
+        assert!(get(&conn, "a").expect("get").is_none());
+        assert_eq!(
+            get(&conn, "kid").expect("get").expect("kid").parent_id,
+            None
+        );
+    }
+
+    #[test]
+    fn merge_reports_missing_tags_and_changes_nothing() {
+        let mut conn = database();
+        save(&mut conn, &input("a", "Uno", None));
+        assert!(!with_tx(&mut conn, |tx| merge(tx, "a", "zzz")).expect("merge"));
+        assert!(!with_tx(&mut conn, |tx| merge(tx, "zzz", "a")).expect("merge"));
+        assert!(get(&conn, "a").expect("get").is_some());
+    }
+
+    #[test]
+    fn list_counts_live_notes_per_tag() {
+        let mut conn = database();
+        save(&mut conn, &input("a", "Uno", None));
+        for (id, deleted) in [("n1", false), ("n2", true)] {
+            conn.execute(
+                "INSERT INTO notes (id, created_at, updated_at, deleted_at)
+                 VALUES (?1, ?2, ?2, CASE WHEN ?3 THEN ?2 END)",
+                params![id, NOW, deleted],
+            )
+            .expect("note");
+            conn.execute("INSERT INTO note_tags VALUES (?1, 'a')", [id])
+                .expect("link");
+        }
+        assert_eq!(list(&conn).expect("list")[0].note_count, 1);
     }
 
     #[test]

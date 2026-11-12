@@ -98,14 +98,15 @@
             {task.dueDate ? formatDisplayDate(task.dueDate) : t.detail.noDate}
           </dd>
         </div>
-        {#if tagsStore.tagOf(task)}
-          {@const tag = tagsStore.tagOf(task)}
-          {#if tag}
-            <div>
-              <dt>{t.tags.taskLabel}</dt>
-              <dd><TagChip name={tag.name} color={tag.colorHex} /></dd>
-            </div>
-          {/if}
+        {#if tagsStore.tagsOf(task).length > 0}
+          <div>
+            <dt>{t.tags.taskLabel}</dt>
+            <dd class="tag-list">
+              {#each tagsStore.tagsOf(task) as tag (tag.id)}
+                <TagChip name={tag.name} color={tag.colorHex} />
+              {/each}
+            </dd>
+          </div>
         {/if}
         {#if task.dueTime}
           <div>
@@ -232,6 +233,12 @@
   dt {
     color: var(--text-secondary);
     font-size: 12px;
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
   }
 
   dd {

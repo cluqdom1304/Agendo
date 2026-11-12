@@ -99,7 +99,7 @@ fn current() -> Value {
         "taskWithoutOptionals": task(false),
         "tag": tag(Some("tag-0")),
         "tagWithoutParent": tag(None),
-        "tagWithCount": TagWithCount { tag: tag(None), pending_count: 4 },
+        "tagWithCount": TagWithCount { tag: tag(None), pending_count: 4, note_count: 2 },
         "dayGroup": day,
         "sectionsOutput": TasksListOutput::Sections(Sections {
             todo: vec![task(false)],

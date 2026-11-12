@@ -150,6 +150,11 @@ export function tagDelete(id: string): Promise<void> {
   return invoke<void>("tag_delete", { id });
 }
 
+/** Moves everything tagged `sourceId` to `targetId` and deletes `sourceId`. */
+export function tagMerge(sourceId: string, targetId: string): Promise<void> {
+  return invoke<void>("tag_merge", { sourceId, targetId });
+}
+
 export function taskTagsSet(taskId: string, tagIds: string[]): Promise<Task> {
   return invoke<Task>("task_tags_set", { taskId, tagIds });
 }

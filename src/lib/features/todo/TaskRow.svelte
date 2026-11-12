@@ -16,10 +16,9 @@
     dueTime: string | null;
     durationMinutes?: number | null;
     dueDate?: string | null;
-    tagId?: string | null;
-    tagName?: string | null;
-    tagColor?: string | null;
-    onTagChange?: (tagId: string | null) => void;
+    /** Tags of the task, in order; the row shows the first two and counts the rest. */
+    tags?: { id: string; name: string; colorHex: string }[];
+    onTagsChange?: (tagIds: string[]) => void;
     /** Pressed on the grip: the parent starts dragging the task towards a sidebar tag. */
     onTagDragStart?: (event: PointerEvent) => void;
     onDateChange?: (date: string | null) => void;
@@ -49,10 +48,8 @@
     dueTime,
     durationMinutes = null,
     dueDate = null,
-    tagId = null,
-    tagName = null,
-    tagColor = null,
-    onTagChange,
+    tags = [],
+    onTagsChange,
     onTagDragStart,
     onDateChange,
     onDelete,
@@ -112,7 +109,7 @@
     disabled={draft}
     onToggle={() => onToggle?.()}
   />
-  {#if !draft && tagName}
+  {#if !draft && tags.length > 0}
     {@render tagSlot()}
   {/if}
   <InlineTitle
@@ -183,7 +180,7 @@
       </svg>
     </button>
   {/if}
-  {#if !draft && !tagName}
+  {#if !draft && tags.length === 0}
     {@render tagSlot()}
   {/if}
   {#if dueTime}
@@ -202,7 +199,7 @@
     <button
       type="button"
       class="tag-button"
-      class:empty={!tagName}
+      class:empty={tags.length === 0}
       data-tag-toggle
       aria-haspopup="menu"
       aria-expanded={tagMenuOpen}
@@ -211,8 +208,23 @@
       tabindex="-1"
       onclick={() => (tagMenuOpen = !tagMenuOpen)}
     >
-      {#if tagName && tagColor}
-        <TagChip name={tagName} color={tagColor} />
+      {#if tags.length > 0}
+        <span class="chips">
+          {#each tags.slice(0, 2) as tag (tag.id)}
+            <TagChip name={tag.name} color={tag.colorHex} />
+          {/each}
+          {#if tags.length > 2}
+            <span
+              class="more"
+              title={tags
+                .slice(2)
+                .map((tag) => tag.name)
+                .join(", ")}
+            >
+              +{tags.length - 2}
+            </span>
+          {/if}
+        </span>
       {:else}
         <svg viewBox="0 0 16 16" aria-hidden="true" class="notes-icon">
           <path d="M2.5 8.5V3h5.5l5.5 5.5-5.5 5.5z" />
@@ -222,8 +234,8 @@
     </button>
     {#if tagMenuOpen}
       <TagMenu
-        value={tagId}
-        onSelect={(id) => onTagChange?.(id)}
+        values={tags.map((tag) => tag.id)}
+        onChange={(ids) => onTagsChange?.(ids)}
         onClose={() => (tagMenuOpen = false)}
       />
     {/if}
@@ -293,6 +305,18 @@
   .row:hover .grip,
   .row:focus-within .grip {
     opacity: 0.7;
+  }
+
+  .chips {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .more {
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
   }
 
   .tag-slot {

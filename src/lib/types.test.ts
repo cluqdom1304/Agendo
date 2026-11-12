@@ -81,6 +81,7 @@ const tagKeys: Record<keyof Tag, true> = {
 const tagWithCountKeys: Record<keyof TagWithCount, true> = {
   ...tagKeys,
   pendingCount: true,
+  noteCount: true,
 };
 const dayGroupKeys: Record<keyof DayGroup, true> = { date: true, tasks: true };
 const sectionsKeys: Record<keyof TasksSections, true> = {
@@ -200,6 +201,7 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
     expect(keys(fixture.tag)).toEqual(keys(tagKeys));
     expect(keys(fixture.tagWithCount)).toEqual(keys(tagWithCountKeys));
     expect(fixture.tagWithCount.pendingCount).toBe(4);
+    expect(fixture.tagWithCount.noteCount).toBe(2);
   });
 
   it("task list outputs", () => {

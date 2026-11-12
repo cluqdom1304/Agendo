@@ -76,6 +76,8 @@ pub struct TagWithCount {
     #[serde(flatten)]
     pub tag: Tag,
     pub pending_count: i64,
+    /// Live notes carrying the tag (tags are shared between tasks and notes, D-44).
+    pub note_count: i64,
 }
 
 /// Data to create a task. The caller supplies the id and the UTC instant `now`, so the

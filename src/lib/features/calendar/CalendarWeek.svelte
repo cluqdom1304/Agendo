@@ -37,6 +37,8 @@
     onOpenTask: (task: Task) => void;
     /** The task's tag, which gives its colour and the small name on the event. */
     tagOf?: (task: Task) => Tag | undefined;
+    /** How many more tags the task has besides the one shown. */
+    moreTags?: (task: Task) => number;
     /** Pressed on an event: the parent starts dragging it towards a sidebar tag. */
     dragTask?: (event: PointerEvent, task: Task) => void;
   }
@@ -48,6 +50,7 @@
     tasksByDate,
     label,
     tagOf,
+    moreTags,
     dragTask,
     onCreate,
     onOpenTask,
@@ -255,7 +258,10 @@
             onclick={() => onOpenTask(task)}
           >
             {task.title || t.calendar.untitled}
-            {#if tag}<span class="tag-name">{tag.name}</span>{/if}
+            {#if tag}<span class="tag-name"
+                >{tag.name}{#if moreTags?.(task)}
+                  +{moreTags(task)}{/if}</span
+              >{/if}
           </button>
         {/each}
       </div>
@@ -303,7 +309,10 @@
                 {timeRange(item.task.dueTime ?? "", item.task.durationMinutes)}
               </span>
               {item.task.title || t.calendar.untitled}
-              {#if tag}<span class="tag-name">{tag.name}</span>{/if}
+              {#if tag}<span class="tag-name"
+                  >{tag.name}{#if moreTags?.(item.task)}
+                    +{moreTags(item.task)}{/if}</span
+                >{/if}
             </button>
           {/each}
 

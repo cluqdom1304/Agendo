@@ -3,12 +3,12 @@
   import { tagsStore } from "../../stores/tags.svelte";
 
   interface Props {
-    value: string | null;
-    onSelect: (tagId: string | null) => void;
+    values: string[];
+    onChange: (tagIds: string[]) => void;
     onClose: () => void;
   }
 
-  let { value, onSelect, onClose }: Props = $props();
+  let { values, onChange, onClose }: Props = $props();
 
   let menu = $state<HTMLElement>();
 
@@ -27,9 +27,13 @@
     onClose();
   }
 
-  function choose(tagId: string | null) {
-    onSelect(tagId);
-    onClose();
+  // The menu stays open so several tags can be ticked one after another.
+  function toggle(tagId: string) {
+    onChange(
+      values.includes(tagId)
+        ? values.filter((id) => id !== tagId)
+        : [...values, tagId],
+    );
   }
 </script>
 
@@ -38,26 +42,31 @@
 <div bind:this={menu} class="menu" role="menu" aria-label={t.tags.menu}>
   <button
     type="button"
-    role="menuitemradio"
-    aria-checked={value === null}
+    role="menuitem"
     class="item"
-    onclick={() => choose(null)}
+    onclick={() => {
+      onChange([]);
+      onClose();
+    }}
   >
     <span class="dot none"></span>
     <span class="name">{t.tags.noneOption}</span>
-    {#if value === null}<span class="check" aria-hidden="true">✓</span>{/if}
+    {#if values.length === 0}<span class="check" aria-hidden="true">✓</span
+      >{/if}
   </button>
   {#each tagsStore.tags as tag (tag.id)}
     <button
       type="button"
-      role="menuitemradio"
-      aria-checked={value === tag.id}
+      role="menuitemcheckbox"
+      aria-checked={values.includes(tag.id)}
       class="item"
-      onclick={() => choose(tag.id)}
+      onclick={() => toggle(tag.id)}
     >
       <span class="dot" style:background={tag.colorHex}></span>
       <span class="name">{tag.name}</span>
-      {#if value === tag.id}<span class="check" aria-hidden="true">✓</span>{/if}
+      {#if values.includes(tag.id)}<span class="check" aria-hidden="true"
+          >✓</span
+        >{/if}
     </button>
   {/each}
   {#if tagsStore.tags.length === 0}

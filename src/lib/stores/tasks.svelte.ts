@@ -120,6 +120,10 @@ function forgetStoredCollapse(): void {
   }
 }
 
+function sameSet(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id) => b.includes(id));
+}
+
 export class TasksStore {
   /** Immutable task objects: an update swaps one object, so untouched rows keep their identity. */
   tasks = $state.raw<Task[]>([]);
@@ -321,7 +325,7 @@ export class TasksStore {
     dueDate?: string;
     dueTime?: string;
     durationMinutes?: number;
-    tagId?: string;
+    tagIds?: string[];
     contentJson?: string;
     reminders?: ReminderInput[];
   }): Promise<boolean> {
@@ -336,7 +340,9 @@ export class TasksStore {
         ...(input.dueDate && input.dueTime && input.durationMinutes
           ? { durationMinutes: input.durationMinutes }
           : {}),
-        ...(input.tagId ? { tagIds: [input.tagId] } : {}),
+        ...(input.tagIds && input.tagIds.length > 0
+          ? { tagIds: input.tagIds }
+          : {}),
         ...(input.contentJson ? { contentJson: input.contentJson } : {}),
       });
       this.tasks = [...this.tasks, created];
@@ -372,8 +378,8 @@ export class TasksStore {
       dueDate: string | null;
       dueTime: string | null;
       durationMinutes: number | null;
-      /** Absent = leave as is; `null` = remove the tag. */
-      tagId?: string | null;
+      /** Absent = leave as is; `[]` = remove every tag. */
+      tagIds?: string[];
       reminders?: ReminderInput[];
     },
   ): Promise<boolean> {
@@ -392,13 +398,8 @@ export class TasksStore {
       if (Object.keys(patch).length > 0) {
         this.#replace(await this.#api.taskUpdate(id, patch));
       }
-      if (
-        input.tagId !== undefined &&
-        input.tagId !== (before.tagIds[0] ?? null)
-      ) {
-        this.#replace(
-          await this.#api.taskTagsSet(id, input.tagId ? [input.tagId] : []),
-        );
+      if (input.tagIds !== undefined && !sameSet(input.tagIds, before.tagIds)) {
+        this.#replace(await this.#api.taskTagsSet(id, input.tagIds));
       }
       if (input.reminders && !before.isCompleted) {
         this.#replace(await this.#api.remindersSet(id, input.reminders));
@@ -462,17 +463,24 @@ export class TasksStore {
     }
   }
 
-  /** Optimistic: the task takes its tag (or loses it) at once; a refusal puts it back. */
-  async setTag(id: string, tagId: string | null): Promise<void> {
+  /** Optimistic: the task takes exactly these tags at once; a refusal puts it back. */
+  async setTags(id: string, tagIds: string[]): Promise<void> {
     const before = this.find(id);
-    if (!before || (before.tagIds[0] ?? null) === tagId) return;
-    this.#replace({ ...before, tagIds: tagId ? [tagId] : [] });
+    if (!before || sameSet(tagIds, before.tagIds)) return;
+    this.#replace({ ...before, tagIds });
     try {
-      this.#replace(await this.#api.taskTagsSet(id, tagId ? [tagId] : []));
+      this.#replace(await this.#api.taskTagsSet(id, tagIds));
     } catch (error) {
       this.#replace(before);
       this.#report(error);
     }
+  }
+
+  /** Adds one tag to the ones the task has (dropping it on a sidebar tag). */
+  async addTag(id: string, tagId: string): Promise<void> {
+    const before = this.find(id);
+    if (!before || before.tagIds.includes(tagId)) return;
+    await this.setTags(id, [...before.tagIds, tagId]);
   }
 
   // ---- reminders ------------------------------------------------------------------------
