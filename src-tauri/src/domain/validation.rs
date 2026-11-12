@@ -69,6 +69,69 @@ pub fn validate_tag_name(name: &str) -> Result<&str, ValidationError> {
     Ok(trimmed)
 }
 
+/// `folders.name` limit, in characters, after trimming.
+pub const MAX_FOLDER_NAME_CHARS: usize = 100;
+/// Levels of nested folders (D-43). A folder at the top level is at depth 1.
+pub const MAX_FOLDER_DEPTH: usize = 5;
+
+/// Returns the name to store: trimmed, 1 to 100 characters.
+pub fn validate_folder_name(name: &str) -> Result<&str, ValidationError> {
+    let trimmed = name.trim();
+    let length = trimmed.chars().count();
+    if length == 0 {
+        return Err(ValidationError::new(
+            "el nombre de la carpeta no puede estar vacío",
+        ));
+    }
+    if length > MAX_FOLDER_NAME_CHARS {
+        return Err(ValidationError::new(format!(
+            "el nombre de la carpeta no puede superar {MAX_FOLDER_NAME_CHARS} caracteres (tiene {length})"
+        )));
+    }
+    Ok(trimmed)
+}
+
+/// The folder chosen as parent, already loaded by the caller.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FolderParent {
+    /// Depth of the parent: 1 for a top-level folder.
+    pub depth: usize,
+    /// The parent is the moved folder itself or one of its descendants.
+    pub inside_moved_subtree: bool,
+}
+
+/// D-43: a folder tree has no cycles and at most [`MAX_FOLDER_DEPTH`] levels.
+///
+/// `parent` is `None` for a top-level folder; `subtree_height` is the number of levels of the
+/// folder being placed, itself included (1 for a folder without subfolders).
+pub fn validate_folder_placement(
+    parent: Option<FolderParent>,
+    subtree_height: usize,
+) -> Result<(), ValidationError> {
+    let Some(parent) = parent else {
+        return if subtree_height <= MAX_FOLDER_DEPTH {
+            Ok(())
+        } else {
+            Err(too_deep())
+        };
+    };
+    if parent.inside_moved_subtree {
+        return Err(ValidationError::new(
+            "una carpeta no puede moverse dentro de sí misma ni de sus subcarpetas",
+        ));
+    }
+    if parent.depth + subtree_height > MAX_FOLDER_DEPTH {
+        return Err(too_deep());
+    }
+    Ok(())
+}
+
+fn too_deep() -> ValidationError {
+    ValidationError::new(format!(
+        "las carpetas admiten como máximo {MAX_FOLDER_DEPTH} niveles"
+    ))
+}
+
 /// `#RRGGBB`, upper or lower case.
 pub fn validate_color_hex(color: &str) -> Result<(), ValidationError> {
     let valid = color.len() == 7
@@ -246,6 +309,50 @@ mod tests {
             "el título no puede superar 500 caracteres (tiene 501)"
         );
         assert!(validate_title(&"ñ".repeat(MAX_TITLE_CHARS + 1)).is_err());
+    }
+
+    #[test]
+    fn folder_name_is_trimmed_and_limited_to_one_hundred_characters() {
+        assert_eq!(validate_folder_name("  Trabajo \t"), Ok("Trabajo"));
+        let longest = "ñ".repeat(MAX_FOLDER_NAME_CHARS);
+        assert_eq!(validate_folder_name(&longest), Ok(longest.as_str()));
+        assert_eq!(
+            message(validate_folder_name("   ")),
+            "el nombre de la carpeta no puede estar vacío"
+        );
+        assert_eq!(
+            message(validate_folder_name(&"x".repeat(MAX_FOLDER_NAME_CHARS + 1))),
+            "el nombre de la carpeta no puede superar 100 caracteres (tiene 101)"
+        );
+    }
+
+    #[test]
+    fn folder_placement_limits_depth_and_forbids_cycles() {
+        let at = |depth, inside| {
+            Some(FolderParent {
+                depth,
+                inside_moved_subtree: inside,
+            })
+        };
+        // A leaf directly under the root, and a leaf at the deepest allowed level.
+        assert!(validate_folder_placement(None, 1).is_ok());
+        assert!(validate_folder_placement(at(1, false), 1).is_ok());
+        assert!(validate_folder_placement(at(4, false), 1).is_ok());
+        assert!(validate_folder_placement(at(5, false), 1).is_err());
+        // A subtree of height 3 needs its parent at depth 2 or less.
+        assert!(validate_folder_placement(at(2, false), 3).is_ok());
+        assert!(validate_folder_placement(at(3, false), 3).is_err());
+        assert!(validate_folder_placement(None, MAX_FOLDER_DEPTH).is_ok());
+        assert!(validate_folder_placement(None, MAX_FOLDER_DEPTH + 1).is_err());
+        // Moving into itself or a descendant is a cycle, whatever the depth.
+        assert_eq!(
+            message(validate_folder_placement(at(1, true), 1)),
+            "una carpeta no puede moverse dentro de sí misma ni de sus subcarpetas"
+        );
+        assert_eq!(
+            message(validate_folder_placement(at(5, false), 1)),
+            "las carpetas admiten como máximo 5 niveles"
+        );
     }
 
     #[test]

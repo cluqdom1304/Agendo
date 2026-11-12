@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** — (Versión 1.0.5 cerrada)
-**Estado:** DONE   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** ninguna. Validar los ítems `[H]` pendientes de `docs/manual-pruebas.md` (incluidas las secciones 1.0.1 a 1.0.4, «Rediseño de interfaz (D-39)» y «Notas en la lista (D-40)») y ejecutar F6-06 (E2E) en un equipo con `tauri-driver`
-**Última actualización:** 2026-11-12 (V1.0.7: renombrado a Agendo, D-42)
+**Fase activa:** Fase 7 de la V2.0.0 (modelo de datos y contrato de notas)
+**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F7 cerrada (todas sus tareas `[A]` en verde y sin ítems `[H]`: no hay interfaz). Esperando confirmación para empezar la Fase 8. Antes, validar los ítems `[H]` pendientes de `docs/manual-pruebas.md` (incluidas las secciones 1.0.1 a 1.0.4, «Rediseño de interfaz (D-39)» y «Notas en la lista (D-40)») y ejecutar F6-06 (E2E) en un equipo con `tauri-driver`
+**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fase 7 completada)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -183,6 +183,100 @@
 - Avisos periódicos (D-32, migración 002): cada N horas/días/semanas/meses; termina nunca / tras N veces / en una fecha. Solo para avisos de hora concreta.
 - UX: el diálogo enfoca el título, Intro envía, Ctrl+Intro envía desde cualquier campo, la hora se desactiva sin fecha, el calendario propone el día que se está viendo, avisos pasados se detectan antes de guardar y los botones llevan ayuda con el atajo.
 - Verificación [A]: `cargo test` 256+4+1+4, `npm run test` 284, lint/check/build/size en verde (JS 177,1 KB gzip). [H] nuevos en `docs/manual-pruebas.md` § Mejoras posteriores.
+
+---
+
+# Versión 2.0.0 — Notas + agenda unificadas (PLANIFICADA)
+
+> **Estado:** EN CURSO. El usuario aprobó el 2026-11-12 todo el plan: D-43 a D-49 `ACCEPTED`, una sola carpeta por nota, varias etiquetas por tarea (D-44), recurrencia, acción de notificación e importación ENEX dentro de 2.0.0. Orden de recorte si hace falta: F14-04, F13-04/05/06, F12-03 (F7–F11 son el mínimo).
+> **Principio:** una sola tabla `tags` para tareas y notas; una tarea vive solo en `tasks` y las notas la referencian; una sola búsqueda, papelera y copia de seguridad.
+
+## Fase 7 — Fundamentos: modelo de datos y contrato
+- [x] F7-01 ADR D-43…D-49 aprobados (o ajustados) por el humano
+- [x] F7-02 Migración `004_notes.sql`: `folders`, `notes`, `note_tags`, `note_tasks`, `note_links`, `notes_fts`
+- [x] F7-03 Migración `005_task_source.sql`: `tasks.source_note_id` (`ON DELETE SET NULL`)
+- [x] F7-04 `repo/folders.rs`, `repo/notes.rs`, `repo/note_tags.rs` con FTS en la misma transacción
+- [x] F7-05 `domain/`: validación de carpetas (profundidad, ciclos al mover), título de nota, extracción de `content_text`, `taskRef` y `[[enlaces]]`
+- [x] F7-06 Comandos `folder_*`, `note_*`, `note_tags_set`, `note_move`; papelera y restaurar con notas; DTOs y fixtures de contrato
+- [x] F7-07 Test de 10 000 operaciones aleatorias con notas, carpetas, etiquetas y referencias (`integrity_check`, claves foráneas, FTS)
+- [x] F7-08 Test de migración desde una copia v1.0.x (los datos se conservan)
+
+**Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (320 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (352), `npm run build` y `npm run size` (188,2 KB gzip de 250) en verde. `cargo check --target x86_64-pc-windows-msvc` queda cubierto: el equipo es Windows y clippy/test compilan la ruta nativa.
+
+**Notas de la fase:**
+- F7-02/03: `004_notes.sql` (`folders`, `notes`, `note_tags`, `note_tasks`, `note_links`, `notes_fts`) y `005_task_source.sql` (`tasks.source_note_id`, `ON DELETE SET NULL`). Solo añaden tablas y una columna nula: no tocan datos. Se añadió `note_tasks` (nota → tareas que referencia), que la hoja de ruta no listaba: sin ella, saber qué notas referencian una tarea (F10-06) obligaría a recorrer todos los JSON. Dos carpetas hermanas no pueden llamarse igual (índice único sin distinguir mayúsculas). Borrar una carpeta con `DELETE` deja las notas en la Bandeja y asciende a las hijas (`SET NULL`); el borrado normal de la aplicación es `folders::delete_tree`. `db/notes_schema_tests.rs` (10 tests) cubre tablas, índices, `CHECK`, cascadas, unicidad y FTS.
+- F7-04: `repo/folders.rs` (árbol con CTE recursivas: `depth`, `height`, `is_in_subtree`, `delete_tree`), `repo/notes.rs` (`list` por ámbito `Todas|Bandeja|Fijadas|Carpeta` —la carpeta incluye subcarpetas—, etiqueta y orden; fijadas siempre primero) y `repo/note_tags.rs`. `fts.rs` gana `insert_note`/`sync_note`/`rebuild_notes`. Las referencias de un documento (`note_tasks`, `note_links`) se recalculan en cada guardado y se **omiten** si el destino ya no existe o es la propia nota, en vez de fallar: un `taskRef` puede apuntar legítimamente a una tarea purgada. Fijar una nota no cambia `updated_at`; moverla sí. La lista devuelve un extracto de 200 caracteres, no el documento.
+- F7-05: `domain/validation.rs` (`validate_folder_name` 1–100, `validate_folder_placement`: máx. 5 niveles y sin ciclos, D-43) y `domain/content.rs` (`references_of`: nodos `taskRef` con `attrs.taskId` y `noteLink` con `attrs.noteId`, sin repetidos y en orden; una referencia sin id se rechaza). **Fijan el formato de esos dos nodos para F10/F11.**
+- F7-06: comandos `folder_list`, `folder_upsert`, `folder_delete`, `notes_list`, `note_get`, `note_create`, `note_update`, `note_set_pinned`, `note_move`, `note_tags_set`, `note_delete`, `note_restore`, `notes_trash_list`; `task_create` acepta `sourceNoteId` y `Task` gana `sourceNoteId`. `trash_list` sigue devolviendo solo tareas (cambiarlo rompería la interfaz actual): la papelera unificada es de F8. `AppState::purge_trash` purga también notas y devuelve el total. DTO nuevos en `fixtures/dto.json`, `src/lib/types.ts`, `api.ts` y `types.test.ts`.
+- F7-07: segundo test de 10 000 operaciones (`random_ops_tests.rs`) con tareas, notas, carpetas (crear, mover, borrar con las mismas reglas que el comando), etiquetas compartidas y referencias; comprueba `integrity_check`, `foreign_key_check`, `notes_fts` = notas vivas sin filas obsoletas, sin autoenlaces y árbol sin ciclos ni más de 5 niveles. El evento `notes:changed` se movió a F8-08 (ver arriba).
+- F7-08: `upgrading_a_v1_database_keeps_every_row` migra una base v3 con tareas, etiquetas, avisos y ajustes hasta la v5 sin perder filas. La restauración de una copia antigua ya migraba sola (D-30) y su test sigue en verde.
+- `task_create` lleva `#[allow(clippy::too_many_arguments)]`: el contrato IPC pasa cada campo como argumento propio (SPEC §7.3).
+
+**Ítems [H]:** ninguno (la fase no tiene interfaz). Nada nuevo en `docs/manual-pruebas.md`.
+
+## Fase 8 — Sección Notas: interfaz esencial
+- [ ] F8-01 Navegación principal Agenda | Notas (`Ctrl+1/2`)
+- [ ] F8-02 Panel de carpetas: árbol, crear/renombrar/mover (puntero propio, como D-34), Bandeja de entrada, Todas, Fijadas, Papelera
+- [ ] F8-03 Lista de notas virtualizada (título, extracto, fecha, etiquetas; orden configurable)
+- [ ] F8-04 Editor de nota con TipTap (D-22), título propio y guardado diferido
+- [ ] F8-05 Fijar, duplicar, mover, eliminar/restaurar con deshacer
+- [ ] F8-06 Textos en `i18n.ts`, estados vacíos, teclado y ARIA (N-08)
+- [ ] F8-07 Recordar carpeta y nota abiertas al reiniciar
+- [ ] F8-08 Evento `notes:changed` (SPEC §7.4) y su escucha en la interfaz; se pospuso desde F7-07 porque hoy nada lo consume (tampoco existe `tasks:changed`)
+
+## Fase 9 — Etiquetas unificadas
+- [ ] F9-01 Varias etiquetas por tarea (D-44): selector, chips, calendario
+- [ ] F9-02 Etiquetas en notas (editor y lista)
+- [ ] F9-03 Barra lateral común con contadores de tareas y notas; vista de etiqueta con pestañas Tareas / Notas
+- [ ] F9-04 Renombrar, recolorear, fusionar y subetiquetas con interfaz (D-06)
+- [ ] F9-05 Autocompletado de etiquetas con `#` en el editor
+
+## Fase 10 — Tareas dentro de las notas
+- [ ] F10-01 Nodo `taskRef` en TipTap: casilla, título, fecha y etiqueta; marcar completa la tarea real
+- [ ] F10-02 Crear tarea desde una nota (`/tarea`, `Ctrl+Shift+T`) con mini-diálogo de fecha, hora y aviso
+- [ ] F10-03 «Convertir casillas en tareas» para las listas de D-37
+- [ ] F10-04 Panel «Tareas de esta nota» con progreso
+- [ ] F10-05 Chip «Nota de origen» en la lista y el detalle de tarea
+- [ ] F10-06 Sincronía editar/completar/borrar entre tarea y notas; tarea borrada → referencia tachada con «Restaurar»
+- [ ] F10-07 «Convertir en nota» y «Crear nota para esta tarea»
+
+## Fase 11 — Enlaces, búsqueda y navegación rápida
+- [ ] F11-01 Enlaces `[[nota]]` con autocompletado, creación al vuelo y renombrado seguro
+- [ ] F11-02 Panel de backlinks y notas huérfanas
+- [ ] F11-03 Búsqueda unificada (tareas, notas, etiquetas) con filtros `tag:`, `in:`, `is:tarea`
+- [ ] F11-04 Paleta de comandos `Ctrl+K`
+- [ ] F11-05 Notas recientes e «Ir a…» (`Ctrl+P`)
+
+## Fase 12 — Editor avanzado y adjuntos
+- [ ] F12-01 Almacén de adjuntos con hash, deduplicación y limpieza de huérfanos (D-47)
+- [ ] F12-02 Imágenes: pegar, arrastrar, redimensionar; vista previa de ficheros
+- [ ] F12-03 Tablas, bloques de código con resaltado, citas, separadores, resaltado de texto
+- [ ] F12-04 Atajos Markdown, buscar dentro de la nota (`Ctrl+F`), contador de palabras
+- [ ] F12-05 Copia `.agendo` (base de datos + adjuntos); restaurar sigue aceptando `.sqlite` (B-02)
+
+## Fase 13 — Productividad
+- [ ] F13-01 Nota diaria enlazada a cada día de la agenda
+- [ ] F13-02 Plantillas de nota editables
+- [ ] F13-03 Historial de versiones con comparar y restaurar (D-48)
+- [ ] F13-04 Recordatorios de nota (sin duplicar el motor de avisos)
+- [ ] F13-05 Tareas recurrentes (`tasks.rrule`, D-07; migración 006)
+- [ ] F13-06 Acción «Marcar como hecha» en la notificación (B-01)
+- [ ] F13-07 Vista «Hoy»: tareas del día, nota diaria y notas fijadas
+
+## Fase 14 — Interoperabilidad
+- [ ] F14-01 Exportar nota/carpeta a Markdown (con adjuntos) y HTML
+- [ ] F14-02 Exportar todo a JSON (B-02)
+- [ ] F14-03 Importar carpeta de Markdown y `.txt`
+- [ ] F14-04 Importar ENEX de Evernote (cuadernos → carpetas, etiquetas, imágenes, fechas)
+
+## Fase 15 — Cierre de 2.0.0
+- [ ] F15-01 Rendimiento con 10 000 notas (arranque, lista, búsqueda < 50 ms); registrar en `docs/metricas.md`
+- [ ] F15-02 Migración real desde una BD v1.0.7 con datos de usuario
+- [ ] F15-03 E2E ampliados (incluye F6-06 pendiente), manual de pruebas `[H]`, README y capturas
+- [ ] F15-04 Versión `2.0.0` coherente en los 5 sitios (CLAUDE.md §10) y entrada en `PROGRESS.md`
+
+**Riesgos:** la copia deja de ser un solo `.sqlite` (F12-05 antes de ofrecer adjuntos); presupuesto N-04 de 250 KB (editor y notas en carga diferida); referencias `taskRef` rotas (F10-06 con test de integridad); rendimiento con miles de notas (lista virtualizada y FTS desde F7/F8).
+**Ideas para 2.x:** cifrado de notas, grafo de enlaces, Kanban por etiqueta, captura rápida con atajo global, OCR de imágenes, subpáginas.
 
 ---
 

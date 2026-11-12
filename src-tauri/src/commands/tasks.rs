@@ -73,6 +73,8 @@ pub struct TaskCreateInput {
     pub duration_minutes: Option<i64>,
     pub tag_ids: Option<Vec<String>>,
     pub content_json: Option<String>,
+    /// Note the task is created from (D-45).
+    pub source_note_id: Option<String>,
 }
 
 /// Distinguishes an absent field (leave as is) from `null` (clear it).
@@ -160,6 +162,7 @@ pub fn create(state: &AppState, input: TaskCreateInput) -> AppResult<Task> {
         due_date: input.due_date,
         due_time: input.due_time,
         duration_minutes: input.duration_minutes,
+        source_note_id: input.source_note_id,
         tag_ids: input.tag_ids.unwrap_or_default(),
         now: state.clock.now_string(),
     };
@@ -342,6 +345,8 @@ pub async fn tasks_list(
     run_blocking(state.inner().clone(), move |state| list(state, input)).await
 }
 
+// The IPC contract passes each field as its own argument (SPEC §7.3).
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn task_create(
     state: State<'_, Arc<AppState>>,
@@ -351,6 +356,7 @@ pub async fn task_create(
     duration_minutes: Option<i64>,
     tag_ids: Option<Vec<String>>,
     content_json: Option<String>,
+    source_note_id: Option<String>,
 ) -> Result<Task, String> {
     let input = TaskCreateInput {
         title,
@@ -359,6 +365,7 @@ pub async fn task_create(
         duration_minutes,
         tag_ids,
         content_json,
+        source_note_id,
     };
     run_blocking(state.inner().clone(), move |state| create(state, input)).await
 }

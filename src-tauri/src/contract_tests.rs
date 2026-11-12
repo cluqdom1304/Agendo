@@ -14,7 +14,7 @@ use crate::{
         reminders::{Repeat, RepeatUnit},
     },
     repo::{
-        model::{Reminder, Tag, TagWithCount, Task},
+        model::{Folder, FolderWithCount, Note, NoteSummary, Reminder, Tag, TagWithCount, Task},
         search::SearchHit,
     },
     window::effects::{EffectApplied, EffectMode},
@@ -34,6 +34,7 @@ fn task(with_values: bool) -> Task {
         due_date: with_values.then(|| "2026-03-12".to_string()),
         due_time: with_values.then(|| "09:30".to_string()),
         duration_minutes: with_values.then_some(45),
+        source_note_id: with_values.then(|| "note-1".to_string()),
         is_completed: with_values,
         completed_at: with_values.then(|| "2026-03-12T08:00:00Z".to_string()),
         position: 3,
@@ -66,6 +67,28 @@ fn tag(parent: Option<&str>) -> Tag {
     }
 }
 
+fn note(in_folder: bool) -> Note {
+    Note {
+        id: "note-1".into(),
+        folder_id: in_folder.then(|| "folder-1".to_string()),
+        title: "Apuntes de clase".into(),
+        content_json: r#"{"type":"doc","content":[]}"#.into(),
+        is_pinned: in_folder,
+        tag_ids: vec!["tag-1".into()],
+        created_at: "2026-03-10T10:00:00Z".into(),
+        updated_at: "2026-03-10T11:00:00Z".into(),
+    }
+}
+
+fn folder() -> Folder {
+    Folder {
+        id: "folder-1".into(),
+        name: "Grado".into(),
+        parent_id: Some("folder-0".into()),
+        position: 2,
+    }
+}
+
 fn current() -> Value {
     let day = DayGroup {
         date: "2026-03-12".into(),
@@ -89,6 +112,20 @@ fn current() -> Value {
             snippet: "…revisar la práctica…".into(),
             due_date: None,
             is_completed: false,
+        },
+        "folder": folder(),
+        "folderWithCount": FolderWithCount { folder: folder(), note_count: 3 },
+        "note": note(true),
+        "noteInInbox": note(false),
+        "noteSummary": NoteSummary {
+            id: "note-1".into(),
+            folder_id: Some("folder-1".into()),
+            title: "Apuntes de clase".into(),
+            excerpt: "Primera línea del texto…".into(),
+            is_pinned: true,
+            tag_ids: vec!["tag-1".into()],
+            created_at: "2026-03-10T10:00:00Z".into(),
+            updated_at: "2026-03-10T11:00:00Z".into(),
         },
         "effectApplied": EffectApplied {
             requested: EffectMode::Mica,

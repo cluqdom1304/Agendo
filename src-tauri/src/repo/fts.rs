@@ -32,6 +32,34 @@ pub fn rebuild(tx: &Transaction<'_>) -> rusqlite::Result<usize> {
     )
 }
 
+/// Indexes a note that has no FTS row yet (`notes_fts`, same design as `tasks_fts`).
+pub fn insert_note(tx: &Transaction<'_>, note_id: &str) -> rusqlite::Result<()> {
+    tx.prepare_cached(
+        "INSERT INTO notes_fts (note_id, title, content_text)
+         SELECT id, title, content_text FROM notes WHERE id = ?1 AND deleted_at IS NULL",
+    )?
+    .execute(params![note_id])?;
+    Ok(())
+}
+
+/// Makes the FTS row of a note match the note: replaced if it is live, removed if it is trashed
+/// or gone.
+pub fn sync_note(tx: &Transaction<'_>, note_id: &str) -> rusqlite::Result<()> {
+    tx.prepare_cached("DELETE FROM notes_fts WHERE note_id = ?1")?
+        .execute(params![note_id])?;
+    insert_note(tx, note_id)
+}
+
+/// Rebuilds the whole notes index (needed when the text extraction changes, D-03).
+pub fn rebuild_notes(tx: &Transaction<'_>) -> rusqlite::Result<usize> {
+    tx.execute("DELETE FROM notes_fts", [])?;
+    tx.execute(
+        "INSERT INTO notes_fts (note_id, title, content_text)
+         SELECT id, title, content_text FROM notes WHERE deleted_at IS NULL",
+        [],
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use std::time::Instant;
@@ -191,5 +219,67 @@ mod tests {
         eprintln!("D-11 fts::sync with 10 000 rows: {best:?}");
         assert!(best.as_millis() < 100, "sync took {best:?}");
         assert_eq!(indexed(&conn, "t9999").len(), 1);
+    }
+
+    fn raw_note(conn: &Connection, id: &str, title: &str, text: &str, deleted: bool) {
+        conn.execute(
+            "INSERT INTO notes (id, title, content_text, created_at, updated_at, deleted_at)
+             VALUES (?1, ?2, ?3, ?4, ?4, CASE WHEN ?5 THEN ?4 END)",
+            params![id, title, text, NOW, deleted],
+        )
+        .expect("insert note");
+    }
+
+    fn indexed_note(conn: &Connection, note_id: &str) -> Vec<(String, String)> {
+        conn.prepare("SELECT title, content_text FROM notes_fts WHERE note_id = ?1")
+            .expect("prepare")
+            .query_map([note_id], |row| Ok((row.get(0)?, row.get(1)?)))
+            .expect("query")
+            .collect::<Result<_, _>>()
+            .expect("rows")
+    }
+
+    #[test]
+    fn note_sync_follows_the_note_through_edit_trash_and_removal() {
+        let mut conn = database();
+        raw_note(&conn, "n1", "Antes", "uno", false);
+        raw_note(&conn, "n2", "Otra", "", false);
+        let tx = conn.transaction().expect("tx");
+        insert_note(&tx, "n1").expect("insert");
+        insert_note(&tx, "n2").expect("insert");
+        tx.execute("UPDATE notes SET title = 'Después' WHERE id = 'n1'", [])
+            .expect("update");
+        sync_note(&tx, "n1").expect("sync edit");
+        tx.execute("UPDATE notes SET deleted_at = ?1 WHERE id = 'n2'", [NOW])
+            .expect("trash");
+        sync_note(&tx, "n2").expect("sync trash");
+        tx.commit().expect("commit");
+
+        assert_eq!(
+            indexed_note(&conn, "n1"),
+            [("Después".to_string(), "uno".to_string())]
+        );
+        assert!(indexed_note(&conn, "n2").is_empty());
+    }
+
+    #[test]
+    fn note_index_skips_trashed_notes_and_rebuild_replaces_everything() {
+        let mut conn = database();
+        raw_note(&conn, "live", "Viva", "", false);
+        raw_note(&conn, "dead", "Muerta", "", true);
+        conn.execute(
+            "INSERT INTO notes_fts (note_id, title, content_text) VALUES ('stale', 'x', 'y')",
+            [],
+        )
+        .expect("stale row");
+        let tx = conn.transaction().expect("tx");
+        insert_note(&tx, "dead").expect("insert trashed");
+        let rebuilt = rebuild_notes(&tx).expect("rebuild");
+        tx.commit().expect("commit");
+
+        assert_eq!(rebuilt, 1);
+        assert_eq!(indexed_note(&conn, "live").len(), 1);
+        assert!(indexed_note(&conn, "dead").is_empty());
+        assert!(indexed_note(&conn, "stale").is_empty());
     }
 }

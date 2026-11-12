@@ -385,6 +385,42 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ---
 
+## D-43 — Carpetas de notas en árbol
+- **Estado:** ACCEPTED (aprobado por el usuario) · **Fecha:** 2026-11-12
+- **Contexto:** V2 añade notas estilo Evernote (Stack > Notebook). Un árbol genérico cubre ambos niveles.
+- **Decisión:** tabla `folders` con `parent_id`, profundidad máxima 5, sin ciclos (validado en `domain`). Cada nota está en una carpeta o en la «Bandeja de entrada» (`folder_id` NULL).
+- **Alternativas descartadas:** dos niveles fijos (rígido); una nota en varias carpetas (ambiguo; para eso están las etiquetas).
+
+## D-44 — Varias etiquetas por tarea y por nota
+- **Estado:** ACCEPTED (aprobado por el usuario) · **Fecha:** 2026-11-12
+- **Contexto:** D-34 limitó la interfaz a una etiqueta por tarea; el modelo ya admite varias. Con notas, la etiqueta es el eje transversal.
+- **Decisión:** una sola tabla `tags`; `note_tags` gemela de `task_tags`. La interfaz admite varias en ambas; el color del evento en el calendario usa la primera. Sustituye la parte de D-34 «una por tarea».
+- **Alternativas descartadas:** tablas de etiquetas separadas para notas (incoherencia entre ambas).
+
+## D-45 — Tareas en notas por referencia
+- **Estado:** ACCEPTED (aprobado por el usuario) · **Fecha:** 2026-11-12
+- **Decisión:** nodo `taskRef` (`attrs.taskId`) en el JSON de TipTap; la tarea vive solo en `tasks` y `tasks.source_note_id` (`ON DELETE SET NULL`) guarda su origen. Las casillas de D-37 se mantienen como checklist ligera con acción «Convertir en tareas».
+- **Alternativas descartadas:** copiar la tarea dentro de la nota (dos fuentes de verdad); sustituir las casillas de D-37.
+
+## D-46 — Enlaces entre notas
+- **Estado:** ACCEPTED (aprobado por el usuario) · **Fecha:** 2026-11-12
+- **Decisión:** sintaxis `[[título]]` resuelta a `note_id`; tabla `note_links` para backlinks, recalculada al guardar.
+
+## D-47 — Adjuntos en disco y copia `.agendo`
+- **Estado:** ACCEPTED (aprobado por el usuario) · **Fecha:** 2026-11-12
+- **Decisión:** ficheros en `attachments/` nombrados por SHA-256 (deduplicados) y tabla `attachments`. La copia de seguridad pasa a `.agendo` (zip con la base de datos y los adjuntos); restaurar sigue aceptando `.sqlite` anteriores. Puede requerir una dependencia de zip (entrada propia antes de añadirla).
+- **Alternativas descartadas:** imágenes en BLOB dentro de SQLite (infla la base y las copias).
+
+## D-48 — Historial de versiones de notas
+- **Estado:** ACCEPTED (aprobado por el usuario) · **Fecha:** 2026-11-12
+- **Decisión:** instantáneas de `content_json` espaciadas en el tiempo, con máximo N por nota; restaurar crea una versión nueva.
+
+## D-49 — Presupuesto del bundle en V2
+- **Estado:** ACCEPTED (aprobado por el usuario) · **Fecha:** 2026-11-12
+- **Decisión:** se mantiene N-04 (250 KB gzip de JS). Notas y editor en carga diferida (D-10); si se supera, ADR nuevo antes de subir el límite.
+
+---
+
 ## Decisiones pendientes de producto
 
 Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`.

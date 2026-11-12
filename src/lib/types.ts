@@ -52,6 +52,8 @@ export interface Task {
   dueTime: string | null;
   /** Minutes from `dueTime` to the end, within the same day; `null` = no duration (D-33). */
   durationMinutes: number | null;
+  /** Note the task was created from (D-45); `null` if none or if that note is gone. */
+  sourceNoteId: string | null;
   isCompleted: boolean;
   completedAt: string | null;
   position: number;
@@ -100,6 +102,7 @@ export interface TaskCreateInput {
   durationMinutes?: number;
   tagIds?: string[];
   contentJson?: string;
+  sourceNoteId?: string;
 }
 
 /** Absent = leave as is; `null` = clear. */
@@ -116,6 +119,73 @@ export interface TagUpsertInput {
   name: string;
   colorHex: string;
   parentId?: string;
+}
+
+/** Folder of notes (D-43). `parentId: null` is the top level. */
+export interface Folder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  position: number;
+}
+
+/** `noteCount` counts the live notes directly inside the folder, not in its subfolders. */
+export interface FolderWithCount extends Folder {
+  noteCount: number;
+}
+
+export interface FolderUpsertInput {
+  id?: string;
+  name: string;
+  parentId?: string;
+}
+
+export interface Note {
+  id: string;
+  /** `null` is the inbox. */
+  folderId: string | null;
+  title: string;
+  contentJson: string;
+  isPinned: boolean;
+  tagIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A note as listed: a short plain-text excerpt instead of the document. */
+export interface NoteSummary {
+  id: string;
+  folderId: string | null;
+  title: string;
+  excerpt: string;
+  isPinned: boolean;
+  tagIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NotesScope = "all" | "inbox" | "pinned" | "folder";
+export type NotesSort = "updated" | "created" | "title";
+
+export interface NotesListQuery {
+  scope: NotesScope;
+  /** Required with `scope: "folder"`; includes the subfolders. */
+  folderId?: string;
+  tagId?: string;
+  sort?: NotesSort;
+}
+
+export interface NoteCreateInput {
+  folderId?: string;
+  title?: string;
+  contentJson?: string;
+  tagIds?: string[];
+}
+
+/** Absent = leave as is. */
+export interface NotePatch {
+  title?: string;
+  contentJson?: string;
 }
 
 export type ErrorCode =

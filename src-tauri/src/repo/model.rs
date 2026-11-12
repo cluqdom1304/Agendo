@@ -16,6 +16,8 @@ pub struct Task {
     pub due_time: Option<String>,
     /// Minutes the task lasts from `due_time`, within the same day (D-33).
     pub duration_minutes: Option<i64>,
+    /// Note this task was created from (D-45).
+    pub source_note_id: Option<String>,
     pub is_completed: bool,
     pub completed_at: Option<String>,
     pub position: i64,
@@ -88,6 +90,7 @@ pub struct NewTask {
     pub due_date: Option<String>,
     pub due_time: Option<String>,
     pub duration_minutes: Option<i64>,
+    pub source_note_id: Option<String>,
     pub tag_ids: Vec<String>,
     pub now: String,
 }
@@ -111,4 +114,93 @@ pub struct TagInput {
     pub color_hex: String,
     pub parent_id: Option<String>,
     pub now: String,
+}
+
+/// Folder as exposed over IPC (D-43).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Folder {
+    pub id: String,
+    pub name: String,
+    pub parent_id: Option<String>,
+    pub position: i64,
+}
+
+/// A folder with the number of live notes directly inside it (not in its subfolders).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FolderWithCount {
+    #[serde(flatten)]
+    pub folder: Folder,
+    pub note_count: i64,
+}
+
+/// Data to create or rename/move a folder. `now` stamps `created_at` and `updated_at`.
+#[derive(Debug, Clone)]
+pub struct FolderInput {
+    pub id: String,
+    pub name: String,
+    pub parent_id: Option<String>,
+    pub now: String,
+}
+
+/// A note with its content, as opened in the editor.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Note {
+    pub id: String,
+    /// `None` is the inbox.
+    pub folder_id: Option<String>,
+    pub title: String,
+    pub content_json: String,
+    pub is_pinned: bool,
+    pub tag_ids: Vec<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// A note as listed: no document, only a short plain-text excerpt.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteSummary {
+    pub id: String,
+    pub folder_id: Option<String>,
+    pub title: String,
+    pub excerpt: String,
+    pub is_pinned: bool,
+    pub tag_ids: Vec<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// Data to create a note; like [`NewTask`], the caller supplies the id and `now`.
+#[derive(Debug, Clone, Default)]
+pub struct NewNote {
+    pub id: String,
+    pub folder_id: Option<String>,
+    pub title: String,
+    /// `None` stores [`EMPTY_DOC`].
+    pub content_json: Option<String>,
+    pub content_text: String,
+    pub task_ids: Vec<String>,
+    pub note_ids: Vec<String>,
+    pub tag_ids: Vec<String>,
+    pub now: String,
+}
+
+/// Partial update of a note. `content_*` and the references travel together: they are all
+/// derived from one document.
+#[derive(Debug, Clone, Default)]
+pub struct NotePatch {
+    pub title: Option<String>,
+    pub content: Option<NoteContent>,
+}
+
+/// A saved document with what was derived from it.
+#[derive(Debug, Clone)]
+pub struct NoteContent {
+    pub json: String,
+    pub text: String,
+    pub task_ids: Vec<String>,
+    pub note_ids: Vec<String>,
 }

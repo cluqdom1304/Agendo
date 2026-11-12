@@ -32,7 +32,7 @@ macro_rules! task_sql {
                                                             'occurrence', r.occurrence) END))
                                 ORDER BY r.notify_at, r.id)
                        FROM reminders r WHERE r.task_id = t.id),
-                    t.duration_minutes
+                    t.duration_minutes, t.source_note_id
              FROM tasks t ",
             $suffix
         )
@@ -72,6 +72,7 @@ fn map_task(row: &Row<'_>) -> rusqlite::Result<Task> {
         tag_ids: json_column(row, 10)?,
         reminders: json_column(row, 11)?,
         duration_minutes: row.get(12)?,
+        source_note_id: row.get(13)?,
     })
 }
 
@@ -131,8 +132,8 @@ pub fn create(tx: &Transaction<'_>, new: &NewTask) -> rusqlite::Result<Task> {
     let position = next_position(tx, new.due_date.as_deref())?;
     tx.prepare_cached(
         "INSERT INTO tasks (id, title, content_json, content_text, due_date, due_time,
-                            duration_minutes, position, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)",
+                            duration_minutes, source_note_id, position, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10)",
     )?
     .execute(params![
         new.id,
@@ -142,6 +143,7 @@ pub fn create(tx: &Transaction<'_>, new: &NewTask) -> rusqlite::Result<Task> {
         new.due_date,
         new.due_time,
         new.duration_minutes,
+        new.source_note_id,
         position,
         new.now
     ])?;
@@ -1036,6 +1038,7 @@ mod tests {
                 "isCompleted",
                 "position",
                 "reminders",
+                "sourceNoteId",
                 "tagIds",
                 "title",
                 "updatedAt"

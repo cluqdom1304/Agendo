@@ -5,6 +5,14 @@ import type {
   EffectApplied,
   EffectMode,
   ErrorCode,
+  Folder,
+  FolderUpsertInput,
+  FolderWithCount,
+  Note,
+  NoteCreateInput,
+  NotePatch,
+  NoteSummary,
+  NotesListQuery,
   ReminderFired,
   ReminderInput,
   SearchHit,
@@ -144,6 +152,61 @@ export function tagDelete(id: string): Promise<void> {
 
 export function taskTagsSet(taskId: string, tagIds: string[]): Promise<Task> {
   return invoke<Task>("task_tags_set", { taskId, tagIds });
+}
+
+export function folderList(): Promise<FolderWithCount[]> {
+  return invoke<FolderWithCount[]>("folder_list");
+}
+
+/** Creates a folder, or renames/moves it when `id` is given. */
+export function folderUpsert(input: FolderUpsertInput): Promise<Folder> {
+  return invoke<Folder>("folder_upsert", { ...input });
+}
+
+/** Deletes the folder and its subfolders; resolves with how many notes went to the trash. */
+export function folderDelete(id: string): Promise<number> {
+  return invoke<number>("folder_delete", { id });
+}
+
+export function notesList(query: NotesListQuery): Promise<NoteSummary[]> {
+  return invoke<NoteSummary[]>("notes_list", { ...query });
+}
+
+export function noteGet(id: string): Promise<Note> {
+  return invoke<Note>("note_get", { id });
+}
+
+export function noteCreate(input: NoteCreateInput = {}): Promise<Note> {
+  return invoke<Note>("note_create", { ...input });
+}
+
+export function noteUpdate(id: string, patch: NotePatch): Promise<Note> {
+  return invoke<Note>("note_update", { id, patch });
+}
+
+export function noteSetPinned(id: string, pinned: boolean): Promise<Note> {
+  return invoke<Note>("note_set_pinned", { id, pinned });
+}
+
+/** `folderId: null` moves the note to the inbox. */
+export function noteMove(id: string, folderId: string | null): Promise<Note> {
+  return invoke<Note>("note_move", { id, folderId });
+}
+
+export function noteTagsSet(noteId: string, tagIds: string[]): Promise<Note> {
+  return invoke<Note>("note_tags_set", { noteId, tagIds });
+}
+
+export function noteDelete(id: string): Promise<void> {
+  return invoke<void>("note_delete", { id });
+}
+
+export function noteRestore(id: string): Promise<Note> {
+  return invoke<Note>("note_restore", { id });
+}
+
+export function notesTrashList(): Promise<NoteSummary[]> {
+  return invoke<NoteSummary[]>("notes_trash_list");
 }
 
 export function settingsGet(key: SettingKey): Promise<string | null> {

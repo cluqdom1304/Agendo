@@ -2,6 +2,8 @@
 
 pub mod backup;
 pub mod migrate;
+#[cfg(test)]
+mod notes_schema_tests;
 pub mod pragmas;
 #[cfg(test)]
 mod schema_tests;

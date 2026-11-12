@@ -101,11 +101,14 @@ impl AppState {
         Ok(state)
     }
 
-    /// Returns how many tasks were purged.
+    /// Removes tasks and notes trashed more than 30 days ago. Returns how many items were purged.
     pub fn purge_trash(&self) -> AppResult<usize> {
         let now = self.clock.now_string();
-        self.db
-            .write(|tx| repo::tasks::purge_deleted(tx, &now).map_err(AppError::from))
+        self.db.write(|tx| {
+            let tasks = repo::tasks::purge_deleted(tx, &now).map_err(AppError::from)?;
+            let notes = repo::notes::purge_deleted(tx, &now).map_err(AppError::from)?;
+            Ok(tasks + notes)
+        })
     }
 }
 

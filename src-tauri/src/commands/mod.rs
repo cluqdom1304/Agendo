@@ -1,5 +1,7 @@
 pub mod autostart;
 pub mod backup;
+pub mod folders;
+pub mod notes;
 pub mod reminders;
 pub mod search;
 pub mod settings;

@@ -5,6 +5,10 @@ import { parseError } from "./api";
 import type {
   DayGroup,
   EffectApplied,
+  Folder,
+  FolderWithCount,
+  Note,
+  NoteSummary,
   Reminder,
   Repeat,
   SearchHit,
@@ -26,6 +30,11 @@ interface Fixture {
   rangeOutput: Task[];
   effectApplied: EffectApplied;
   searchHit: SearchHit;
+  folder: Folder;
+  folderWithCount: FolderWithCount;
+  note: Note;
+  noteInInbox: Note;
+  noteSummary: NoteSummary;
 }
 
 const fixture = fixtureJson as unknown as Fixture;
@@ -39,6 +48,7 @@ const taskKeys: Record<keyof Task, true> = {
   dueDate: true,
   dueTime: true,
   durationMinutes: true,
+  sourceNoteId: true,
   isCompleted: true,
   completedAt: true,
   position: true,
@@ -90,6 +100,37 @@ const searchHitKeys: Record<keyof SearchHit, true> = {
   isCompleted: true,
 };
 
+const folderKeys: Record<keyof Folder, true> = {
+  id: true,
+  name: true,
+  parentId: true,
+  position: true,
+};
+const folderWithCountKeys: Record<keyof FolderWithCount, true> = {
+  ...folderKeys,
+  noteCount: true,
+};
+const noteKeys: Record<keyof Note, true> = {
+  id: true,
+  folderId: true,
+  title: true,
+  contentJson: true,
+  isPinned: true,
+  tagIds: true,
+  createdAt: true,
+  updatedAt: true,
+};
+const noteSummaryKeys: Record<keyof NoteSummary, true> = {
+  id: true,
+  folderId: true,
+  title: true,
+  excerpt: true,
+  isPinned: true,
+  tagIds: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
 function keys(value: object): string[] {
   return Object.keys(value).sort();
 }
@@ -131,6 +172,28 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
     expect(Array.isArray(task.tagIds)).toBe(true);
     expect(typeof task.reminders[0].offsetMinutes).toBe("number");
     expect(typeof task.reminders[0].isSent).toBe("boolean");
+  });
+
+  it("Folder and FolderWithCount (flattened noteCount)", () => {
+    expect(keys(fixture.folder)).toEqual(keys(folderKeys));
+    expect(keys(fixture.folderWithCount)).toEqual(keys(folderWithCountKeys));
+    expect(fixture.folderWithCount.noteCount).toBe(3);
+    expect(fixture.folder.parentId).toBe("folder-0");
+  });
+
+  it("Note and NoteSummary, with the inbox as a null folder", () => {
+    expect(keys(fixture.note)).toEqual(keys(noteKeys));
+    expect(keys(fixture.noteInInbox)).toEqual(keys(noteKeys));
+    expect(keys(fixture.noteSummary)).toEqual(keys(noteSummaryKeys));
+    expect(fixture.noteInInbox.folderId).toBeNull();
+    expect(typeof fixture.note.isPinned).toBe("boolean");
+    expect(typeof fixture.noteSummary.excerpt).toBe("string");
+    expect(Array.isArray(fixture.note.tagIds)).toBe(true);
+  });
+
+  it("Task keeps the note it was created from", () => {
+    expect(fixture.task.sourceNoteId).toBe("note-1");
+    expect(fixture.taskWithoutOptionals.sourceNoteId).toBeNull();
   });
 
   it("Tag and TagWithCount (flattened pendingCount)", () => {

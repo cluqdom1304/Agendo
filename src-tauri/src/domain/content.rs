@@ -17,6 +17,52 @@ pub fn text_of(content_json: &str) -> Result<String, ValidationError> {
     Ok(text)
 }
 
+/// Tasks and notes a document points to (D-45, D-46), in order of first appearance and without
+/// repeats. They come from `taskRef` (`attrs.taskId`) and `noteLink` (`attrs.noteId`) nodes.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct References {
+    pub task_ids: Vec<String>,
+    pub note_ids: Vec<String>,
+}
+
+/// Validates `content_json` and returns the references it contains. A reference node without a
+/// non-empty id is rejected: it could never be resolved.
+pub fn references_of(content_json: &str) -> Result<References, ValidationError> {
+    validate_content_json(content_json)?;
+    let document: Value = serde_json::from_str(content_json)
+        .map_err(|_| ValidationError::new("las notas no tienen un formato válido"))?;
+    let mut references = References::default();
+    collect_references(&document, &mut references)?;
+    Ok(references)
+}
+
+fn collect_references(node: &Value, references: &mut References) -> Result<(), ValidationError> {
+    let target = match node.get("type").and_then(Value::as_str) {
+        Some("taskRef") => Some(("taskId", &mut references.task_ids, "tarea")),
+        Some("noteLink") => Some(("noteId", &mut references.note_ids, "nota")),
+        _ => None,
+    };
+    if let Some((attribute, ids, what)) = target {
+        let id = node
+            .get("attrs")
+            .and_then(|attrs| attrs.get(attribute))
+            .and_then(Value::as_str)
+            .filter(|id| !id.is_empty())
+            .ok_or_else(|| {
+                ValidationError::new(format!("una referencia a {what} no tiene identificador"))
+            })?;
+        if !ids.iter().any(|known| known == id) {
+            ids.push(id.to_string());
+        }
+    }
+    if let Some(children) = node.get("content").and_then(Value::as_array) {
+        for child in children {
+            collect_references(child, references)?;
+        }
+    }
+    Ok(())
+}
+
 fn collect(node: &Value, text: &mut String) {
     let kind = node.get("type").and_then(Value::as_str);
     match kind {
@@ -45,6 +91,54 @@ mod tests {
 
     fn text(json: &str) -> String {
         text_of(json).expect("valid document")
+    }
+
+    #[test]
+    fn references_are_collected_once_in_order_of_appearance() {
+        let json = r#"{"type":"doc","content":[
+            {"type":"paragraph","content":[
+                {"type":"noteLink","attrs":{"noteId":"n2"}},
+                {"type":"text","text":" y "},
+                {"type":"noteLink","attrs":{"noteId":"n1"}}]},
+            {"type":"taskRef","attrs":{"taskId":"t1"}},
+            {"type":"bulletList","content":[{"type":"listItem","content":[
+                {"type":"taskRef","attrs":{"taskId":"t2"}},
+                {"type":"taskRef","attrs":{"taskId":"t1"}},
+                {"type":"noteLink","attrs":{"noteId":"n2"}}]}]}
+        ]}"#;
+        let references = references_of(json).expect("valid");
+        assert_eq!(references.task_ids, ["t1", "t2"]);
+        assert_eq!(references.note_ids, ["n2", "n1"]);
+    }
+
+    #[test]
+    fn a_document_without_references_has_none() {
+        let references =
+            references_of(r#"{"type":"doc","content":[{"type":"paragraph"}]}"#).expect("valid");
+        assert_eq!(references, References::default());
+    }
+
+    #[test]
+    fn a_reference_without_an_id_is_rejected() {
+        for json in [
+            r#"{"type":"doc","content":[{"type":"taskRef"}]}"#,
+            r#"{"type":"doc","content":[{"type":"taskRef","attrs":{"taskId":""}}]}"#,
+            r#"{"type":"doc","content":[{"type":"noteLink","attrs":{"noteId":5}}]}"#,
+        ] {
+            assert!(references_of(json).is_err(), "{json}");
+        }
+        assert_eq!(
+            references_of(r#"{"type":"doc","content":[{"type":"taskRef"}]}"#)
+                .expect_err("rejected")
+                .to_string(),
+            "una referencia a tarea no tiene identificador"
+        );
+    }
+
+    #[test]
+    fn references_of_rejects_what_text_of_rejects() {
+        assert!(references_of("not json").is_err());
+        assert!(references_of(r#"{"type":"paragraph"}"#).is_err());
     }
 
     #[test]

@@ -16,6 +16,7 @@ export function makeTask(overrides: Partial<Task> & { id: string }): Task {
     dueDate: null,
     dueTime: null,
     durationMinutes: null,
+    sourceNoteId: null,
     isCompleted: false,
     completedAt: null,
     position: 0,
