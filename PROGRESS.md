@@ -307,6 +307,14 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F11-04 Paleta de comandos `Ctrl+K` — sustituye al buscador de la agenda y funciona en ambas secciones: busca en todo, `>` para solo comandos (nueva tarea/nota, cambiar de sección o vista, carpetas inteligentes de notas, mostrar todas las etiquetas)
 - [x] F11-05 Notas recientes e «Ir a…» (`Ctrl+P`) — las 8 últimas notas abiertas se guardan en el ajuste `notes_recent` (límite de 480 caracteres, el resto de ajustes libres sigue en 64)
 
+## Fase 11B — Menús contextuales y botón flotante de nueva tarea (añadida a petición del usuario, D-50)
+- [ ] F11B-01 Componente único de menú contextual (clic derecho y tecla Menú / Mayús+F10): posición sin salirse de la ventana, flechas, Esc, submenús (etiquetas, mover a, fecha), reutilizando `shell/Menu.svelte`; el menú del navegador queda desactivado salvo en campos de texto
+- [ ] F11B-02 Tareas (lista, calendario, detalle): hecha/reabrir, editar, fecha de hoy/mañana/elegir, aviso, etiquetas (marcar varias), duplicar, crear nota para la tarea, convertir en nota, borrar con Deshacer
+- [ ] F11B-03 Notas (lista y cabecera): abrir, fijar, mover a…, etiquetas, duplicar, nueva tarea desde la nota, copiar enlace `[[…]]`, borrar; en la papelera: restaurar. Carpetas: nueva nota aquí, subcarpeta, renombrar, borrar. Etiquetas (barras laterales): renombrar, color, subetiqueta, fusionar, borrar
+- [ ] F11B-04 Fondo de cada sección: Agenda → nueva tarea (con la fecha del día pulsado en el calendario); Notas → nueva nota (en la carpeta actual). Editor: cortar/copiar/pegar, formato y enlace; clic derecho sobre un enlace `[[…]]` o una referencia de tarea → abrir, quitar
+- [ ] F11B-05 Botón «Nueva tarea» flotante en la esquina inferior derecha de la Agenda (redondo, sombra, sin tapar contenido ni el aviso de Deshacer, `Ctrl+N` intacto, desaparece en Notas); se retira de la barra superior
+- [ ] F11B-06 Tests de cada menú (acciones disponibles según el elemento, accesibilidad por teclado) y `[H]` en `docs/manual-pruebas.md`
+
 ## Fase 12 — Editor avanzado y adjuntos
 - [ ] F12-01 Almacén de adjuntos con hash, deduplicación y limpieza de huérfanos (D-47)
 - [ ] F12-02 Imágenes: pegar, arrastrar, redimensionar; vista previa de ficheros
