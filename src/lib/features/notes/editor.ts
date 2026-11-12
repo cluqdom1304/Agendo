@@ -21,6 +21,9 @@ import { Placeholder, UndoRedo } from "@tiptap/extensions";
 
 import { sanitizeLink } from "../../links";
 import { findTagQuery } from "./tagQuery";
+import { TaskRef, type TaskRefHost } from "./taskRef";
+
+export type { TaskRefHost, TaskRefInfo } from "./taskRef";
 
 export const EMPTY_NOTE = '{"type":"doc","content":[]}';
 
@@ -47,6 +50,22 @@ export interface NoteEditorHandle {
   toggle(name: ToggleName): void;
   /** Deletes the `#text` being typed, once its tag has been chosen. */
   removeTagQuery(): void;
+  /** Puts a reference to the task after the cursor. */
+  insertTaskRef(taskId: string): void;
+  /** Redraws every task reference: the tasks they show have changed. */
+  refreshTaskRefs(): void;
+  /** The checklist items (D-37) of the document, in order. */
+  checklistItems(): ChecklistItem[];
+  /**
+   * Replaces every checklist with references to the tasks `create` makes for its items, in the
+   * same order. Resolves with how many were converted (0 when there were none, or the note was
+   * edited meanwhile).
+   */
+  convertChecklists(
+    create: (items: ChecklistItem[]) => Promise<string[] | null>,
+  ): Promise<number>;
+  /** Text selected in the document; empty when nothing is. */
+  selectedText(): string;
   /** Sets the link on the selection, or removes it with `null`. False if the address is refused. */
   setLink(href: string | null): boolean;
   undo(): void;
@@ -74,6 +93,15 @@ export interface NoteEditorOptions {
   onTagQuery?: (query: TagQuery | null) => void;
   /** First look at a key while a `#text` is open; returns true when it was used. */
   onTagKey?: (event: KeyboardEvent) => boolean;
+  /** Turns on task references: how to read and drive the tasks they point at. */
+  taskHost?: TaskRefHost;
+  /** Ctrl+Mayús+T or `/tarea` + space: the user wants a task made from here. */
+  onTaskRequest?: (prefill: string) => void;
+}
+
+export interface ChecklistItem {
+  text: string;
+  checked: boolean;
 }
 
 export interface TagQuery {
@@ -129,8 +157,28 @@ function queryAtCursor(editor: Editor): QueryRange | null {
   return { query, from: selection.from - query.length - 1, to: selection.from };
 }
 
+function checklists(
+  editor: Editor,
+): { pos: number; size: number; items: ChecklistItem[] }[] {
+  const found: { pos: number; size: number; items: ChecklistItem[] }[] = [];
+  editor.state.doc.descendants((node, pos) => {
+    if (node.type.name !== "taskList") return true;
+    const items: ChecklistItem[] = [];
+    node.forEach((item) =>
+      items.push({
+        text: item.textContent.trim(),
+        checked: item.attrs.checked === true,
+      }),
+    );
+    found.push({ pos, size: node.nodeSize, items });
+    return false;
+  });
+  return found;
+}
+
 export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
   let open: QueryRange | null = null;
+  const taskRefs = new Set<() => void>();
   const editor = new Editor({
     element: options.element,
     content: parseContent(options.contentJson),
@@ -148,6 +196,9 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
       TaskList,
       TaskItem.configure({ nested: false }),
       UndoRedo,
+      ...(options.taskHost
+        ? [TaskRef.configure({ host: options.taskHost, registry: taskRefs })]
+        : []),
       Placeholder.configure({ placeholder: options.placeholder }),
       Link.configure({
         openOnClick: false,
@@ -163,7 +214,36 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
         "aria-multiline": "true",
         "aria-label": options.label,
       },
+      handleTextInput: (view, from, _to, text) => {
+        if (!options.onTaskRequest || text !== " ") return false;
+        const before = view.state.doc
+          .resolve(from)
+          .parent.textBetween(
+            0,
+            view.state.doc.resolve(from).parentOffset,
+            undefined,
+            "\ufffc",
+          );
+        const typed = /(?:^|\s)(\/tarea)$/i.exec(before);
+        if (!typed?.[1]) return false;
+        view.dispatch(view.state.tr.delete(from - typed[1].length, from));
+        options.onTaskRequest("");
+        return true;
+      },
       handleKeyDown: (_view, event) => {
+        if (
+          options.onTaskRequest &&
+          (event.ctrlKey || event.metaKey) &&
+          event.shiftKey &&
+          event.key.toLowerCase() === "t"
+        ) {
+          event.preventDefault();
+          const { from, to } = editor.state.selection;
+          options.onTaskRequest(
+            editor.state.doc.textBetween(from, to, " ").trim(),
+          );
+          return true;
+        }
         if (open && options.onTagKey?.(event)) {
           event.preventDefault();
           return true;
@@ -219,6 +299,62 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
 
   return {
     state: () => toolbarState(editor),
+    insertTaskRef(taskId) {
+      editor
+        .chain()
+        .focus()
+        .insertContent([
+          { type: "taskRef", attrs: { taskId } },
+          { type: "paragraph" },
+        ])
+        .run();
+    },
+    refreshTaskRefs() {
+      for (const redraw of taskRefs) redraw();
+    },
+    selectedText() {
+      const { from, to } = editor.state.selection;
+      return editor.state.doc.textBetween(from, to, " ").trim();
+    },
+    checklistItems: () => checklists(editor).flatMap((list) => list.items),
+    async convertChecklists(create) {
+      const before = checklists(editor);
+      const items = before.flatMap((list) => list.items);
+      if (items.length === 0) return 0;
+      const ids = await create(items);
+      if (!ids || ids.length !== items.length) return 0;
+      // The note may have been edited while the tasks were being made: only replace what is
+      // still exactly the lists that were read.
+      const now = checklists(editor);
+      const same =
+        now.length === before.length &&
+        now.every(
+          (list, index) =>
+            list.items.length === before[index]?.items.length &&
+            list.items.every(
+              (item, at) =>
+                item.text === before[index]?.items[at]?.text &&
+                item.checked === before[index]?.items[at]?.checked,
+            ),
+        );
+      if (!same) return 0;
+      const schema = editor.state.schema;
+      const refType = schema.nodes.taskRef;
+      if (!refType) return 0;
+      const tr = editor.state.tr;
+      let used = ids.length;
+      for (const list of [...now].reverse()) {
+        const slice = ids.slice(used - list.items.length, used);
+        used -= list.items.length;
+        tr.replaceWith(
+          list.pos,
+          list.pos + list.size,
+          slice.map((taskId) => refType.create({ taskId })),
+        );
+      }
+      editor.view.dispatch(tr);
+      return items.length;
+    },
     removeTagQuery() {
       const range = queryAtCursor(editor);
       if (!range) return;

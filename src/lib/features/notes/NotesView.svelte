@@ -18,9 +18,11 @@
     tasks: TasksStore;
     /** Shows a task in the agenda. */
     onOpenTask: (task: Task) => void;
+    /** Shows the details dialog of a task, without leaving the notes. */
+    onPreviewTask: (taskId: string) => void;
   }
 
-  let { notes, tags, tasks, onOpenTask }: Props = $props();
+  let { notes, tags, tasks, onOpenTask, onPreviewTask }: Props = $props();
 
   type Tab = "notes" | "tasks";
   let tab = $state<Tab>("notes");
@@ -100,7 +102,7 @@
     <div class="pane">
       {#if notes.open}
         {#key notes.open.id}
-          <NotePane {notes} note={notes.open} />
+          <NotePane {notes} note={notes.open} {tasks} {onPreviewTask} />
         {/key}
       {:else}
         <EmptyState

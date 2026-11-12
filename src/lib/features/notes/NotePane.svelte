@@ -6,19 +6,32 @@
   import TagChip from "../tags/TagChip.svelte";
   import TagMenu from "../tags/TagMenu.svelte";
   import type { NotesStore } from "../../stores/notes.svelte";
+  import type { TasksStore } from "../../stores/tasks.svelte";
   import type { Note } from "../../types";
   import { formatNoteDate } from "./format";
   import NoteEditor from "./NoteEditor.svelte";
   import { NoteSaver } from "./noteSaver";
+  import NoteTaskDialog from "./NoteTaskDialog.svelte";
+  import NoteTasksPanel from "./NoteTasksPanel.svelte";
+  import { createTaskHost } from "./taskHost";
 
   interface Props {
     notes: NotesStore;
     /** The note to edit. The parent re-creates the pane when it changes. */
     note: Note;
+    tasks: TasksStore;
+    /** Shows the details of a task (the dialog of the agenda). */
+    onPreviewTask: (taskId: string) => void;
     now?: () => Date;
   }
 
-  let { notes, note, now = () => new Date() }: Props = $props();
+  let {
+    notes,
+    note,
+    tasks,
+    onPreviewTask,
+    now = () => new Date(),
+  }: Props = $props();
 
   // The pane is created per note, so these read the opening values on purpose.
   // svelte-ignore state_referenced_locally
@@ -28,6 +41,15 @@
   let moveOpen = $state(false);
   let tagsOpen = $state(false);
   let titleInput = $state<HTMLInputElement>();
+  let editor = $state<NoteEditor>();
+  /** Text to start the new task with while its dialog is open; `null` when it is closed. */
+  let taskPrefill = $state<string | null>(null);
+
+  // The store is the same for the life of the pane.
+  // svelte-ignore state_referenced_locally
+  const taskHost = createTaskHost(tasks, tagsStore, (taskId) =>
+    onPreviewTask(taskId),
+  );
 
   const titleSaver = new NoteSaver((value) => notes.saveTitle(id, value));
   const inTrash = $derived(notes.scope === "trash");
@@ -65,6 +87,51 @@
     if (!current.includes(tag.id)) void setTags([...current, tag.id]);
   }
 
+  function requestTask(prefill = editor?.selectedText() ?? "") {
+    taskPrefill = prefill;
+  }
+
+  /** D-37 checklist items become real tasks, in place (F10-03). */
+  async function convertChecklists() {
+    if (!editor?.hasChecklists()) {
+      notes.notice = { kind: "info", message: t.notesApp.noChecklists };
+      return;
+    }
+    const converted = await editor.convertChecklists(async (items) => {
+      const ids: string[] = [];
+      for (const item of items) {
+        const created = await tasks.create({
+          title: item.text || t.notesApp.untitledTask,
+          sourceNoteId: id,
+          ...((notes.open?.tagIds.length ?? 0) > 0
+            ? { tagIds: notes.open?.tagIds ?? [] }
+            : {}),
+        });
+        if (!created) {
+          notes.notice = { kind: "error", message: t.notesApp.convertFailed };
+          return null;
+        }
+        ids.push(created.id);
+      }
+      // A ticked box becomes a task that is already done.
+      await Promise.all(
+        items.flatMap((item, at) => {
+          const taskId = ids[at];
+          return item.checked && taskId
+            ? [tasks.setCompleted(taskId, true)]
+            : [];
+        }),
+      );
+      return ids;
+    });
+    if (converted > 0) {
+      notes.notice = {
+        kind: "info",
+        message: t.notesApp.converted(converted),
+      };
+    }
+  }
+
   const saveContent = (contentJson: string) =>
     notes.saveContent(id, contentJson);
 
@@ -98,6 +165,48 @@
           {t.notesApp.restore}
         </button>
       {:else}
+        <button
+          type="button"
+          class="icon-btn"
+          aria-label={t.notesApp.newTaskFromNote}
+          title={t.notesApp.newTaskFromNote}
+          onclick={() => requestTask()}
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <circle
+              cx="8"
+              cy="8"
+              r="5.6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+            />
+            <path
+              d="M8 5.6v4.8M5.6 8h4.8"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="icon-btn"
+          aria-label={t.notesApp.convertChecklists}
+          title={t.notesApp.convertChecklists}
+          onclick={() => void convertChecklists()}
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path
+              d="M2.5 4.2l1.2 1.2 2-2.2M2.5 10.2l1.2 1.2 2-2.2M8 4.5h5.5M8 10.5h5.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
         <button
           type="button"
           class="icon-btn"
@@ -275,14 +384,35 @@
       <p class="trash-note">{t.notesApp.inTrash}</p>
     {/if}
     <NoteEditor
+      bind:this={editor}
       contentJson={note.contentJson}
       save={saveContent}
       variant="page"
+      {taskHost}
+      taskTrack={taskHost.track}
+      onTaskRequest={inTrash ? undefined : requestTask}
       tagSuggest={{ tags: tagsStore.tags, onPick: addTag }}
       placeholder={t.notesApp.bodyPlaceholder}
     />
+    <NoteTasksPanel
+      {tasks}
+      noteId={id}
+      contentJson={notes.open?.contentJson ?? note.contentJson}
+      onOpen={(task) => onPreviewTask(task.id)}
+    />
   </div>
 </article>
+
+{#if taskPrefill !== null}
+  <NoteTaskDialog
+    {tasks}
+    noteId={id}
+    prefill={taskPrefill}
+    tagIds={notes.open?.tagIds ?? []}
+    onCreated={(task) => editor?.insertTaskRef(task.id)}
+    onClose={() => (taskPrefill = null)}
+  />
+{/if}
 
 <style>
   .note-pane {

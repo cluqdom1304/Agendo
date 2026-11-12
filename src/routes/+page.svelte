@@ -60,6 +60,14 @@
   const loadCalendar = () =>
     import("$lib/features/calendar/CalendarView.svelte");
 
+  // Tasks made from a note name it (F10-05): look the titles up as tasks come and go.
+  $effect(() => {
+    const ids = tasksStore.tasks.flatMap((task) =>
+      task.sourceNoteId ? [task.sourceNoteId] : [],
+    );
+    if (ids.length > 0) void notesStore.ensureTitles(ids);
+  });
+
   // The notes load the first time their section is shown, not at startup (N-01).
   $effect(() => {
     if (viewStore.section === "notes" && notesStore.status === "idle") {
@@ -251,6 +259,7 @@
             notes={notesStore}
             tags={tagsStore}
             tasks={tasksStore}
+            onPreviewTask={(taskId) => (detailId = taskId)}
             onOpenTask={(task) => {
               viewStore.setSection("agenda");
               void openInList(task);

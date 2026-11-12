@@ -251,4 +251,51 @@ describe("NotesStore", () => {
     expect(created).not.toBeNull();
     expect(store.scope).toBe("tag:mat");
   });
+
+  it("looks up the titles of the notes tasks come from, once each", async () => {
+    const { api, store } = await loaded((fake) => {
+      fake.notes = [
+        note("n1", { title: "Reunión" }),
+        note("n2", { title: "Plan" }),
+      ];
+    });
+    let lookups = 0;
+    const original = api.noteGet.bind(api);
+    api.noteGet = async (id) => {
+      lookups += 1;
+      return original(id);
+    };
+    await store.ensureTitles(["n1", "n2", "n1", "gone"]);
+    expect(store.titleOf("n1")).toBe("Reunión");
+    expect(store.titleOf("gone")).toBeUndefined();
+    const first = lookups;
+    await store.ensureTitles(["n1", "n2"]);
+    expect(lookups).toBe(first);
+  });
+
+  it("creates a note with given contents and opens it", async () => {
+    const { store } = await loaded();
+    const created = await store.createNoteWith({
+      title: "Desde una tarea",
+      tagIds: ["mat"],
+    });
+    expect(created?.title).toBe("Desde una tarea");
+    expect(store.open?.id).toBe(created?.id);
+    expect(store.titleOf(created?.id ?? "")).toBe("Desde una tarea");
+  });
+
+  it("shares one load between callers that arrive together", async () => {
+    const api = new FakeApi();
+    let lists = 0;
+    const original = api.folderList.bind(api);
+    api.folderList = async () => {
+      lists += 1;
+      return original();
+    };
+    const store = new NotesStore(api);
+    await Promise.all([store.load(), store.ensureLoaded(), store.load()]);
+    expect(lists).toBe(1);
+    await store.ensureLoaded();
+    expect(lists).toBe(1);
+  });
 });

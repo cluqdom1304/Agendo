@@ -242,7 +242,7 @@ Movimiento y fluidez
 - [H] Ajustes → «Restaurar copia…» con el `.sqlite` guardado: reaparecen todas las tareas, etiquetas, notas y recordatorios.
 - [H] La base nueva está en `%APPDATA%\com.cristian.agendo\agenda.sqlite`.
 
-## Notas V2 — Fases 8 y 9 (`[H]`, pendientes de validar en Windows 11)
+## Notas V2 — Fases 8, 9 y 10 (`[H]`, pendientes de validar en Windows 11)
 - [ ] Pulsar «Notas» en la barra superior (o `Ctrl+Mayús+2`) cambia de sección con una transición suave; `Ctrl+Mayús+1` vuelve a la Agenda. La sección, carpeta y nota abiertas se recuerdan al reiniciar.
 - [ ] Crear carpeta, subcarpeta, renombrar y eliminar (con confirmación): los contadores y el árbol se actualizan; no deja crear más de 5 niveles ni dos hermanas con el mismo nombre.
 - [ ] Arrastrar una nota o una carpeta sobre una carpeta, la Bandeja o «Carpetas» la mueve; Esc cancela el arrastre.
@@ -254,3 +254,8 @@ Movimiento y fluidez
 - [ ] (F9) En una nota: asignar etiquetas con el botón y con `#` (lista bajo el cursor; flechas, Intro, Tab, Esc); la etiqueta aparece en la lista de notas.
 - [ ] (F9) En «Notas», la sección Etiquetas muestra contadores; al elegir una, las pestañas Notas/Tareas cambian de contenido y pulsar una tarea abre la agenda.
 - [ ] (F9) Editar una etiqueta: ponerla dentro de otra, fusionarla con confirmación y comprobar que tareas y notas pasan a la etiqueta destino.
+- [ ] (F10) En una nota, escribir `/tarea` y espacio (o `Ctrl+Mayús+T`, o el botón +): crear una tarea con fecha, hora y aviso; aparece como fila con casilla en la nota y en la agenda, con su nota de origen.
+- [ ] (F10) Marcar la casilla en la nota completa la tarea en la agenda (y al revés); renombrar o cambiar la fecha se ve en la nota; borrar la tarea deja la línea tachada con «Restaurar», que la devuelve.
+- [ ] (F10) «Convertir casillas en tareas» sobre una lista con casillas marcadas y sin marcar: se crean las tareas (las marcadas, hechas) y la lista pasa a ser referencias. El panel «Tareas de esta nota» muestra el progreso.
+- [ ] (F10) En el detalle de una tarea: «Crear nota para esta tarea» y «Convertir en nota» (con Deshacer); el chip de origen de la fila y del detalle abre la nota.
+- [ ] (F10) Aspecto: las filas de tarea dentro de la nota en tema claro y oscuro, animación de la casilla y del progreso.

@@ -23,6 +23,7 @@ export interface TasksApi {
     durationMinutes?: number;
     tagIds?: string[];
     contentJson?: string;
+    sourceNoteId?: string;
   }): Promise<Task>;
   taskUpdate(id: string, patch: TaskPatch): Promise<Task>;
   taskTagsSet(taskId: string, tagIds: string[]): Promise<Task>;
@@ -118,6 +119,19 @@ function forgetStoredCollapse(): void {
   } catch {
     // Storage may be unavailable; there is nothing to forget then.
   }
+}
+
+/** What `create` takes: the details of a new task. */
+export interface NewTaskDetails {
+  title: string;
+  dueDate?: string;
+  dueTime?: string;
+  durationMinutes?: number;
+  tagIds?: string[];
+  contentJson?: string;
+  reminders?: ReminderInput[];
+  /** The note the task is created from (D-45). */
+  sourceNoteId?: string;
 }
 
 function sameSet(a: readonly string[], b: readonly string[]): boolean {
@@ -320,17 +334,14 @@ export class TasksStore {
    * its reminders are then refused the task stays and the error is reported, so nothing typed
    * is lost twice. Returns whether the task was created.
    */
-  async createDetailed(input: {
-    title: string;
-    dueDate?: string;
-    dueTime?: string;
-    durationMinutes?: number;
-    tagIds?: string[];
-    contentJson?: string;
-    reminders?: ReminderInput[];
-  }): Promise<boolean> {
+  async createDetailed(input: NewTaskDetails): Promise<boolean> {
+    return (await this.create(input)) !== null;
+  }
+
+  /** Like `createDetailed`, but hands back the task (a note needs its id to point at it). */
+  async create(input: NewTaskDetails): Promise<Task | null> {
     const title = input.title.trim();
-    if (!title || this.#creating) return false;
+    if (!title || this.#creating) return null;
     this.#creating = true;
     try {
       let created = await this.#api.taskCreate({
@@ -344,6 +355,7 @@ export class TasksStore {
           ? { tagIds: input.tagIds }
           : {}),
         ...(input.contentJson ? { contentJson: input.contentJson } : {}),
+        ...(input.sourceNoteId ? { sourceNoteId: input.sourceNoteId } : {}),
       });
       this.tasks = [...this.tasks, created];
       this.#warnIfHidden(created);
@@ -355,10 +367,10 @@ export class TasksStore {
           this.#report(error);
         }
       }
-      return true;
+      return created;
     } catch (error) {
       this.#report(error);
-      return false;
+      return null;
     } finally {
       this.#creating = false;
     }
@@ -655,6 +667,20 @@ export class TasksStore {
       entry.key,
       setTimeout(() => this.#expire(entry.key), this.#undoMs),
     );
+  }
+
+  /**
+   * Brings back a task that is in the trash, for a note that still points at it. Resolves
+   * `false` when it is gone for good (purged after 30 days).
+   */
+  async restoreById(id: string): Promise<boolean> {
+    if (this.find(id)) return true;
+    try {
+      this.#restoreLocally(await this.#api.taskRestore(id));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /** Brings back the most recently deleted task. */

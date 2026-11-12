@@ -1,4 +1,4 @@
-import { SvelteSet } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import * as backend from "../api";
 import { parseError } from "../api";
@@ -91,8 +91,12 @@ export class NotesStore {
   /** Folders whose children are shown. */
   readonly expanded = new SvelteSet<string>();
 
+  /** Titles of notes tasks come from, so a task can name its note without opening it. */
+  readonly titles = new SvelteMap<string, string>();
+
   readonly #api: NotesApi;
   #listToken = 0;
+  #loading: Promise<void> | null = null;
 
   // Rebuilt on change, never mutated.
   // eslint-disable-next-line svelte/prefer-svelte-reactivity
@@ -145,7 +149,56 @@ export class NotesStore {
     this.#api = api;
   }
 
-  async load(): Promise<void> {
+  /** Loads once at a time: callers that arrive while it runs share the same work. */
+  load(): Promise<void> {
+    this.#loading ??= this.#load().finally(() => {
+      this.#loading = null;
+    });
+    return this.#loading;
+  }
+
+  /** Loads the notes the first time they are needed. */
+  async ensureLoaded(): Promise<void> {
+    if (this.status === "idle") await this.load();
+  }
+
+  /** The title of a note known by id, if it has been looked up. */
+  titleOf(id: string): string | undefined {
+    return this.titles.get(id);
+  }
+
+  /** Looks up the titles of notes not known yet; unknown or removed notes stay unknown. */
+  async ensureTitles(ids: readonly string[]): Promise<void> {
+    const missing = ids.filter(
+      (id, at) => ids.indexOf(id) === at && !this.titles.has(id),
+    );
+    await Promise.all(
+      missing.map(async (id) => {
+        try {
+          this.titles.set(id, (await this.#api.noteGet(id)).title);
+        } catch {
+          // A purged note has no title to show.
+        }
+      }),
+    );
+  }
+
+  /** Creates a note with these contents, shows it and opens it. */
+  async createNoteWith(input: NoteCreateInput): Promise<Note | null> {
+    try {
+      const note = await this.#api.noteCreate(input);
+      this.titles.set(note.id, note.title);
+      await this.#refreshAll();
+      this.open = note;
+      this.#remember("notes_open", note.id);
+      return note;
+    } catch {
+      this.#fail(t.notesApp.createFailed);
+      return null;
+    }
+  }
+
+  async #load(): Promise<void> {
     try {
       const [scope, openId] = await Promise.all([
         this.#api.settingsGet("notes_scope").catch(() => null),
@@ -234,6 +287,7 @@ export class NotesStore {
 
   async saveTitle(id: string, title: string): Promise<void> {
     const saved = await this.#api.noteUpdate(id, { title });
+    this.titles.set(id, saved.title);
     this.#adopt(saved);
     await this.#refreshList();
   }
@@ -433,6 +487,7 @@ export class NotesStore {
       notes = await this.#api.notesList(query);
     }
     if (token === this.#listToken) this.notes = notes;
+    for (const note of notes) this.titles.set(note.id, note.title);
   }
 
   #remember(key: "notes_scope" | "notes_open", value: string): void {

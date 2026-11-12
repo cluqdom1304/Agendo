@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 9 de la V2.0.0 (etiquetas unificadas)
+**Fase activa:** Fase 10 de la V2.0.0 (tareas dentro de las notas)
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F9 cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8 y 9» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 10 (F8-08 sigue pospuesta a F10).
-**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 y 9 implementadas, pendientes de validación humana)
+**Siguiente tarea:** F10 cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8, 9 y 10» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 11.
+**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8, 9 y 10 implementadas, pendientes de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -222,7 +222,7 @@
 - [x] F8-05 Fijar, duplicar, mover, eliminar/restaurar con deshacer
 - [x] F8-06 Textos en `i18n.ts`, estados vacíos, teclado y ARIA (N-08)
 - [x] F8-07 Recordar carpeta y nota abiertas al reiniciar
-- [ ] F8-08 Evento `notes:changed` (SPEC §7.4) y su escucha en la interfaz; se pospuso desde F7-07 porque hoy nada lo consume (tampoco existe `tasks:changed`)
+- [ ] F8-08 (innecesaria hasta ahora: ver notas de la F10) Evento `notes:changed` (SPEC §7.4) y su escucha en la interfaz; se pospuso desde F7-07 porque hoy nada lo consume (tampoco existe `tasks:changed`)
 
 **Verificaciones [A] de F8:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (321 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (385+), `npm run build` y `npm run size` (196,1 KB gzip de 250) en verde.
 
@@ -252,13 +252,26 @@
 - F9-05: escribir `#` al principio de línea o tras un espacio abre una lista de etiquetas (sin distinguir mayúsculas ni tildes; flechas, Intro/Tab y Esc). Elegir una **asigna la etiqueta a la nota** y borra el `#texto`; no inserta un nodo en el documento ni añade dependencias. Solo en el cuerpo de las notas, no en las descripciones de tareas.
 
 ## Fase 10 — Tareas dentro de las notas
-- [ ] F10-01 Nodo `taskRef` en TipTap: casilla, título, fecha y etiqueta; marcar completa la tarea real
-- [ ] F10-02 Crear tarea desde una nota (`/tarea`, `Ctrl+Shift+T`) con mini-diálogo de fecha, hora y aviso
-- [ ] F10-03 «Convertir casillas en tareas» para las listas de D-37
-- [ ] F10-04 Panel «Tareas de esta nota» con progreso
-- [ ] F10-05 Chip «Nota de origen» en la lista y el detalle de tarea
-- [ ] F10-06 Sincronía editar/completar/borrar entre tarea y notas; tarea borrada → referencia tachada con «Restaurar»
-- [ ] F10-07 «Convertir en nota» y «Crear nota para esta tarea»
+- [x] F10-01 Nodo `taskRef` en TipTap: casilla, título, fecha y etiqueta; marcar completa la tarea real
+- [x] F10-02 Crear tarea desde una nota (`/tarea`, `Ctrl+Shift+T`) con mini-diálogo de fecha, hora y aviso
+- [x] F10-03 «Convertir casillas en tareas» para las listas de D-37
+- [x] F10-04 Panel «Tareas de esta nota» con progreso
+- [x] F10-05 Chip «Nota de origen» en la lista y el detalle de tarea
+- [x] F10-06 Sincronía editar/completar/borrar entre tarea y notas; tarea borrada → referencia tachada con «Restaurar»
+- [x] F10-07 «Convertir en nota» y «Crear nota para esta tarea»
+
+**Verificaciones [A] de F10:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (325 de lib + 4 + 1 + 4, sin cambios de backend), `npm run lint`, `npm run check` (0/0), `npm run test` (418), `npm run build` y `npm run size` (205,5 KB gzip de 250) en verde.
+
+**Notas de la fase 10 (D-45):**
+- F10-01: nodo `taskRef` de TipTap (`features/notes/taskRef.ts`), bloque atómico que solo guarda `attrs.taskId` (el formato que ya entendía el backend desde F7). Se dibuja con DOM propio y lee la tarea viva a través de un `TaskRefHost` (`taskHost.ts`): casilla (completa la tarea real con la misma lógica que la lista), título (abre el detalle), fecha y hora, y etiquetas. Solo existe en las notas, no en las descripciones de tareas.
+- F10-02: `/tarea` + espacio, `Ctrl+Mayús+T` o el botón de la barra abren `NoteTaskDialog` (título, fecha, hora, aviso y etiquetas, que arrancan con las de la nota; el texto seleccionado rellena el título). La tarea se crea con `sourceNoteId` y la referencia se inserta tras el cursor.
+- F10-03: «Convertir casillas en tareas» crea una tarea por casilla (las marcadas quedan hechas) y sustituye las listas por sus referencias, en una sola transacción del editor. Si la nota se edita mientras tanto no toca nada (las tareas quedan creadas y aparecen en el panel).
+- F10-04: `NoteTasksPanel` bajo el texto: tareas referenciadas + creadas desde la nota, con «n de m» y barra de progreso; casilla y título funcionan como en el resto.
+- F10-05: chip de la nota de origen en la fila de la tarea y fila «Nota de origen» en el detalle; abre la nota en la sección Notas (`navigation.ts`). Los títulos se resuelven y cachean (`NotesStore.titles`, `ensureTitles`).
+- F10-06: no hace falta evento: tareas y notas viven en la misma ventana y los mismos stores, así que editar o completar se ve a la vez en todas las referencias (el efecto de `NoteEditor` las redibuja). Una tarea eliminada sale tachada con «Restaurar» (`restoreById`); si ya se purgó, avisa. **Por eso F8-08 (`notes:changed`) sigue sin hacerse y propongo retirarla.**
+- F10-07: en el detalle de la tarea, «Crear nota para esta tarea» (nota con título y una referencia) y «Convertir en nota» (nota con su descripción y etiquetas; la tarea va a la papelera con el aviso de deshacer de la agenda).
+- Bug cazado por los tests: `restoreById` no volvía a meter la tarea en la lista (`#replace` solo sustituye).
+- `NotesStore.load` comparte una sola carga entre llamadas simultáneas, porque abrir una nota de origen desde la agenda puede cruzarse con la carga inicial.
 
 ## Fase 11 — Enlaces, búsqueda y navegación rápida
 - [ ] F11-01 Enlaces `[[nota]]` con autocompletado, creación al vuelo y renombrado seguro

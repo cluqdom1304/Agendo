@@ -80,6 +80,7 @@ export class FakeApi implements TasksApi {
     durationMinutes?: number;
     tagIds?: string[];
     contentJson?: string;
+    sourceNoteId?: string;
   }): Promise<Task> {
     await this.#enter(
       "taskCreate",
@@ -95,6 +96,7 @@ export class FakeApi implements TasksApi {
       durationMinutes: input.durationMinutes ?? null,
       tagIds: input.tagIds ?? [],
       contentJson: input.contentJson ?? "",
+      sourceNoteId: input.sourceNoteId ?? null,
       position: 1000 + this.#created,
     });
     this.tasks = [...this.tasks, task];

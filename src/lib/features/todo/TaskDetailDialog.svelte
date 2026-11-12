@@ -14,6 +14,12 @@
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { Reminder, Task } from "../../types";
   import NoteEditor from "../notes/NoteEditor.svelte";
+  import {
+    convertTaskToNote,
+    createNoteForTask,
+    showNote,
+  } from "../notes/navigation";
+  import { notesStore } from "../../stores/notes.svelte";
   import TagChip from "../tags/TagChip.svelte";
 
   // The view of one task: everything about it, notes included, with the actions that matter
@@ -49,6 +55,30 @@
         : [offsetLabel(reminder.offsetMinutes), moment];
     if (reminder.repeat) parts.push(describeRepeat(reminder.repeat));
     return parts.join(" · ");
+  }
+
+  const sourceTitle = $derived(
+    task?.sourceNoteId ? notesStore.titleOf(task.sourceNoteId) : undefined,
+  );
+
+  async function openSource() {
+    if (!task?.sourceNoteId) return;
+    onClose();
+    await showNote(task.sourceNoteId);
+  }
+
+  async function noteForTask() {
+    if (!task) return;
+    const current = task;
+    onClose();
+    await createNoteForTask(current);
+  }
+
+  async function convert() {
+    if (!task) return;
+    const current = task;
+    onClose();
+    await convertTaskToNote(current);
   }
 
   async function toggleDone() {
@@ -108,6 +138,21 @@
             </dd>
           </div>
         {/if}
+        {#if task.sourceNoteId && sourceTitle !== undefined}
+          <div>
+            <dt>{t.notesApp.originNote}</dt>
+            <dd>
+              <button
+                type="button"
+                class="origin"
+                title={t.notesApp.originNoteOpen(sourceTitle)}
+                onclick={() => void openSource()}
+              >
+                {sourceTitle || t.notesApp.untitled}
+              </button>
+            </dd>
+          </div>
+        {/if}
         {#if task.dueTime}
           <div>
             <dt>{t.detail.schedule}</dt>
@@ -163,6 +208,21 @@
           onclick={() => onShowInList(task)}
         >
           {t.detail.showInList}
+        </button>
+        <button
+          type="button"
+          class="btn quiet"
+          onclick={() => void noteForTask()}
+        >
+          {t.notesApp.createNoteForTask}
+        </button>
+        <button
+          type="button"
+          class="btn quiet"
+          title={t.notesApp.convertToNoteHint}
+          onclick={() => void convert()}
+        >
+          {t.notesApp.convertToNote}
         </button>
         <span class="spacer"></span>
         <button type="button" class="btn" onclick={() => onEdit(task)}>
@@ -233,6 +293,19 @@
   dt {
     color: var(--text-secondary);
     font-size: 12px;
+  }
+
+  .origin {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .origin:hover {
+    text-decoration: underline;
   }
 
   .tag-list {

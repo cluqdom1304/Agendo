@@ -4,8 +4,10 @@
   import { t } from "../../i18n";
   import type { Tag } from "../../types";
   import type {
+    ChecklistItem,
     NoteEditorHandle,
     TagQuery,
+    TaskRefHost,
     ToggleName,
     ToolbarState,
   } from "./editor";
@@ -29,6 +31,12 @@
     onEmptyBlur?: (next: Element | null) => void;
     /** Turns on the `#tag` shortcut: the tags to offer and what to do with the chosen one. */
     tagSuggest?: { tags: Tag[]; onPick: (tag: Tag) => void };
+    /** Turns on task references (D-45): how to read and drive the tasks they point at. */
+    taskHost?: TaskRefHost;
+    /** Reads the reactive state the references depend on, so they are redrawn when it changes. */
+    taskTrack?: () => void;
+    /** The user asked for a task made from the note (`/tarea`, Ctrl+Mayús+T). */
+    onTaskRequest?: (prefill: string) => void;
   }
 
   let {
@@ -40,6 +48,9 @@
     onAutofocus,
     onEmptyBlur,
     tagSuggest,
+    taskHost,
+    taskTrack,
+    onTaskRequest,
   }: Props = $props();
 
   const idleState: ToolbarState = {
@@ -138,6 +149,8 @@
           onState: (state) => (toolbar = state),
           onLinkShortcut: () => (linkRequest += 1),
           onOpenLink: (href) => void openLink(href).catch(() => {}),
+          ...(taskHost ? { taskHost } : {}),
+          ...(onTaskRequest ? { onTaskRequest } : {}),
           ...(tagSuggest
             ? {
                 onTagQuery: (next: TagQuery | null) => {
@@ -165,6 +178,33 @@
       created?.destroy();
     };
   });
+
+  // The references show live data: redraw them whenever the tasks they read change.
+  $effect(() => {
+    taskTrack?.();
+    handle?.refreshTaskRefs();
+  });
+
+  /** Puts a reference to the task after the cursor. */
+  export function insertTaskRef(taskId: string): void {
+    handle?.insertTaskRef(taskId);
+  }
+
+  /** Text selected in the note, to start a task from it. */
+  export function selectedText(): string {
+    return handle?.selectedText() ?? "";
+  }
+
+  /** See `NoteEditorHandle.convertChecklists`. */
+  export function convertChecklists(
+    create: (items: ChecklistItem[]) => Promise<string[] | null>,
+  ): Promise<number> {
+    return handle?.convertChecklists(create) ?? Promise.resolve(0);
+  }
+
+  export function hasChecklists(): boolean {
+    return (handle?.checklistItems().length ?? 0) > 0;
+  }
 
   const toggle = (name: ToggleName) => handle?.toggle(name);
   const setLink = (href: string | null) => handle?.setLink(href) ?? false;
@@ -459,6 +499,137 @@
   .surface :global(.tiptap li[data-checked="true"] > div) {
     color: var(--text-secondary);
     text-decoration: line-through;
+  }
+
+  /* A reference to a task: a row that reads like the task's own row in the agenda. */
+  .surface :global(.task-ref) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 3px 0;
+    padding: 5px var(--space-2);
+    border-radius: var(--radius-control);
+    background: var(--bg-control);
+    font-size: 14px;
+    line-height: 1.35;
+    user-select: none;
+    transition: background-color var(--motion-fast) var(--ease-out);
+  }
+
+  .surface :global(.task-ref:hover) {
+    background: var(--bg-control-hover);
+  }
+
+  .surface :global(.task-ref.ProseMirror-selectednode) {
+    box-shadow: inset 0 0 0 1.5px var(--accent);
+  }
+
+  .surface :global(.task-ref button) {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .surface :global(.task-ref button:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .surface :global(.tr-check),
+  .surface :global(.tr-mark) {
+    position: relative;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 1.5px solid var(--text-secondary);
+    border-radius: var(--radius-chip);
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out),
+      transform var(--motion-base) var(--ease-bounce);
+  }
+
+  .surface :global(.tr-check:active) {
+    transform: scale(0.82);
+  }
+
+  .surface :global(.task-ref.is-done .tr-check) {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .surface :global(.task-ref.is-done .tr-check::after) {
+    content: "";
+    position: absolute;
+    top: 1.5px;
+    left: 4.5px;
+    width: 4px;
+    height: 7px;
+    border: solid var(--on-accent);
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+
+  .surface :global(.tr-title) {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-weight: 500;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .surface :global(.task-ref.is-done .tr-title) {
+    color: var(--text-secondary);
+    text-decoration: line-through;
+  }
+
+  .surface :global(.tr-due) {
+    flex: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .surface :global(.tr-tag) {
+    flex: none;
+    padding: 0 7px;
+    border-radius: var(--radius-chip);
+    background: color-mix(in srgb, var(--tag) 20%, transparent);
+    color: color-mix(in srgb, var(--tag) 55%, var(--text-primary));
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+
+  /* A task that was deleted: struck through, with a way back. */
+  .surface :global(.task-ref.is-gone) {
+    opacity: 0.75;
+  }
+
+  .surface :global(.tr-title.gone) {
+    color: var(--text-secondary);
+    font-style: italic;
+    text-decoration: line-through;
+  }
+
+  .surface :global(.tr-mark.gone) {
+    border-style: dashed;
+  }
+
+  .surface :global(.tr-restore) {
+    flex: none;
+    padding: 1px 10px;
+    border-radius: var(--radius-chip);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 12px;
   }
 
   .surface :global(.tiptap li > p) {

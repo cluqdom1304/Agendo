@@ -291,4 +291,26 @@ describe("TasksStore with a tag filter", () => {
       "k2",
     ]);
   });
+
+  it("create hands back the task with the note it comes from", async () => {
+    const { store } = await tasksSetup();
+    const created = await store.create({
+      title: "Desde la nota",
+      sourceNoteId: "n1",
+    });
+    expect(created?.sourceNoteId).toBe("n1");
+    expect(store.find(created?.id ?? "")).toBeDefined();
+    expect(await store.create({ title: "  " })).toBeNull();
+  });
+
+  it("brings back a trashed task by id, and says when it cannot", async () => {
+    const { api, store } = await tasksSetup();
+    await store.remove("b");
+    expect(store.find("b")).toBeUndefined();
+    expect(await store.restoreById("b")).toBe(true);
+    expect(store.find("b")).toBeDefined();
+    expect(await store.restoreById("b")).toBe(true);
+    api.failing.add("taskRestore");
+    expect(await store.restoreById("never-there")).toBe(false);
+  });
 });

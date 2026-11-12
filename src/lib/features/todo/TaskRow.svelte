@@ -19,6 +19,9 @@
     /** Tags of the task, in order; the row shows the first two and counts the rest. */
     tags?: { id: string; name: string; colorHex: string }[];
     onTagsChange?: (tagIds: string[]) => void;
+    /** The note the task was created from, when it is known (F10-05). */
+    sourceNote?: { id: string; title: string } | null;
+    onOpenSource?: (noteId: string) => void;
     /** Pressed on the grip: the parent starts dragging the task towards a sidebar tag. */
     onTagDragStart?: (event: PointerEvent) => void;
     onDateChange?: (date: string | null) => void;
@@ -50,6 +53,8 @@
     dueDate = null,
     tags = [],
     onTagsChange,
+    sourceNote = null,
+    onOpenSource,
     onTagDragStart,
     onDateChange,
     onDelete,
@@ -121,6 +126,28 @@
     {onCommit}
     {onCancel}
   />
+  {#if !draft && sourceNote}
+    <button
+      type="button"
+      class="source"
+      title={t.notesApp.originNoteOpen(sourceNote.title)}
+      aria-label={t.notesApp.originNoteOpen(sourceNote.title)}
+      tabindex="-1"
+      onclick={() => onOpenSource?.(sourceNote.id)}
+    >
+      <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true">
+        <path
+          d="M4 2.5h5.5L12.5 5.5v8H4zM9.5 2.5v3h3"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.4"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span class="source-title">{sourceNote.title || t.notesApp.untitled}</span
+      >
+    </button>
+  {/if}
   {#if !draft}
     <input
       type="date"
@@ -305,6 +332,42 @@
   .row:hover .grip,
   .row:focus-within .grip {
     opacity: 0.7;
+  }
+
+  .source {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    max-width: 130px;
+    height: 20px;
+    padding: 0 7px;
+    border: 0;
+    border-radius: var(--radius-chip);
+    background: var(--bg-control);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    transition:
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear;
+  }
+
+  .source:hover {
+    background: var(--bg-control-hover);
+    color: var(--text-primary);
+  }
+
+  .source:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .source-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .chips {

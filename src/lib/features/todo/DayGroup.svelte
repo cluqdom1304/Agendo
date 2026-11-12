@@ -5,6 +5,9 @@
   import { pending } from "../../reminders";
   import NoteEditor from "../notes/NoteEditor.svelte";
   import { hasNotes } from "../notes/content";
+  import { showNote } from "../notes/navigation";
+  import { notesStore } from "../../stores/notes.svelte";
+  import type { Task } from "../../types";
   import ReminderPopover from "./ReminderPopover.svelte";
   import { tagDrag } from "../../stores/tagDrag.svelte";
   import { NO_TAG, tagsStore } from "../../stores/tags.svelte";
@@ -23,6 +26,13 @@
       ? ({ section: "todo" } as const)
       : ({ section: "agenda", date: block.date } as const),
   );
+  /** The note a task comes from, once its title is known. */
+  function sourceOf(task: Task): { id: string; title: string } | null {
+    if (!task.sourceNoteId) return null;
+    const title = notesStore.titleOf(task.sourceNoteId);
+    return title === undefined ? null : { id: task.sourceNoteId, title };
+  }
+
   const draft = $derived(store.isDraftFor(target) ? store.draft : null);
   const heading = $derived(
     block.date === null ? t.tasks.sectionTodo : formatDisplayDate(block.date),
@@ -39,6 +49,8 @@
     dueDate={task.dueDate}
     tags={tagsStore.tagsOf(task)}
     onTagsChange={(tagIds) => store.setTags(task.id, tagIds)}
+    sourceNote={sourceOf(task)}
+    onOpenSource={(noteId) => void showNote(noteId)}
     onTagDragStart={(event) =>
       tagDrag.begin(event, { id: task.id, title: task.title }, (key) =>
         key === NO_TAG
