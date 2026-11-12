@@ -4,6 +4,7 @@
 //! Functions return `rusqlite::Result`: constraint violations surface as SQLite errors and are
 //! mapped to IPC error codes by `error.rs`. "Not found" is `None` / `false`, never an error.
 
+pub mod attachments;
 pub mod find;
 pub mod folders;
 pub mod fts;

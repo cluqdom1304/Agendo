@@ -327,10 +327,9 @@ mod tests {
         fs::write(&truncated, &bytes[..bytes.len() / 2]).expect("truncated");
         let corrupt = fx.sibling("corrupt.sqlite");
         let mut damaged = bytes.clone();
-        let middle = damaged.len() / 2;
-        for byte in &mut damaged[middle..middle + 2048] {
-            *byte = 0xAB;
-        }
+        // Everything after the first page: the schema is still readable, the data is not. (A
+        // small patch in the middle can land on an unused page as the schema grows.)
+        damaged[4096..].fill(0xAB);
         fs::write(&corrupt, damaged).expect("corrupt");
 
         for (path, expected) in [

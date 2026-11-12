@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 import type {
+  Attachment,
   EffectApplied,
   EffectMode,
   ErrorCode,
@@ -142,6 +143,17 @@ export function search(query: string, limit?: number): Promise<SearchHit[]> {
 /** Tasks, notes and tags at once; understands `tag:`, `in:` and `is:` (F11-03). */
 export function searchAll(query: string, limit?: number): Promise<FoundItem[]> {
   return invoke<FoundItem[]>("search_all", { query, limit });
+}
+
+/** Stores an image and returns its id; the same content gives the same id (D-47). */
+export function attachmentAdd(bytes: Uint8Array): Promise<Attachment> {
+  return invoke<Attachment>("attachment_add", bytes);
+}
+
+/** The bytes of a stored image. */
+export async function attachmentRead(id: string): Promise<Uint8Array> {
+  const data = await invoke<ArrayBuffer>("attachment_read", { id });
+  return new Uint8Array(data);
 }
 
 export function noteBacklinks(id: string): Promise<NoteSummary[]> {

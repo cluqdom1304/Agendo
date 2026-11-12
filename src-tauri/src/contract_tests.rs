@@ -8,7 +8,10 @@ use std::{fs, path::PathBuf};
 use serde_json::{Value, json};
 
 use crate::{
-    commands::tasks::{Sections, TasksListOutput},
+    commands::{
+        attachments::AttachmentDto,
+        tasks::{Sections, TasksListOutput},
+    },
     domain::{
         ordering::DayGroup,
         reminders::{Repeat, RepeatUnit},
@@ -134,6 +137,11 @@ fn current() -> Value {
             color_hex: "#4C8DFF".into(),
             note_count: 2,
             pending_count: 3,
+        },
+        "attachment": AttachmentDto {
+            id: "a".repeat(64),
+            mime: "image/png".into(),
+            size_bytes: 2048,
         },
         "folder": folder(),
         "folderWithCount": FolderWithCount { folder: folder(), note_count: 3 },

@@ -1,3 +1,4 @@
+pub mod attachments;
 pub mod autostart;
 pub mod backup;
 pub mod folders;

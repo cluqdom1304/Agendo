@@ -229,6 +229,13 @@ export type FoundItem =
       pendingCount: number;
     };
 
+/** A stored image of a note (D-47); `id` is the SHA-256 of its content. */
+export interface Attachment {
+  id: string;
+  mime: string;
+  sizeBytes: number;
+}
+
 /** Settings the backend accepts (`settings_get` / `settings_set`). */
 export type SettingKey =
   | "view_mode"

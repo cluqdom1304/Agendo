@@ -36,6 +36,38 @@ pub fn references_of(content_json: &str) -> Result<References, ValidationError> 
     Ok(references)
 }
 
+/// Files a document shows (D-47): the `attrs.attachmentId` of its `image` nodes, in order of
+/// first appearance and without repeats. A node without an id is skipped, not an error: the
+/// editor can keep an image whose file is gone.
+pub fn attachment_ids_of(content_json: &str) -> Result<Vec<String>, ValidationError> {
+    validate_content_json(content_json)?;
+    let document: Value = serde_json::from_str(content_json)
+        .map_err(|_| ValidationError::new("las notas no tienen un formato válido"))?;
+    let mut ids = Vec::new();
+    collect_attachments(&document, &mut ids);
+    Ok(ids)
+}
+
+fn collect_attachments(node: &Value, ids: &mut Vec<String>) {
+    if node.get("type").and_then(Value::as_str) == Some("image") {
+        let id = node
+            .get("attrs")
+            .and_then(|attrs| attrs.get("attachmentId"))
+            .and_then(Value::as_str)
+            .filter(|id| !id.is_empty());
+        if let Some(id) = id
+            && !ids.iter().any(|known| known == id)
+        {
+            ids.push(id.to_string());
+        }
+    }
+    if let Some(children) = node.get("content").and_then(Value::as_array) {
+        for child in children {
+            collect_attachments(child, ids);
+        }
+    }
+}
+
 fn collect_references(node: &Value, references: &mut References) -> Result<(), ValidationError> {
     let target = match node.get("type").and_then(Value::as_str) {
         Some("taskRef") => Some(("taskId", &mut references.task_ids, "tarea")),
@@ -116,6 +148,20 @@ mod tests {
         let references =
             references_of(r#"{"type":"doc","content":[{"type":"paragraph"}]}"#).expect("valid");
         assert_eq!(references, References::default());
+    }
+
+    #[test]
+    fn attachments_are_collected_once_and_nodes_without_an_id_are_skipped() {
+        let json = r#"{"type":"doc","content":[
+            {"type":"image","attrs":{"attachmentId":"a"}},
+            {"type":"image","attrs":{"attachmentId":""}},
+            {"type":"image"},
+            {"type":"blockquote","content":[
+                {"type":"image","attrs":{"attachmentId":"b"}},
+                {"type":"image","attrs":{"attachmentId":"a"}}]}
+        ]}"#;
+        assert_eq!(attachment_ids_of(json).expect("valid"), ["a", "b"]);
+        assert!(attachment_ids_of("nope").is_err());
     }
 
     #[test]

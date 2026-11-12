@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import fixtureJson from "../../src-tauri/fixtures/dto.json";
 import { parseError } from "./api";
 import type {
+  Attachment,
   DayGroup,
   EffectApplied,
   Folder,
@@ -39,6 +40,7 @@ interface Fixture {
   foundTask: FoundItem;
   foundNote: FoundItem;
   foundTag: FoundItem;
+  attachment: Attachment;
 }
 
 const fixture = fixtureJson as unknown as Fixture;
@@ -209,6 +211,11 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
     expect(fixture.foundTask.kind).toBe("task");
     expect(fixture.foundNote.kind).toBe("note");
     expect(fixture.foundTag.kind).toBe("tag");
+  });
+
+  it("Attachment has the shape of the backend", () => {
+    expect(keys(fixture.attachment)).toEqual(["id", "mime", "sizeBytes"]);
+    expect(fixture.attachment.id).toHaveLength(64);
   });
 
   it("Task keeps the note it was created from", () => {

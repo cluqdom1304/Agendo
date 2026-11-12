@@ -426,6 +426,12 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Archivar:** no se incluye. No existe ese estado en el modelo (tareas ni notas) y exigiría una migración y una vista nueva; los equivalentes actuales son «hecha» (tareas) y «fijar» / papelera (notas). Si se quiere, ADR aparte.
 - **Alternativas descartadas:** menú nativo de Tauri (`tauri::menu`); mantener el botón en la barra superior.
 
+## D-51 — Dependencias de la Fase 12 (adjuntos y editor)
+- **Estado:** ACCEPTED (consecuencia directa de D-47) · **Fecha:** 2026-11-12
+- **Rust:** `sha2` 0.11 (SHA-256 de los adjuntos; la biblioteca estándar no lo trae) y `zip` 9.5 con solo la característica `deflate` (copia `.agendo`). Alternativas descartadas: un contenedor propio (riesgo de corrupción sin ventaja) y guardar las imágenes en la base (D-47).
+- **Editor (se añadirán al usarlos, todas de la misma familia y versión 3.33.0 que las actuales):** `@tiptap/extension-table`, `-blockquote`, `-horizontal-rule`, `-highlight`, `-code-block` y `-heading`. Alternativas descartadas: `lowlight`/`highlight.js` (pesan demasiado para el presupuesto de 250 KB, D-49): el resaltado de código se hace con un tokenizador propio y pequeño; la imagen y la búsqueda dentro de la nota son nodos y complementos propios, sin dependencia.
+- **Imágenes:** solo PNG, JPEG, GIF y WebP, identificadas por su firma y no por el nombre; SVG queda fuera (puede llevar scripts). Máximo 20 MB. Los bytes viajan como cuerpo binario de IPC, no como JSON.
+
 ---
 
 ## Decisiones pendientes de producto

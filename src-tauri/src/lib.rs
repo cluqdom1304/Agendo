@@ -1,3 +1,4 @@
+pub mod attachments;
 mod commands;
 #[cfg(test)]
 mod contract_tests;
@@ -58,6 +59,11 @@ pub fn run() {
             let path = data_dir(app)?.join(DATABASE_FILE);
             let state = AppState::open(&path, Arc::new(SystemClock))?;
             let state = Arc::new(state);
+            // Files that no note uses any more (past a grace period) are removed at start-up; a
+            // failure here is not worth stopping the app for, the next start tries again.
+            if let Ok(dir) = commands::attachments::dir(app.handle()) {
+                let _ = attachments::collect_orphans(&state, &dir);
+            }
             app.manage(Arc::clone(&state));
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(scheduler::run(
@@ -109,6 +115,8 @@ pub fn run() {
             commands::reminders::reminders_set,
             commands::settings::settings_get,
             commands::settings::settings_set,
+            commands::attachments::attachment_add,
+            commands::attachments::attachment_read,
             commands::backup::backup_create,
             commands::backup::backup_restore,
             commands::autostart::autostart_get,

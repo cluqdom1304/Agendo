@@ -1,4 +1,9 @@
 {
+  "attachment": {
+    "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "mime": "image/png",
+    "sizeBytes": 2048
+  },
   "dayGroup": {
     "date": "2026-03-12",
     "tasks": [

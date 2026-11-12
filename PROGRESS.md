@@ -1,7 +1,7 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 11B de la V2.0.0 (menús contextuales y botón flotante de nueva tarea)
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Fase activa:** Fase 12 de la V2.0.0 (editor avanzado y adjuntos) — en curso
+**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
 **Siguiente tarea:** F11B cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8 a 11B» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 12.
 **Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 a 11B implementadas, pendientes de validación humana)
 
@@ -324,7 +324,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - **Verificaciones [A]:** `cargo fmt --check` (Rust sin cambios), `npm run lint`, `npm run check` (0/0), `npm run test` (491 en 42 archivos: 21 del menú, 5 de `target`, intents de ambas barras laterales), `npm run build` y `npm run size` (215,7 KB gzip de 250) en verde. Sin dependencias nuevas.
 
 ## Fase 12 — Editor avanzado y adjuntos
-- [ ] F12-01 Almacén de adjuntos con hash, deduplicación y limpieza de huérfanos (D-47)
+- [x] F12-01 Almacén de adjuntos con hash, deduplicación y limpieza de huérfanos (D-47). Migración 006 (`attachments`, `note_attachments`), `attachments.rs` (firma de imagen, SHA-256, escritura atómica, limpieza a las 24 h al arrancar), comandos `attachment_add`/`attachment_read` con cuerpo binario, dependencias en D-51. Aviso: F13-05 pasa a ser la migración 007
 - [ ] F12-02 Imágenes: pegar, arrastrar, redimensionar; vista previa de ficheros
 - [ ] F12-03 Tablas, bloques de código con resaltado, citas, separadores, resaltado de texto
 - [ ] F12-04 Atajos Markdown, buscar dentro de la nota (`Ctrl+F`), contador de palabras
@@ -335,7 +335,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [ ] F13-02 Plantillas de nota editables
 - [ ] F13-03 Historial de versiones con comparar y restaurar (D-48)
 - [ ] F13-04 Recordatorios de nota (sin duplicar el motor de avisos)
-- [ ] F13-05 Tareas recurrentes (`tasks.rrule`, D-07; migración 006)
+- [ ] F13-05 Tareas recurrentes (`tasks.rrule`, D-07; migración 007)
 - [ ] F13-06 Acción «Marcar como hecha» en la notificación (B-01)
 - [ ] F13-07 Vista «Hoy»: tareas del día, nota diaria y notas fijadas
 

@@ -11,6 +11,7 @@ use crate::{
     domain::{content, validation},
     error::{AppError, AppResult},
     repo::{
+        attachments,
         model::{NewNote, Note, NoteContent, NotePatch, NoteSummary},
         note_tags,
         notes::{self, Scope, Sort},
@@ -66,15 +67,19 @@ pub struct NotePatchInput {
 }
 
 /// Validates a document and derives what is stored with it.
-fn derive(content_json: String) -> AppResult<NoteContent> {
+fn derive(content_json: String) -> AppResult<(NoteContent, Vec<String>)> {
     let text = content::text_of(&content_json)?;
     let references = content::references_of(&content_json)?;
-    Ok(NoteContent {
-        json: content_json,
-        text,
-        task_ids: references.task_ids,
-        note_ids: references.note_ids,
-    })
+    let attachment_ids = content::attachment_ids_of(&content_json)?;
+    Ok((
+        NoteContent {
+            json: content_json,
+            text,
+            task_ids: references.task_ids,
+            note_ids: references.note_ids,
+        },
+        attachment_ids,
+    ))
 }
 
 pub fn list(state: &AppState, input: NotesListInput) -> AppResult<Vec<NoteSummary>> {
@@ -109,14 +114,15 @@ pub fn create(state: &AppState, input: NoteCreateInput) -> AppResult<Note> {
     let title = input.title.unwrap_or_default();
     validation::validate_title(&title)?;
     let derived = input.content_json.map(derive).transpose()?;
-    let (content_json, content_text, task_ids, note_ids) = match derived {
-        Some(content) => (
+    let (content_json, content_text, task_ids, note_ids, attachment_ids) = match derived {
+        Some((content, attachments)) => (
             Some(content.json),
             content.text,
             content.task_ids,
             content.note_ids,
+            attachments,
         ),
-        None => (None, String::new(), Vec::new(), Vec::new()),
+        None => (None, String::new(), Vec::new(), Vec::new(), Vec::new()),
     };
     let new = NewNote {
         id: state.ids.new_id(),
@@ -129,14 +135,21 @@ pub fn create(state: &AppState, input: NoteCreateInput) -> AppResult<Note> {
         tag_ids: input.tag_ids.unwrap_or_default(),
         now: state.clock.now_string(),
     };
-    state.db.write(|tx| Ok(notes::create(tx, &new)?))
+    state.db.write(|tx| {
+        let note = notes::create(tx, &new)?;
+        attachments::sync_note(tx, &note.id, &attachment_ids)?;
+        Ok(note)
+    })
 }
 
 pub fn update(state: &AppState, id: &str, patch: NotePatchInput) -> AppResult<Note> {
     if let Some(title) = &patch.title {
         validation::validate_title(title)?;
     }
-    let content = patch.content_json.map(derive).transpose()?;
+    let (content, attachment_ids) = match patch.content_json.map(derive).transpose()? {
+        Some((content, attachments)) => (Some(content), Some(attachments)),
+        None => (None, None),
+    };
     let repo_patch = NotePatch {
         title: patch.title,
         content,
@@ -146,7 +159,11 @@ pub fn update(state: &AppState, id: &str, patch: NotePatchInput) -> AppResult<No
         if repo_patch.title.is_none() && repo_patch.content.is_none() {
             return notes::get(tx, id)?.ok_or_else(|| note_not_found(id));
         }
-        notes::update(tx, id, &repo_patch, &now)?.ok_or_else(|| note_not_found(id))
+        let note = notes::update(tx, id, &repo_patch, &now)?.ok_or_else(|| note_not_found(id))?;
+        if let Some(ids) = &attachment_ids {
+            attachments::sync_note(tx, id, ids)?;
+        }
+        Ok(note)
     })
 }
 
