@@ -16,6 +16,16 @@ use crate::{
 pub const VIEW_MODE: &str = "view_mode";
 /// Colour theme: follow the system or force light or dark (F6-05).
 pub const THEME: &str = "theme";
+/// Which section is open: the agenda or the notes (V2 F8-07).
+pub const APP_SECTION: &str = "app_section";
+/// What the notes list shows: `all`, `inbox`, `pinned` or `folder:<id>` (F8-07).
+pub const NOTES_SCOPE: &str = "notes_scope";
+/// Id of the note open in the editor, or empty (F8-07).
+pub const NOTES_OPEN: &str = "notes_open";
+
+/// Longest free-form value (an id plus a prefix).
+const MAX_FREE_VALUE: usize = 64;
+
 /// Native window material requested at startup (F6-05); the OS may still fall back.
 pub const WINDOW_EFFECT: &str = "window_effect";
 
@@ -23,14 +33,15 @@ pub const WINDOW_EFFECT: &str = "window_effect";
 pub const DEFAULT_NOTIFY_TIME: &str = settings::NOTIFY_TIME_KEY;
 
 /// Whitelist: every setting with the values it accepts.
-const ALLOWED: [(&str, &[&str]); 3] = [
+const ALLOWED: [(&str, &[&str]); 4] = [
+    (APP_SECTION, &["agenda", "notes"]),
     (VIEW_MODE, &["list", "day", "week", "month"]),
     (THEME, &["system", "light", "dark"]),
     (WINDOW_EFFECT, &["mica", "acrylic", "none"]),
 ];
 
 fn allowed_values(key: &str) -> AppResult<&'static [&'static str]> {
-    if key == DEFAULT_NOTIFY_TIME {
+    if key == DEFAULT_NOTIFY_TIME || is_free_form(key) {
         return Ok(&[]);
     }
     ALLOWED
@@ -40,8 +51,15 @@ fn allowed_values(key: &str) -> AppResult<&'static [&'static str]> {
         .ok_or_else(|| AppError::Validation(format!("el ajuste «{key}» no existe")))
 }
 
+/// Settings that hold an id-like string the backend does not enumerate.
+fn is_free_form(key: &str) -> bool {
+    key == NOTES_SCOPE || key == NOTES_OPEN
+}
+
 fn validate(key: &str, value: &str) -> AppResult<()> {
-    let valid = if key == DEFAULT_NOTIFY_TIME {
+    let valid = if is_free_form(key) {
+        value.chars().count() <= MAX_FREE_VALUE && !value.chars().any(char::is_control)
+    } else if key == DEFAULT_NOTIFY_TIME {
         dates::parse_time(value).is_ok()
     } else {
         allowed_values(key)?.contains(&value)
@@ -109,6 +127,27 @@ mod tests {
             set(&state, VIEW_MODE, mode).expect("set");
             assert_eq!(get(&state, VIEW_MODE).expect("get").as_deref(), Some(mode));
         }
+    }
+
+    #[test]
+    fn remembers_the_section_and_the_open_note() {
+        let (state, _) = test_state();
+        set(&state, APP_SECTION, "notes").expect("section");
+        set(&state, NOTES_SCOPE, "folder:abc-123").expect("scope");
+        set(&state, NOTES_OPEN, "").expect("clear");
+        assert_eq!(
+            get(&state, NOTES_SCOPE).expect("get").as_deref(),
+            Some("folder:abc-123")
+        );
+        assert_eq!(code(set(&state, APP_SECTION, "tasks")), "VALIDATION");
+        assert_eq!(code(set(&state, NOTES_OPEN, &"x".repeat(65))), "VALIDATION");
+        assert_eq!(
+            code(set(
+                &state, NOTES_OPEN, "a
+b"
+            )),
+            "VALIDATION"
+        );
     }
 
     #[test]

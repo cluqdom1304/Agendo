@@ -2,6 +2,8 @@
   import { onMount, tick } from "svelte";
 
   import { onReminderFired } from "$lib/api";
+  import FolderSidebar from "$lib/features/notes/FolderSidebar.svelte";
+  import NotesView from "$lib/features/notes/NotesView.svelte";
   import TagDragGhost from "$lib/features/tags/TagDragGhost.svelte";
   import TagSidebar from "$lib/features/tags/TagSidebar.svelte";
   import TaskDialog from "$lib/features/todo/TaskDialog.svelte";
@@ -13,13 +15,14 @@
   import SegmentedControl from "$lib/shell/SegmentedControl.svelte";
   import Toast from "$lib/shell/Toast.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
-  import { tagDrag } from "$lib/stores/tagDrag.svelte";
+  import { notesStore } from "$lib/stores/notes.svelte";
+  import { folderDrag, tagDrag } from "$lib/stores/tagDrag.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
   import { tasksStore } from "$lib/stores/tasks.svelte";
-  import { viewStore } from "$lib/stores/view.svelte";
+  import { viewStore, type Section } from "$lib/stores/view.svelte";
   import type { Task, ViewMode } from "$lib/types";
 
-  type Section = "list" | "calendar";
+  type ViewSection = "list" | "calendar";
 
   let settingsOpen = $state(false);
   let newTaskOpen = $state(false);
@@ -35,9 +38,14 @@
   // The list shows its own deletion notices; elsewhere they are shown here.
   const lastDeletion = $derived(tasksStore.undoStack.at(-1));
 
-  const SECTION_OPTIONS: { value: Section; label: string }[] = [
+  const VIEW_OPTIONS: { value: ViewSection; label: string }[] = [
     { value: "list", label: t.views.list },
     { value: "calendar", label: t.views.calendar },
+  ];
+
+  const SECTION_OPTIONS: { value: Section; label: string }[] = [
+    { value: "agenda", label: t.notesApp.agenda },
+    { value: "notes", label: t.notesApp.notes },
   ];
 
   const SHORTCUT_VIEWS: Record<string, ViewMode> = {
@@ -52,9 +60,16 @@
   const loadCalendar = () =>
     import("$lib/features/calendar/CalendarView.svelte");
 
+  // The notes load the first time their section is shown, not at startup (N-01).
+  $effect(() => {
+    if (viewStore.section === "notes" && notesStore.status === "idle") {
+      void notesStore.load();
+    }
+  });
+
   // The sidebar is the drop target, so it opens as soon as a drag starts.
   $effect(() => {
-    if (tagDrag.active) sidebarOpen = true;
+    if (tagDrag.active || folderDrag.active) sidebarOpen = true;
   });
 
   onMount(() => {
@@ -93,8 +108,13 @@
 
   function onKeydown(event: KeyboardEvent) {
     const shortcut = findShortcut(event, focusContextOf(event.target));
+    if (shortcut === "goAgenda" || shortcut === "goNotes") {
+      event.preventDefault();
+      viewStore.setSection(shortcut === "goAgenda" ? "agenda" : "notes");
+      return;
+    }
     const mode = shortcut ? SHORTCUT_VIEWS[shortcut] : undefined;
-    if (!mode) return;
+    if (!mode || viewStore.section !== "agenda") return;
     event.preventDefault();
     viewStore.setMode(mode);
   }
@@ -103,7 +123,11 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div class="shell">
-  <TagSidebar tags={tagsStore} tasks={tasksStore} open={sidebarOpen} />
+  {#if viewStore.section === "notes"}
+    <FolderSidebar notes={notesStore} open={sidebarOpen} />
+  {:else}
+    <TagSidebar tags={tagsStore} tasks={tasksStore} open={sidebarOpen} />
+  {/if}
   <div class="page">
     <div class="toolbar" data-tauri-drag-region>
       <div class="lead" data-tauri-drag-region>
@@ -134,34 +158,46 @@
             <path d="M6 3v10" stroke="currentColor" stroke-width="1.5" />
           </svg>
         </button>
-        <button
-          type="button"
-          class="btn primary"
-          title={t.newTask.buttonHint}
-          aria-haspopup="dialog"
-          onclick={() => (newTaskOpen = true)}
-        >
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-            <path
-              d="M8 3v10M3 8h10"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-            />
-          </svg>
-          {t.newTask.button}
-        </button>
+        <SegmentedControl
+          label={t.notesApp.sections}
+          options={SECTION_OPTIONS}
+          value={viewStore.section}
+          onChange={(section) => viewStore.setSection(section)}
+        />
+        {#if viewStore.section === "agenda"}
+          <button
+            type="button"
+            class="btn primary"
+            title={t.newTask.buttonHint}
+            aria-haspopup="dialog"
+            onclick={() => (newTaskOpen = true)}
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <path
+                d="M8 3v10M3 8h10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+            {t.newTask.button}
+          </button>
+        {/if}
       </div>
-      <SegmentedControl
-        label={t.views.label}
-        options={SECTION_OPTIONS}
-        value={viewStore.mode === "list" ? "list" : "calendar"}
-        onChange={(section) =>
-          viewStore.setMode(
-            section === "list" ? "list" : viewStore.calendarMode,
-          )}
-      />
+      {#if viewStore.section === "agenda"}
+        <SegmentedControl
+          label={t.views.label}
+          options={VIEW_OPTIONS}
+          value={viewStore.mode === "list" ? "list" : "calendar"}
+          onChange={(section) =>
+            viewStore.setMode(
+              section === "list" ? "list" : viewStore.calendarMode,
+            )}
+        />
+      {:else}
+        <span></span>
+      {/if}
       <div class="trail" data-tauri-drag-region>
         <button
           type="button"
@@ -201,7 +237,11 @@
     </div>
 
     {#if viewStore.ready}
-      {#if viewStore.mode === "list"}
+      {#if viewStore.section === "notes"}
+        <div class="content">
+          <NotesView notes={notesStore} tags={tagsStore} />
+        </div>
+      {:else if viewStore.mode === "list"}
         <div class="content scrolls">
           <TodoView store={tasksStore} />
         </div>
@@ -225,6 +265,7 @@
 </div>
 
 <TagDragGhost drag={tagDrag} />
+<TagDragGhost drag={folderDrag} hint={t.notesApp.dragHint} />
 
 {#if newTaskOpen}
   <TaskDialog
@@ -252,7 +293,7 @@
   />
 {/if}
 
-{#if viewStore.mode !== "list"}
+{#if viewStore.section === "agenda" && viewStore.mode !== "list"}
   {#if lastDeletion}
     <Toast
       message={t.tasks.deleted}

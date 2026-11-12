@@ -241,3 +241,12 @@ Movimiento y fluidez
 - [H] Instalar Agendo: el título de ventana, el acceso directo, «Aplicaciones instaladas» y el ejecutable muestran «Agendo»; arranca con la lista vacía.
 - [H] Ajustes → «Restaurar copia…» con el `.sqlite` guardado: reaparecen todas las tareas, etiquetas, notas y recordatorios.
 - [H] La base nueva está en `%APPDATA%\com.cristian.agendo\agenda.sqlite`.
+
+## Notas V2 — Fase 8 (`[H]`, pendiente de validar en Windows 11)
+- [ ] Pulsar «Notas» en la barra superior (o `Ctrl+Mayús+2`) cambia de sección con una transición suave; `Ctrl+Mayús+1` vuelve a la Agenda. La sección, carpeta y nota abiertas se recuerdan al reiniciar.
+- [ ] Crear carpeta, subcarpeta, renombrar y eliminar (con confirmación): los contadores y el árbol se actualizan; no deja crear más de 5 niveles ni dos hermanas con el mismo nombre.
+- [ ] Arrastrar una nota o una carpeta sobre una carpeta, la Bandeja o «Carpetas» la mueve; Esc cancela el arrastre.
+- [ ] Escribir en una nota: título y cuerpo se guardan solos; al cambiar de nota no se pierde nada; la barra de formato siempre visible.
+- [ ] Fijar, duplicar, mover (menú), eliminar con «Deshacer» y restaurar desde la Papelera.
+- [ ] Lista con unas miles de notas: el desplazamiento es fluido; flechas arriba/abajo cambian de nota.
+- [ ] Aspecto: tema claro y oscuro, animaciones suaves y sin parpadeos, foco visible con teclado y lector de pantalla.

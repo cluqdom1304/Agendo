@@ -15,7 +15,9 @@ export type ShortcutId =
   | "viewList"
   | "viewDay"
   | "viewWeek"
-  | "viewMonth";
+  | "viewMonth"
+  | "goAgenda"
+  | "goNotes";
 
 /** Where the keyboard focus is: a title input, the list itself (body or a row), or elsewhere. */
 export type FocusContext = "title" | "list" | "other";
@@ -24,6 +26,9 @@ interface Binding {
   id: ShortcutId;
   /** `KeyboardEvent.key`, compared case-insensitively. */
   key: string;
+  /** Physical key (`KeyboardEvent.code`); when set it is compared instead of `key`, which
+   * Shift changes (Shift+1 is `!`). */
+  code?: string;
   ctrl?: boolean;
   shift?: boolean;
   /** `anywhere` also fires while typing; the others only in their focus context. */
@@ -45,6 +50,22 @@ export const BINDINGS: readonly Binding[] = [
   { id: "viewDay", key: "2", ctrl: true, scope: "anywhere" },
   { id: "viewWeek", key: "3", ctrl: true, scope: "anywhere" },
   { id: "viewMonth", key: "4", ctrl: true, scope: "anywhere" },
+  {
+    id: "goAgenda",
+    key: "1",
+    code: "Digit1",
+    ctrl: true,
+    shift: true,
+    scope: "anywhere",
+  },
+  {
+    id: "goNotes",
+    key: "2",
+    code: "Digit2",
+    ctrl: true,
+    shift: true,
+    scope: "anywhere",
+  },
 ];
 
 export const ROW_ATTRIBUTE = "data-task-row";
@@ -67,7 +88,9 @@ export function findShortcut(
   const ctrl = event.ctrlKey || event.metaKey;
   const binding = BINDINGS.find(
     (candidate) =>
-      candidate.key.toLowerCase() === event.key.toLowerCase() &&
+      (candidate.code
+        ? candidate.code === event.code
+        : candidate.key.toLowerCase() === event.key.toLowerCase()) &&
       Boolean(candidate.ctrl) === ctrl &&
       Boolean(candidate.shift) === event.shiftKey &&
       !event.altKey &&

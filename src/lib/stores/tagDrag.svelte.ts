@@ -12,7 +12,7 @@ export interface ActiveDrag extends DragSubject {
 }
 
 const THRESHOLD_PX = 5;
-const DROP_ATTRIBUTE = "data-tag-drop";
+const TAG_DROP_ATTRIBUTE = "data-tag-drop";
 
 /**
  * Pointer-based drag of a task onto a sidebar tag. HTML5 drag and drop is not used: the
@@ -23,6 +23,11 @@ export class TagDrag {
   active = $state.raw<ActiveDrag | null>(null);
 
   #stop: (() => void) | null = null;
+  readonly #dropAttribute: string;
+
+  constructor(dropAttribute = TAG_DROP_ATTRIBUTE) {
+    this.#dropAttribute = dropAttribute;
+  }
 
   begin(
     event: PointerEvent,
@@ -38,8 +43,8 @@ export class TagDrag {
       if (typeof document.elementFromPoint !== "function") return null;
       const target = document
         .elementFromPoint(x, y)
-        ?.closest(`[${DROP_ATTRIBUTE}]`);
-      return target?.getAttribute(DROP_ATTRIBUTE) ?? null;
+        ?.closest(`[${this.#dropAttribute}]`);
+      return target?.getAttribute(this.#dropAttribute) ?? null;
     };
 
     const onMove = (move: PointerEvent) => {
@@ -100,3 +105,5 @@ export class TagDrag {
 }
 
 export const tagDrag = new TagDrag();
+/** Notes and folders dragged onto a folder of the notes panel (V2 F8-02). */
+export const folderDrag = new TagDrag("data-folder-drop");

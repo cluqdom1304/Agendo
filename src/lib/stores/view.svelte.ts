@@ -10,8 +10,8 @@ import type { ViewMode } from "../types";
 
 /** The slice of `api.ts` the store uses; tests pass a fake. */
 export interface ViewApi {
-  settingsGet(key: "view_mode"): Promise<string | null>;
-  settingsSet(key: "view_mode", value: string): Promise<void>;
+  settingsGet(key: "view_mode" | "app_section"): Promise<string | null>;
+  settingsSet(key: "view_mode" | "app_section", value: string): Promise<void>;
 }
 
 const MODES: readonly ViewMode[] = ["list", "day", "week", "month"];
@@ -26,6 +26,8 @@ export interface ViewStoreOptions {
   firstDay?: () => WeekDay;
 }
 
+export type Section = "agenda" | "notes";
+
 /** Which view is showing (persisted in `settings`) and which date the calendar is centred on. */
 export class ViewStore {
   mode = $state<ViewMode>("list");
@@ -33,6 +35,8 @@ export class ViewStore {
   calendarMode = $state<Exclude<ViewMode, "list">>("week");
   /** `YYYY-MM-DD` the day, week or month view is showing. */
   anchor = $state("");
+  /** The section of the app: the agenda (tasks and calendar) or the notes. */
+  section = $state<Section>("agenda");
   /** Waits for the saved mode so the list does not flash before a saved calendar view. */
   ready = $state(false);
   readonly firstDay: WeekDay;
@@ -64,6 +68,14 @@ export class ViewStore {
       // The saved view is a convenience: without it the app starts on the list.
       this.mode = "list";
     }
+    try {
+      this.section =
+        (await this.#api.settingsGet("app_section")) === "notes"
+          ? "notes"
+          : "agenda";
+    } catch {
+      this.section = "agenda";
+    }
     if (this.mode !== "list") this.calendarMode = this.mode;
     this.anchor = this.today();
     this.ready = true;
@@ -75,6 +87,13 @@ export class ViewStore {
     this.mode = mode;
     if (mode !== "list") this.calendarMode = mode;
     void this.#api.settingsSet("view_mode", mode).catch(() => undefined);
+  }
+
+  /** Switches the section at once; saving is best effort, like the view. */
+  setSection(section: Section): void {
+    if (section === this.section) return;
+    this.section = section;
+    void this.#api.settingsSet("app_section", section).catch(() => undefined);
   }
 
   /** Moves a whole day, week or month, depending on the view. */

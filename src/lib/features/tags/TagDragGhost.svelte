@@ -4,9 +4,10 @@
 
   interface Props {
     drag: TagDrag;
+    hint?: string;
   }
 
-  let { drag }: Props = $props();
+  let { drag, hint = t.tags.dropHint }: Props = $props();
 </script>
 
 {#if drag.active}
@@ -18,7 +19,7 @@
   >
     <span class="title">{drag.active.title || t.calendar.untitled}</span>
     {#if drag.active.overKey === null}
-      <span class="hint">{t.tags.dropHint}</span>
+      <span class="hint">{hint}</span>
     {/if}
   </div>
 {/if}

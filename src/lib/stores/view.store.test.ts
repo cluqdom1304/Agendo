@@ -41,6 +41,22 @@ describe("ViewStore", () => {
     expect(store.ready).toBe(true);
   });
 
+  it("starts on the agenda and remembers the notes section", async () => {
+    const api = new FakeViewApi(null);
+    const store = make(api);
+    await store.load();
+    expect(store.section).toBe("agenda");
+    store.setSection("notes");
+    expect(store.section).toBe("notes");
+    expect(api.writes).toEqual(["notes"]);
+    store.setSection("notes");
+    expect(api.writes).toHaveLength(1);
+
+    const reopened = make(new FakeViewApi("notes"));
+    await reopened.load();
+    expect(reopened.section).toBe("notes");
+  });
+
   it("restores the saved view", async () => {
     const store = make(new FakeViewApi("week"));
     await store.load();

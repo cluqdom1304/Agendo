@@ -11,8 +11,10 @@
     contentJson: string;
     /** Saves the document; rejects when the backend refuses it. */
     save: (contentJson: string) => Promise<void>;
-    /** `inline` sits under a task row of the list; `field` is a form field (the default). */
-    variant?: "inline" | "field";
+    /** `inline` sits under a task row of the list; `field` is a form field (the default);
+     * `page` is the body of a note, with the format bar always showing. */
+    variant?: "inline" | "field" | "page";
+    placeholder?: string;
     /** Takes the cursor when it opens: only for a note the user has just opened. */
     autofocus?: boolean;
     onAutofocus?: () => void;
@@ -24,6 +26,7 @@
     contentJson,
     save,
     variant = "field",
+    placeholder = t.notes.placeholder,
     autofocus = false,
     onAutofocus,
     onEmptyBlur,
@@ -81,7 +84,7 @@
           element: host,
           contentJson,
           label: t.notes.editorLabel,
-          placeholder: t.notes.placeholder,
+          placeholder,
           onChange: (json) => saver.schedule(json),
           onState: (state) => (toolbar = state),
           onLinkShortcut: () => (linkRequest += 1),
@@ -113,6 +116,7 @@
   class="note"
   class:in-list={variant === "inline"}
   class:as-field={variant === "field"}
+  class:as-page={variant === "page"}
   class:focused
   onfocusin={() => (focused = true)}
   onfocusout={onFocusOut}
@@ -120,7 +124,7 @@
   {#if failed}
     <p class="status" role="alert">{t.notes.loadFailed}</p>
   {:else}
-    {#if focused}
+    {#if focused || variant === "page"}
       <div class="tools">
         <NoteToolbar
           formats={toolbar}
@@ -159,8 +163,28 @@
     background: var(--bg-control);
   }
 
-  .note.focused {
+  .note.focused:not(.as-page) {
     background: var(--bg-control);
+  }
+
+  /* The body of a note: no field chrome, reading-size text. */
+  .as-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  .as-page .tools {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding-bottom: var(--space-2);
+    background: var(--bg-window-solid);
+  }
+
+  .as-page .surface {
+    flex: 1;
+    cursor: text;
   }
 
   .as-field.focused {
@@ -198,8 +222,15 @@
     transition: color var(--motion-fast) var(--ease-out);
   }
 
+  .as-page .surface :global(.tiptap) {
+    min-height: 50vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
   .focused .surface :global(.tiptap),
-  .as-field .surface :global(.tiptap) {
+  .as-field .surface :global(.tiptap),
+  .as-page .surface :global(.tiptap) {
     color: var(--text-primary);
   }
 

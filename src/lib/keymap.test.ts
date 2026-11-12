@@ -17,6 +17,20 @@ describe("findShortcut", () => {
     );
   });
 
+  it("switches section with Ctrl+Shift+1 and 2, whatever character Shift gives", () => {
+    const go = (key: string, code: string) =>
+      findShortcut(
+        press({ key, code, ctrlKey: true, shiftKey: true }),
+        "other",
+      );
+    expect(go("!", "Digit1")).toBe("goAgenda");
+    expect(go("@", "Digit2")).toBe("goNotes");
+    expect(go('"', "Digit2")).toBe("goNotes");
+    expect(findShortcut(press({ key: "2", ctrlKey: true }), "other")).toBe(
+      "viewDay",
+    );
+  });
+
   it("switches views with Ctrl+1…4 from anywhere", () => {
     const ids = ["viewList", "viewDay", "viewWeek", "viewMonth"];
     ["1", "2", "3", "4"].forEach((key, index) => {

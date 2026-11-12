@@ -2,9 +2,9 @@
   interface Props {
     title: string;
     description: string;
-    actionLabel: string;
+    actionLabel?: string;
     shortcut?: string;
-    onAction: () => void;
+    onAction?: () => void;
   }
 
   let { title, description, actionLabel, shortcut, onAction }: Props = $props();
@@ -13,10 +13,12 @@
 <div class="empty">
   <h2>{title}</h2>
   <p>{description}</p>
-  <button type="button" class="btn primary" onclick={onAction}>
-    {actionLabel}
-    {#if shortcut}<kbd>{shortcut}</kbd>{/if}
-  </button>
+  {#if actionLabel && onAction}
+    <button type="button" class="btn primary" onclick={onAction}>
+      {actionLabel}
+      {#if shortcut}<kbd>{shortcut}</kbd>{/if}
+    </button>
+  {/if}
 </div>
 
 <style>

@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 7 de la V2.0.0 (modelo de datos y contrato de notas)
+**Fase activa:** Fase 8 de la V2.0.0 (sección Notas: interfaz esencial)
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F7 cerrada (todas sus tareas `[A]` en verde y sin ítems `[H]`: no hay interfaz). Esperando confirmación para empezar la Fase 8. Antes, validar los ítems `[H]` pendientes de `docs/manual-pruebas.md` (incluidas las secciones 1.0.1 a 1.0.4, «Rediseño de interfaz (D-39)» y «Notas en la lista (D-40)») y ejecutar F6-06 (E2E) en un equipo con `tauri-driver`
-**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fase 7 completada)
+**Siguiente tarea:** F8 cerrada salvo F8-08 (evento `notes:changed`, pospuesta: ver notas). Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fase 8» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 9.
+**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fase 8 implementada, pendiente de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -215,14 +215,24 @@
 **Ítems [H]:** ninguno (la fase no tiene interfaz). Nada nuevo en `docs/manual-pruebas.md`.
 
 ## Fase 8 — Sección Notas: interfaz esencial
-- [ ] F8-01 Navegación principal Agenda | Notas (`Ctrl+1/2`)
-- [ ] F8-02 Panel de carpetas: árbol, crear/renombrar/mover (puntero propio, como D-34), Bandeja de entrada, Todas, Fijadas, Papelera
-- [ ] F8-03 Lista de notas virtualizada (título, extracto, fecha, etiquetas; orden configurable)
-- [ ] F8-04 Editor de nota con TipTap (D-22), título propio y guardado diferido
-- [ ] F8-05 Fijar, duplicar, mover, eliminar/restaurar con deshacer
-- [ ] F8-06 Textos en `i18n.ts`, estados vacíos, teclado y ARIA (N-08)
-- [ ] F8-07 Recordar carpeta y nota abiertas al reiniciar
+- [x] F8-01 Navegación principal Agenda | Notas (`Ctrl+Mayús+1/2`: `Ctrl+1…4` ya eran las vistas de la agenda)
+- [x] F8-02 Panel de carpetas: árbol, crear/renombrar/mover (puntero propio, como D-34), Bandeja de entrada, Todas, Fijadas, Papelera
+- [x] F8-03 Lista de notas virtualizada (título, extracto, fecha, etiquetas; orden configurable)
+- [x] F8-04 Editor de nota con TipTap (D-22), título propio y guardado diferido
+- [x] F8-05 Fijar, duplicar, mover, eliminar/restaurar con deshacer
+- [x] F8-06 Textos en `i18n.ts`, estados vacíos, teclado y ARIA (N-08)
+- [x] F8-07 Recordar carpeta y nota abiertas al reiniciar
 - [ ] F8-08 Evento `notes:changed` (SPEC §7.4) y su escucha en la interfaz; se pospuso desde F7-07 porque hoy nada lo consume (tampoco existe `tasks:changed`)
+
+**Verificaciones [A] de F8:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (321 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (385+), `npm run build` y `npm run size` (196,1 KB gzip de 250) en verde.
+
+**Notas de la fase 8:**
+- Sección y estado: `viewStore.section` (`agenda`|`notes`) y ajustes nuevos `app_section`, `notes_scope` y `notes_open` (el segundo y el tercero aceptan texto libre de hasta 64 caracteres sin control). Al arrancar se restaura la sección, la carpeta y la nota; si ya no existen se vuelve a «Todas».
+- `stores/notes.svelte.ts` (carpetas, lista por ámbito, nota abierta, deshacer, avisos), `FolderSidebar` (árbol, Bandeja, Fijadas, Papelera; crear, renombrar, eliminar con confirmación; mover por arrastre con puntero propio `folderDrag`), `NoteList` (virtualizada, 78 px por fila), `NotePane` (título + `NoteEditor` variante `page`, fijar, duplicar, mover, eliminar) y `NotesView`. Las notas se cargan al entrar por primera vez en la sección (N-01).
+- Duplicar no necesita comando nuevo: crea con el contenido de la original.
+- **F8-08 pospuesta otra vez:** sigue sin haber ningún consumidor del evento (una sola ventana, y cada acción ya recarga lo suyo). Propuesta: hacerla en F10, cuando crear tareas desde notas obligue a refrescar ambas listas.
+- Atajo de sección `Ctrl+Mayús+1/2` por `event.code`, porque Mayús cambia `event.key`.
+- Cada nota guarda con retardo (400 ms) y se vuelca al cerrar o cambiar de nota.
 
 ## Fase 9 — Etiquetas unificadas
 - [ ] F9-01 Varias etiquetas por tarea (D-44): selector, chips, calendario
