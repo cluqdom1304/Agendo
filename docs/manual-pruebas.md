@@ -269,3 +269,13 @@ Movimiento y fluidez
 - [ ] Lista: la nota abierta se distingue bien con el tinte de acento en claro y oscuro; las filas con etiquetas no se cortan; sin etiquetas el extracto ocupa dos líneas. Pasar el ratón por una etiqueta de la barra no oculta su contador.
 - [ ] Nota larga y nota vacía: el texto se lee en una columna centrada en ventanas anchas; pulsar bajo el último párrafo coloca el cursor; «Tareas de esta nota» solo aparece cuando hay tareas.
 - [ ] Barra de formato de la descripción de una tarea (agenda): mismos iconos nuevos, sin cambios de comportamiento.
+
+## Notas V2 — Fase 11: enlaces, búsqueda y navegación rápida (`[H]`, pendientes de validar en Windows 11)
+- [ ] (F11-01) En una nota, escribir `[[` abre una lista bajo el cursor con las notas que coinciden; flechas, Intro/Tab o clic enlazan; Esc la oculta. Si no hay una nota con ese título aparece «Crear la nota «…»», que la crea sin salir de la nota actual y deja el enlace puesto.
+- [ ] (F11-01) El enlace se ve en color de acento y subrayado suave; pulsarlo abre la nota. Renombrar la nota enlazada cambia el texto del enlace en cuanto se vuelve a la nota; si se envía a la papelera el enlace sale tachado como «Nota eliminada» y se recupera al restaurarla.
+- [ ] (F11-02) Una nota enlazada desde otras muestra al pie «Enlaces a esta nota» con las notas de origen (plegable, un clic abre la nota). Sin enlaces entrantes no aparece nada.
+- [ ] (F11-02) Carpeta inteligente «Notas sin enlaces» en la barra lateral: lista las notas que ni enlazan ni reciben enlaces; su estado vacío es legible.
+- [ ] (F11-03) `Ctrl+K` busca a la vez en notas, tareas y etiquetas, con grupos y contadores. Probar `tag:trabajo`, `in:clase`, `is:tarea`, `is:hecha`, `is:fijada` y combinaciones (`informe tag:trabajo is:pendiente`); valores con espacios entre comillas.
+- [ ] (F11-04) `Ctrl+K` funciona igual en la Agenda y en Notas; `>` muestra solo comandos (nueva tarea/nota, cambiar vista o sección, carpetas inteligentes). Elegir una tarea la revela en la lista; elegir una etiqueta filtra la agenda o abre la etiqueta en Notas.
+- [ ] (F11-05) `Ctrl+P` («Ir a…») lista las notas abiertas hace poco y, al escribir, filtra por título; Intro abre la nota. Tras cerrar y abrir la aplicación la lista de recientes se conserva. `Ctrl+P` no abre el diálogo de impresión del navegador.
+- [ ] (F11) Aspecto: la paleta (grupos, fila activa en acento, atajos a la derecha, animación de entrada) y la lista de enlaces en tema claro y oscuro, con y sin Mica.

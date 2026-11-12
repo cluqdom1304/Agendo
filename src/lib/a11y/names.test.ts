@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import CalendarView from "../features/calendar/CalendarView.svelte";
 import TodoView from "../features/todo/TodoView.svelte";
-import Spotlight from "../shell/Spotlight.svelte";
+import Palette from "../features/palette/Palette.svelte";
 import WindowControls from "../shell/WindowControls.svelte";
 import EmptyState from "../shell/EmptyState.svelte";
 import { TasksStore } from "../stores/tasks.svelte";
@@ -73,9 +73,14 @@ describe("accessible names", () => {
   );
 
   it("the shell components have names", () => {
-    const search = render(Spotlight, {
+    const search = render(Palette, {
+      mode: "all",
       search: async () => [],
-      onSelect: () => undefined,
+      commands: [{ id: "c", label: "Comando", run: () => undefined }],
+      recent: [{ id: "n", title: "Nota" }],
+      onNote: () => undefined,
+      onTask: () => undefined,
+      onTag: () => undefined,
       onClose: () => undefined,
     });
     expect(unnamedControls(search.container)).toEqual([]);

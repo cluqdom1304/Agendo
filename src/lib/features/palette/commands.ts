@@ -1,0 +1,104 @@
+// The commands of the palette (F11-04). Each one drives the same stores the rest of the app
+// uses, so a command never does anything a button could not.
+
+import { t } from "../../i18n";
+import type { NotesStore, ScopeKey } from "../../stores/notes.svelte";
+import type { TagsStore } from "../../stores/tags.svelte";
+import type { TasksStore } from "../../stores/tasks.svelte";
+import type { ViewStore } from "../../stores/view.svelte";
+import type { ViewMode } from "../../types";
+import type { PaletteCommand } from "./palette";
+
+export interface CommandDeps {
+  view: ViewStore;
+  notes: NotesStore;
+  tasks: TasksStore;
+  tags: TagsStore;
+}
+
+export function buildCommands(deps: CommandDeps): PaletteCommand[] {
+  const { view, notes, tasks, tags } = deps;
+  const l = t.palette.commands;
+
+  const inAgenda = (action: () => void) => () => {
+    view.setSection("agenda");
+    action();
+  };
+  const showView = (mode: ViewMode) => inAgenda(() => view.setMode(mode));
+  const showNotes = (scope: ScopeKey) => () => {
+    view.setSection("notes");
+    void notes.ensureLoaded().then(() => notes.selectScope(scope));
+  };
+
+  return [
+    {
+      id: "new-task",
+      label: l.newTask,
+      shortcut: "Ctrl+N",
+      run: inAgenda(() => tasks.startDraft(tasks.defaultTarget())),
+    },
+    {
+      id: "new-task-today",
+      label: l.newTaskToday,
+      shortcut: "Ctrl+Mayús+N",
+      run: inAgenda(() => tasks.startDraft(tasks.todayTarget())),
+    },
+    {
+      id: "new-note",
+      label: l.newNote,
+      run: () => {
+        view.setSection("notes");
+        void notes.ensureLoaded().then(() => notes.createNote());
+      },
+    },
+    {
+      id: "go-agenda",
+      label: l.goAgenda,
+      shortcut: "Ctrl+Mayús+1",
+      run: () => view.setSection("agenda"),
+    },
+    {
+      id: "go-notes",
+      label: l.goNotes,
+      shortcut: "Ctrl+Mayús+2",
+      run: () => {
+        view.setSection("notes");
+        void notes.ensureLoaded();
+      },
+    },
+    {
+      id: "view-list",
+      label: l.viewList,
+      shortcut: "Ctrl+1",
+      run: showView("list"),
+    },
+    {
+      id: "view-day",
+      label: l.viewDay,
+      shortcut: "Ctrl+2",
+      run: showView("day"),
+    },
+    {
+      id: "view-week",
+      label: l.viewWeek,
+      shortcut: "Ctrl+3",
+      run: showView("week"),
+    },
+    {
+      id: "view-month",
+      label: l.viewMonth,
+      shortcut: "Ctrl+4",
+      run: showView("month"),
+    },
+    { id: "notes-all", label: l.notesAll, run: showNotes("all") },
+    { id: "notes-inbox", label: l.notesInbox, run: showNotes("inbox") },
+    { id: "notes-pinned", label: l.notesPinned, run: showNotes("pinned") },
+    { id: "notes-orphans", label: l.notesOrphans, run: showNotes("orphans") },
+    { id: "notes-trash", label: l.notesTrash, run: showNotes("trash") },
+    {
+      id: "show-all-tags",
+      label: l.showAllTags,
+      run: () => tags.showAll(),
+    },
+  ];
+}

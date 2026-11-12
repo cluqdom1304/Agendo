@@ -15,6 +15,9 @@ import type {
   FoundItem,
 } from "../types";
 
+type NotesSetting =
+  "app_section" | "notes_scope" | "notes_open" | "notes_recent";
+
 /** The slice of `api.ts` the store uses; tests pass a fake. */
 export interface NotesApi {
   folderList(): Promise<FolderWithCount[]>;
@@ -34,13 +37,8 @@ export interface NotesApi {
   notesOrphans(): Promise<NoteSummary[]>;
   searchAll(query: string, limit?: number): Promise<FoundItem[]>;
   notesTrashList(): Promise<NoteSummary[]>;
-  settingsGet(
-    key: "app_section" | "notes_scope" | "notes_open",
-  ): Promise<string | null>;
-  settingsSet(
-    key: "app_section" | "notes_scope" | "notes_open",
-    value: string,
-  ): Promise<void>;
+  settingsGet(key: NotesSetting): Promise<string | null>;
+  settingsSet(key: NotesSetting, value: string): Promise<void>;
 }
 
 /** What the list shows. `folder:<id>` is a folder with its subfolders. */
@@ -69,6 +67,8 @@ export interface Notice {
 }
 
 const MAX_UNDO = 20;
+/** How many opened notes are remembered for "Ir a…". */
+const MAX_RECENT = 8;
 
 function parseScope(value: string | null): ScopeKey {
   if (
@@ -111,6 +111,9 @@ export class NotesStore {
 
   /** Notes known to be in the trash or gone: links to them show as removed. */
   readonly missing = new SvelteSet<string>();
+
+  /** Ids of the notes opened last, most recent first (F11-05). */
+  recent = $state.raw<string[]>([]);
 
   readonly #api: NotesApi;
   #listToken = 0;
@@ -276,10 +279,15 @@ export class NotesStore {
 
   async #load(): Promise<void> {
     try {
-      const [scope, openId] = await Promise.all([
+      const [scope, openId, recent] = await Promise.all([
         this.#api.settingsGet("notes_scope").catch(() => null),
         this.#api.settingsGet("notes_open").catch(() => null),
+        this.#api.settingsGet("notes_recent").catch(() => null),
       ]);
+      this.recent = (recent ?? "")
+        .split(",")
+        .filter((id, at, all) => id !== "" && all.indexOf(id) === at)
+        .slice(0, MAX_RECENT);
       this.folders = await this.#api.folderList();
       const wanted = parseScope(scope);
       // A folder deleted since the last run falls back to everything.
@@ -335,7 +343,10 @@ export class NotesStore {
         : await this.#api.noteGet(id);
       this.open = note;
       this.openInTrash = trashed;
-      if (options.remember !== false) this.#remember("notes_open", id);
+      if (options.remember !== false) {
+        this.#remember("notes_open", id);
+        if (!trashed) this.#touchRecent(id);
+      }
     } catch {
       // A note that no longer exists (purged, or restored from another backup).
       this.open = null;
@@ -560,6 +571,25 @@ export class NotesStore {
     this.open = note;
     this.openInTrash = false;
     this.#remember("notes_open", note.id);
+    this.#touchRecent(note.id);
+  }
+
+  #touchRecent(id: string): void {
+    this.recent = [id, ...this.recent.filter((known) => known !== id)].slice(
+      0,
+      MAX_RECENT,
+    );
+    this.#remember("notes_recent", this.recent.join(","));
+  }
+
+  /** The recent notes that still exist, with their titles, for the quick switcher. */
+  recentNotes(limit = MAX_RECENT): { id: string; title: string }[] {
+    return this.recent
+      .flatMap((id) => {
+        const title = this.linkTitle(id);
+        return typeof title === "string" ? [{ id, title }] : [];
+      })
+      .slice(0, limit);
   }
 
   async #tryRefreshList(): Promise<void> {
@@ -602,7 +632,10 @@ export class NotesStore {
     for (const note of notes) this.titles.set(note.id, note.title);
   }
 
-  #remember(key: "notes_scope" | "notes_open", value: string): void {
+  #remember(
+    key: "notes_scope" | "notes_open" | "notes_recent",
+    value: string,
+  ): void {
     void this.#api.settingsSet(key, value).catch(() => undefined);
   }
 

@@ -23,8 +23,13 @@ pub const NOTES_SCOPE: &str = "notes_scope";
 /// Id of the note open in the editor, or empty (F8-07).
 pub const NOTES_OPEN: &str = "notes_open";
 
+/// Ids of the notes opened last, most recent first, separated by commas (F11-05).
+pub const NOTES_RECENT: &str = "notes_recent";
+
 /// Longest free-form value (an id plus a prefix).
 const MAX_FREE_VALUE: usize = 64;
+/// Longest list of recent notes: a dozen ids and their separators.
+const MAX_RECENT_VALUE: usize = 480;
 
 /// Native window material requested at startup (F6-05); the OS may still fall back.
 pub const WINDOW_EFFECT: &str = "window_effect";
@@ -53,12 +58,17 @@ fn allowed_values(key: &str) -> AppResult<&'static [&'static str]> {
 
 /// Settings that hold an id-like string the backend does not enumerate.
 fn is_free_form(key: &str) -> bool {
-    key == NOTES_SCOPE || key == NOTES_OPEN
+    key == NOTES_SCOPE || key == NOTES_OPEN || key == NOTES_RECENT
 }
 
 fn validate(key: &str, value: &str) -> AppResult<()> {
     let valid = if is_free_form(key) {
-        value.chars().count() <= MAX_FREE_VALUE && !value.chars().any(char::is_control)
+        let longest = if key == NOTES_RECENT {
+            MAX_RECENT_VALUE
+        } else {
+            MAX_FREE_VALUE
+        };
+        value.chars().count() <= longest && !value.chars().any(char::is_control)
     } else if key == DEFAULT_NOTIFY_TIME {
         dates::parse_time(value).is_ok()
     } else {
@@ -146,6 +156,18 @@ mod tests {
                 &state, NOTES_OPEN, "a
 b"
             )),
+            "VALIDATION"
+        );
+    }
+
+    #[test]
+    fn remembers_the_recent_notes_with_a_longer_limit() {
+        let (state, _) = test_state();
+        let ids = ["0190b3a4-7c1e-7d2f-8a55-3f2f6c1d9e10"; 8].join(",");
+        set(&state, NOTES_RECENT, &ids).expect("recent");
+        assert_eq!(get(&state, NOTES_RECENT).expect("get"), Some(ids));
+        assert_eq!(
+            code(set(&state, NOTES_RECENT, &"x".repeat(481))),
             "VALIDATION"
         );
     }

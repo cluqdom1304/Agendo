@@ -4,6 +4,8 @@
   import { onReminderFired } from "$lib/api";
   import FolderSidebar from "$lib/features/notes/FolderSidebar.svelte";
   import NotesView from "$lib/features/notes/NotesView.svelte";
+  import PaletteHost from "$lib/features/palette/PaletteHost.svelte";
+  import type { PaletteMode } from "$lib/features/palette/palette";
   import TagDragGhost from "$lib/features/tags/TagDragGhost.svelte";
   import TagSidebar from "$lib/features/tags/TagSidebar.svelte";
   import TaskDialog from "$lib/features/todo/TaskDialog.svelte";
@@ -32,6 +34,8 @@
   );
   /** The task whose view is open (opened from the calendar). */
   let detailId = $state<string | null>(null);
+  /** The command palette (Ctrl+K) or "Ir a…" (Ctrl+P) while it is open. */
+  let palette = $state<PaletteMode | null>(null);
   /** The task being edited in the creation dialog; the view comes back when it closes. */
   let editing = $state.raw<Task | null>(null);
 
@@ -125,8 +129,22 @@
     row?.scrollIntoView?.({ block: "center" });
   }
 
+  /** Shows a task found by the palette in the agenda's list. */
+  async function showTask(taskId: string) {
+    viewStore.setSection("agenda");
+    await tick();
+    const task = tasksStore.find(taskId);
+    if (task) await openInList(task);
+    else detailId = taskId;
+  }
+
   function onKeydown(event: KeyboardEvent) {
     const shortcut = findShortcut(event, focusContextOf(event.target));
+    if (shortcut === "openSearch" || shortcut === "quickOpen") {
+      event.preventDefault();
+      palette = shortcut === "openSearch" ? "all" : "notes";
+      return;
+    }
     if (shortcut === "goAgenda" || shortcut === "goNotes") {
       event.preventDefault();
       viewStore.setSection(shortcut === "goAgenda" ? "agenda" : "notes");
@@ -297,6 +315,14 @@
     {/if}
   </div>
 </div>
+
+{#if palette}
+  <PaletteHost
+    mode={palette}
+    onTask={(taskId) => void showTask(taskId)}
+    onClose={() => (palette = null)}
+  />
+{/if}
 
 <TagDragGhost drag={tagDrag} />
 <TagDragGhost drag={folderDrag} hint={t.notesApp.dragHint} />

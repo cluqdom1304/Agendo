@@ -337,36 +337,6 @@ describe("notes and search", () => {
       ).toBe(true),
     );
   });
-
-  it("Ctrl+K opens the search and Enter reveals the chosen task with its notes", async () => {
-    const { store } = await mount([
-      makeTask({ id: "a", title: "Primera" }),
-      makeTask({ id: "b", title: "Estudiar álgebra", contentJson: notes }),
-    ]);
-    await key({ key: "k", ctrlKey: true });
-    const field = await screen.findByRole("combobox");
-    await fireEvent.input(field, { target: { value: "algebra" } });
-    await screen.findByRole("option");
-    await fireEvent.keyDown(field, { key: "Enter" });
-
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(store.selectedId).toBe("b");
-    expect(store.isNotesOpen("b")).toBe(true);
-    expect(
-      await screen.findByRole("textbox", { name: "Notas de la tarea" }),
-    ).toBeTruthy();
-  });
-
-  it("does not run list shortcuts while the search is open", async () => {
-    const { api } = await mount([makeTask({ id: "a", title: "Primera" })]);
-    await key({ key: "k", ctrlKey: true });
-    const field = await screen.findByRole("combobox");
-    await fireEvent.keyDown(field, { key: "n", ctrlKey: true });
-    expect(screen.getAllByRole("row")).toHaveLength(1);
-    expect(
-      api.calls.filter((call) => call.startsWith("taskCreate")),
-    ).toHaveLength(0);
-  });
 });
 
 describe("row actions", () => {

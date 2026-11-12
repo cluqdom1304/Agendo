@@ -1,0 +1,418 @@
+<script lang="ts">
+  import { onMount } from "svelte";
+
+  import { formatDisplayDate } from "../../dates";
+  import { t } from "../../i18n";
+  import type { FoundItem } from "../../types";
+  import {
+    buildGroups,
+    planQuery,
+    type PaletteCommand,
+    type PaletteMode,
+    type PaletteRow,
+  } from "./palette";
+
+  // Ctrl+K searches tasks, notes and tags and runs commands; Ctrl+P ("Ir a…") only jumps to
+  // notes. One dialog, two modes (F11-03 to F11-05).
+  interface Props {
+    mode: PaletteMode;
+    search: (query: string) => Promise<FoundItem[]>;
+    commands: PaletteCommand[];
+    /** Notes opened lately, most recent first. */
+    recent: { id: string; title: string }[];
+    onNote: (id: string) => void;
+    onTask: (id: string) => void;
+    onTag: (id: string) => void;
+    onClose: () => void;
+  }
+
+  let {
+    mode,
+    search,
+    commands,
+    recent,
+    onNote,
+    onTask,
+    onTag,
+    onClose,
+  }: Props = $props();
+
+  let query = $state("");
+  let found = $state.raw<FoundItem[]>([]);
+  let active = $state(0);
+  let failed = $state(false);
+  let input = $state<HTMLInputElement>();
+
+  // Answers can arrive out of order; only the latest request may update the list.
+  let latest = 0;
+
+  const plan = $derived(planQuery(query, mode));
+  const groups = $derived(buildGroups({ mode, plan, commands, recent, found }));
+  const rows = $derived(groups.flatMap((group) => group.rows));
+  const groupTitles = $derived({
+    commands: t.palette.groupCommands,
+    recent: t.palette.groupRecent,
+    notes: t.palette.groupNotes,
+    tasks: t.palette.groupTasks,
+    tags: t.palette.groupTags,
+  });
+
+  const status = $derived(
+    failed
+      ? t.palette.failed
+      : rows.length > 0
+        ? plan.text === "" && !plan.commandsOnly
+          ? mode === "notes"
+            ? t.palette.hintNotes
+            : t.palette.hintAll
+          : t.palette.resultCount(rows.length)
+        : plan.text === "" && !plan.commandsOnly
+          ? mode === "notes"
+            ? t.palette.hintNotes
+            : t.palette.hintAll
+          : t.palette.empty,
+  );
+
+  onMount(() => {
+    input?.focus();
+    // "Ir a…" lists the notes edited lately before anything is typed.
+    if (mode === "notes") void run();
+  });
+
+  async function run() {
+    const request = ++latest;
+    const wanted = plan.search;
+    if (wanted === null) {
+      found = [];
+      failed = false;
+      active = 0;
+      return;
+    }
+    try {
+      const answer = await search(wanted);
+      if (request !== latest) return;
+      found = answer;
+      failed = false;
+    } catch {
+      if (request !== latest) return;
+      found = [];
+      failed = true;
+    }
+    active = 0;
+  }
+
+  function onInput() {
+    active = 0;
+    void run();
+  }
+
+  function choose(row: PaletteRow | undefined) {
+    if (!row) return;
+    onClose();
+    if (row.kind === "command") row.command.run();
+    else if (row.kind === "note") onNote(row.id);
+    else if (row.kind === "task") onTask(row.id);
+    else onTag(row.id);
+  }
+
+  function onkeydown(event: KeyboardEvent) {
+    if (event.isComposing) return;
+    // The dialog owns the keyboard while it is open: nothing reaches the document shortcuts.
+    event.stopPropagation();
+    const key = event.key.toLowerCase();
+    if (
+      event.key === "Escape" ||
+      (event.ctrlKey && (key === "k" || key === "p"))
+    ) {
+      event.preventDefault();
+      onClose();
+    } else if (event.key === "ArrowDown" && rows.length > 0) {
+      event.preventDefault();
+      active = (active + 1) % rows.length;
+    } else if (event.key === "ArrowUp" && rows.length > 0) {
+      event.preventDefault();
+      active = (active - 1 + rows.length) % rows.length;
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      choose(rows[active]);
+    }
+  }
+
+  $effect(() => {
+    document
+      .getElementById(`row-${active}`)
+      ?.scrollIntoView?.({ block: "nearest" });
+  });
+
+  const titleOf = (row: PaletteRow): string =>
+    row.kind === "command"
+      ? row.command.label
+      : row.kind === "tag"
+        ? row.name
+        : row.title || t.palette.untitled;
+</script>
+
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+<div class="backdrop" onclick={onClose}>
+  <div
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-label={mode === "notes" ? t.palette.titleNotes : t.palette.titleAll}
+    tabindex="-1"
+    {onkeydown}
+    onclick={(event) => event.stopPropagation()}
+  >
+    <input
+      bind:this={input}
+      bind:value={query}
+      oninput={onInput}
+      class="query"
+      type="text"
+      role="combobox"
+      autocomplete="off"
+      spellcheck="false"
+      aria-label={mode === "notes"
+        ? t.palette.placeholderNotes
+        : t.palette.placeholderAll}
+      aria-expanded={rows.length > 0}
+      aria-controls="palette-results"
+      aria-activedescendant={rows.length > 0 ? `row-${active}` : undefined}
+      placeholder={mode === "notes"
+        ? t.palette.placeholderNotes
+        : t.palette.placeholderAll}
+    />
+
+    <ul
+      id="palette-results"
+      class="results"
+      role="listbox"
+      aria-label={t.palette.results}
+    >
+      {#each groups as group (group.id)}
+        <li class="group" role="presentation">{groupTitles[group.id]}</li>
+        {#each group.rows as row (row.key)}
+          {@const index = rows.indexOf(row)}
+          <li
+            id={`row-${index}`}
+            role="option"
+            aria-selected={index === active}
+            class="hit"
+            class:active={index === active}
+            onmousemove={() => (active = index)}
+            onclick={() => choose(row)}
+          >
+            <span class="lead" aria-hidden="true">
+              {#if row.kind === "tag"}
+                <span class="dot" style:background={row.color}></span>
+              {:else if row.kind === "task"}
+                <span class="box" class:done={row.done}></span>
+              {:else if row.kind === "note"}
+                <svg viewBox="0 0 16 16" width="14" height="14">
+                  <path
+                    d="M4 2.5h5.5L12.5 5.5v8H4zM9.5 2.5v3h3"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              {:else}
+                <svg viewBox="0 0 16 16" width="14" height="14">
+                  <path
+                    d="M6 4.5L3 8l3 3.5M10 4.5L13 8l-3 3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              {/if}
+            </span>
+            <span class="title" class:done={row.kind === "task" && row.done}>
+              {titleOf(row)}
+            </span>
+            <span class="detail">
+              {#if row.kind === "command"}
+                {#if row.command.shortcut}
+                  <kbd>{row.command.shortcut}</kbd>
+                {/if}
+              {:else if row.kind === "task"}
+                {#if row.dueDate}{formatDisplayDate(row.dueDate)}{/if}
+              {:else if row.kind === "tag"}
+                {t.palette.tagCounts(row.notes, row.pending)}
+              {/if}
+            </span>
+            {#if row.kind !== "command" && row.kind !== "tag" && row.snippet}
+              <span class="snippet">{row.snippet}</span>
+            {/if}
+          </li>
+        {/each}
+      {/each}
+    </ul>
+
+    <p class="status" role="status">{status}</p>
+  </div>
+</div>
+
+<style>
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 12vh;
+    background: var(--backdrop);
+    animation: fade-in var(--motion-fast) linear;
+  }
+
+  .dialog {
+    width: min(620px, calc(100vw - 2 * var(--space-6)));
+    border-radius: var(--radius-panel);
+    background: var(--bg-popover);
+    box-shadow: var(--shadow-modal);
+    overflow: hidden;
+    outline: none;
+    animation: sheet-in var(--motion-spring) var(--ease-spring);
+  }
+
+  .query {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 18px;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-family: var(--font-display);
+    font-size: 18px;
+    letter-spacing: -0.01em;
+    outline: none;
+  }
+
+  .query::placeholder {
+    color: var(--text-secondary);
+  }
+
+  .results {
+    max-height: 360px;
+    margin: 0;
+    padding: 6px;
+    border-top: 1px solid var(--separator);
+    list-style: none;
+    overflow-y: auto;
+  }
+
+  .results:empty {
+    display: none;
+  }
+
+  .group {
+    padding: 8px 10px 3px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .hit {
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    align-items: center;
+    gap: 1px var(--space-3);
+    padding: 6px 10px;
+    border-radius: var(--radius-control);
+    cursor: pointer;
+  }
+
+  /* Solid accent, as in a system launcher: the choice is unmistakable at a glance. */
+  .hit.active {
+    background: var(--accent);
+  }
+
+  .lead {
+    display: flex;
+    justify-content: center;
+    color: var(--text-secondary);
+  }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: var(--radius-chip);
+  }
+
+  .box {
+    width: 12px;
+    height: 12px;
+    border: 1.5px solid var(--text-secondary);
+    border-radius: var(--radius-chip);
+  }
+
+  .box.done {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+  }
+
+  .title.done {
+    color: var(--text-secondary);
+    text-decoration: line-through;
+  }
+
+  .detail {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  kbd {
+    font: inherit;
+    font-size: 11px;
+  }
+
+  .snippet {
+    grid-column: 2 / -1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .hit.active .title,
+  .hit.active .detail,
+  .hit.active .snippet,
+  .hit.active .lead {
+    color: var(--on-accent);
+  }
+
+  .hit.active .box {
+    border-color: var(--on-accent);
+  }
+
+  .status {
+    margin: 0;
+    padding: var(--space-2) 18px;
+    border-top: 1px solid var(--separator);
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .backdrop,
+    .dialog {
+      animation: none;
+    }
+  }
+</style>

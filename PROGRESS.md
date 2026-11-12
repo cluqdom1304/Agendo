@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 10 de la V2.0.0 (tareas dentro de las notas)
+**Fase activa:** Fase 11 de la V2.0.0 (enlaces, búsqueda y navegación rápida)
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F10 cerrada en lo `[A]`, más un repaso de fallos y diseño de la sección Notas (ver «Repaso de la sección Notas»). Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8, 9 y 10» y de «Repaso de diseño de Notas» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 11.
-**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8, 9 y 10 implementadas y repasadas, pendientes de validación humana)
+**Siguiente tarea:** F11 cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8 a 11» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 12.
+**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 a 11 implementadas, pendientes de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -303,9 +303,9 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 ## Fase 11 — Enlaces, búsqueda y navegación rápida
 - [x] F11-01 Enlaces `[[nota]]` con autocompletado, creación al vuelo y renombrado seguro — nodo `noteLink` (guarda solo el id; el título se lee de la nota, así que renombrar no rompe nada), lista al escribir `[[`, «Crear la nota «x»» si no existe, enlace tachado «Nota eliminada» si está en la papelera
 - [x] F11-02 Panel de backlinks y notas huérfanas — pie «Enlaces a esta nota» (`note_backlinks`) y carpeta inteligente «Notas sin enlaces» (`notes_orphans`)
-- [ ] F11-03 Búsqueda unificada (tareas, notas, etiquetas) con filtros `tag:`, `in:`, `is:tarea`
-- [ ] F11-04 Paleta de comandos `Ctrl+K`
-- [ ] F11-05 Notas recientes e «Ir a…» (`Ctrl+P`)
+- [x] F11-03 Búsqueda unificada (tareas, notas, etiquetas) con filtros `tag:`, `in:`, `is:tarea` — `search_all` (`repo/find.rs`): `tag:` acepta subetiquetas y se puede repetir, `in:` es una carpeta (con subcarpetas), `is:` admite tarea, nota, etiqueta, hecha, pendiente y fijada; valores con espacios entre comillas
+- [x] F11-04 Paleta de comandos `Ctrl+K` — sustituye al buscador de la agenda y funciona en ambas secciones: busca en todo, `>` para solo comandos (nueva tarea/nota, cambiar de sección o vista, carpetas inteligentes de notas, mostrar todas las etiquetas)
+- [x] F11-05 Notas recientes e «Ir a…» (`Ctrl+P`) — las 8 últimas notas abiertas se guardan en el ajuste `notes_recent` (límite de 480 caracteres, el resto de ajustes libres sigue en 64)
 
 ## Fase 12 — Editor avanzado y adjuntos
 - [ ] F12-01 Almacén de adjuntos con hash, deduplicación y limpieza de huérfanos (D-47)
@@ -391,3 +391,9 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - 2026-11-09: **Versión 1.0.1 lanzada** (D-35, D-36). Versión fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y los dos lockfiles. El usuario revisó la interfaz con `tauri dev` (tema claro opaco, hora de aviso por defecto, semana alineada). Instaladores con `npx tauri build`. Los ítems `[H]` de la 1.0.1 siguen sin marcar en `docs/manual-pruebas.md` hasta su validación formal.
 - 2026-11-09: **Versión 1.0.2 lanzada** (D-37): casillas (subtareas) en las notas de las tareas, marcables con un clic sin editar el texto. Batería `[A]` en verde (`cargo fmt/clippy/test` 264 de lib; `npm lint/check/test` 342/build/size 187,3 KB). Pendiente `[H]`: manual-pruebas § «Versión 1.0.2». Versión fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y lockfiles; instaladores con `npx tauri build`.
 - 2026-11-09: **Versión 1.0.3 lanzada.** Corrección: al teclear la fecha, el navegador notifica años parciales (`0002`, `0020`, `0202`) y la app los confirmaba, dejando la tarea en el año 2 y rompiendo la escritura. `isSettledDate` (`dates.ts`) ignora esos valores en el diálogo de tarea y en la fila. Batería `[A]` en verde (Vitest 346, build, size, Rust 264). Nota: `NoteEditor.test.ts` «loads TipTap lazily» falló una vez por tiempo de carga con la máquina ocupada y pasó en las dos ejecuciones siguientes. Pendiente `[H]`: manual-pruebas § «Versión 1.0.3».
+
+### Resultado de la Fase 11
+- **Decisiones de interpretación (sin ADR, no tocan la especificación):** en `in:` se eligió la carpeta (lo habitual en un cuaderno de notas) y no una zona de la nota; `is:` completa el filtrado por tipo y estado. El buscador solo de tareas (`search`) se mantiene en el backend, pero la interfaz usa ya `search_all`.
+- **Sustitución:** `Spotlight.svelte` y sus tests se retiran; su lógica (respuestas fuera de orden, teclado, foco) pasa a `features/palette/Palette.svelte` con tests equivalentes. Los dos tests de `TodoView` que abrían el buscador se sustituyen por los de la paleta.
+- **Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (335 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (468 en 40 archivos), `npm run build` y `npm run size` (211,7 KB gzip de 250) en verde. Sin dependencias nuevas.
+- **Pendiente de la V2:** F8-08 (`notes:changed`) sigue sin hacerse (innecesaria con una sola ventana); propuesta de retirarla.

@@ -352,3 +352,46 @@ describe("NotesStore", () => {
     expect(lists).toBe(1);
   });
 });
+
+describe("NotesStore: recent notes", () => {
+  it("remembers the notes opened, most recent first, without repeats or more than eight", async () => {
+    const { api, store } = await loaded((fake) => {
+      fake.notes = Array.from({ length: 10 }, (_, at) => note(`n${at}`));
+    });
+    for (let at = 0; at < 10; at += 1) await store.openNote(`n${at}`);
+    await store.openNote("n5");
+    expect(store.recent).toEqual([
+      "n5",
+      "n9",
+      "n8",
+      "n7",
+      "n6",
+      "n4",
+      "n3",
+      "n2",
+    ]);
+    expect(api.settings.get("notes_recent")).toBe(store.recent.join(","));
+  });
+
+  it("restores them on load and only lists those that still exist", async () => {
+    const { store } = await loaded((api) => {
+      api.notes = [note("a", { title: "Uno" }), note("b", { title: "Dos" })];
+      api.settings.set("notes_recent", "b,gone,a,b");
+    });
+    expect(store.recent).toEqual(["b", "gone", "a"]);
+    await store.ensureTitles(store.recent);
+    expect(store.recentNotes()).toEqual([
+      { id: "b", title: "Dos" },
+      { id: "a", title: "Uno" },
+    ]);
+  });
+
+  it("does not count the note restored at startup nor one from the trash", async () => {
+    const { store } = await loaded((api) => {
+      api.notes = [note("a")];
+      api.settings.set("notes_open", "a");
+    });
+    expect(store.open?.id).toBe("a");
+    expect(store.recent).toEqual([]);
+  });
+});

@@ -3,6 +3,7 @@
 
 export type ShortcutId =
   | "openSearch"
+  | "quickOpen"
   | "newTask"
   | "newTaskToday"
   | "confirmTitle"
@@ -37,6 +38,7 @@ interface Binding {
 
 export const BINDINGS: readonly Binding[] = [
   { id: "openSearch", key: "k", ctrl: true, scope: "anywhere" },
+  { id: "quickOpen", key: "p", ctrl: true, scope: "anywhere" },
   { id: "newTask", key: "n", ctrl: true, scope: "anywhere" },
   { id: "newTaskToday", key: "n", ctrl: true, shift: true, scope: "anywhere" },
   { id: "confirmTitle", key: "Enter", scope: "title" },
