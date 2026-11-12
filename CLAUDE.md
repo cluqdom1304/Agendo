@@ -114,3 +114,15 @@ Al terminar, deja en la respuesta, como máximo:
 - No repitas lo que ya hemos decidido en esta sesión.
 - Si cambiamos de tarea, propón /compact o una sesión nueva.
 - Respuestas cortas por defecto.
+
+## 10. Publicar una versión
+
+Cada versión nueva (`X.Y.Z`) cierra con estos pasos, en este orden:
+
+1. Versión idéntica en `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json` y los dos lockfiles; entrada en `PROGRESS.md`.
+2. Batería de verificación (sección 4) en verde y commit de versión (`chore:` o `feat:` con `vX.Y.Z` en el mensaje).
+3. Etiqueta anotada sobre ese commit: `git tag -a vX.Y.Z -m "Versión X.Y.Z"`. Una etiqueta por versión, nunca se mueve ni se reescribe.
+4. Subir commit y etiqueta: `git push origin main vX.Y.Z`.
+5. Release de GitHub con `gh release create vX.Y.Z --title "Agendo X.Y.Z" --notes "<cambios>"`, con las notas tomadas de la entrada de `PROGRESS.md` y adjuntando `Agendo_X.Y.Z_x64-setup.exe` y `Agendo_X.Y.Z_x64_es-ES.msi` si están generados (sin firma).
+
+Si `gh` no está disponible, haz los pasos 1–4 y deja la release como pendiente en `PROGRESS.md`.
