@@ -3,6 +3,7 @@ import { SvelteMap, SvelteSet } from "svelte/reactivity";
 import * as backend from "../api";
 import { parseError } from "../api";
 import { t } from "../i18n";
+import { plainQuery } from "../features/notes/linkQuery";
 import type {
   FolderUpsertInput,
   FolderWithCount,
@@ -11,6 +12,7 @@ import type {
   NotePatch,
   NotesListQuery,
   NoteSummary,
+  FoundItem,
 } from "../types";
 
 /** The slice of `api.ts` the store uses; tests pass a fake. */
@@ -28,6 +30,9 @@ export interface NotesApi {
   noteDelete(id: string): Promise<void>;
   noteRestore(id: string): Promise<Note>;
   noteTrashGet(id: string): Promise<Note>;
+  noteBacklinks(id: string): Promise<NoteSummary[]>;
+  notesOrphans(): Promise<NoteSummary[]>;
+  searchAll(query: string, limit?: number): Promise<FoundItem[]>;
   notesTrashList(): Promise<NoteSummary[]>;
   settingsGet(
     key: "app_section" | "notes_scope" | "notes_open",
@@ -40,7 +45,13 @@ export interface NotesApi {
 
 /** What the list shows. `folder:<id>` is a folder with its subfolders. */
 export type ScopeKey =
-  "all" | "inbox" | "pinned" | "trash" | `folder:${string}` | `tag:${string}`;
+  | "all"
+  | "inbox"
+  | "pinned"
+  | "orphans"
+  | "trash"
+  | `folder:${string}`
+  | `tag:${string}`;
 
 export type NotesSortKey = "updated" | "created" | "title";
 
@@ -64,6 +75,7 @@ function parseScope(value: string | null): ScopeKey {
     value === "all" ||
     value === "inbox" ||
     value === "pinned" ||
+    value === "orphans" ||
     value === "trash"
   ) {
     return value;
@@ -97,6 +109,9 @@ export class NotesStore {
   /** Titles of notes tasks come from, so a task can name its note without opening it. */
   readonly titles = new SvelteMap<string, string>();
 
+  /** Notes known to be in the trash or gone: links to them show as removed. */
+  readonly missing = new SvelteSet<string>();
+
   readonly #api: NotesApi;
   #listToken = 0;
   #loading: Promise<void> | null = null;
@@ -127,6 +142,7 @@ export class NotesStore {
     if (this.scope === "all") return t.notesApp.all;
     if (this.scope === "inbox") return t.notesApp.inbox;
     if (this.scope === "pinned") return t.notesApp.pinned;
+    if (this.scope === "orphans") return t.notesApp.orphans;
     if (this.scope === "trash") return t.notesApp.trash;
     // A tag has no name here; the list takes it from the tags store.
     if (this.scopeTagId) return "";
@@ -176,6 +192,56 @@ export class NotesStore {
     return this.titles.get(id);
   }
 
+  /** The title a link shows: `null` for a removed note, `undefined` while it is unknown. */
+  linkTitle(id: string): string | null | undefined {
+    if (this.missing.has(id)) return null;
+    return this.titles.get(id);
+  }
+
+  /** Notes to offer when a link is being typed: the title (or, with no text, the recent ones). */
+  async suggest(
+    text: string,
+    limit = 6,
+  ): Promise<{ id: string; title: string }[]> {
+    const found = await this.#api.searchAll(
+      `is:nota ${plainQuery(text)}`,
+      limit,
+    );
+    return found.flatMap((item) =>
+      item.kind === "note" ? [{ id: item.noteId, title: item.title }] : [],
+    );
+  }
+
+  /** A note made while linking to it: it is shown in the list but the open note stays open. */
+  async createLinkedNote(
+    title: string,
+    folderId: string | null,
+  ): Promise<Note | null> {
+    try {
+      const note = await this.#api.noteCreate({
+        title,
+        ...(folderId ? { folderId } : {}),
+      });
+      this.titles.set(note.id, note.title);
+      this.missing.delete(note.id);
+      await this.#refreshAll();
+      return note;
+    } catch {
+      this.#fail(t.notesApp.linkCreateFailed);
+      return null;
+    }
+  }
+
+  /** Notes that link to this one. */
+  backlinks(id: string): Promise<NoteSummary[]> {
+    return this.#api.noteBacklinks(id);
+  }
+
+  /** Notes without links to or from any other. */
+  orphans(): Promise<NoteSummary[]> {
+    return this.#api.notesOrphans();
+  }
+
   /** Looks up the titles of notes not known yet; unknown or removed notes stay unknown. */
   async ensureTitles(ids: readonly string[]): Promise<void> {
     const missing = ids.filter(
@@ -185,8 +251,10 @@ export class NotesStore {
       missing.map(async (id) => {
         try {
           this.titles.set(id, (await this.#api.noteGet(id)).title);
+          this.missing.delete(id);
         } catch {
-          // A purged note has no title to show.
+          // A trashed or purged note has no title to show: its links read as removed.
+          this.missing.add(id);
         }
       }),
     );
@@ -279,7 +347,11 @@ export class NotesStore {
   async createNote(): Promise<Note | null> {
     const folderId = this.scopeFolderId;
     try {
-      if (this.scope === "trash" || this.scope === "pinned") {
+      if (
+        this.scope === "trash" ||
+        this.scope === "pinned" ||
+        this.scope === "orphans"
+      ) {
         await this.selectScope("all");
       }
       const tagId = this.scopeTagId;
@@ -360,6 +432,7 @@ export class NotesStore {
   async trashNote(id: string): Promise<void> {
     try {
       await this.#api.noteDelete(id);
+      this.missing.add(id);
       this.undoStack = [...this.undoStack, id].slice(-MAX_UNDO);
       if (this.open?.id === id) await this.openNote(null);
       await this.#refreshAll();
@@ -378,6 +451,8 @@ export class NotesStore {
   async restoreNote(id: string): Promise<void> {
     try {
       const restored = await this.#api.noteRestore(id);
+      this.missing.delete(id);
+      this.titles.set(id, restored.title);
       if (this.open?.id === id) {
         this.open = restored;
         this.openInTrash = false;
@@ -511,6 +586,7 @@ export class NotesStore {
     const scope = this.scope;
     let notes: NoteSummary[];
     if (scope === "trash") notes = await this.#api.notesTrashList();
+    else if (scope === "orphans") notes = await this.#api.notesOrphans();
     else {
       const query: NotesListQuery = { scope: "all", sort: this.sort };
       if (scope === "inbox" || scope === "pinned") query.scope = scope;

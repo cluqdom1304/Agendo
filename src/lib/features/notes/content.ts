@@ -25,8 +25,12 @@ interface DocNode {
   content?: DocNode[];
 }
 
-/** Ids of the tasks a document points at with `taskRef` nodes, in order and without repeats. */
-export function taskRefIds(contentJson: string): string[] {
+/** Ids of the `type` nodes of a document, read from `attribute`, in order and without repeats. */
+function referenceIds(
+  contentJson: string,
+  type: string,
+  attribute: string,
+): string[] {
   if (!contentJson.trim().startsWith("{")) return [];
   let root: DocNode;
   try {
@@ -36,8 +40,8 @@ export function taskRefIds(contentJson: string): string[] {
   }
   const ids: string[] = [];
   const walk = (node: DocNode) => {
-    if (node.type === "taskRef") {
-      const id = node.attrs?.taskId;
+    if (node.type === type) {
+      const id = node.attrs?.[attribute];
       if (typeof id === "string" && id !== "" && !ids.includes(id)) {
         ids.push(id);
       }
@@ -46,6 +50,16 @@ export function taskRefIds(contentJson: string): string[] {
   };
   walk(root);
   return ids;
+}
+
+/** Ids of the tasks a document points at with `taskRef` nodes, in order and without repeats. */
+export function taskRefIds(contentJson: string): string[] {
+  return referenceIds(contentJson, "taskRef", "taskId");
+}
+
+/** Ids of the notes a document links to with `noteLink` nodes, in order and without repeats. */
+export function noteLinkIds(contentJson: string): string[] {
+  return referenceIds(contentJson, "noteLink", "noteId");
 }
 
 /** A note document made of a single reference to `taskId`. */

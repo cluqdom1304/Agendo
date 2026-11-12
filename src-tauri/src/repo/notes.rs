@@ -154,6 +154,33 @@ pub fn list(
         .collect()
 }
 
+/// Live notes that link to the note, most recently edited first (D-46 backlinks).
+pub fn backlinks(conn: &Connection, id: &str) -> rusqlite::Result<Vec<NoteSummary>> {
+    conn.prepare_cached(concat!(
+        summary_columns!(),
+        "WHERE n.deleted_at IS NULL
+           AND n.id IN (SELECT source_note_id FROM note_links WHERE target_note_id = ?1)
+         ORDER BY n.updated_at DESC, n.id"
+    ))?
+    .query_map([id], map_summary)?
+    .collect()
+}
+
+/// Live notes with no link to or from another live note, most recently edited first.
+pub fn orphans(conn: &Connection) -> rusqlite::Result<Vec<NoteSummary>> {
+    conn.prepare_cached(concat!(
+        summary_columns!(),
+        "WHERE n.deleted_at IS NULL
+           AND NOT EXISTS (SELECT 1 FROM note_links l JOIN notes o ON o.id = l.target_note_id
+                            WHERE l.source_note_id = n.id AND o.deleted_at IS NULL)
+           AND NOT EXISTS (SELECT 1 FROM note_links l JOIN notes o ON o.id = l.source_note_id
+                            WHERE l.target_note_id = n.id AND o.deleted_at IS NULL)
+         ORDER BY n.updated_at DESC, n.id"
+    ))?
+    .query_map([], map_summary)?
+    .collect()
+}
+
 /// Replaces the tasks and notes a note points to. Targets that do not exist (a purged task, a
 /// note that is gone) and a link to the note itself are skipped instead of failing the save: the
 /// document may legitimately hold a reference whose target disappeared.
@@ -561,6 +588,38 @@ mod tests {
 
         save(&mut conn, &[], &["c"]);
         assert_eq!(links(&conn), (vec![], vec!["c".into()]));
+    }
+
+    #[test]
+    fn backlinks_and_orphans_follow_the_links_between_live_notes() {
+        let mut conn = database();
+        for id in ["a", "b", "c", "d"] {
+            add_in(&mut conn, id, id, None);
+        }
+        let link = |conn: &mut Connection, from: &str, to: &[&str]| {
+            let patch = NotePatch {
+                title: None,
+                content: Some(NoteContent {
+                    json: r#"{"type":"doc","content":[]}"#.into(),
+                    text: String::new(),
+                    task_ids: vec![],
+                    note_ids: to.iter().map(|id| (*id).to_string()).collect(),
+                }),
+            };
+            with_tx(conn, |tx| update(tx, from, &patch, T1)).expect("save");
+        };
+        link(&mut conn, "a", &["b"]);
+        link(&mut conn, "c", &["b"]);
+
+        assert_eq!(ids(backlinks(&conn, "b").expect("backlinks")), ["a", "c"]);
+        assert!(backlinks(&conn, "a").expect("backlinks").is_empty());
+        assert_eq!(ids(orphans(&conn).expect("orphans")), ["d"]);
+
+        with_tx(&mut conn, |tx| soft_delete(tx, "a", T1)).expect("trash");
+        assert_eq!(ids(backlinks(&conn, "b").expect("backlinks")), ["c"]);
+        link(&mut conn, "c", &[]);
+        // `c` was saved last, so it comes first.
+        assert_eq!(ids(orphans(&conn).expect("orphans")), ["c", "b", "d"]);
     }
 
     #[test]

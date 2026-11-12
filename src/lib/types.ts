@@ -202,6 +202,33 @@ export interface SearchHit {
   isCompleted: boolean;
 }
 
+/** A result of the unified search (F11-03): a task, a note or a tag. */
+export type FoundItem =
+  | {
+      kind: "task";
+      taskId: string;
+      title: string;
+      snippet: string;
+      dueDate: string | null;
+      isCompleted: boolean;
+    }
+  | {
+      kind: "note";
+      noteId: string;
+      title: string;
+      snippet: string;
+      folderId: string | null;
+      isPinned: boolean;
+    }
+  | {
+      kind: "tag";
+      tagId: string;
+      name: string;
+      colorHex: string;
+      noteCount: number;
+      pendingCount: number;
+    };
+
 /** Settings the backend accepts (`settings_get` / `settings_set`). */
 export type SettingKey =
   | "view_mode"

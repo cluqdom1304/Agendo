@@ -6,7 +6,10 @@ use tauri::State;
 
 use crate::{
     error::AppResult,
-    repo::search::{self, DEFAULT_LIMIT, MAX_LIMIT, SearchHit},
+    repo::{
+        find::{self, FoundItem},
+        search::{self, DEFAULT_LIMIT, MAX_LIMIT, SearchHit},
+    },
     state::{AppState, run_blocking},
 };
 
@@ -15,6 +18,24 @@ pub fn run(state: &AppState, query: &str, limit: Option<u32>) -> AppResult<Vec<S
     state
         .db
         .read(|conn| Ok(search::search(conn, query, limit)?))
+}
+
+/// Search over tasks, notes and tags with the `tag:`, `in:` and `is:` filters (F11-03).
+pub fn run_all(state: &AppState, query: &str, limit: Option<u32>) -> AppResult<Vec<FoundItem>> {
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
+    state.db.read(|conn| Ok(find::find(conn, query, limit)?))
+}
+
+#[tauri::command]
+pub async fn search_all(
+    state: State<'_, Arc<AppState>>,
+    query: String,
+    limit: Option<u32>,
+) -> Result<Vec<FoundItem>, String> {
+    run_blocking(state.inner().clone(), move |state| {
+        run_all(state, &query, limit)
+    })
+    .await
 }
 
 #[tauri::command]

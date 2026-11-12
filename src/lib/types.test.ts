@@ -7,6 +7,7 @@ import type {
   EffectApplied,
   Folder,
   FolderWithCount,
+  FoundItem,
   Note,
   NoteSummary,
   Reminder,
@@ -35,6 +36,9 @@ interface Fixture {
   note: Note;
   noteInInbox: Note;
   noteSummary: NoteSummary;
+  foundTask: FoundItem;
+  foundNote: FoundItem;
+  foundTag: FoundItem;
 }
 
 const fixture = fixtureJson as unknown as Fixture;
@@ -190,6 +194,21 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
     expect(typeof fixture.note.isPinned).toBe("boolean");
     expect(typeof fixture.noteSummary.excerpt).toBe("string");
     expect(Array.isArray(fixture.note.tagIds)).toBe(true);
+  });
+
+  it("unified search items are tagged by kind and carry their own fields", () => {
+    expect(keys(fixture.foundTask)).toEqual(
+      ["dueDate", "isCompleted", "kind", "snippet", "taskId", "title"].sort(),
+    );
+    expect(keys(fixture.foundNote)).toEqual(
+      ["folderId", "isPinned", "kind", "noteId", "snippet", "title"].sort(),
+    );
+    expect(keys(fixture.foundTag)).toEqual(
+      ["colorHex", "kind", "name", "noteCount", "pendingCount", "tagId"].sort(),
+    );
+    expect(fixture.foundTask.kind).toBe("task");
+    expect(fixture.foundNote.kind).toBe("note");
+    expect(fixture.foundTag.kind).toBe("tag");
   });
 
   it("Task keeps the note it was created from", () => {

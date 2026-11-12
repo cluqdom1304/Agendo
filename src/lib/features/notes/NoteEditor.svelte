@@ -6,6 +6,7 @@
   import type {
     ChecklistItem,
     NoteEditorHandle,
+    NoteLinkHost,
     TagQuery,
     TaskRefHost,
     ToggleName,
@@ -37,6 +38,15 @@
     onEmptyBlur?: (next: Element | null) => void;
     /** Turns on the `#tag` shortcut: the tags to offer and what to do with the chosen one. */
     tagSuggest?: { tags: Tag[]; onPick: (tag: Tag) => void };
+    /** Turns on `[[note]]` links (D-46): how to draw and open them, and what to offer while one
+     * is typed. `create` makes a note on the spot and resolves with its id. */
+    links?: {
+      host: NoteLinkHost;
+      search: (text: string) => Promise<{ id: string; title: string }[]>;
+      create: (title: string) => Promise<string | null>;
+      /** Reads the reactive state the titles depend on, so links are redrawn when it changes. */
+      track?: () => void;
+    };
     /** Turns on task references (D-45): how to read and drive the tasks they point at. */
     taskHost?: TaskRefHost;
     /** Reads the reactive state the references depend on, so they are redrawn when it changes. */
@@ -56,6 +66,7 @@
     onAutofocus,
     onEmptyBlur,
     tagSuggest,
+    links,
     taskHost,
     taskTrack,
     onTaskRequest,
@@ -120,6 +131,73 @@
     return false;
   }
 
+  // `[[note]]`: the notes that match what is typed, plus "create it" when none has that title.
+  type LinkChoice = { id: string; title: string } | { create: string };
+  let linkQuery = $state.raw<TagQuery | null>(null);
+  let linkChoices = $state.raw<LinkChoice[]>([]);
+  let linkHighlighted = $state(0);
+  let linkDismissedFor = $state<string | null>(null);
+  // Answers can arrive out of order; only the latest request may update the list.
+  let linkRequestToken = 0;
+
+  const linkVisible = $derived(
+    linkQuery !== null &&
+      linkDismissedFor !== linkQuery.query &&
+      linkChoices.length > 0,
+  );
+
+  async function refreshLinkChoices(text: string | null) {
+    const token = ++linkRequestToken;
+    if (text === null || !links) {
+      linkChoices = [];
+      return;
+    }
+    let found: { id: string; title: string }[];
+    try {
+      found = await links.search(text);
+    } catch {
+      found = [];
+    }
+    if (token !== linkRequestToken) return;
+    const wanted = text.trim();
+    const exact = found.some(
+      (item) => item.title.trim().toLowerCase() === wanted.toLowerCase(),
+    );
+    linkChoices = [...found, ...(wanted && !exact ? [{ create: wanted }] : [])];
+  }
+
+  async function pickLink(choice: LinkChoice) {
+    if ("create" in choice) {
+      const id = await links?.create(choice.create);
+      if (id) handle?.insertNoteLink(id);
+    } else {
+      handle?.insertNoteLink(choice.id);
+    }
+  }
+
+  function onLinkKey(event: KeyboardEvent): boolean {
+    if (!linkVisible || event.ctrlKey || event.metaKey) return false;
+    if (event.key === "ArrowDown") {
+      linkHighlighted = (linkHighlighted + 1) % linkChoices.length;
+      return true;
+    }
+    if (event.key === "ArrowUp") {
+      linkHighlighted =
+        (linkHighlighted - 1 + linkChoices.length) % linkChoices.length;
+      return true;
+    }
+    if (event.key === "Enter" || event.key === "Tab") {
+      const chosen = linkChoices[linkHighlighted];
+      if (chosen) void pickLink(chosen);
+      return true;
+    }
+    if (event.key === "Escape") {
+      linkDismissedFor = linkQuery?.query ?? null;
+      return true;
+    }
+    return false;
+  }
+
   const saver = new NoteSaver((json) => save(json));
 
   async function openLink(href: string) {
@@ -145,6 +223,17 @@
           onState: (state) => (toolbar = state),
           onLinkShortcut: () => (linkRequest += 1),
           onOpenLink: (href) => void openLink(href).catch(() => {}),
+          ...(links
+            ? {
+                linkHost: links.host,
+                onLinkQuery: (next: TagQuery | null) => {
+                  linkQuery = next;
+                  linkHighlighted = 0;
+                  void refreshLinkChoices(next ? next.query : null);
+                },
+                onLinkKey,
+              }
+            : {}),
           ...(taskHost ? { taskHost } : {}),
           ...(onTaskRequest ? { onTaskRequest } : {}),
           ...(tagSuggest
@@ -179,6 +268,10 @@
   $effect(() => {
     taskTrack?.();
     handle?.refreshTaskRefs();
+  });
+  $effect(() => {
+    links?.track?.();
+    handle?.refreshNoteLinks();
   });
 
   /** Puts a reference to the task after the cursor. */
@@ -263,6 +356,55 @@
     {/if}
   {/if}
   <div class="surface" bind:this={host}></div>
+  {#if linkQuery && linkVisible}
+    <ul
+      class="suggest"
+      role="listbox"
+      aria-label={t.notesApp.linkSuggestions}
+      style:left="{linkQuery.left}px"
+      style:top="{linkQuery.bottom + 6}px"
+    >
+      {#each linkChoices as choice, index ("create" in choice ? `new:${choice.create}` : choice.id)}
+        <li role="presentation">
+          <button
+            type="button"
+            role="option"
+            class="suggestion"
+            class:active={index === linkHighlighted}
+            aria-selected={index === linkHighlighted}
+            tabindex="-1"
+            onmousedown={(event) => {
+              event.preventDefault();
+              void pickLink(choice);
+            }}
+          >
+            {#if "create" in choice}
+              <span class="plus" aria-hidden="true">+</span>
+              {t.notesApp.linkCreate(choice.create)}
+            {:else}
+              <svg
+                viewBox="0 0 16 16"
+                width="12"
+                height="12"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 2.5h5.5L12.5 5.5v8H4zM9.5 2.5v3h3"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span class="link-title"
+                >{choice.title || t.notesApp.untitled}</span
+              >
+            {/if}
+          </button>
+        </li>
+      {/each}
+    </ul>
+  {/if}
   {#if query && suggestions.length > 0}
     <ul
       class="suggest"
@@ -382,6 +524,50 @@
     width: 9px;
     height: 9px;
     border-radius: var(--radius-chip);
+  }
+
+  .plus {
+    flex: none;
+    width: 12px;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .link-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* A link to another note: accent text with a soft underline, like a link in Notes. */
+  .surface :global(.note-link) {
+    color: var(--accent);
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    text-underline-offset: 2px;
+    transition: background-color var(--motion-instant) linear;
+  }
+
+  .surface :global(.note-link:hover) {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .surface :global(.note-link:focus-visible),
+  .surface :global(.note-link.ProseMirror-selectednode) {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .surface :global(.note-link.is-gone) {
+    color: var(--text-secondary);
+    text-decoration: line-through;
+    cursor: default;
+  }
+
+  .surface :global(.note-link.is-loading) {
+    color: var(--text-secondary);
   }
 
   .status {

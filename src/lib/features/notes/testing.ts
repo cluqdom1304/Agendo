@@ -1,5 +1,6 @@
 import type {
   FolderUpsertInput,
+  FoundItem,
   FolderWithCount,
   Note,
   NoteCreateInput,
@@ -52,6 +53,9 @@ export class FakeNotesApi implements NotesApi {
   notes: Note[] = [];
   trash: Note[] = [];
   settings = new Map<string, string>();
+  /** `from` -> `to`: the links between notes the fake reports as backlinks. */
+  links: [string, string][] = [];
+  searches: string[] = [];
   queries: NotesListQuery[] = [];
   failWith: string | null = null;
   #next = 0;
@@ -147,6 +151,33 @@ export class FakeNotesApi implements NotesApi {
   }
   async notesTrashList() {
     return this.trash.map(summary);
+  }
+  async noteBacklinks(id: string) {
+    const from = this.links
+      .filter(([, to]) => to === id)
+      .map(([source]) => source);
+    return this.notes.filter((n) => from.includes(n.id)).map(summary);
+  }
+  async notesOrphans() {
+    const linked = new Set(this.links.flat());
+    return this.notes.filter((n) => !linked.has(n.id)).map(summary);
+  }
+  async searchAll(query: string): Promise<FoundItem[]> {
+    this.searches.push(query);
+    const text = query
+      .replace(/\b(is|in|tag):\S*/g, "")
+      .trim()
+      .toLowerCase();
+    return this.notes
+      .filter((n) => n.title.toLowerCase().includes(text))
+      .map((n) => ({
+        kind: "note" as const,
+        noteId: n.id,
+        title: n.title,
+        snippet: "",
+        folderId: n.folderId,
+        isPinned: n.isPinned,
+      }));
   }
   async settingsGet(key: string) {
     return this.settings.get(key) ?? null;

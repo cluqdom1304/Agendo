@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import { t } from "../../i18n";
   import Menu, { type MenuItem } from "../../shell/Menu.svelte";
@@ -9,7 +9,9 @@
   import type { NotesStore } from "../../stores/notes.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { Note } from "../../types";
+  import { noteLinkIds } from "./content";
   import { formatNoteStamp } from "./format";
+  import NoteBacklinks from "./NoteBacklinks.svelte";
   import NoteEditor from "./NoteEditor.svelte";
   import { NoteSaver } from "./noteSaver";
   import NoteTaskDialog from "./NoteTaskDialog.svelte";
@@ -48,6 +50,27 @@
   const taskHost = createTaskHost(tasks, tagsStore, (taskId) =>
     onPreviewTask(taskId),
   );
+
+  // Links to other notes: titles are read from the store each time, so a rename shows at once.
+  const links = {
+    host: {
+      lookup: (noteId: string) => notes.linkTitle(noteId),
+      open: (noteId: string) => void notes.openNote(noteId),
+    },
+    search: (text: string) => notes.suggest(text),
+    create: async (linkTitle: string) =>
+      (await notes.createLinkedNote(linkTitle, current.folderId))?.id ?? null,
+    track: () => {
+      void [...notes.titles.values()];
+      void notes.missing.size;
+    },
+  };
+
+  // The titles the note's links show, fetched for the ones not known yet.
+  $effect(() => {
+    const ids = noteLinkIds(current.contentJson);
+    untrack(() => void notes.ensureTitles(ids));
+  });
 
   const titleSaver = new NoteSaver((value) => notes.saveTitle(id, value));
 
@@ -378,6 +401,7 @@
         variant="page"
         readonly={inTrash}
         label={t.notesApp.bodyLabel}
+        links={inTrash ? undefined : links}
         {taskHost}
         taskTrack={taskHost.track}
         onTaskRequest={inTrash ? undefined : requestTask}
@@ -386,6 +410,7 @@
           : { tags: tagsStore.tags, onPick: addTag }}
         placeholder={t.notesApp.bodyPlaceholder}
       />
+      <NoteBacklinks {notes} noteId={id} />
       <NoteTasksPanel
         {tasks}
         noteId={id}

@@ -53,6 +53,30 @@
     "parentId": "folder-0",
     "position": 2
   },
+  "foundNote": {
+    "folderId": "folder-1",
+    "isPinned": true,
+    "kind": "note",
+    "noteId": "note-1",
+    "snippet": "…primera línea…",
+    "title": "Apuntes de clase"
+  },
+  "foundTag": {
+    "colorHex": "#4C8DFF",
+    "kind": "tag",
+    "name": "Trabajo",
+    "noteCount": 2,
+    "pendingCount": 3,
+    "tagId": "tag-1"
+  },
+  "foundTask": {
+    "dueDate": "2026-03-12",
+    "isCompleted": false,
+    "kind": "task",
+    "snippet": "…revisar la práctica…",
+    "taskId": "task-1",
+    "title": "Entregar práctica"
+  },
   "note": {
     "contentJson": "{\"type\":\"doc\",\"content\":[]}",
     "createdAt": "2026-03-10T10:00:00Z",

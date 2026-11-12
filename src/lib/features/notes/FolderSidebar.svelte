@@ -140,6 +140,11 @@
         t.notesApp.pinned,
         "M9.8 2.5l3.7 3.7-1.6.5-2.3 2.3.2 3-.9.9-2.7-2.7-3.5 3.5M6.4 5.2l.9-.9 3 .2",
       )}
+      {@render smart(
+        "orphans",
+        t.notesApp.orphans,
+        "M6.5 9.5l3-3M5 8L3.5 9.5a2.1 2.1 0 003 3L8 11M11 8l1.5-1.5a2.1 2.1 0 00-3-3L8 5",
+      )}
     </nav>
 
     <div class="section">

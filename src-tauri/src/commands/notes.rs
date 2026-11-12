@@ -205,6 +205,32 @@ pub fn trashed(state: &AppState, id: &str) -> AppResult<Note> {
         .read(|conn| notes::get_trashed(conn, id)?.ok_or_else(|| note_not_found(id)))
 }
 
+/// Notes that link to `id` (D-46).
+pub fn backlinks(state: &AppState, id: &str) -> AppResult<Vec<NoteSummary>> {
+    state.db.read(|conn| {
+        notes::get(conn, id)?.ok_or_else(|| note_not_found(id))?;
+        Ok(notes::backlinks(conn, id)?)
+    })
+}
+
+/// Notes without links to or from any other note.
+pub fn orphans(state: &AppState) -> AppResult<Vec<NoteSummary>> {
+    state.db.read(|conn| Ok(notes::orphans(conn)?))
+}
+
+#[tauri::command]
+pub async fn note_backlinks(
+    state: State<'_, Arc<AppState>>,
+    id: String,
+) -> Result<Vec<NoteSummary>, String> {
+    run_blocking(state.inner().clone(), move |state| backlinks(state, &id)).await
+}
+
+#[tauri::command]
+pub async fn notes_orphans(state: State<'_, Arc<AppState>>) -> Result<Vec<NoteSummary>, String> {
+    run_blocking(state.inner().clone(), orphans).await
+}
+
 #[tauri::command]
 pub async fn notes_list(
     state: State<'_, Arc<AppState>>,

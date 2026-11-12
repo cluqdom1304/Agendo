@@ -301,8 +301,8 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 **Discrepancia anotada:** `note_trash_get` es un comando añadido al contrato de F7-06 (lectura, sin migración). Si se prefiere que `note_get` devuelva también notas eliminadas, es un cambio pequeño; se eligió un comando aparte para que una nota eliminada no vuelva a aparecer como «nota de origen» de una tarea.
 
 ## Fase 11 — Enlaces, búsqueda y navegación rápida
-- [ ] F11-01 Enlaces `[[nota]]` con autocompletado, creación al vuelo y renombrado seguro
-- [ ] F11-02 Panel de backlinks y notas huérfanas
+- [x] F11-01 Enlaces `[[nota]]` con autocompletado, creación al vuelo y renombrado seguro — nodo `noteLink` (guarda solo el id; el título se lee de la nota, así que renombrar no rompe nada), lista al escribir `[[`, «Crear la nota «x»» si no existe, enlace tachado «Nota eliminada» si está en la papelera
+- [x] F11-02 Panel de backlinks y notas huérfanas — pie «Enlaces a esta nota» (`note_backlinks`) y carpeta inteligente «Notas sin enlaces» (`notes_orphans`)
 - [ ] F11-03 Búsqueda unificada (tareas, notas, etiquetas) con filtros `tag:`, `in:`, `is:tarea`
 - [ ] F11-04 Paleta de comandos `Ctrl+K`
 - [ ] F11-05 Notas recientes e «Ir a…» (`Ctrl+P`)

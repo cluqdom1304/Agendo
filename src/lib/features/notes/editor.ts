@@ -20,9 +20,12 @@ import { Text } from "@tiptap/extension-text";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
 
 import { sanitizeLink } from "../../links";
+import { findLinkQuery } from "./linkQuery";
+import { NoteLink, type NoteLinkHost } from "./noteLink";
 import { findTagQuery } from "./tagQuery";
 import { TaskRef, type TaskRefHost } from "./taskRef";
 
+export type { NoteLinkHost } from "./noteLink";
 export type { TaskRefHost, TaskRefInfo } from "./taskRef";
 
 export const EMPTY_NOTE = '{"type":"doc","content":[]}';
@@ -52,6 +55,12 @@ export interface NoteEditorHandle {
   removeTagQuery(): void;
   /** Puts a reference to the task after the cursor. */
   insertTaskRef(taskId: string): void;
+  /** Replaces the `[[text` being typed with a link to the note. */
+  insertNoteLink(noteId: string): void;
+  /** Deletes the `[[text` being typed, to make room for something else. */
+  removeLinkQuery(): void;
+  /** Redraws every note link: the titles they show may have changed. */
+  refreshNoteLinks(): void;
   /** Redraws every task reference: the tasks they show have changed. */
   refreshTaskRefs(): void;
   /** The checklist items (D-37) of the document, in order. */
@@ -96,6 +105,12 @@ export interface NoteEditorOptions {
   onTagQuery?: (query: TagQuery | null) => void;
   /** First look at a key while a `#text` is open; returns true when it was used. */
   onTagKey?: (event: KeyboardEvent) => boolean;
+  /** Turns on links between notes: how to read and open the notes they point at. */
+  linkHost?: NoteLinkHost;
+  /** The `[[text` being typed (without the brackets) and where to draw its suggestions. */
+  onLinkQuery?: (query: TagQuery | null) => void;
+  /** First look at a key while a `[[text` is open; returns true when it was used. */
+  onLinkKey?: (event: KeyboardEvent) => boolean;
   /** Turns on task references: how to read and drive the tasks they point at. */
   taskHost?: TaskRefHost;
   /** Ctrl+Mayús+T or `/tarea` + space: the user wants a task made from here. */
@@ -160,6 +175,22 @@ function queryAtCursor(editor: Editor): QueryRange | null {
   return { query, from: selection.from - query.length - 1, to: selection.from };
 }
 
+function linkQueryAtCursor(editor: Editor): QueryRange | null {
+  const { selection } = editor.state;
+  if (!selection.empty) return null;
+  const { $from } = selection;
+  if (!$from.parent.isTextblock) return null;
+  const before = $from.parent.textBetween(
+    0,
+    $from.parentOffset,
+    undefined,
+    "￼",
+  );
+  const query = findLinkQuery(before);
+  if (query === null) return null;
+  return { query, from: selection.from - query.length - 2, to: selection.from };
+}
+
 function checklists(
   editor: Editor,
 ): { pos: number; size: number; items: ChecklistItem[] }[] {
@@ -181,7 +212,9 @@ function checklists(
 
 export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
   let open: QueryRange | null = null;
+  let openLink: QueryRange | null = null;
   const taskRefs = new Set<() => void>();
+  const noteLinks = new Set<() => void>();
   const editor = new Editor({
     element: options.element,
     content: parseContent(options.contentJson),
@@ -200,6 +233,9 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
       TaskList,
       TaskItem.configure({ nested: false }),
       UndoRedo,
+      ...(options.linkHost
+        ? [NoteLink.configure({ host: options.linkHost, registry: noteLinks })]
+        : []),
       ...(options.taskHost
         ? [TaskRef.configure({ host: options.taskHost, registry: taskRefs })]
         : []),
@@ -248,6 +284,10 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
           );
           return true;
         }
+        if (openLink && options.onLinkKey?.(event)) {
+          event.preventDefault();
+          return true;
+        }
         if (open && options.onTagKey?.(event)) {
           event.preventDefault();
           return true;
@@ -283,8 +323,26 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
       ),
     onTransaction: ({ editor: current }) => {
       options.onState(toolbarState(current));
+      // A `[[` takes precedence over a `#` typed inside it.
+      const link = options.onLinkQuery ? linkQueryAtCursor(current) : null;
+      if (options.onLinkQuery) {
+        if (link?.query !== openLink?.query || link?.from !== openLink?.from) {
+          openLink = link;
+          if (!link) {
+            options.onLinkQuery(null);
+          } else {
+            const at = current.view.coordsAtPos(link.to);
+            options.onLinkQuery({
+              query: link.query,
+              left: at.left,
+              top: at.top,
+              bottom: at.bottom,
+            });
+          }
+        }
+      }
       if (!options.onTagQuery) return;
-      const next = queryAtCursor(current);
+      const next = link ? null : queryAtCursor(current);
       if (next?.query === open?.query && next?.from === open?.from) return;
       open = next;
       if (!next) {
@@ -315,6 +373,29 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
     },
     refreshTaskRefs() {
       for (const redraw of taskRefs) redraw();
+    },
+    refreshNoteLinks() {
+      for (const redraw of noteLinks) redraw();
+    },
+    insertNoteLink(noteId) {
+      const range = linkQueryAtCursor(editor);
+      const chain = editor.chain().focus();
+      if (range) chain.deleteRange({ from: range.from, to: range.to });
+      chain
+        .insertContent([
+          { type: "noteLink", attrs: { noteId } },
+          { type: "text", text: " " },
+        ])
+        .run();
+    },
+    removeLinkQuery() {
+      const range = linkQueryAtCursor(editor);
+      if (!range) return;
+      editor
+        .chain()
+        .focus()
+        .deleteRange({ from: range.from, to: range.to })
+        .run();
     },
     selectedText() {
       const { from, to } = editor.state.selection;

@@ -15,6 +15,7 @@ import type {
   NotesListQuery,
   ReminderFired,
   ReminderInput,
+  FoundItem,
   SearchHit,
   SettingKey,
   Section,
@@ -136,6 +137,20 @@ export function onReminderFired(
 
 export function search(query: string, limit?: number): Promise<SearchHit[]> {
   return invoke<SearchHit[]>("search", { query, limit });
+}
+
+/** Tasks, notes and tags at once; understands `tag:`, `in:` and `is:` (F11-03). */
+export function searchAll(query: string, limit?: number): Promise<FoundItem[]> {
+  return invoke<FoundItem[]>("search_all", { query, limit });
+}
+
+export function noteBacklinks(id: string): Promise<NoteSummary[]> {
+  return invoke<NoteSummary[]>("note_backlinks", { id });
+}
+
+/** Notes with no link to or from another note. */
+export function notesOrphans(): Promise<NoteSummary[]> {
+  return invoke<NoteSummary[]>("notes_orphans");
 }
 
 export function tagList(): Promise<TagWithCount[]> {

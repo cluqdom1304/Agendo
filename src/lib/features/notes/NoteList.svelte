@@ -97,15 +97,20 @@
           title: t.notesApp.emptyTrashTitle,
           description: t.notesApp.emptyTrashDescription,
         }
-      : notes.scope === "pinned"
+      : notes.scope === "orphans"
         ? {
-            title: t.notesApp.emptyPinnedTitle,
-            description: t.notesApp.emptyPinnedDescription,
+            title: t.notesApp.orphansEmpty,
+            description: t.notesApp.orphansHint,
           }
-        : {
-            title: t.notesApp.emptyTitle,
-            description: t.notesApp.emptyDescription,
-          },
+        : notes.scope === "pinned"
+          ? {
+              title: t.notesApp.emptyPinnedTitle,
+              description: t.notesApp.emptyPinnedDescription,
+            }
+          : {
+              title: t.notesApp.emptyTitle,
+              description: t.notesApp.emptyDescription,
+            },
   );
 
   function press(event: PointerEvent, note: NoteSummary) {
@@ -224,7 +229,9 @@
     <EmptyState
       title={empty.title}
       description={empty.description}
-      actionLabel={inTrash || notes.scope === "pinned"
+      actionLabel={inTrash ||
+      notes.scope === "pinned" ||
+      notes.scope === "orphans"
         ? undefined
         : t.notesApp.newNote}
       shortcut="Ctrl+N"
