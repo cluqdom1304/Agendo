@@ -439,6 +439,13 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Alternativas descartadas:** reconstruir `reminders` (viola §7); tarea «sombra» por nota (ensucia listas, búsqueda y papelera); un segundo planificador (duplica el motor, lo que F13-04 prohíbe).
 - **Consecuencias:** si se rechaza, solo hay que retirar la migración 010 y sus comandos; nada más depende de ella.
 
+## D-53 — Datos de desarrollo separados de los de la aplicación instalada
+- **Estado:** ACCEPTED (petición del usuario) · **Fecha:** 2026-11-16 · **Validación:** `[A]` con tests de `resolve_data_dir`; `[H]` abrir `tauri dev` y comprobar la carpeta
+- **Contexto:** `tauri dev` y la app instalada compartían `%APPDATA%\com.cristian.agendo`. Ejecutar una versión en desarrollo migró la base de datos (esquema 5) y la 1.0.7 instalada dejó de abrir («schema version 5 is newer than the supported version 3»). Las migraciones solo avanzan.
+- **Decisión:** `data_dir` (`src-tauri/src/lib.rs`) elige la carpeta así: 1) `MIAGENDA_DATA_DIR` si está definida (D-31); 2) en compilaciones de depuración (`cfg!(debug_assertions)`, es decir `tauri dev`, `cargo run`), `%APPDATA%\com.cristian.agendo.dev`; 3) en release, `%APPDATA%\com.cristian.agendo`. Las compilaciones release (instaladores y `tauri build`) nunca usan la carpeta `.dev`.
+- **Consecuencias:** desarrollo empieza con una base vacía y propia; se puede borrar `com.cristian.agendo.dev` sin riesgo. Para probar con datos reales, restaurar una copia de seguridad en la app de desarrollo. El almacenamiento de la WebView no guarda datos de usuario (solo se limpia una clave heredada), por lo que no se separa. **Regla:** nunca hacer que una compilación de depuración abra la carpeta real.
+- **Alternativas descartadas:** identificador distinto para desarrollo (`tauri.dev.conf.json`: duplica configuración y cambia permisos y avisos); solo variable de entorno (se olvida y vuelve el problema); copiar la base real a desarrollo al arrancar (acopla ambas).
+
 ## D-54 — Formatos de intercambio de la Fase 14 (Markdown, HTML, JSON, ENEX)
 - **Estado:** ACCEPTED (detalle técnico de F14 dentro del plan aprobado el 2026-11-12; revisable) · **Fecha:** 2026-11-16 · **Validación:** `[A]` con tests de ida y vuelta; `[H]` abrir los ficheros en otros programas y probar un `.enex` real
 - **Contexto:** F14 pide exportar a Markdown/HTML, volcar todo a JSON (B-02 se resolvió «JSON en v2»), importar carpetas de Markdown/`.txt` y exportaciones de Evernote. Ningún formato lo fija `docs/SPEC.md`.

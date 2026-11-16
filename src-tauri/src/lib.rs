@@ -30,18 +30,41 @@ use crate::{
 /// File name of the SQLite database inside the app data directory.
 const DATABASE_FILE: &str = "agenda.sqlite";
 
-/// When set, the app keeps its data in this directory instead of the user's profile. The E2E
+/// When set, the app keeps its data in this directory instead of the profile folder. The E2E
 /// suite uses it so that tests never touch real data.
 const DATA_DIR_ENV: &str = "MIAGENDA_DATA_DIR";
+
+/// Suffix added to the profile folder in debug builds (`tauri dev`), so development never opens or
+/// migrates the database of the installed app (D-53).
+const DEV_DIR_SUFFIX: &str = ".dev";
+
+/// Picks the data directory: an explicit override wins, then a separate folder for debug builds,
+/// and only release builds use the real profile folder.
+fn resolve_data_dir(
+    override_dir: Option<std::ffi::OsString>,
+    profile_dir: std::path::PathBuf,
+    debug_build: bool,
+) -> std::path::PathBuf {
+    if let Some(dir) = override_dir.filter(|value| !value.is_empty()) {
+        return dir.into();
+    }
+    if !debug_build {
+        return profile_dir;
+    }
+    let mut name = profile_dir.file_name().unwrap_or_default().to_os_string();
+    name.push(DEV_DIR_SUFFIX);
+    profile_dir.with_file_name(name)
+}
 
 /// The directory for the database and the safety copy of a restore.
 pub(crate) fn data_dir<R: tauri::Runtime>(
     app: &impl Manager<R>,
 ) -> Result<std::path::PathBuf, tauri::Error> {
-    match std::env::var_os(DATA_DIR_ENV).filter(|value| !value.is_empty()) {
-        Some(dir) => Ok(dir.into()),
-        None => app.path().app_data_dir(),
-    }
+    Ok(resolve_data_dir(
+        std::env::var_os(DATA_DIR_ENV),
+        app.path().app_data_dir()?,
+        cfg!(debug_assertions),
+    ))
 }
 
 // Si Tauri no puede arrancar no hay estado recuperable: abortar con mensaje es correcto.
@@ -140,4 +163,45 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod data_dir_tests {
+    use super::resolve_data_dir;
+    use std::path::PathBuf;
+
+    fn profile() -> PathBuf {
+        PathBuf::from("AppData").join("com.cristian.agendo")
+    }
+
+    #[test]
+    fn release_builds_use_the_profile_folder() {
+        assert_eq!(resolve_data_dir(None, profile(), false), profile());
+    }
+
+    #[test]
+    fn debug_builds_use_a_separate_folder() {
+        let dir = resolve_data_dir(None, profile(), true);
+        assert_eq!(
+            dir,
+            PathBuf::from("AppData").join("com.cristian.agendo.dev")
+        );
+        assert_ne!(dir, profile());
+    }
+
+    #[test]
+    fn an_explicit_override_wins_in_both_builds() {
+        for debug in [true, false] {
+            let dir = resolve_data_dir(Some("scratch".into()), profile(), debug);
+            assert_eq!(dir, PathBuf::from("scratch"));
+        }
+    }
+
+    #[test]
+    fn an_empty_override_is_ignored() {
+        assert_eq!(
+            resolve_data_dir(Some("".into()), profile(), false),
+            profile()
+        );
+    }
 }

@@ -60,6 +60,8 @@ npm install
 npm run tauri dev
 ```
 
+> **Datos de desarrollo:** `npm run tauri dev` guarda sus datos en `%APPDATA%\com.cristian.agendo.dev`, separados de los de la aplicación instalada (`%APPDATA%\com.cristian.agendo`). Pueden borrarse sin riesgo.
+
 ### Comandos habituales
 
 | Comando | Descripción |

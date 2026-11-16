@@ -90,6 +90,7 @@ Una tarea **no** se marca como hecha si cualquiera de estos comandos falla. Si u
 - Añadir telemetría, analítica o llamadas de red desde la aplicación.
 - Saltarse hooks de git (`--no-verify`) o hacer `git push --force` sobre `main`.
 - Dar por hecho que la UI funciona en Windows: esa verificación es `[H]`.
+- Hacer que una compilación de depuración (`tauri dev`, `cargo run`) abra la carpeta de datos real `%APPDATA%\com.cristian.agendo`: desarrollo usa `com.cristian.agendo.dev` (D-53) y solo release usa la real.
 
 ## 8. Entorno del agente
 
@@ -117,7 +118,7 @@ Al terminar, deja en la respuesta, como máximo:
 
 ## 10. Publicar una versión
 
-Cada versión nueva (`X.Y.Z`) cierra con estos pasos, en este orden:
+Cada versión nueva (`X.Y.Z`) se prepara con los pasos 1–3. Los pasos 4–5 (push y release en GitHub) **solo** se ejecutan cuando el usuario diga explícitamente «subir a GitHub» o «sacar la nueva versión»; nunca por iniciativa propia:
 
 1. Versión idéntica en `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json` y los dos lockfiles; entrada en `PROGRESS.md`.
 2. Batería de verificación (sección 4) en verde y commit de versión (`chore:` o `feat:` con `vX.Y.Z` en el mensaje).
@@ -125,4 +126,4 @@ Cada versión nueva (`X.Y.Z`) cierra con estos pasos, en este orden:
 4. Subir commit y etiqueta: `git push origin main vX.Y.Z`.
 5. Release de GitHub con `gh release create vX.Y.Z --title "Agendo X.Y.Z" --notes "<cambios>"`, con las notas tomadas de la entrada de `PROGRESS.md` y adjuntando `Agendo_X.Y.Z_x64-setup.exe` y `Agendo_X.Y.Z_x64_es-ES.msi` si están generados (sin firma).
 
-Si `gh` no está disponible, haz los pasos 1–4 y deja la release como pendiente en `PROGRESS.md`.
+Si `gh` no está disponible al sacar la versión, haz el paso 4 y deja la release como pendiente en `PROGRESS.md`.
