@@ -118,6 +118,15 @@ pub struct TagInput {
     pub now: String,
 }
 
+/// The time a note will remind its owner (F13-04, D-52).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteReminder {
+    pub id: String,
+    pub note_id: String,
+    pub notify_at: String,
+}
+
 /// A saved version of a note, as listed: no document (F13-03).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

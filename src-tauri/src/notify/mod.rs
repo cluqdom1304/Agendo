@@ -78,7 +78,11 @@ pub trait Notifier: Send + Sync {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Fired {
-    pub task_id: String,
+    /// The task of the reminder, or the note (`note_id`) when it is a note's (D-52).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub task_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note_id: Option<String>,
     pub reminder_id: String,
 }
 
@@ -117,7 +121,9 @@ mod tests {
     fn reminder(title: &str, tags: &[&str], time: Option<&str>) -> DueReminder {
         DueReminder {
             id: "r".into(),
-            task_id: "t".into(),
+            notify_at: "2026-03-10T10:00:00Z".into(),
+            task_id: Some("t".into()),
+            note_id: None,
             title: title.into(),
             due_time: time.map(str::to_string),
             notes: String::new(),
@@ -189,7 +195,8 @@ Primera línea segunda línea"
     #[test]
     fn the_fired_payload_is_camel_case() {
         let json = serde_json::to_value(Fired {
-            task_id: "t".into(),
+            task_id: Some("t".into()),
+            note_id: None,
             reminder_id: "r".into(),
         })
         .expect("json");

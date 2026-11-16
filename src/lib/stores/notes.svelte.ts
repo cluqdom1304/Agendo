@@ -13,6 +13,7 @@ import type {
   NotePatch,
   NotesListQuery,
   NoteSummary,
+  NoteReminder,
   NoteTemplate,
   NoteVersion,
   NoteVersionSummary,
@@ -34,6 +35,11 @@ export interface NotesApi {
   noteVersionsList(noteId: string): Promise<NoteVersionSummary[]>;
   noteVersionGet(id: string): Promise<NoteVersion>;
   noteVersionRestore(id: string): Promise<Note>;
+  noteReminderGet(noteId: string): Promise<NoteReminder | null>;
+  noteReminderSet(
+    noteId: string,
+    notifyAt: string | null,
+  ): Promise<NoteReminder | null>;
   templateList(): Promise<NoteTemplate[]>;
   templateSave(input: {
     id?: string;
@@ -295,6 +301,47 @@ export class NotesStore {
       this.#fail(t.notesApp.createFailed);
       return null;
     }
+  }
+
+  async reminderGet(noteId: string): Promise<NoteReminder | null> {
+    try {
+      return await this.#api.noteReminderGet(noteId);
+    } catch {
+      this.#fail(t.notesApp.reminder.failed);
+      return null;
+    }
+  }
+
+  /** Sets (`notifyAt` as a UTC instant) or clears (`null`) the reminder; returns what is set. */
+  async reminderSet(
+    noteId: string,
+    notifyAt: string | null,
+  ): Promise<{ ok: boolean; reminder: NoteReminder | null }> {
+    try {
+      return {
+        ok: true,
+        reminder: await this.#api.noteReminderSet(noteId, notifyAt),
+      };
+    } catch (error) {
+      this.#fail(parseError(error).message || t.notesApp.reminder.failed);
+      return { ok: false, reminder: null };
+    }
+  }
+
+  /** The scheduler delivered the reminder of a note: say so in the notes section. */
+  async onReminderFired(noteId: string): Promise<void> {
+    let title = this.titles.get(noteId);
+    if (title === undefined) {
+      try {
+        title = (await this.#api.noteGet(noteId)).title;
+      } catch {
+        return;
+      }
+    }
+    this.notice = {
+      kind: "info",
+      message: t.notesApp.reminder.fired(title.trim() || t.notesApp.untitled),
+    };
   }
 
   async versionList(noteId: string): Promise<NoteVersionSummary[]> {

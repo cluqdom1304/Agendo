@@ -17,6 +17,7 @@
   import NoteFind from "./NoteFind.svelte";
   import NoteBacklinks from "./NoteBacklinks.svelte";
   import NoteHistory from "./NoteHistory.svelte";
+  import NoteReminderDialog from "./NoteReminderDialog.svelte";
   import NoteEditor from "./NoteEditor.svelte";
   import { NoteSaver } from "./noteSaver";
   import NoteTaskDialog from "./NoteTaskDialog.svelte";
@@ -149,6 +150,7 @@
   const MORE_ITEMS: MenuItem[] = [
     { id: "duplicate", label: t.notesApp.duplicate },
     { id: "convert", label: t.notesApp.convertChecklists },
+    { id: "reminder", label: t.notesApp.reminder.open },
     { id: "history", label: t.notesApp.history.open },
     { id: "delete", label: t.notesApp.delete, danger: true, separated: true },
   ];
@@ -235,6 +237,7 @@
     notes.saveContent(id, contentJson);
 
   let historyOpen = $state(false);
+  let reminderOpen = $state(false);
 
   /** What is typed must be saved first, or the history would compare an older text. */
   async function openHistory() {
@@ -247,6 +250,7 @@
     if (action === "duplicate") void notes.duplicateNote(id);
     else if (action === "convert") void convertChecklists();
     else if (action === "history") void openHistory();
+    else if (action === "reminder") reminderOpen = true;
     else if (action === "delete") void notes.trashNote(id);
   }
 </script>
@@ -493,6 +497,13 @@
         </p>
       {/if}
       <NoteBacklinks {notes} noteId={id} />
+      {#if reminderOpen}
+        <NoteReminderDialog
+          {notes}
+          noteId={id}
+          onClose={() => (reminderOpen = false)}
+        />
+      {/if}
       {#if historyOpen}
         <NoteHistory
           {notes}

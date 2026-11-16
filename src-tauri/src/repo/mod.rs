@@ -9,6 +9,7 @@ pub mod find;
 pub mod folders;
 pub mod fts;
 pub mod model;
+pub mod note_reminders;
 pub mod note_tags;
 pub mod notes;
 pub mod reminders;

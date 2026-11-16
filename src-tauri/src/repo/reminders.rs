@@ -14,7 +14,10 @@ use crate::domain::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct DueReminder {
     pub id: String,
-    pub task_id: String,
+    pub notify_at: String,
+    /// Set for the reminder of a task; `note_id` for the reminder of a note (D-52).
+    pub task_id: Option<String>,
+    pub note_id: Option<String>,
     pub title: String,
     pub due_time: Option<String>,
     /// Plain text of the task's notes (`content_text`), possibly empty.
@@ -32,28 +35,66 @@ pub struct NewReminder {
     pub repeat: Option<Repeat>,
 }
 
-/// Unsent reminders of live, open tasks whose time has come, oldest first.
+/// Unsent reminders of live, open tasks and of live notes whose time has come, oldest first.
 pub fn due(conn: &Connection, now: &str) -> rusqlite::Result<Vec<DueReminder>> {
+    let mut found = due_tasks(conn, now)?;
+    found.extend(due_notes(conn, now)?);
+    found.sort_by(|a, b| (&a.notify_at, &a.id).cmp(&(&b.notify_at, &b.id)));
+    Ok(found)
+}
+
+fn tag_names(row: &rusqlite::Row<'_>, index: usize) -> rusqlite::Result<Vec<String>> {
+    let names: String = row.get(index)?;
+    serde_json::from_str(&names).map_err(|error| {
+        rusqlite::Error::FromSqlConversionFailure(index, Type::Text, Box::new(error))
+    })
+}
+
+fn due_notes(conn: &Connection, now: &str) -> rusqlite::Result<Vec<DueReminder>> {
+    conn.prepare_cached(
+        "SELECT r.id, n.id, n.title, n.content_text, r.notify_at,
+                (SELECT json_group_array(g.name ORDER BY g.name)
+                   FROM note_tags nt JOIN tags g ON g.id = nt.tag_id WHERE nt.note_id = n.id)
+         FROM note_reminders r JOIN notes n ON n.id = r.note_id
+         WHERE r.is_sent = 0 AND r.notify_at <= ?1 AND n.deleted_at IS NULL
+         ORDER BY r.notify_at, r.id",
+    )?
+    .query_map(params![now], |row| {
+        Ok(DueReminder {
+            id: row.get(0)?,
+            notify_at: row.get(4)?,
+            task_id: None,
+            note_id: Some(row.get(1)?),
+            title: row.get(2)?,
+            due_time: None,
+            notes: row.get(3)?,
+            tag_names: tag_names(row, 5)?,
+        })
+    })?
+    .collect()
+}
+
+fn due_tasks(conn: &Connection, now: &str) -> rusqlite::Result<Vec<DueReminder>> {
     conn.prepare_cached(
         "SELECT r.id, t.id, t.title, t.due_time, t.content_text,
                 (SELECT json_group_array(g.name ORDER BY g.name)
-                   FROM task_tags tt JOIN tags g ON g.id = tt.tag_id WHERE tt.task_id = t.id)
+                   FROM task_tags tt JOIN tags g ON g.id = tt.tag_id WHERE tt.task_id = t.id),
+                r.notify_at
          FROM reminders r JOIN tasks t ON t.id = r.task_id
          WHERE r.is_sent = 0 AND r.notify_at <= ?1
            AND t.deleted_at IS NULL AND t.is_completed = 0
          ORDER BY r.notify_at, r.id",
     )?
     .query_map(params![now], |row| {
-        let names: String = row.get(5)?;
         Ok(DueReminder {
             id: row.get(0)?,
-            task_id: row.get(1)?,
+            notify_at: row.get(6)?,
+            task_id: Some(row.get(1)?),
+            note_id: None,
             title: row.get(2)?,
             due_time: row.get(3)?,
             notes: row.get(4)?,
-            tag_names: serde_json::from_str(&names).map_err(|error| {
-                rusqlite::Error::FromSqlConversionFailure(5, Type::Text, Box::new(error))
-            })?,
+            tag_names: tag_names(row, 5)?,
         })
     })?
     .collect()
@@ -61,19 +102,39 @@ pub fn due(conn: &Connection, now: &str) -> rusqlite::Result<Vec<DueReminder>> {
 
 /// The earliest `notify_at` after `now` among reminders that can still fire.
 pub fn next_after(conn: &Connection, now: &str) -> rusqlite::Result<Option<String>> {
-    conn.prepare_cached(
-        "SELECT MIN(r.notify_at)
-         FROM reminders r JOIN tasks t ON t.id = r.task_id
-         WHERE r.is_sent = 0 AND r.notify_at > ?1
-           AND t.deleted_at IS NULL AND t.is_completed = 0",
-    )?
-    .query_row(params![now], |row| row.get(0))
+    let task: Option<String> = conn
+        .prepare_cached(
+            "SELECT MIN(r.notify_at)
+             FROM reminders r JOIN tasks t ON t.id = r.task_id
+             WHERE r.is_sent = 0 AND r.notify_at > ?1
+               AND t.deleted_at IS NULL AND t.is_completed = 0",
+        )?
+        .query_row(params![now], |row| row.get(0))?;
+    let note: Option<String> = conn
+        .prepare_cached(
+            "SELECT MIN(r.notify_at)
+             FROM note_reminders r JOIN notes n ON n.id = r.note_id
+             WHERE r.is_sent = 0 AND r.notify_at > ?1 AND n.deleted_at IS NULL",
+        )?
+        .query_row(params![now], |row| row.get(0))?;
+    Ok(match (task, note) {
+        (Some(a), Some(b)) => Some(a.min(b)),
+        (a, b) => a.or(b),
+    })
 }
 
 pub fn mark_sent(tx: &Transaction<'_>, id: &str, now: &str) -> rusqlite::Result<bool> {
     let changed = tx
         .prepare_cached(
             "UPDATE reminders SET is_sent = 1, sent_at = ?2 WHERE id = ?1 AND is_sent = 0",
+        )?
+        .execute(params![id, now])?;
+    if changed > 0 {
+        return Ok(true);
+    }
+    let changed = tx
+        .prepare_cached(
+            "UPDATE note_reminders SET is_sent = 1, sent_at = ?2 WHERE id = ?1 AND is_sent = 0",
         )?
         .execute(params![id, now])?;
     Ok(changed > 0)
@@ -86,16 +147,20 @@ pub fn expire_before(
     cutoff: &str,
     now: &str,
 ) -> rusqlite::Result<Vec<String>> {
-    let ids: Vec<String> = tx
-        .prepare_cached(
-            "SELECT id FROM reminders WHERE is_sent = 0 AND notify_at < ?1 ORDER BY id",
-        )?
-        .query_map(params![cutoff], |row| row.get(0))?
-        .collect::<rusqlite::Result<_>>()?;
-    tx.prepare_cached(
-        "UPDATE reminders SET is_sent = 1, sent_at = ?2 WHERE is_sent = 0 AND notify_at < ?1",
-    )?
-    .execute(params![cutoff, now])?;
+    let mut ids: Vec<String> = Vec::new();
+    for table in ["reminders", "note_reminders"] {
+        let found: Vec<String> = tx
+            .prepare_cached(&format!(
+                "SELECT id FROM {table} WHERE is_sent = 0 AND notify_at < ?1 ORDER BY id"
+            ))?
+            .query_map(params![cutoff], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        tx.prepare_cached(&format!(
+            "UPDATE {table} SET is_sent = 1, sent_at = ?2 WHERE is_sent = 0 AND notify_at < ?1"
+        ))?
+        .execute(params![cutoff, now])?;
+        ids.extend(found);
+    }
     Ok(ids)
 }
 

@@ -113,9 +113,10 @@
     void tagsStore.load();
     void tasksStore.load();
     void viewStore.load();
-    const unlisten = onReminderFired((fired) =>
-      tasksStore.onReminderFired(fired.taskId),
-    );
+    const unlisten = onReminderFired((fired) => {
+      if (fired.taskId) return tasksStore.onReminderFired(fired.taskId);
+      if (fired.noteId) return notesStore.onReminderFired(fired.noteId);
+    });
     return () => {
       void unlisten.then((stop) => stop());
       tasksStore.dispose();

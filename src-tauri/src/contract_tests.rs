@@ -19,7 +19,7 @@ use crate::{
     repo::{
         find::FoundItem,
         model::{
-            Folder, FolderWithCount, Note, NoteSummary, NoteTemplate, NoteVersion,
+            Folder, FolderWithCount, Note, NoteReminder, NoteSummary, NoteTemplate, NoteVersion,
             NoteVersionSummary, Reminder, Tag, TagWithCount, Task,
         },
         search::SearchHit,
@@ -150,6 +150,11 @@ fn current() -> Value {
         "folderWithCount": FolderWithCount { folder: folder(), note_count: 3 },
         "note": note(true),
         "noteInInbox": note(false),
+        "noteReminder": NoteReminder {
+            id: "nreminder-1".into(),
+            note_id: "note-1".into(),
+            notify_at: "2026-03-12T09:00:00Z".into(),
+        },
         "noteVersionSummary": NoteVersionSummary {
             id: "version-1".into(),
             note_id: "note-1".into(),

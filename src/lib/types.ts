@@ -40,8 +40,17 @@ export interface ReminderInput {
 
 /** Payload of the `reminder:fired` event (SPEC §7.4). */
 export interface ReminderFired {
-  taskId: string;
+  /** Set for the reminder of a task; `noteId` for the reminder of a note (D-52). */
+  taskId?: string;
+  noteId?: string;
   reminderId: string;
+}
+
+/** The time a note will remind its owner (F13-04). */
+export interface NoteReminder {
+  id: string;
+  noteId: string;
+  notifyAt: string;
 }
 
 export interface Task {

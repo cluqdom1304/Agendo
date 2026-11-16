@@ -13,6 +13,7 @@ import type {
   NoteCreateInput,
   NotePatch,
   NoteSummary,
+  NoteReminder,
   NoteTemplate,
   NoteVersion,
   NoteVersionSummary,
@@ -231,6 +232,18 @@ export function noteVersionGet(id: string): Promise<NoteVersion> {
 
 export function noteVersionRestore(id: string): Promise<Note> {
   return invoke<Note>("note_version_restore", { id });
+}
+
+export function noteReminderGet(noteId: string): Promise<NoteReminder | null> {
+  return invoke<NoteReminder | null>("note_reminder_get", { noteId });
+}
+
+/** Sets the reminder of a note at a UTC instant, or removes it with `null` (F13-04). */
+export function noteReminderSet(
+  noteId: string,
+  notifyAt: string | null,
+): Promise<NoteReminder | null> {
+  return invoke<NoteReminder | null>("note_reminder_set", { noteId, notifyAt });
 }
 
 export function templateList(): Promise<NoteTemplate[]> {

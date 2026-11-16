@@ -432,6 +432,13 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Editor (se añadirán al usarlos, todas de la misma familia y versión 3.33.0 que las actuales):** `@tiptap/extension-table`, `-blockquote`, `-horizontal-rule`, `-highlight`, `-code-block` y `-heading`. Alternativas descartadas: `lowlight`/`highlight.js` (pesan demasiado para el presupuesto de 250 KB, D-49): el resaltado de código se hace con un tokenizador propio y pequeño; la imagen y la búsqueda dentro de la nota son nodos y complementos propios, sin dependencia.
 - **Imágenes:** solo PNG, JPEG, GIF y WebP, identificadas por su firma y no por el nombre; SVG queda fuera (puede llevar scripts). Máximo 20 MB. Los bytes viajan como cuerpo binario de IPC, no como JSON.
 
+## D-52 — Recordatorios de nota: tabla propia sobre el mismo motor
+- **Estado:** PROPOSED (decisión técnica del agente en F13-04; no contradice `docs/SPEC.md`) · **Fecha:** 2026-11-16
+- **Contexto:** `reminders.task_id` es `NOT NULL REFERENCES tasks`. Admitir notas ahí exige reconstruir la tabla (crear, copiar, `DROP`, renombrar), y `CLAUDE.md` §7 prohíbe `DROP` sobre datos de usuario.
+- **Decisión:** tabla `note_reminders` (migración 010; un aviso pendiente por nota, `ON DELETE CASCADE`). El motor es el mismo: `repo/reminders.rs` (`due`, `next_after`, `mark_sent`, `expire_before`) consulta las dos tablas y el planificador, los reintentos, la caducidad de 24 h y el despertar no cambian. `DueReminder` y `Fired` llevan `task_id` o `note_id`. Los avisos de nota no se repiten ni tienen antelación: una sola hora.
+- **Alternativas descartadas:** reconstruir `reminders` (viola §7); tarea «sombra» por nota (ensucia listas, búsqueda y papelera); un segundo planificador (duplica el motor, lo que F13-04 prohíbe).
+- **Consecuencias:** si se rechaza, solo hay que retirar la migración 010 y sus comandos; nada más depende de ella.
+
 ---
 
 ## Decisiones pendientes de producto

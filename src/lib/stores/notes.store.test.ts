@@ -462,3 +462,49 @@ describe("note templates (F13-02)", () => {
     });
   });
 });
+
+describe("note reminders (F13-04)", () => {
+  it("sets, reads and clears the reminder of a note", async () => {
+    const api = new FakeApi();
+    const store = new NotesStore(api);
+    await store.ensureLoaded();
+    const note = await store.createNoteWith({ title: "Reunión" });
+    const id = note!.id;
+    expect(await store.reminderGet(id)).toBeNull();
+
+    const set = await store.reminderSet(id, "2026-03-12T09:00:00Z");
+    expect(set.ok).toBe(true);
+    expect(set.reminder?.notifyAt).toBe("2026-03-12T09:00:00Z");
+    expect((await store.reminderGet(id))?.notifyAt).toBe(
+      "2026-03-12T09:00:00Z",
+    );
+
+    expect((await store.reminderSet(id, null)).reminder).toBeNull();
+    expect(await store.reminderGet(id)).toBeNull();
+  });
+
+  it("shows the backend's reason when the reminder is refused", async () => {
+    const api = new FakeApi();
+    const store = new NotesStore(api);
+    await store.ensureLoaded();
+    api.noteReminderSet = async () => {
+      throw "VALIDATION: ese recordatorio ya habría pasado";
+    };
+    const result = await store.reminderSet("n1", "2020-01-01T00:00:00Z");
+    expect(result.ok).toBe(false);
+    expect(store.notice?.message).toBe("ese recordatorio ya habría pasado");
+  });
+
+  it("announces a fired reminder with the title of the note", async () => {
+    const api = new FakeApi();
+    const store = new NotesStore(api);
+    await store.ensureLoaded();
+    const note = await store.createNoteWith({ title: "Reunión" });
+    store.notice = null;
+    await store.onReminderFired(note!.id);
+    expect(store.notice).toEqual({
+      kind: "info",
+      message: "Recordatorio de la nota «Reunión».",
+    });
+  });
+});

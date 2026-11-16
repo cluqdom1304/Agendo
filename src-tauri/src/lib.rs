@@ -105,6 +105,8 @@ pub fn run() {
             commands::notes::note_backlinks,
             commands::notes::notes_orphans,
             commands::notes::note_create,
+            commands::note_reminders::note_reminder_get,
+            commands::note_reminders::note_reminder_set,
             commands::versions::note_versions_list,
             commands::versions::note_version_get,
             commands::versions::note_version_restore,

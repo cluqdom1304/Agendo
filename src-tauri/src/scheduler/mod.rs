@@ -132,6 +132,7 @@ impl Engine {
                     self.retries.remove(&reminder.id);
                     sink.fired(&Fired {
                         task_id: reminder.task_id.clone(),
+                        note_id: reminder.note_id.clone(),
                         reminder_id: reminder.id.clone(),
                     });
                     report.fired.push(reminder.id);
@@ -368,7 +369,8 @@ mod tests {
         assert_eq!(
             *sink.0.lock().expect("lock"),
             [Fired {
-                task_id: "t1".into(),
+                task_id: Some("t1".into()),
+                note_id: None,
                 reminder_id: "r1".into()
             }]
         );

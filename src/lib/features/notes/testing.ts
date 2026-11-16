@@ -107,6 +107,17 @@ export class FakeNotesApi implements NotesApi {
     this.notes = [created, ...this.notes];
     return created;
   }
+  reminders = new Map<string, string>();
+  async noteReminderGet(noteId: string) {
+    const at = this.reminders.get(noteId);
+    return at ? { id: `r-${noteId}`, noteId, notifyAt: at } : null;
+  }
+  async noteReminderSet(noteId: string, notifyAt: string | null) {
+    this.#guard();
+    if (notifyAt === null) this.reminders.delete(noteId);
+    else this.reminders.set(noteId, notifyAt);
+    return this.noteReminderGet(noteId);
+  }
   versions: NoteVersion[] = [];
   async noteVersionsList(noteId: string) {
     return this.versions
