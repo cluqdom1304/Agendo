@@ -32,6 +32,7 @@
             }
           }
         ],
+        "rrule": "FREQ=WEEKLY;INTERVAL=1",
         "sourceNoteId": "note-1",
         "tagIds": [
           "tag-1"
@@ -170,6 +171,7 @@
           }
         }
       ],
+      "rrule": "FREQ=WEEKLY;INTERVAL=1",
       "sourceNoteId": "note-1",
       "tagIds": [
         "tag-1"
@@ -215,6 +217,7 @@
                 }
               }
             ],
+            "rrule": "FREQ=WEEKLY;INTERVAL=1",
             "sourceNoteId": "note-1",
             "tagIds": [
               "tag-1"
@@ -245,6 +248,7 @@
             "repeat": null
           }
         ],
+        "rrule": null,
         "sourceNoteId": null,
         "tagIds": [
           "tag-1"
@@ -302,6 +306,7 @@
         }
       }
     ],
+    "rrule": "FREQ=WEEKLY;INTERVAL=1",
     "sourceNoteId": "note-1",
     "tagIds": [
       "tag-1"
@@ -328,6 +333,7 @@
         "repeat": null
       }
     ],
+    "rrule": null,
     "sourceNoteId": null,
     "tagIds": [
       "tag-1"

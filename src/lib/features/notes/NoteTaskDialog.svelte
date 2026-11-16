@@ -162,6 +162,7 @@
 <style>
   .form {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-4);
   }
 
@@ -175,12 +176,13 @@
 
   .block {
     display: grid;
+    min-width: 0;
     gap: 6px;
   }
 
   .row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--space-3);
   }
 

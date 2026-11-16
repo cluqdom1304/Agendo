@@ -63,6 +63,8 @@ export interface Task {
   durationMinutes: number | null;
   /** Note the task was created from (D-45); `null` if none or if that note is gone. */
   sourceNoteId: string | null;
+  /** How the task repeats (F13-05): `FREQ=WEEKLY;INTERVAL=1`, with anchors added by the backend. */
+  rrule: string | null;
   isCompleted: boolean;
   completedAt: string | null;
   position: number;
@@ -114,6 +116,7 @@ export interface TaskCreateInput {
   tagIds?: string[];
   contentJson?: string;
   sourceNoteId?: string;
+  rrule?: string;
 }
 
 /** Absent = leave as is; `null` = clear. */
@@ -123,6 +126,7 @@ export interface TaskPatch {
   dueDate?: string | null;
   dueTime?: string | null;
   durationMinutes?: number | null;
+  rrule?: string | null;
 }
 
 export interface TagUpsertInput {

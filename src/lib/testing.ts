@@ -17,6 +17,7 @@ export function makeTask(overrides: Partial<Task> & { id: string }): Task {
     dueTime: null,
     durationMinutes: null,
     sourceNoteId: null,
+    rrule: null,
     isCompleted: false,
     completedAt: null,
     position: 0,
@@ -81,6 +82,7 @@ export class FakeApi implements TasksApi {
     tagIds?: string[];
     contentJson?: string;
     sourceNoteId?: string;
+    rrule?: string;
   }): Promise<Task> {
     await this.#enter(
       "taskCreate",
@@ -97,6 +99,7 @@ export class FakeApi implements TasksApi {
       tagIds: input.tagIds ?? [],
       contentJson: input.contentJson ?? "",
       sourceNoteId: input.sourceNoteId ?? null,
+      rrule: input.rrule ?? null,
       position: 1000 + this.#created,
     });
     this.tasks = [...this.tasks, task];

@@ -18,6 +18,8 @@ pub struct Task {
     pub duration_minutes: Option<i64>,
     /// Note this task was created from (D-45).
     pub source_note_id: Option<String>,
+    /// How the task repeats, as a rule of `domain::recurrence` (F13-05).
+    pub rrule: Option<String>,
     pub is_completed: bool,
     pub completed_at: Option<String>,
     pub position: i64,
@@ -93,6 +95,7 @@ pub struct NewTask {
     pub due_time: Option<String>,
     pub duration_minutes: Option<i64>,
     pub source_note_id: Option<String>,
+    pub rrule: Option<String>,
     pub tag_ids: Vec<String>,
     pub now: String,
 }

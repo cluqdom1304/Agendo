@@ -438,6 +438,25 @@ export const t = {
     week: "Semana",
     month: "Mes",
   },
+  recurrence: {
+    label: "Repetir",
+    taskLabel: "Repetir la tarea",
+    never: "No se repite",
+    units: {
+      DAILY: { one: "Cada día", many: "días" },
+      WEEKLY: { one: "Cada semana", many: "semanas" },
+      MONTHLY: { one: "Cada mes", many: "meses" },
+      YEARLY: { one: "Cada año", many: "años" },
+    },
+    every: (count: number, unit: string) => `Cada ${count} ${unit}`,
+    until: (date: string) => `hasta el ${date}`,
+    intervalLabel: "Cada",
+    untilLabel: "Hasta (opcional)",
+    needsDate: "Para repetir una tarea, ponle fecha.",
+    untilBefore:
+      "La repetición no puede terminar antes de la fecha de la tarea.",
+    detail: "Se repite",
+  },
   today: {
     title: "Hoy",
     tasks: "Tareas de hoy",

@@ -32,7 +32,7 @@ macro_rules! task_sql {
                                                             'occurrence', r.occurrence) END))
                                 ORDER BY r.notify_at, r.id)
                        FROM reminders r WHERE r.task_id = t.id),
-                    t.duration_minutes, t.source_note_id
+                    t.duration_minutes, t.source_note_id, t.rrule
              FROM tasks t ",
             $suffix
         )
@@ -73,6 +73,7 @@ fn map_task(row: &Row<'_>) -> rusqlite::Result<Task> {
         reminders: json_column(row, 11)?,
         duration_minutes: row.get(12)?,
         source_note_id: row.get(13)?,
+        rrule: row.get(14)?,
     })
 }
 
@@ -132,8 +133,8 @@ pub fn create(tx: &Transaction<'_>, new: &NewTask) -> rusqlite::Result<Task> {
     let position = next_position(tx, new.due_date.as_deref())?;
     tx.prepare_cached(
         "INSERT INTO tasks (id, title, content_json, content_text, due_date, due_time,
-                            duration_minutes, source_note_id, position, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10)",
+                            duration_minutes, source_note_id, position, created_at, updated_at, rrule)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10, ?11)",
     )?
     .execute(params![
         new.id,
@@ -145,7 +146,8 @@ pub fn create(tx: &Transaction<'_>, new: &NewTask) -> rusqlite::Result<Task> {
         new.duration_minutes,
         new.source_note_id,
         position,
-        new.now
+        new.now,
+        new.rrule
     ])?;
     tags::replace_links(tx, &new.id, &new.tag_ids)?;
     fts::insert(tx, &new.id)?;
@@ -200,6 +202,13 @@ pub fn update(
         fts::sync(tx, id)?;
     }
     get(tx, id)
+}
+
+/// Sets or clears the repeat rule of a task without touching anything else (F13-05).
+pub fn set_rrule(tx: &Transaction<'_>, id: &str, rrule: Option<&str>) -> rusqlite::Result<()> {
+    tx.prepare_cached("UPDATE tasks SET rrule = ?2 WHERE id = ?1")?
+        .execute(params![id, rrule])?;
+    Ok(())
 }
 
 /// Completes or reopens a live task. Completing an already completed task keeps its original
@@ -1038,6 +1047,7 @@ mod tests {
                 "isCompleted",
                 "position",
                 "reminders",
+                "rrule",
                 "sourceNoteId",
                 "tagIds",
                 "title",

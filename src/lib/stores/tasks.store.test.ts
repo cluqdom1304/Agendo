@@ -501,3 +501,77 @@ describe("refresh", () => {
     expect(store.find("a")?.isCompleted).toBe(true);
   });
 });
+
+describe("repeating tasks (F13-05)", () => {
+  it("reads the tasks again after completing one that repeats, to show the next one", async () => {
+    const { api, store } = setup([
+      makeTask({
+        id: "a",
+        dueDate: "2026-03-10",
+        rrule: "FREQ=DAILY;INTERVAL=1",
+      }),
+    ]);
+    await store.load();
+    const next = makeTask({
+      id: "b",
+      dueDate: "2026-03-11",
+      rrule: "FREQ=DAILY;INTERVAL=1",
+    });
+    const original = api.taskSetCompleted.bind(api);
+    api.taskSetCompleted = async (...args) => {
+      const done = await original(...args);
+      api.tasks = [...api.tasks, next];
+      return done;
+    };
+    await store.setCompleted("a", true);
+    expect(store.find("b")?.dueDate).toBe("2026-03-11");
+  });
+
+  it("does not reread everything for a task that does not repeat", async () => {
+    const { api, store } = setup();
+    await store.load();
+    const before = api.calls.filter((call) =>
+      call.startsWith("tasksList"),
+    ).length;
+    await store.setCompleted("a", true);
+    const after = api.calls.filter((call) =>
+      call.startsWith("tasksList"),
+    ).length;
+    expect(after).toBe(before);
+  });
+
+  it("sends a changed rule when saving and skips an unchanged one", async () => {
+    const { api, store } = setup([
+      makeTask({
+        id: "a",
+        dueDate: "2026-03-10",
+        rrule: "FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=10",
+      }),
+    ]);
+    await store.load();
+    const same = {
+      title: "Tarea",
+      dueDate: "2026-03-10",
+      dueTime: null,
+      durationMinutes: null,
+      rrule: "FREQ=MONTHLY;INTERVAL=1",
+    };
+    const updates = vi.spyOn(api, "taskUpdate");
+    await store.saveDetails("a", { ...same, title: store.find("a")!.title });
+    expect(updates).not.toHaveBeenCalled();
+    await store.saveDetails("a", {
+      ...same,
+      title: store.find("a")!.title,
+      rrule: "FREQ=WEEKLY;INTERVAL=1",
+    });
+    expect(updates).toHaveBeenCalledWith("a", {
+      rrule: "FREQ=WEEKLY;INTERVAL=1",
+    });
+    await store.saveDetails("a", {
+      ...same,
+      title: store.find("a")!.title,
+      dueDate: null,
+      rrule: null,
+    });
+  });
+});

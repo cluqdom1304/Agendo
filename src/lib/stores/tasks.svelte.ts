@@ -3,6 +3,7 @@ import { SvelteSet } from "svelte/reactivity";
 import * as backend from "../api";
 import { toInstant, toLocalIsoDate } from "../dates";
 import { t } from "../i18n";
+import { sameRule } from "../recurrence";
 import { hasNotes } from "../features/notes/content";
 import { groupByDay, sortTodo, splitCompleted } from "../ordering";
 import type {
@@ -24,6 +25,7 @@ export interface TasksApi {
     tagIds?: string[];
     contentJson?: string;
     sourceNoteId?: string;
+    rrule?: string;
   }): Promise<Task>;
   taskUpdate(id: string, patch: TaskPatch): Promise<Task>;
   taskTagsSet(taskId: string, tagIds: string[]): Promise<Task>;
@@ -132,6 +134,8 @@ export interface NewTaskDetails {
   reminders?: ReminderInput[];
   /** The note the task is created from (D-45). */
   sourceNoteId?: string;
+  /** Repeat rule (F13-05); needs a date. */
+  rrule?: string;
 }
 
 function sameSet(a: readonly string[], b: readonly string[]): boolean {
@@ -365,6 +369,7 @@ export class TasksStore {
           : {}),
         ...(input.contentJson ? { contentJson: input.contentJson } : {}),
         ...(input.sourceNoteId ? { sourceNoteId: input.sourceNoteId } : {}),
+        ...(input.dueDate && input.rrule ? { rrule: input.rrule } : {}),
       });
       this.tasks = [...this.tasks, created];
       this.#warnIfHidden(created);
@@ -402,6 +407,8 @@ export class TasksStore {
       /** Absent = leave as is; `[]` = remove every tag. */
       tagIds?: string[];
       reminders?: ReminderInput[];
+      /** Absent = leave as is; `null` = stop repeating (F13-05). */
+      rrule?: string | null;
     },
   ): Promise<boolean> {
     const before = this.find(id);
@@ -414,6 +421,10 @@ export class TasksStore {
     const duration = dueTime ? input.durationMinutes : null;
     if (dueTime !== before.dueTime) patch.dueTime = dueTime;
     if (duration !== before.durationMinutes) patch.durationMinutes = duration;
+    if (input.rrule !== undefined) {
+      const rule = input.dueDate ? input.rrule : null;
+      if (!sameRule(rule, before.rrule)) patch.rrule = rule;
+    }
     this.#suspendNotes(id);
     try {
       if (Object.keys(patch).length > 0) {
@@ -578,6 +589,8 @@ export class TasksStore {
     const { task, failure } = answered();
     if (task) {
       this.#replace(task);
+      // Completing a repeating task created the next one behind the interface's back.
+      if (completed && before.rrule) await this.refresh();
     } else if (failure) {
       this.#replace(before);
       this.#report(failure.error);

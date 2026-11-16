@@ -1,5 +1,6 @@
 <script lang="ts">
   import { formatDisplayDate } from "../../dates";
+  import { describeRule } from "../../recurrence";
   import { t } from "../../i18n";
   import {
     describeRepeat,
@@ -138,6 +139,12 @@
             </dd>
           </div>
         {/if}
+        {#if task.rrule}
+          <div>
+            <dt>{t.recurrence.detail}</dt>
+            <dd>{describeRule(task.rrule)}</dd>
+          </div>
+        {/if}
         {#if task.sourceNoteId && sourceTitle !== undefined}
           <div>
             <dt>{t.notesApp.originNote}</dt>
@@ -242,9 +249,17 @@
 {/if}
 
 <style>
+  /* Everything stacks inside the dialog's width: nothing may push it sideways. */
   .detail {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-4);
+    min-width: 0;
+  }
+
+  .section {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   h2 {
@@ -280,7 +295,7 @@
 
   .facts div {
     display: grid;
-    grid-template-columns: 96px 1fr;
+    grid-template-columns: 96px minmax(0, 1fr);
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-2) var(--space-3);
@@ -315,7 +330,9 @@
   }
 
   dd {
+    min-width: 0;
     margin: 0;
+    overflow-wrap: anywhere;
     font-size: 13px;
     font-variant-numeric: tabular-nums;
   }
@@ -345,13 +362,16 @@
     color: var(--text-secondary);
   }
 
+  /* Six buttons do not fit in one row: they wrap, the primary ones stay together at the end. */
   .actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
   }
 
   .spacer {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
   }
 </style>

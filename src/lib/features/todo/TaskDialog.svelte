@@ -3,6 +3,13 @@
   import { t } from "../../i18n";
   import { draftReminders, pending, toInput } from "../../reminders";
   import {
+    buildRule,
+    clampInterval,
+    FREQS,
+    parseRule,
+    type Freq,
+  } from "../../recurrence";
+  import {
     DURATION_PRESETS,
     durationBetween,
     durationLabel,
@@ -48,6 +55,11 @@
   let duration = $state<number | null>(task?.durationMinutes ?? null);
   // svelte-ignore state_referenced_locally
   let tagIds = $state<string[]>(task?.tagIds ?? []);
+  // svelte-ignore state_referenced_locally
+  const startRepeat = parseRule(task?.rrule);
+  let repeatFreq = $state<Freq | "">(startRepeat?.freq ?? "");
+  let repeatInterval = $state<number | null>(startRepeat?.interval ?? 1);
+  let repeatUntil = $state(startRepeat?.until ?? "");
   let description = $state("");
   // svelte-ignore state_referenced_locally
   let inputs = $state.raw<ReminderInput[]>(
@@ -125,9 +137,36 @@
     endError = false;
   }
 
+  // A repetition needs a date: clearing the date ends it.
+  $effect(() => {
+    if (!dueDate) repeatFreq = "";
+  });
+  const untilBefore = $derived(
+    repeatFreq !== "" &&
+      repeatUntil !== "" &&
+      dueDate !== "" &&
+      repeatUntil < dueDate,
+  );
+  const rule = $derived(
+    dueDate && repeatFreq
+      ? buildRule({
+          freq: repeatFreq,
+          interval: clampInterval(repeatInterval ?? 1),
+          until: repeatUntil,
+        })
+      : null,
+  );
+
   async function submit() {
     attempted = true;
-    if (saving || title.trim() === "" || pastReminder || endError) return;
+    if (
+      saving ||
+      title.trim() === "" ||
+      pastReminder ||
+      endError ||
+      untilBefore
+    )
+      return;
     saving = true;
     const durationMinutes = dueDate && dueTime ? duration : null;
     let saved: boolean;
@@ -138,6 +177,7 @@
         dueTime: dueDate && dueTime ? dueTime : null,
         durationMinutes,
         tagIds,
+        rrule: rule,
         ...(remindersTouched && !isDone ? { reminders: usable } : {}),
       });
     } else {
@@ -149,6 +189,7 @@
         ...(durationMinutes ? { durationMinutes } : {}),
         ...(tagIds.length > 0 ? { tagIds } : {}),
         ...(contentJson ? { contentJson } : {}),
+        ...(rule ? { rrule: rule } : {}),
         reminders: usable,
       });
     }
@@ -302,6 +343,48 @@
       </label>
     {/if}
 
+    <div class="block">
+      <span class="label">{t.recurrence.label}</span>
+      <div class="repeat">
+        <select
+          class="text"
+          aria-label={t.recurrence.taskLabel}
+          disabled={!dueDate}
+          bind:value={repeatFreq}
+        >
+          <option value="">{t.recurrence.never}</option>
+          {#each FREQS as freq (freq)}
+            <option value={freq}>{t.recurrence.units[freq].one}</option>
+          {/each}
+        </select>
+        {#if repeatFreq}
+          <label class="block">
+            <span class="label">
+              {t.recurrence.intervalLabel}
+              ({t.recurrence.units[repeatFreq].many})
+            </span>
+            <input
+              class="text"
+              type="number"
+              min="1"
+              max="365"
+              step="1"
+              bind:value={repeatInterval}
+            />
+          </label>
+          <label class="block">
+            <span class="label">{t.recurrence.untilLabel}</span>
+            <input class="text" type="date" bind:value={repeatUntil} />
+          </label>
+        {/if}
+      </div>
+      {#if !dueDate}
+        <p class="hint">{t.recurrence.needsDate}</p>
+      {:else if untilBefore}
+        <p class="hint error" role="alert">{t.recurrence.untilBefore}</p>
+      {/if}
+    </div>
+
     <section class="block" aria-label={t.newTask.remindersHeading}>
       <span class="label">{t.newTask.remindersHeading}</span>
       {#if isDone}
@@ -403,6 +486,12 @@
     margin: 0;
     color: var(--text-secondary);
     font-size: 12px;
+  }
+
+  .repeat {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
   }
 
   .durations {

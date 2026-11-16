@@ -42,6 +42,7 @@ fn task(with_values: bool) -> Task {
         due_time: with_values.then(|| "09:30".to_string()),
         duration_minutes: with_values.then_some(45),
         source_note_id: with_values.then(|| "note-1".to_string()),
+        rrule: with_values.then(|| "FREQ=WEEKLY;INTERVAL=1".to_string()),
         is_completed: with_values,
         completed_at: with_values.then(|| "2026-03-12T08:00:00Z".to_string()),
         position: 3,

@@ -3,5 +3,6 @@
 pub mod content;
 pub mod dates;
 pub mod ordering;
+pub mod recurrence;
 pub mod reminders;
 pub mod validation;

@@ -63,6 +63,7 @@ const taskKeys: Record<keyof Task, true> = {
   dueTime: true,
   durationMinutes: true,
   sourceNoteId: true,
+  rrule: true,
   isCompleted: true,
   completedAt: true,
   position: true,
@@ -261,6 +262,8 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
   it("Task keeps the note it was created from", () => {
     expect(fixture.task.sourceNoteId).toBe("note-1");
     expect(fixture.taskWithoutOptionals.sourceNoteId).toBeNull();
+    expect(fixture.task.rrule).toBe("FREQ=WEEKLY;INTERVAL=1");
+    expect(fixture.taskWithoutOptionals.rrule).toBeNull();
   });
 
   it("Tag and TagWithCount (flattened pendingCount)", () => {

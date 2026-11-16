@@ -12,12 +12,13 @@ use crate::{
     domain::{
         content, dates,
         ordering::{self, DayGroup},
+        recurrence::Rule,
         validation,
     },
     error::{AppError, AppResult},
     repo::{
         model::{NewTask, Task, TaskPatch},
-        reminders,
+        reminders::{self, NewReminder},
         tasks::{self, Query},
     },
     state::{AppState, run_blocking},
@@ -75,6 +76,8 @@ pub struct TaskCreateInput {
     pub content_json: Option<String>,
     /// Note the task is created from (D-45).
     pub source_note_id: Option<String>,
+    /// Repeat rule (F13-05); needs a date.
+    pub rrule: Option<String>,
 }
 
 /// Distinguishes an absent field (leave as is) from `null` (clear it).
@@ -102,6 +105,19 @@ pub struct TaskPatchInput {
     pub due_time: Option<Option<String>>,
     #[serde(default, deserialize_with = "present_or_null_number")]
     pub duration_minutes: Option<Option<i64>>,
+    #[serde(default, deserialize_with = "present_or_null")]
+    pub rrule: Option<Option<String>>,
+}
+
+/// Validates a repeat rule and anchors it to the task's date (F13-05).
+fn normalize_rule(rule: &str, due_date: Option<&str>) -> AppResult<String> {
+    let Some(date) = due_date else {
+        return Err(AppError::Validation(
+            "una tarea que se repite necesita fecha".into(),
+        ));
+    };
+    let start = dates::parse_date(date)?;
+    Ok(Rule::parse(rule)?.anchored(start)?.format())
 }
 
 pub fn list(state: &AppState, input: TasksListInput) -> AppResult<TasksListOutput> {
@@ -150,6 +166,11 @@ pub fn create(state: &AppState, input: TaskCreateInput) -> AppResult<Task> {
     validation::validate_title(&title)?;
     validation::validate_schedule(input.due_date.as_deref(), input.due_time.as_deref())?;
     validation::validate_duration(input.due_time.as_deref(), input.duration_minutes)?;
+    let rrule = input
+        .rrule
+        .as_deref()
+        .map(|rule| normalize_rule(rule, input.due_date.as_deref()))
+        .transpose()?;
     let content_text = match &input.content_json {
         Some(json) => content::text_of(json)?,
         None => String::new(),
@@ -163,6 +184,7 @@ pub fn create(state: &AppState, input: TaskCreateInput) -> AppResult<Task> {
         due_time: input.due_time,
         duration_minutes: input.duration_minutes,
         source_note_id: input.source_note_id,
+        rrule,
         tag_ids: input.tag_ids.unwrap_or_default(),
         now: state.clock.now_string(),
     };
@@ -210,7 +232,26 @@ pub fn update(state: &AppState, id: &str, patch: TaskPatchInput) -> AppResult<Ta
             due_time: due_time_patch,
             duration_minutes: duration_patch,
         };
-        let untouched = repo_patch.title.is_none()
+        // The rule follows the date: without one the task stops repeating, and a new date
+        // re-anchors it (the 31st of a month, the day of a year).
+        let rrule_patch: Option<Option<String>> = match (&patch.rrule, due_date.as_deref()) {
+            (Some(Some(_)), None) => {
+                return Err(AppError::Validation(
+                    "una tarea que se repite necesita fecha".into(),
+                ));
+            }
+            (_, None) => current.rrule.is_some().then_some(None),
+            (Some(Some(rule)), date) => Some(Some(normalize_rule(rule, date)?)),
+            (Some(None), _) => Some(None),
+            (None, date) => match &current.rrule {
+                Some(rule) if date != current.due_date.as_deref() => {
+                    Some(Some(normalize_rule(rule, date)?))
+                }
+                _ => None,
+            },
+        };
+        let untouched = rrule_patch.is_none()
+            && repo_patch.title.is_none()
             && repo_patch.content_json.is_none()
             && repo_patch.due_date.is_none()
             && repo_patch.due_time.is_none()
@@ -219,6 +260,9 @@ pub fn update(state: &AppState, id: &str, patch: TaskPatchInput) -> AppResult<Ta
             return Ok(current);
         }
         tasks::update(tx, id, &repo_patch, &now)?.ok_or_else(|| task_not_found(id))?;
+        if let Some(rule) = &rrule_patch {
+            tasks::set_rrule(tx, id, rule.as_deref())?;
+        }
         if repo_patch.due_date.is_some() || repo_patch.due_time.is_some() {
             reminders::recalculate(tx, id, &Local)?;
         }
@@ -246,13 +290,75 @@ pub fn complete(
     }
     let now = state.clock.now_string();
     let task = state.db.write(|tx| {
+        let before = tasks::get(tx, id)?.ok_or_else(|| task_not_found(id))?;
         tasks::set_completed_on(tx, id, completed, &now, local_date)?
             .ok_or_else(|| task_not_found(id))?;
         reminders::recalculate(tx, id, &Local)?;
+        if completed && !before.is_completed {
+            spawn_next_occurrence(state, tx, &before, local_date, &now)?;
+        }
         tasks::get(tx, id)?.ok_or_else(|| task_not_found(id))
     })?;
     state.wake.notify_one();
     Ok(task)
+}
+
+/// Completing a repeating task hands the series over to a new task on the next date (B-05):
+/// same title, notes, tags, time, duration and relative reminders. The completed one stops
+/// repeating, so reopening and completing it again cannot create a second copy.
+fn spawn_next_occurrence(
+    state: &AppState,
+    tx: &rusqlite::Transaction<'_>,
+    before: &Task,
+    local_date: Option<&str>,
+    now: &str,
+) -> AppResult<()> {
+    let (Some(text), Some(date)) = (&before.rrule, &before.due_date) else {
+        return Ok(());
+    };
+    let rule = Rule::parse(text)?;
+    let due = dates::parse_date(date)?;
+    let floor = match local_date {
+        Some(day) => dates::parse_date(day)?,
+        None => dates::utc_to_local(&Local, state.clock.now()).date(),
+    };
+    tasks::set_rrule(tx, &before.id, None)?;
+    let Some(next) = rule.next_after(due, floor) else {
+        return Ok(());
+    };
+    let created = tasks::create(
+        tx,
+        &NewTask {
+            id: state.ids.new_id(),
+            title: before.title.clone(),
+            content_text: content::text_of(&before.content_json)?,
+            content_json: Some(before.content_json.clone()),
+            due_date: Some(dates::format_date(next)),
+            due_time: before.due_time.clone(),
+            duration_minutes: before.duration_minutes,
+            source_note_id: before.source_note_id.clone(),
+            rrule: Some(text.clone()),
+            tag_ids: before.tag_ids.clone(),
+            now: now.to_string(),
+        },
+    )?;
+    let relative: Vec<NewReminder> = before
+        .reminders
+        .iter()
+        .filter(|reminder| reminder.offset_minutes.is_some())
+        .map(|reminder| NewReminder {
+            id: state.ids.new_id(),
+            notify_at: now.to_string(),
+            offset_minutes: reminder.offset_minutes,
+            repeat: None,
+        })
+        .collect();
+    if !relative.is_empty() {
+        reminders::replace_unsent(tx, &created.id, &relative, now)?;
+        // The placeholders get their real time from the new date; those that do not fit go.
+        reminders::recalculate(tx, &created.id, &Local)?;
+    }
+    Ok(())
 }
 
 /// Moves a task into POR HACER or onto a day, before `before_id` (a task of the destination
@@ -292,8 +398,14 @@ pub fn move_task(
                 ));
             }
         }
-        tasks::move_task(tx, id, target, before_id.as_deref(), &now)?
+        let moved = tasks::move_task(tx, id, target, before_id.as_deref(), &now)?
             .ok_or_else(|| task_not_found(id))?;
+        if let Some(rule) = &moved.rrule {
+            let anchored = target
+                .map(|date| normalize_rule(rule, Some(date)))
+                .transpose()?;
+            tasks::set_rrule(tx, id, anchored.as_deref())?;
+        }
         reminders::recalculate(tx, id, &Local)?;
         tasks::get(tx, id)?.ok_or_else(|| task_not_found(id))
     })?;
@@ -357,6 +469,7 @@ pub async fn task_create(
     tag_ids: Option<Vec<String>>,
     content_json: Option<String>,
     source_note_id: Option<String>,
+    rrule: Option<String>,
 ) -> Result<Task, String> {
     let input = TaskCreateInput {
         title,
@@ -366,6 +479,7 @@ pub async fn task_create(
         tag_ids,
         content_json,
         source_note_id,
+        rrule,
     };
     run_blocking(state.inner().clone(), move |state| create(state, input)).await
 }
@@ -1191,5 +1305,238 @@ mod tests {
 
         let range = serde_json::to_value(TasksListOutput::Range(vec![])).expect("json");
         assert_eq!(range, serde_json::json!([]));
+    }
+    fn repeating(state: &AppState, date: &str, rule: &str) -> Task {
+        create(
+            state,
+            TaskCreateInput {
+                title: Some("Regar".into()),
+                due_date: Some(date.into()),
+                due_time: Some("09:00".into()),
+                rrule: Some(rule.into()),
+                ..TaskCreateInput::default()
+            },
+        )
+        .expect("repeating")
+    }
+
+    fn open_tasks(state: &AppState) -> Vec<Task> {
+        let mut found: Vec<Task> = state
+            .db
+            .read(|conn| Ok(tasks::list(conn, tasks::Query::Agenda, None)?))
+            .expect("list")
+            .into_iter()
+            .filter(|task| !task.is_completed)
+            .collect();
+        found.sort_by(|a, b| a.due_date.cmp(&b.due_date));
+        found
+    }
+
+    fn open_dates(state: &AppState) -> Vec<String> {
+        open_tasks(state)
+            .into_iter()
+            .filter_map(|task| task.due_date)
+            .collect()
+    }
+
+    #[test]
+    fn a_rule_is_validated_and_anchored_to_the_date() {
+        let (state, _) = test_state();
+        let made = repeating(&state, "2026-01-31", "FREQ=MONTHLY");
+        assert_eq!(
+            made.rrule.as_deref(),
+            Some("FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=31")
+        );
+
+        let code = |r: AppResult<Task>| r.expect_err("fails").to_string();
+        let undated = TaskCreateInput {
+            rrule: Some("FREQ=DAILY".into()),
+            ..TaskCreateInput::default()
+        };
+        assert!(code(create(&state, undated)).starts_with("VALIDATION"));
+        let bad = TaskCreateInput {
+            due_date: Some("2026-03-10".into()),
+            rrule: Some("FREQ=SOMETIMES".into()),
+            ..TaskCreateInput::default()
+        };
+        assert!(code(create(&state, bad)).starts_with("VALIDATION"));
+    }
+
+    #[test]
+    fn completing_a_repeating_task_creates_the_next_one_and_hands_over_the_series() {
+        let (state, _) = test_state();
+        let tag = crate::commands::tags::upsert(
+            &state,
+            crate::commands::tags::TagUpsertInput {
+                id: None,
+                name: "Casa".into(),
+                color_hex: "#112233".into(),
+                parent_id: None,
+            },
+        )
+        .expect("tag");
+        let first = create(
+            &state,
+            TaskCreateInput {
+                title: Some("Regar".into()),
+                due_date: Some("2026-03-10".into()),
+                due_time: Some("09:00".into()),
+                duration_minutes: Some(30),
+                tag_ids: Some(vec![tag.id.clone()]),
+                rrule: Some("FREQ=WEEKLY".into()),
+                ..TaskCreateInput::default()
+            },
+        )
+        .expect("first");
+
+        let done = complete(&state, &first.id, true, Some("2026-03-10")).expect("complete");
+        assert!(done.is_completed);
+        assert_eq!(done.rrule, None, "the series moves on");
+
+        let open = open_tasks(&state);
+        assert_eq!(open.len(), 1);
+        let next = &open[0];
+        assert_eq!(next.due_date.as_deref(), Some("2026-03-17"));
+        assert_eq!(next.title, "Regar");
+        assert_eq!(next.due_time.as_deref(), Some("09:00"));
+        assert_eq!(next.duration_minutes, Some(30));
+        assert_eq!(next.tag_ids, [tag.id]);
+        assert_eq!(next.rrule.as_deref(), first.rrule.as_deref());
+        assert_ne!(next.id, first.id);
+    }
+
+    #[test]
+    fn reopening_and_completing_again_does_not_duplicate_and_late_completion_skips_ahead() {
+        let (state, _) = test_state();
+        let first = repeating(&state, "2026-03-10", "FREQ=DAILY");
+        complete(&state, &first.id, true, Some("2026-03-10")).expect("done");
+        complete(&state, &first.id, false, None).expect("reopen");
+        complete(&state, &first.id, true, Some("2026-03-10")).expect("done again");
+        let after_reopen = open_dates(&state);
+        assert_eq!(after_reopen, ["2026-03-11"], "one next task, no copy");
+
+        let (state, _) = test_state();
+        let late = repeating(&state, "2026-03-01", "FREQ=WEEKLY");
+        complete(&state, &late.id, true, Some("2026-03-10")).expect("late");
+        assert_eq!(
+            open_dates(&state),
+            ["2026-03-15"],
+            "still on its weekly cycle"
+        );
+    }
+
+    #[test]
+    fn the_series_ends_at_until_and_a_plain_task_creates_nothing() {
+        let (state, _) = test_state();
+        let last = repeating(&state, "2026-03-10", "FREQ=DAILY;UNTIL=20260310");
+        complete(&state, &last.id, true, Some("2026-03-10")).expect("done");
+        assert!(open_dates(&state).is_empty());
+
+        let plain = create(
+            &state,
+            TaskCreateInput {
+                title: Some("Suelta".into()),
+                due_date: Some("2026-03-10".into()),
+                ..TaskCreateInput::default()
+            },
+        )
+        .expect("plain");
+        complete(&state, &plain.id, true, Some("2026-03-10")).expect("done");
+        assert!(open_dates(&state).is_empty());
+    }
+
+    #[test]
+    fn relative_reminders_follow_the_series() {
+        let (state, _) = test_state();
+        let first = repeating(&state, "2026-03-20", "FREQ=WEEKLY");
+        crate::commands::reminders::set(
+            &state,
+            &first.id,
+            &[crate::commands::reminders::ReminderInput {
+                offset_minutes: Some(60),
+                notify_at: None,
+                repeat: None,
+            }],
+            &chrono::Local,
+        )
+        .expect("reminder");
+        complete(&state, &first.id, true, Some("2026-03-20")).expect("done");
+        let open = open_tasks(&state);
+        assert_eq!(open.len(), 1);
+        assert_eq!(open[0].due_date.as_deref(), Some("2026-03-27"));
+        assert_eq!(open[0].reminders.len(), 1);
+        assert_eq!(open[0].reminders[0].offset_minutes, Some(60));
+        assert!(!open[0].reminders[0].is_sent);
+    }
+
+    #[test]
+    fn changing_or_clearing_the_date_keeps_the_rule_coherent() {
+        let (state, _) = test_state();
+        let task = repeating(&state, "2026-01-31", "FREQ=MONTHLY");
+        let moved = update(
+            &state,
+            &task.id,
+            TaskPatchInput {
+                due_date: Some(Some("2026-02-05".into())),
+                ..TaskPatchInput::default()
+            },
+        )
+        .expect("moved");
+        assert_eq!(
+            moved.rrule.as_deref(),
+            Some("FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=5")
+        );
+
+        let off = update(
+            &state,
+            &task.id,
+            TaskPatchInput {
+                rrule: Some(None),
+                ..TaskPatchInput::default()
+            },
+        )
+        .expect("off");
+        assert_eq!(off.rrule, None);
+
+        let again = update(
+            &state,
+            &task.id,
+            TaskPatchInput {
+                rrule: Some(Some("FREQ=DAILY".into())),
+                ..TaskPatchInput::default()
+            },
+        )
+        .expect("again");
+        assert!(again.rrule.is_some());
+        let undated = update(
+            &state,
+            &task.id,
+            TaskPatchInput {
+                due_date: Some(None),
+                ..TaskPatchInput::default()
+            },
+        )
+        .expect("undated");
+        assert_eq!(undated.rrule, None, "no date, no repetition");
+    }
+
+    #[test]
+    fn dragging_a_repeating_task_re_anchors_it_and_the_to_do_list_ends_it() {
+        let (state, _) = test_state();
+        let task = repeating(&state, "2026-01-31", "FREQ=MONTHLY");
+        let moved = move_task(
+            &state,
+            &task.id,
+            Section::Agenda,
+            Some("2026-02-09".into()),
+            None,
+        )
+        .expect("moved");
+        assert_eq!(
+            moved.rrule.as_deref(),
+            Some("FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=9")
+        );
+        let parked = move_task(&state, &task.id, Section::Todo, None, None).expect("parked");
+        assert_eq!(parked.rrule, None);
     }
 }

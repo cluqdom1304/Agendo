@@ -79,8 +79,8 @@ El agente registra aquí cualquier bloqueo, ambigüedad de producto o test que n
   1. **Siguiente ocurrencia (recomendada):** al completar una tarea repetida, esa tarea queda hecha (historial) y se crea otra igual con la fecha siguiente. Reglas: cada N días/semanas/meses/años (con días de la semana opcionales para semanal), `rrule` guardado como un subconjunto de RFC 5545 (`FREQ`, `INTERVAL`, `BYDAY`, `COUNT`, `UNTIL`). Avisos relativos a la fecha se recalculan en la nueva; los de hora fija no se copian.
   2. **Misma tarea que avanza:** al completar, la tarea no se marca hecha: su fecha salta a la siguiente ocurrencia. Más simple de modelar (una fila), pero no deja historial de lo hecho y «Completadas» no refleja nada.
 - **Recomendación del agente:** opción 1, con migración nueva para la regla (usa `rrule`, sin tocar datos) y el cálculo de la siguiente ocurrencia en `domain/` con tests de calendario (fin de mes, años bisiestos, cambio horario).
-- **Estado:** ABIERTO
-- **Resolución humana:**
+- **Estado:** RESUELTO
+- **Resolución humana:** Implementar opción 1. (2026-11-16; implementada en F13-05 sin `COUNT` ni `BYDAY`.)
 
 ---
 

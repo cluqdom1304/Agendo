@@ -242,4 +242,46 @@ describe("TaskDialog editing a task", () => {
       false,
     );
   });
+  it("creates a repeating task with its interval and end date (F13-05)", async () => {
+    const { store, onClose } = await mount("2026-03-10");
+    await fireEvent.input(title(), { target: { value: "Regar" } });
+    await fireEvent.change(screen.getByLabelText("Repetir la tarea"), {
+      target: { value: "WEEKLY" },
+    });
+    await fireEvent.input(screen.getByLabelText(/^Cada/), {
+      target: { value: "2" },
+    });
+    await fireEvent.input(screen.getByLabelText("Hasta (opcional)"), {
+      target: { value: "2026-12-31" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Crear tarea" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(store.tasks[0]?.rrule).toBe("FREQ=WEEKLY;INTERVAL=2;UNTIL=20261231");
+  });
+
+  it("does not offer to repeat a task without a date and refuses an end before the task", async () => {
+    await mount();
+    expect(
+      (screen.getByLabelText("Repetir la tarea") as HTMLSelectElement).disabled,
+    ).toBe(true);
+    expect(
+      screen.getByText("Para repetir una tarea, ponle fecha."),
+    ).toBeTruthy();
+  });
+
+  it("refuses an end date before the task's date", async () => {
+    const { api, onClose } = await mount("2026-03-10");
+    await fireEvent.input(title(), { target: { value: "Regar" } });
+    await fireEvent.change(screen.getByLabelText("Repetir la tarea"), {
+      target: { value: "DAILY" },
+    });
+    await fireEvent.input(screen.getByLabelText("Hasta (opcional)"), {
+      target: { value: "2026-03-01" },
+    });
+    expect((await screen.findByRole("alert")).textContent).toContain("antes");
+    await fireEvent.click(screen.getByRole("button", { name: "Crear tarea" }));
+    expect(api.calls.some((call) => call.startsWith("taskCreate"))).toBe(false);
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

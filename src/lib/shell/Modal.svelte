@@ -106,6 +106,7 @@
     width: min(520px, calc(100vw - 2 * var(--space-6)));
     max-height: 84vh;
     padding: 20px var(--space-6) var(--space-6);
+    overflow-x: hidden;
     overflow-y: auto;
     border-radius: var(--radius-panel);
     background: var(--bg-popover);
