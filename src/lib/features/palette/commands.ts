@@ -63,6 +63,14 @@ export function buildCommands(deps: CommandDeps): PaletteCommand[] {
       },
     },
     {
+      id: "templates",
+      label: l.templates,
+      run: () => {
+        view.setSection("notes");
+        void notes.ensureLoaded().then(() => notes.openTemplates());
+      },
+    },
+    {
       id: "go-agenda",
       label: l.goAgenda,
       shortcut: "Ctrl+Mayús+1",

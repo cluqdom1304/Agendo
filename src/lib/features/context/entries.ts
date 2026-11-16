@@ -71,6 +71,11 @@ export function buildEntries(
           label: t.context.newNote,
           run: () => void deps.notes.createNote(),
         },
+        {
+          id: "templates",
+          label: t.context.templates,
+          run: () => void deps.notes.openTemplates(),
+        },
       ];
     case "editor":
       return editorEntries(deps, target.node, target.inTable);

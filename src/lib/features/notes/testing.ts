@@ -7,6 +7,7 @@ import type {
   NotePatch,
   NotesListQuery,
   NoteSummary,
+  NoteTemplate,
 } from "../../types";
 import type { NotesApi } from "../../stores/notes.svelte";
 
@@ -104,6 +105,35 @@ export class FakeNotesApi implements NotesApi {
     });
     this.notes = [created, ...this.notes];
     return created;
+  }
+  templates: NoteTemplate[] = [];
+  async templateList() {
+    return this.templates;
+  }
+  async templateSave(input: {
+    id?: string;
+    name: string;
+    contentJson?: string;
+  }) {
+    this.#guard();
+    const existing = this.templates.find((item) => item.id === input.id);
+    const next: NoteTemplate = {
+      id: existing?.id ?? `t${++this.#next}`,
+      name: input.name,
+      contentJson:
+        input.contentJson ??
+        existing?.contentJson ??
+        '{"type":"doc","content":[]}',
+      createdAt: existing?.createdAt ?? "2026-03-10T10:00:00Z",
+      updatedAt: "2026-03-10T10:00:00Z",
+    };
+    this.templates = existing
+      ? this.templates.map((item) => (item.id === next.id ? next : item))
+      : [...this.templates, next];
+    return next;
+  }
+  async templateDelete(id: string) {
+    this.templates = this.templates.filter((item) => item.id !== id);
   }
   async noteDailyOpen(date: string, title: string) {
     this.#guard();

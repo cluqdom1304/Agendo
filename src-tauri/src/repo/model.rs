@@ -118,6 +118,17 @@ pub struct TagInput {
     pub now: String,
 }
 
+/// A named document new notes can start from (F13-02).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteTemplate {
+    pub id: String,
+    pub name: String,
+    pub content_json: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 /// Folder as exposed over IPC (D-43).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -11,6 +11,7 @@ import type {
   FoundItem,
   Note,
   NoteSummary,
+  NoteTemplate,
   Reminder,
   Repeat,
   SearchHit,
@@ -37,6 +38,7 @@ interface Fixture {
   note: Note;
   noteInInbox: Note;
   noteSummary: NoteSummary;
+  noteTemplate: NoteTemplate;
   foundTask: FoundItem;
   foundNote: FoundItem;
   foundTag: FoundItem;
@@ -127,6 +129,13 @@ const noteKeys: Record<keyof Note, true> = {
   createdAt: true,
   updatedAt: true,
 };
+const noteTemplateKeys: Record<keyof NoteTemplate, true> = {
+  id: true,
+  name: true,
+  contentJson: true,
+  createdAt: true,
+  updatedAt: true,
+};
 const noteSummaryKeys: Record<keyof NoteSummary, true> = {
   id: true,
   folderId: true,
@@ -192,6 +201,7 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
     expect(keys(fixture.note)).toEqual(keys(noteKeys));
     expect(keys(fixture.noteInInbox)).toEqual(keys(noteKeys));
     expect(keys(fixture.noteSummary)).toEqual(keys(noteSummaryKeys));
+    expect(keys(fixture.noteTemplate)).toEqual(keys(noteTemplateKeys));
     expect(fixture.noteInInbox.folderId).toBeNull();
     expect(typeof fixture.note.isPinned).toBe("boolean");
     expect(typeof fixture.noteSummary.excerpt).toBe("string");

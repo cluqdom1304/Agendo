@@ -13,6 +13,7 @@ import type {
   NotePatch,
   NotesListQuery,
   NoteSummary,
+  NoteTemplate,
   FoundItem,
 } from "../types";
 
@@ -28,6 +29,13 @@ export interface NotesApi {
   noteGet(id: string): Promise<Note>;
   noteCreate(input?: NoteCreateInput): Promise<Note>;
   noteDailyOpen(date: string, title: string): Promise<Note>;
+  templateList(): Promise<NoteTemplate[]>;
+  templateSave(input: {
+    id?: string;
+    name: string;
+    contentJson?: string;
+  }): Promise<NoteTemplate>;
+  templateDelete(id: string): Promise<void>;
   noteUpdate(id: string, patch: NotePatch): Promise<Note>;
   noteSetPinned(id: string, pinned: boolean): Promise<Note>;
   noteMove(id: string, folderId: string | null): Promise<Note>;
@@ -103,6 +111,9 @@ export class NotesStore {
   openInTrash = $state(false);
   status = $state<"idle" | "ready" | "error">("idle");
   notice = $state.raw<Notice | null>(null);
+  /** Templates for new notes (F13-02), loaded when the dialog opens. */
+  templates = $state.raw<NoteTemplate[]>([]);
+  templatesOpen = $state(false);
   /** Notes sent to the trash in this session, newest last, to bring them back. */
   undoStack = $state.raw<string[]>([]);
   /** Folders whose children are shown. */
@@ -277,6 +288,68 @@ export class NotesStore {
       this.#fail(t.notesApp.createFailed);
       return null;
     }
+  }
+
+  async openTemplates(): Promise<void> {
+    this.templatesOpen = true;
+    await this.loadTemplates();
+  }
+
+  async loadTemplates(): Promise<void> {
+    try {
+      this.templates = await this.#api.templateList();
+    } catch {
+      this.#fail(t.notesApp.templatesFailed);
+    }
+  }
+
+  /** Saves the open note as a template, or rewrites `id` with it. */
+  async saveOpenAsTemplate(name: string, id?: string): Promise<boolean> {
+    return this.#saveTemplate({
+      name,
+      ...(id ? { id } : {}),
+      ...(this.open ? { contentJson: this.open.contentJson } : {}),
+    });
+  }
+
+  async renameTemplate(id: string, name: string): Promise<boolean> {
+    return this.#saveTemplate({ id, name });
+  }
+
+  async #saveTemplate(input: {
+    id?: string;
+    name: string;
+    contentJson?: string;
+  }): Promise<boolean> {
+    try {
+      await this.#api.templateSave(input);
+      await this.loadTemplates();
+      return true;
+    } catch (error) {
+      const message = parseError(error).message;
+      this.#fail(message || t.notesApp.templatesFailed);
+      return false;
+    }
+  }
+
+  async deleteTemplate(id: string): Promise<void> {
+    try {
+      await this.#api.templateDelete(id);
+      await this.loadTemplates();
+    } catch {
+      this.#fail(t.notesApp.templatesFailed);
+    }
+  }
+
+  /** A new note that starts as the template, shown and opened. */
+  async createFromTemplate(id: string): Promise<Note | null> {
+    const template = this.templates.find((item) => item.id === id);
+    if (!template) return null;
+    this.templatesOpen = false;
+    return this.createNoteWith({
+      title: template.name,
+      contentJson: template.contentJson,
+    });
   }
 
   /** Opens the note of a day (`YYYY-MM-DD`), creating it the first time (F13-01). */

@@ -155,6 +155,15 @@ export interface Note {
 }
 
 /** A note as listed: a short plain-text excerpt instead of the document. */
+/** A named document new notes can start from (F13-02). */
+export interface NoteTemplate {
+  id: string;
+  name: string;
+  contentJson: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface NoteSummary {
   id: string;
   folderId: string | null;

@@ -303,3 +303,4 @@ Movimiento y fluidez
 
 ## Notas V2 — Fase 13: productividad (`[H]`, pendientes de validar en Windows 11)
 - [ ] (F13-01) «Nota del día» en la cabecera del calendario abre (y la primera vez crea) la nota del día mostrado, titulada «Nota del DD/MM/AAAA»; pulsarlo otra vez, o desde otro día y volviendo, abre la misma. Si se envió a la papelera, vuelve de ella. El comando «Abrir la nota de hoy» de la paleta (`Ctrl+K`) hace lo mismo con la fecha de hoy.
+- [ ] (F13-02) «Plantillas de nota…» (clic derecho en el fondo de la lista de notas, o `Ctrl+K`) abre el diálogo: con una nota abierta, guardarla con un nombre la añade; «Usar» crea una nota con ese contenido y el nombre como título; «Renombrar», «Reemplazar con la nota abierta» y «Eliminar» funcionan; un nombre repetido (aunque cambien mayúsculas) muestra el aviso. Esc cierra y devuelve el foco. Revisar el aspecto en tema claro y oscuro y con la ventana estrecha.

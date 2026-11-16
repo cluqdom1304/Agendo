@@ -9,6 +9,7 @@
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { Task } from "../../types";
   import NoteList from "./NoteList.svelte";
+  import NoteTemplates from "./NoteTemplates.svelte";
   import NotePane from "./NotePane.svelte";
   import TagTasks from "./TagTasks.svelte";
 
@@ -123,6 +124,10 @@
 {#snippet tagTaskList()}
   <TagTasks tasks={tagTasks} onOpen={onOpenTask} />
 {/snippet}
+
+{#if notes.templatesOpen}
+  <NoteTemplates {notes} onClose={() => (notes.templatesOpen = false)} />
+{/if}
 
 {#if lastTrashed}
   <Toast

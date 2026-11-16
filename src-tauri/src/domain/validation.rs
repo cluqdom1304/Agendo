@@ -74,6 +74,18 @@ pub const MAX_FOLDER_NAME_CHARS: usize = 100;
 /// Levels of nested folders (D-43). A folder at the top level is at depth 1.
 pub const MAX_FOLDER_DEPTH: usize = 5;
 
+/// Returns the template name to store: trimmed, 1 to 100 characters.
+pub fn validate_template_name(name: &str) -> Result<&str, ValidationError> {
+    let trimmed = name.trim();
+    let length = trimmed.chars().count();
+    if length == 0 || length > MAX_FOLDER_NAME_CHARS {
+        return Err(ValidationError::new(format!(
+            "el nombre de la plantilla debe tener entre 1 y {MAX_FOLDER_NAME_CHARS} caracteres"
+        )));
+    }
+    Ok(trimmed)
+}
+
 /// Returns the name to store: trimmed, 1 to 100 characters.
 pub fn validate_folder_name(name: &str) -> Result<&str, ValidationError> {
     let trimmed = name.trim();

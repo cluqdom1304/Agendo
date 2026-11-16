@@ -13,6 +13,7 @@ import type {
   NoteCreateInput,
   NotePatch,
   NoteSummary,
+  NoteTemplate,
   NotesListQuery,
   ReminderFired,
   ReminderInput,
@@ -214,6 +215,22 @@ export function noteCreate(input: NoteCreateInput = {}): Promise<Note> {
 
 export function noteDailyOpen(date: string, title: string): Promise<Note> {
   return invoke<Note>("note_daily_open", { date, title });
+}
+
+export function templateList(): Promise<NoteTemplate[]> {
+  return invoke<NoteTemplate[]>("template_list");
+}
+
+export function templateSave(input: {
+  id?: string;
+  name: string;
+  contentJson?: string;
+}): Promise<NoteTemplate> {
+  return invoke<NoteTemplate>("template_save", { ...input });
+}
+
+export function templateDelete(id: string): Promise<void> {
+  return invoke<void>("template_delete", { id });
 }
 
 export function noteUpdate(id: string, patch: NotePatch): Promise<Note> {

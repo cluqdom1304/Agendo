@@ -2,7 +2,7 @@
 
 **Fase activa:** Fase 12 de la V2.0.0 (editor avanzado y adjuntos)
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F13-02 (plantillas de nota editables). Ítems `[H]` de F8–F12 siguen pendientes de validar.
+**Siguiente tarea:** F13-03 (historial de versiones, D-48). Ítems `[H]` de F8–F12 siguen pendientes de validar.
 **Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 a 12 implementadas, pendientes de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -341,7 +341,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 
 ## Fase 13 — Productividad
 - [x] F13-01 Nota diaria enlazada a cada día de la agenda
-- [ ] F13-02 Plantillas de nota editables
+- [x] F13-02 Plantillas de nota editables
 - [ ] F13-03 Historial de versiones con comparar y restaurar (D-48)
 - [ ] F13-04 Recordatorios de nota (sin duplicar el motor de avisos)
 - [ ] F13-05 Tareas recurrentes (`tasks.rrule`, D-07; migración 007)
@@ -351,7 +351,8 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 **Notas de la fase 13:**
 - **Estado:** IN_PROGRESS. El usuario pidió explícitamente implementar la Fase 13 (confirmación de fin de la F12).
 - F13-01: migración `007_daily_note.sql` (`notes.daily_date`, índice único parcial; incluye notas en la papelera, que `note_daily_open` restaura en vez de duplicar). Comando `note_daily_open(date, title)` (busca, restaura o crea en la Bandeja; el título lo pone la interfaz: «Nota del DD/MM/AAAA»). Acceso: botón «Nota del día» en la cabecera del calendario (día ancla) y comando de paleta «Abrir la nota de hoy». `daily_date` no viaja en el DTO `Note`. **Aviso:** las migraciones se numeran por orden de implementación, así que F13-05 ya no será la 007.
-- **Presupuesto:** JS 238,7 KB gzip de 250 tras F13-01; queda poco margen para F13-02…07 (cargar en diferido lo nuevo, D-49).
+- F13-02: migración `008_note_templates.sql` (`note_templates`, nombre único sin distinguir mayúsculas), comandos `template_list`/`template_save`/`template_delete` (crear con documento, renombrar o reemplazar el documento; borrar), DTO `NoteTemplate` en el contrato. «Nueva nota desde plantilla» es el `note_create` de siempre con el documento de la plantilla y su nombre como título. Interfaz: diálogo «Plantillas de nota» (`NoteTemplates.svelte`; usar, renombrar, reemplazar con la nota abierta, eliminar, guardar la nota abierta) desde el menú contextual del fondo de Notas y la paleta. Interpretación de «editables»: renombrar y reemplazar el contenido con otra nota; no hay editor de plantillas aparte (decisión propia, sin ADR: no toca la especificación).
+- **Presupuesto:** JS 239,9 KB gzip tras F13-02 (238,7 tras F13-01) gzip de 250 tras F13-01; queda poco margen para F13-02…07 (cargar en diferido lo nuevo, D-49).
 - Los tests de interfaz fallaron 3 de 517 una vez bajo carga en paralelo y pasaron en la repetición (517/517); no se tocó ninguno.
 
 ## Fase 14 — Interoperabilidad

@@ -409,3 +409,56 @@ describe("daily note (F13-01)", () => {
     expect(api.notes).toHaveLength(1);
   });
 });
+
+describe("note templates (F13-02)", () => {
+  const DOC = '{"type":"doc","content":[{"type":"paragraph"}]}';
+
+  async function ready() {
+    const api = new FakeApi();
+    const store = new NotesStore(api);
+    await store.ensureLoaded();
+    return { api, store };
+  }
+
+  it("saves the open note as a template and starts new notes from it", async () => {
+    const { api, store } = await ready();
+    const source = await store.createNoteWith({
+      title: "Acta",
+      contentJson: DOC,
+    });
+    expect(source).not.toBeNull();
+    await store.openTemplates();
+    expect(store.templatesOpen).toBe(true);
+    expect(await store.saveOpenAsTemplate("Reunión")).toBe(true);
+    expect(store.templates.map((item) => item.name)).toEqual(["Reunión"]);
+
+    const created = await store.createFromTemplate(store.templates[0]!.id);
+    expect(created?.title).toBe("Reunión");
+    expect(created?.contentJson).toBe(DOC);
+    expect(store.templatesOpen).toBe(false);
+    expect(api.notes).toHaveLength(2);
+  });
+
+  it("renames and deletes templates", async () => {
+    const { store } = await ready();
+    await store.createNoteWith({ title: "Acta", contentJson: DOC });
+    await store.saveOpenAsTemplate("Reunión");
+    const id = store.templates[0]!.id;
+    expect(await store.renameTemplate(id, "Semanal")).toBe(true);
+    expect(store.templates[0]?.name).toBe("Semanal");
+    await store.deleteTemplate(id);
+    expect(store.templates).toEqual([]);
+  });
+
+  it("reports a rejected name and keeps the dialog data", async () => {
+    const { api, store } = await ready();
+    api.templateSave = async () => {
+      throw "CONFLICT: ya existe una plantilla con ese nombre";
+    };
+    expect(await store.saveOpenAsTemplate("Reunión")).toBe(false);
+    expect(store.notice).toEqual({
+      kind: "error",
+      message: "ya existe una plantilla con ese nombre",
+    });
+  });
+});
