@@ -13,12 +13,15 @@ Agenda y editor de notas de escritorio para Windows 11. Combina la estructura de
 - **Tareas y notas:** crea, edita, completa y elimina (papelera de 30 días y deshacer de 5 s).
 - **POR HACER y AGENDA:** tareas sin fecha con orden manual y bloques por día con hora opcional.
 - **Etiquetas:** una por asignatura, con color, contador de pendientes y filtro en la barra lateral.
-- **Editor de notas:** negrita, cursiva, código, enlaces y listas, con guardado automático.
+- **Notas:** editor con negrita, cursiva, código, resaltado, títulos, listas, casillas, tablas, citas, bloques de código e imágenes; carpetas de hasta 5 niveles, etiquetas, notas fijadas, plantillas, historial de versiones, enlaces entre notas con enlaces entrantes, nota diaria y recordatorios.
+- **Hoy:** tareas del día, nota diaria y notas fijadas en una sola vista (`Ctrl+Mayús+3`).
+- **Tareas recurrentes** (diaria, semanal, mensual o anual) y botón «Marcar como hecha» en la notificación.
+- **Exportar e importar:** notas a Markdown (con imágenes) y HTML, todo a JSON, carpetas de Markdown y `.txt`, y exportaciones de Evernote (`.enex`).
 - **Búsqueda instantánea** sobre títulos y notas (SQLite FTS5).
 - **Calendario:** vistas Lista, Día, Semana y Mes; crea eventos arrastrando un tramo horario.
 - **Recordatorios nativos de Windows 11:** varios por tarea; los perdidos con el equipo apagado se recuperan al arrancar.
 - **Atajos de teclado** completos (`Ctrl+K` buscar, `Ctrl+N` nueva tarea, `Ctrl+1/2/3/4` vistas…).
-- **Copia de seguridad y restauración** manual con validación de integridad.
+- **Copia de seguridad y restauración** manual (`.agendo`, con datos e imágenes) con validación de integridad.
 - **Mica / Acrylic**, tema claro y oscuro.
 - **Privacidad:** tus datos viven en un archivo SQLite local. Nada sale de tu equipo.
 

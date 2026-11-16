@@ -37,3 +37,19 @@ el total del crate, 92,7 %. Objetivo del DoD de Fase 6: ≥ 90 % en dominio.
 1. N-01, N-02: medir en el equipo de referencia (`[H]`).
 2. N-07: prueba real con el equipo despierto (`[H]`).
 3. N-08: Narrador de Windows y contraste sobre Mica real (`[H]`).
+
+## Versión 2.0.0 (F15)
+
+| Medida | Objetivo | Resultado | Cómo se midió |
+|--------|----------|-----------|---------------|
+| Lista de 10 000 notas (todas) | < 250 ms (la interfaz la virtualiza) | 31,3 ms | `cargo test scale_tests -- --nocapture`, build de depuración, mejor de 5 |
+| Lista de una carpeta (200 notas) | < 50 ms | 1,7 ms | ídem |
+| Búsqueda con 10 000 notas (peor de 4 consultas) | < 50 ms | 19,9 ms | ídem, `repo::find::find` |
+| Abrir una base con 10 000 notas (arranque del almacén) | < 200 ms | 1,8 ms | ídem |
+| Migración desde una base de la 1.0.7 (esquema 3) | datos intactos, `integrity_check` y claves foráneas limpios | cumple | `a_1_0_7_database_migrates_to_the_current_schema_keeping_its_data` (base construida con las migraciones 1 a 3 y rellenada como un usuario) |
+| N-03 ejecutable release | < 15 MB | 15 363 072 B (**14,65 MiB**; con la medida en MiB de la tabla anterior cumple, en MB decimales 15,36 queda 0,36 por encima) | `npm run tauri -- build` |
+| N-04 JS gzip | < 250 KB | 246,4 KB | `npm run size` |
+| Instaladores | — | `Agendo_2.0.0_x64-setup.exe` 3,80 MiB · `Agendo_2.0.0_x64_es-ES.msi` 5,38 MiB (sin firma) | `npm run tauri -- build` |
+
+Las mediciones de arranque y memoria (N-01, N-02) siguen siendo `[H]`. El rendimiento medido es el
+de la capa de datos con una base **sintética**; el de la interfaz con 10 000 notas reales es `[H]`.

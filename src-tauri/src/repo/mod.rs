@@ -23,6 +23,8 @@ pub mod versions;
 
 #[cfg(test)]
 mod random_ops_tests;
+#[cfg(test)]
+mod scale_tests;
 
 use rusqlite::{Connection, Transaction, TransactionBehavior};
 

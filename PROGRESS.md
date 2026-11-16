@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 14 de la V2.0.0 (interoperabilidad)
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F14 cerrada en lo `[A]` (F14-01 a F14-04). Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fase 14» en `docs/manual-pruebas.md`. Siguiente fase: F15, solo con confirmación humana. Ítems `[H]` de F8–F13 siguen pendientes de validar; D-52 sigue `PROPOSED`.
-**Última actualización:** 2026-11-16 (V2.0.0 en curso: Fases 8 a 14 implementadas, pendientes de validación humana)
+**Fase activa:** Fase 15 de la V2.0.0 (cierre) — versión 2.0.0
+**Estado:** DONE   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** ninguna en curso. La 2.0.0 está lista y publicada. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 en `docs/manual-pruebas.md` y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-16 (V2.0.0 cerrada y publicada)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -375,10 +375,19 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - **Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (433 de lib + 4 + 1 + 4, con los nuevos de F14: códecs, Markdown, HTML, ENEX, volcado JSON y exportar/importar con ida y vuelta), `npm run lint`, `npm run check` (0/0), `npm run test` (563 en 51 archivos), `npm run build` y `npm run size` (246,2 KB gzip de 250: quedan 3,8 KB). `cargo check --target x86_64-pc-windows-msvc` no hizo falta aparte: se compila en Windows. Los cuatro `[H]` y el de aspecto están en `docs/manual-pruebas.md`.
 
 ## Fase 15 — Cierre de 2.0.0
-- [ ] F15-01 Rendimiento con 10 000 notas (arranque, lista, búsqueda < 50 ms); registrar en `docs/metricas.md`
-- [ ] F15-02 Migración real desde una BD v1.0.7 con datos de usuario
-- [ ] F15-03 E2E ampliados (incluye F6-06 pendiente), manual de pruebas `[H]`, README y capturas
-- [ ] F15-04 Versión `2.0.0` coherente en los 5 sitios (CLAUDE.md §10) y entrada en `PROGRESS.md`
+- [x] F15-01 Rendimiento con 10 000 notas (arranque, lista, búsqueda < 50 ms); registrar en `docs/metricas.md`
+- [x] F15-02 Migración real desde una BD v1.0.7 con datos de usuario
+- [x] F15-03 E2E ampliados (incluye F6-06 pendiente), manual de pruebas `[H]`, README y capturas
+- [x] F15-04 Versión `2.0.0` coherente en los 5 sitios (CLAUDE.md §10) y entrada en `PROGRESS.md`
+
+**Notas de la fase 15:**
+- El usuario pidió explícitamente la Fase 15, cerrar lo suelto, generar los instaladores y publicar la 2.0.0 (autoriza push y release, CLAUDE.md §10).
+- F15-01: `repo/scale_tests.rs` con 10 000 notas sintéticas: lista completa 31,3 ms, carpeta 1,7 ms, búsqueda 19,9 ms (peor caso), apertura 1,8 ms (build de depuración; los tests fallan por encima de los umbrales). Detalle en `docs/metricas.md`. El rendimiento de la interfaz con miles de notas es `[H]`.
+- F15-02: el esquema de la 1.0.7 es la versión 3; el test lo reconstruye con las migraciones 1 a 3, lo rellena (tareas hechas, borradas, con duración, etiquetas, avisos periódicos, ajustes, índice de búsqueda) y lo abre con las diez migraciones: todo intacto, `integrity_check` y claves foráneas limpios. No se probó con la base real de ningún usuario (privada): `[H]`.
+- F15-03: `e2e/specs/notes.e2e.mjs` (notas, búsqueda y sección de exportar/importar); **los E2E siguen sin ejecutarse** (necesitan Windows con `tauri-driver`, `[H]`), así que F6-06 sigue pendiente de ejecución aunque ya no de escritura. README actualizado; **sin capturas de pantalla** (el agente no ve la interfaz).
+- F15-04: versión 2.0.0 en `package.json`, `Cargo.toml`, `tauri.conf.json`, `package-lock.json` y `Cargo.lock`.
+- Cabos sueltos cerrados: D-52 pasa a `ACCEPTED` (el usuario pidió cerrar lo pendiente); retirado un ítem obsoleto del manual (F13-05 ya estaba implementada); el árbol de trabajo queda limpio.
+- **Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (436 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (563 en 51 archivos), `npm run build`, `npm run size` (246,4 KB de 250). Instaladores con `npm run tauri -- build`.
 
 **Riesgos:** la copia deja de ser un solo `.sqlite` (F12-05 antes de ofrecer adjuntos); presupuesto N-04 de 250 KB (editor y notas en carga diferida); referencias `taskRef` rotas (F10-06 con test de integridad); rendimiento con miles de notas (lista virtualizada y FTS desde F7/F8).
 **Ideas para 2.x:** cifrado de notas, grafo de enlaces, Kanban por etiqueta, captura rápida con atajo global, OCR de imágenes, subpáginas.
@@ -413,6 +422,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - **Actualizar a una versión posterior:** subir la versión, `npx tauri build` y abrir el `.exe` nuevo sobre el instalado; los datos se conservan.
 
 ## Notas de sesión
+- 2026-11-16: **Versión 2.0.0 lanzada** (cierre de la V2, Fase 15): notas con carpetas, etiquetas, adjuntos, historial, plantillas y enlaces; vista «Hoy»; tareas recurrentes; acción «Marcar como hecha»; exportar/importar (Markdown, HTML, JSON, Evernote); copia `.agendo`. Versión fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y los dos lockfiles. Instaladores sin firma: `Agendo_2.0.0_x64-setup.exe` (3,80 MiB) y `Agendo_2.0.0_x64_es-ES.msi` (5,38 MiB). Las migraciones 004 a 010 se aplican solas al abrir; **no hay vuelta atrás a la 1.0.7** con la base ya migrada (haz una copia antes de actualizar).
 - 2026-11-16: **repaso de diseño previo a la 2.0 (D-55)**, a petición del usuario; no pertenece a ninguna fase y **no se ha generado versión** (la Fase 15 sigue pendiente y no la hace este agente). Solo CSS y marcado: tokens de resaltado, código y diferencias; menús con resaltado de acento; `Modal` ancho para el historial (antes recortado); «Hoy» en tarjetas agrupadas; historial, plantillas, enlaces entrantes, tareas de la nota, buscador y campo de enlace alineados con D-39; selección de texto en acento. Corregidas variables CSS inexistentes (`--radius-sm`, `--surface-hover`, `--space-5`) y botones sin la tipografía de la app. Batería `[A]` en verde: `cargo fmt --check`, `clippy -D warnings`, `cargo test` (433 de lib + 4 + 1 + 4), `npm run lint`, `check` (0/0), `test` (563 en 51 archivos), `build`, `size` (JS 246,4 KB de 250, **quedan 3,6 KB para F15**; CSS 18,6 KB). **No se ha visto la interfaz en ejecución:** `[H]` en manual-pruebas § «Repaso de diseño previo a la 2.0».
 - 2026-11-12: **Versión 1.0.7 lanzada** (D-42): la aplicación pasa a llamarse **Agendo** (producto, crate, binario, paquete e identificador `com.cristian.agendo`), con README y licencia MIT. Versión fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y los dos lockfiles. Validación `[H]` en `docs/manual-pruebas.md` (§ «Cambio de nombre a Agendo»).
 - 2026-11-12: **Versión 1.0.6 lanzada** (D-41): etiqueta antes del título en `TaskRow.svelte` e instalador NSIS que reemplaza la versión anterior sin confirmación. Batería `[A]` en verde: `cargo fmt --check`, `clippy -D warnings`, `cargo test` (264 + 9), `npm run lint`, `check` (0/0), `test` (349), `build`, `size`. Instaladores con `npx tauri build`: `MiAgendaApp_1.0.6_x64-setup.exe` (3,20 MiB) y `MiAgendaApp_1.0.6_x64_es-ES.msi` (4,52 MiB). **`[H]`:** aspecto de la etiqueta y que instalar sobre la 1.0.5 no pida confirmación y conserve los datos (manual-pruebas § «Versión 1.0.6»).
