@@ -211,6 +211,20 @@ fn replace_references(
     Ok(())
 }
 
+/// Id of the note that belongs to `date`, trashed or not (F13-01): the unique index spans both.
+pub fn daily_id(conn: &Connection, date: &str) -> rusqlite::Result<Option<(String, bool)>> {
+    conn.prepare_cached("SELECT id, deleted_at IS NOT NULL FROM notes WHERE daily_date = ?1")?
+        .query_row([date], |row| Ok((row.get(0)?, row.get(1)?)))
+        .optional()
+}
+
+/// Marks a note as the one of `date`.
+pub fn set_daily_date(tx: &Transaction<'_>, id: &str, date: &str) -> rusqlite::Result<()> {
+    tx.prepare_cached("UPDATE notes SET daily_date = ?2 WHERE id = ?1")?
+        .execute(params![id, date])?;
+    Ok(())
+}
+
 pub fn create(tx: &Transaction<'_>, new: &NewNote) -> rusqlite::Result<Note> {
     tx.prepare_cached(
         "INSERT INTO notes (id, folder_id, title, content_json, content_text, created_at, updated_at)

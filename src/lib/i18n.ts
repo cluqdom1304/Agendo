@@ -248,6 +248,8 @@ export const t = {
     copyOf: (title: string) =>
       title.trim() === "" ? "Copia" : `Copia de ${title}`,
     createFailed: "No se pudo crear la nota.",
+    dailyTitle: (date: string) => `Nota del ${date}`,
+    dailyFailed: "No se pudo abrir la nota del día.",
     actionFailed: "No se pudo completar la acción.",
     loadFailed: "No se pudieron cargar las notas.",
     emptyTitle: "Aquí no hay notas",
@@ -356,6 +358,7 @@ export const t = {
       newTaskToday: "Nueva tarea para hoy",
       newNote: "Nueva nota",
       goAgenda: "Ir a la agenda",
+      dailyNote: "Abrir la nota de hoy",
       goNotes: "Ir a las notas",
       viewList: "Agenda: vista de lista",
       viewDay: "Agenda: vista de día",
@@ -394,6 +397,7 @@ export const t = {
     openTask: (title: string) => `Ver los detalles de «${title}»`,
     untitled: "Sin título",
     goToDay: (date: string) => `Ver el día ${date}`,
+    dailyNote: "Nota del día",
     createAt: (date: string) => `Crear una tarea el ${date}`,
   },
   detail: {

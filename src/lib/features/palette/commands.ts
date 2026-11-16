@@ -1,6 +1,7 @@
 // The commands of the palette (F11-04). Each one drives the same stores the rest of the app
 // uses, so a command never does anything a button could not.
 
+import { toLocalIsoDate } from "../../dates";
 import { t } from "../../i18n";
 import type { NotesStore, ScopeKey } from "../../stores/notes.svelte";
 import type { TagsStore } from "../../stores/tags.svelte";
@@ -49,6 +50,16 @@ export function buildCommands(deps: CommandDeps): PaletteCommand[] {
       run: () => {
         view.setSection("notes");
         void notes.ensureLoaded().then(() => notes.createNote());
+      },
+    },
+    {
+      id: "daily-note",
+      label: l.dailyNote,
+      run: () => {
+        view.setSection("notes");
+        void notes
+          .ensureLoaded()
+          .then(() => notes.openDaily(toLocalIsoDate(new Date())));
       },
     },
     {

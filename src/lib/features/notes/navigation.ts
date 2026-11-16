@@ -14,6 +14,13 @@ export async function showNote(id: string): Promise<void> {
   await notesStore.openNote(id);
 }
 
+/** Switches to the notes and opens the note of that day, creating it if needed (F13-01). */
+export async function showDailyNote(date: string): Promise<void> {
+  viewStore.setSection("notes");
+  await notesStore.ensureLoaded();
+  await notesStore.openDaily(date);
+}
+
 /** A note named after the task that holds a reference to it (D-45). */
 export async function createNoteForTask(task: Task): Promise<Note | null> {
   viewStore.setSection("notes");

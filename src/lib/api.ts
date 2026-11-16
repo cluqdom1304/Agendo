@@ -212,6 +212,10 @@ export function noteCreate(input: NoteCreateInput = {}): Promise<Note> {
   return invoke<Note>("note_create", { ...input });
 }
 
+export function noteDailyOpen(date: string, title: string): Promise<Note> {
+  return invoke<Note>("note_daily_open", { date, title });
+}
+
 export function noteUpdate(id: string, patch: NotePatch): Promise<Note> {
   return invoke<Note>("note_update", { id, patch });
 }

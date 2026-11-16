@@ -105,6 +105,7 @@ pub fn run() {
             commands::notes::note_backlinks,
             commands::notes::notes_orphans,
             commands::notes::note_create,
+            commands::notes::note_daily_open,
             commands::notes::note_update,
             commands::notes::note_set_pinned,
             commands::notes::note_move,

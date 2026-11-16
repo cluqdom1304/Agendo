@@ -300,3 +300,6 @@ Movimiento y fluidez
 - [ ] (F12-05) «Crear copia…» propone `Agendo-AAAA-MM-DD.agendo`; en un equipo sin datos, «Restaurar copia…» con ese fichero recupera tareas, notas y sus imágenes. Una copia `.sqlite` de una versión anterior sigue restaurándose. Un `.agendo` dañado o renombrado se rechaza sin cambiar nada.
 - [ ] (F12) Aspecto: tablas, citas, código, resaltado, búsqueda y vista previa de imagen en tema claro y oscuro, con y sin Mica, y con una ventana estrecha (la barra de formato se desplaza en horizontal).
 
+
+## Notas V2 — Fase 13: productividad (`[H]`, pendientes de validar en Windows 11)
+- [ ] (F13-01) «Nota del día» en la cabecera del calendario abre (y la primera vez crea) la nota del día mostrado, titulada «Nota del DD/MM/AAAA»; pulsarlo otra vez, o desde otro día y volviendo, abre la misma. Si se envió a la papelera, vuelve de ella. El comando «Abrir la nota de hoy» de la paleta (`Ctrl+K`) hace lo mismo con la fecha de hoy.

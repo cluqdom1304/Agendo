@@ -59,6 +59,7 @@ export class FakeNotesApi implements NotesApi {
   queries: NotesListQuery[] = [];
   failWith: string | null = null;
   #next = 0;
+  daily = new Map<string, string>();
 
   #guard() {
     if (this.failWith) throw this.failWith;
@@ -102,6 +103,15 @@ export class FakeNotesApi implements NotesApi {
       ...(input.contentJson ? { contentJson: input.contentJson } : {}),
     });
     this.notes = [created, ...this.notes];
+    return created;
+  }
+  async noteDailyOpen(date: string, title: string) {
+    this.#guard();
+    const known = this.daily.get(date);
+    if (known) return this.noteGet(known);
+    const created = note(`n${++this.#next}`, { title });
+    this.notes = [created, ...this.notes];
+    this.daily.set(date, created.id);
     return created;
   }
   async noteUpdate(id: string, patch: NotePatch) {

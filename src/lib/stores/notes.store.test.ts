@@ -395,3 +395,17 @@ describe("NotesStore: recent notes", () => {
     expect(store.recent).toEqual([]);
   });
 });
+
+describe("daily note (F13-01)", () => {
+  it("opens the note of a day, titled with its date, and reuses it", async () => {
+    const api = new FakeApi();
+    const store = new NotesStore(api);
+    await store.ensureLoaded();
+    const first = await store.openDaily("2026-03-05");
+    expect(first?.title).toBe("Nota del 05/03/2026");
+    expect(store.open?.id).toBe(first?.id);
+    const again = await store.openDaily("2026-03-05");
+    expect(again?.id).toBe(first?.id);
+    expect(api.notes).toHaveLength(1);
+  });
+});

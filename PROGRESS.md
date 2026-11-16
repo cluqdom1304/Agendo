@@ -1,8 +1,8 @@
 # PROGRESS.md
 
 **Fase activa:** Fase 12 de la V2.0.0 (editor avanzado y adjuntos)
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F12 cerrada en lo `[A]`. Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fases 8 a 12» en `docs/manual-pruebas.md` y confirme antes de empezar la Fase 13.
+**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F13-02 (plantillas de nota editables). Ítems `[H]` de F8–F12 siguen pendientes de validar.
 **Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 a 12 implementadas, pendientes de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -340,13 +340,19 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - **Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (349 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (516 en 44 archivos), `npm run build` y `npm run size` (238,8 KB gzip de 250: **queda poco margen** para las fases 13 a 15). Dependencias nuevas, en D-51: `sha2`, `zip`, y las extensiones `table`, `blockquote`, `horizontal-rule`, `highlight`, `code-block` y `heading` de TipTap 3.33.0.
 
 ## Fase 13 — Productividad
-- [ ] F13-01 Nota diaria enlazada a cada día de la agenda
+- [x] F13-01 Nota diaria enlazada a cada día de la agenda
 - [ ] F13-02 Plantillas de nota editables
 - [ ] F13-03 Historial de versiones con comparar y restaurar (D-48)
 - [ ] F13-04 Recordatorios de nota (sin duplicar el motor de avisos)
 - [ ] F13-05 Tareas recurrentes (`tasks.rrule`, D-07; migración 007)
 - [ ] F13-06 Acción «Marcar como hecha» en la notificación (B-01)
 - [ ] F13-07 Vista «Hoy»: tareas del día, nota diaria y notas fijadas
+
+**Notas de la fase 13:**
+- **Estado:** IN_PROGRESS. El usuario pidió explícitamente implementar la Fase 13 (confirmación de fin de la F12).
+- F13-01: migración `007_daily_note.sql` (`notes.daily_date`, índice único parcial; incluye notas en la papelera, que `note_daily_open` restaura en vez de duplicar). Comando `note_daily_open(date, title)` (busca, restaura o crea en la Bandeja; el título lo pone la interfaz: «Nota del DD/MM/AAAA»). Acceso: botón «Nota del día» en la cabecera del calendario (día ancla) y comando de paleta «Abrir la nota de hoy». `daily_date` no viaja en el DTO `Note`. **Aviso:** las migraciones se numeran por orden de implementación, así que F13-05 ya no será la 007.
+- **Presupuesto:** JS 238,7 KB gzip de 250 tras F13-01; queda poco margen para F13-02…07 (cargar en diferido lo nuevo, D-49).
+- Los tests de interfaz fallaron 3 de 517 una vez bajo carga en paralelo y pasaron en la repetición (517/517); no se tocó ninguno.
 
 ## Fase 14 — Interoperabilidad
 - [ ] F14-01 Exportar nota/carpeta a Markdown (con adjuntos) y HTML

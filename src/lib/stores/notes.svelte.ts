@@ -2,6 +2,7 @@ import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import * as backend from "../api";
 import { parseError } from "../api";
+import { formatDisplayDate } from "../dates";
 import { t } from "../i18n";
 import { plainQuery } from "../features/notes/linkQuery";
 import type {
@@ -26,6 +27,7 @@ export interface NotesApi {
   notesList(query: NotesListQuery): Promise<NoteSummary[]>;
   noteGet(id: string): Promise<Note>;
   noteCreate(input?: NoteCreateInput): Promise<Note>;
+  noteDailyOpen(date: string, title: string): Promise<Note>;
   noteUpdate(id: string, patch: NotePatch): Promise<Note>;
   noteSetPinned(id: string, pinned: boolean): Promise<Note>;
   noteMove(id: string, folderId: string | null): Promise<Note>;
@@ -273,6 +275,23 @@ export class NotesStore {
       return note;
     } catch {
       this.#fail(t.notesApp.createFailed);
+      return null;
+    }
+  }
+
+  /** Opens the note of a day (`YYYY-MM-DD`), creating it the first time (F13-01). */
+  async openDaily(date: string): Promise<Note | null> {
+    try {
+      const note = await this.#api.noteDailyOpen(
+        date,
+        t.notesApp.dailyTitle(formatDisplayDate(date)),
+      );
+      this.titles.set(note.id, note.title);
+      await this.#refreshAll();
+      this.#show(note);
+      return note;
+    } catch {
+      this.#fail(t.notesApp.dailyFailed);
       return null;
     }
   }

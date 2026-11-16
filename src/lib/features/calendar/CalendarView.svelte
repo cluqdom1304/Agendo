@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
 
   import { toLocalIsoDate } from "../../dates";
+  import { showDailyNote } from "../notes/navigation";
   import { t } from "../../i18n";
   import SegmentedControl from "../../shell/SegmentedControl.svelte";
   import { tagDrag } from "../../stores/tagDrag.svelte";
@@ -71,6 +72,13 @@
       <h2>{heading}</h2>
     </div>
     <div class="buttons">
+      <button
+        type="button"
+        class="btn small"
+        onclick={() => void showDailyNote(view.anchor)}
+      >
+        {t.calendar.dailyNote}
+      </button>
       <button type="button" class="btn small" onclick={() => view.shift(-1)}>
         {t.calendar.previous}
       </button>

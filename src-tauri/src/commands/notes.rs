@@ -8,7 +8,7 @@ use serde::Deserialize;
 use tauri::State;
 
 use crate::{
-    domain::{content, validation},
+    domain::{content, dates, validation},
     error::{AppError, AppResult},
     repo::{
         attachments,
@@ -138,6 +138,33 @@ pub fn create(state: &AppState, input: NoteCreateInput) -> AppResult<Note> {
     state.db.write(|tx| {
         let note = notes::create(tx, &new)?;
         attachments::sync_note(tx, &note.id, &attachment_ids)?;
+        Ok(note)
+    })
+}
+
+/// The note of a day: found, brought back from the trash, or created with `title` (F13-01).
+pub fn daily_open(state: &AppState, date: &str, title: &str) -> AppResult<Note> {
+    dates::parse_date(date)?;
+    validation::validate_title(title)?;
+    let id = state.ids.new_id();
+    let now = state.clock.now_string();
+    state.db.write(|tx| {
+        if let Some((existing, trashed)) = notes::daily_id(tx, date)? {
+            let note = if trashed {
+                notes::restore(tx, &existing, &now)?
+            } else {
+                notes::get(tx, &existing)?
+            };
+            return note.ok_or_else(|| note_not_found(&existing));
+        }
+        let new = NewNote {
+            id,
+            title: title.to_string(),
+            now,
+            ..NewNote::default()
+        };
+        let note = notes::create(tx, &new)?;
+        notes::set_daily_date(tx, &note.id, date)?;
         Ok(note)
     })
 }
@@ -285,6 +312,18 @@ pub async fn note_create(
         tag_ids,
     };
     run_blocking(state.inner().clone(), move |state| create(state, input)).await
+}
+
+#[tauri::command]
+pub async fn note_daily_open(
+    state: State<'_, Arc<AppState>>,
+    date: String,
+    title: String,
+) -> Result<Note, String> {
+    run_blocking(state.inner().clone(), move |state| {
+        daily_open(state, &date, &title)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -776,5 +815,35 @@ mod tests {
         clock.advance(Duration::days(31));
         assert_eq!(state.purge_trash().expect("purge"), 1);
         assert!(trash(&state).expect("trash").is_empty());
+    }
+    #[test]
+    fn the_daily_note_is_created_once_per_day() {
+        let (state, _) = test_state();
+        let first = daily_open(&state, "2026-03-05", "5 de marzo").expect("first");
+        let again = daily_open(&state, "2026-03-05", "otro título").expect("again");
+        assert_eq!(first.id, again.id);
+        assert_eq!(again.title, "5 de marzo");
+        let other = daily_open(&state, "2026-03-06", "6 de marzo").expect("other");
+        assert_ne!(first.id, other.id);
+        assert_eq!(all(&state).len(), 2);
+    }
+
+    #[test]
+    fn a_trashed_daily_note_comes_back_instead_of_a_second_one() {
+        let (state, _) = test_state();
+        let note = daily_open(&state, "2026-03-05", "5 de marzo").expect("note");
+        delete(&state, &note.id).expect("delete");
+        let back = daily_open(&state, "2026-03-05", "5 de marzo").expect("back");
+        assert_eq!(back.id, note.id);
+        assert_eq!(all(&state).len(), 1);
+    }
+
+    #[test]
+    fn the_daily_note_rejects_a_bad_date_or_title() {
+        let (state, _) = test_state();
+        assert!(code_of(daily_open(&state, "05/03/2026", "x")).starts_with("VALIDATION"));
+        assert!(
+            code_of(daily_open(&state, "2026-03-05", &"a".repeat(501))).starts_with("VALIDATION")
+        );
     }
 }
