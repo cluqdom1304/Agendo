@@ -138,6 +138,8 @@
     void tagsStore.load();
     void tasksStore.load();
     void viewStore.load();
+    // Folders, notes and tags changed too; the notes view reads them again if it was loaded.
+    if (notesStore.status !== "idle") void notesStore.load();
   }
 
   async function openInList(task: Task) {

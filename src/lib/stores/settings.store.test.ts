@@ -18,6 +18,20 @@ function setup(saved: Partial<Record<SettingKey, string>> = {}) {
     autostartSet: vi.fn(async () => undefined),
     backupCreate: vi.fn(async () => undefined),
     backupRestore: vi.fn(async () => undefined),
+    exportNotes: vi.fn(async () => ({ notes: 0, files: 0 })),
+    exportJson: vi.fn(async () => ({ notes: 0, files: 0 })),
+    importMarkdown: vi.fn(async () => ({
+      notes: 0,
+      folders: 0,
+      tags: 0,
+      skipped: 0,
+    })),
+    importEnex: vi.fn(async () => ({
+      notes: 0,
+      folders: 0,
+      tags: 0,
+      skipped: 0,
+    })),
   } satisfies SettingsApi;
   const applied: ThemeMode[] = [];
   const effects = {
@@ -152,6 +166,56 @@ describe("SettingsStore", () => {
     expect(store.notice?.kind).toBe("error");
     expect(store.notice?.text).toContain("disco lleno");
     expect(store.busy).toBe(false);
+  });
+
+  it("reports what an export wrote and what an import stored", async () => {
+    const { store, api } = setup();
+    api.exportNotes.mockResolvedValue({ notes: 3, files: 1 });
+    expect(await store.exportNotes("markdown", "C:/salida")).toBe(true);
+    expect(api.exportNotes).toHaveBeenCalledWith(
+      "markdown",
+      "all",
+      null,
+      "C:/salida",
+    );
+    expect(store.notice?.text).toBe("3 notas exportadas y 1 imagen.");
+
+    api.exportJson.mockResolvedValue({ notes: 1, files: 0 });
+    expect(await store.exportJson("C:/todo.json")).toBe(true);
+    expect(store.notice?.text).toContain("1 nota y todas las tareas");
+
+    api.importMarkdown.mockResolvedValue({
+      notes: 2,
+      folders: 1,
+      tags: 0,
+      skipped: 1,
+    });
+    expect(await store.importMarkdown("C:/notas")).toBe(true);
+    expect(store.notice?.text).toBe(
+      "2 notas importadas (1 carpeta y 0 etiquetas nuevas). 1 elemento no se pudo leer.",
+    );
+
+    api.importEnex.mockResolvedValue({
+      notes: 1,
+      folders: 1,
+      tags: 1,
+      skipped: 0,
+    });
+    expect(await store.importEnex(["C:/a.enex"])).toBe(true);
+    expect(api.importEnex).toHaveBeenCalledWith(["C:/a.enex"]);
+    expect(store.notice?.text).toBe(
+      "1 nota importada (1 carpeta y 1 etiqueta nuevas).",
+    );
+  });
+
+  it("shows why an import was rejected", async () => {
+    const { store, api } = setup();
+    api.importEnex.mockRejectedValue(
+      "VALIDATION: el archivo no es una exportación de Evernote (.enex)",
+    );
+    expect(await store.importEnex(["C:/mal.enex"])).toBe(false);
+    expect(store.notice?.kind).toBe("error");
+    expect(store.notice?.text).toContain("exportación de Evernote");
   });
 
   it("reloads the preferences after a restore and keeps them on a rejected one", async () => {

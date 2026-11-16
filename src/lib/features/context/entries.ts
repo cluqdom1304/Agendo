@@ -8,8 +8,15 @@ import type { NotesStore } from "../../stores/notes.svelte";
 import type { TagsStore } from "../../stores/tags.svelte";
 import type { TasksStore } from "../../stores/tasks.svelte";
 import type { ViewStore } from "../../stores/view.svelte";
-import type { Note, NoteSummary, Task, ViewMode } from "../../types";
+import type {
+  ExportFormat,
+  Note,
+  NoteSummary,
+  Task,
+  ViewMode,
+} from "../../types";
 import type { TableAction } from "../notes/editor";
+import { exportSelection } from "../notes/exportNotes";
 import { editorActions } from "./editorActions";
 import { nodeRemovers } from "./nodeRemovers";
 import type { ContextEntry, ContextMenuStore } from "./context.svelte";
@@ -323,6 +330,15 @@ function noteEntries(noteId: string, deps: ContextDeps): ContextEntry[] {
   ];
 }
 
+async function exportFolder(
+  format: ExportFormat,
+  folderId: string,
+  notes: NotesStore,
+): Promise<void> {
+  const notice = await exportSelection(format, "folder", folderId);
+  if (notice) notes.notice = notice;
+}
+
 function folderEntries(folderId: string, deps: ContextDeps): ContextEntry[] {
   const { notes, menu } = deps;
   if (!notes.byId.has(folderId)) return [];
@@ -339,6 +355,17 @@ function folderEntries(folderId: string, deps: ContextDeps): ContextEntry[] {
       id: "subfolder",
       label: t.context.newSubfolder,
       run: () => menu.request({ kind: "folder", mode: "new", id: folderId }),
+    },
+    {
+      id: "export-markdown",
+      label: t.context.exportFolderMarkdown,
+      separated: true,
+      run: () => void exportFolder("markdown", folderId, notes),
+    },
+    {
+      id: "export-html",
+      label: t.context.exportFolderHtml,
+      run: () => void exportFolder("html", folderId, notes),
     },
     {
       id: "rename",

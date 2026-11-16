@@ -185,6 +185,24 @@ export interface NoteVersion {
   createdAt: string;
 }
 
+/** What an export wrote (F14). */
+export interface ExportReport {
+  notes: number;
+  /** Images written next to the notes. */
+  files: number;
+}
+
+/** What an import stored (F14). `skipped` are files, notes or images left out. */
+export interface ImportReport {
+  notes: number;
+  folders: number;
+  tags: number;
+  skipped: number;
+}
+
+export type ExportFormat = "markdown" | "html";
+export type ExportKind = "all" | "folder" | "note";
+
 /** A named document new notes can start from (F13-02). */
 export interface NoteTemplate {
   id: string;

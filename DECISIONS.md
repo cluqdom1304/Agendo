@@ -439,6 +439,19 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Alternativas descartadas:** reconstruir `reminders` (viola §7); tarea «sombra» por nota (ensucia listas, búsqueda y papelera); un segundo planificador (duplica el motor, lo que F13-04 prohíbe).
 - **Consecuencias:** si se rechaza, solo hay que retirar la migración 010 y sus comandos; nada más depende de ella.
 
+## D-54 — Formatos de intercambio de la Fase 14 (Markdown, HTML, JSON, ENEX)
+- **Estado:** ACCEPTED (detalle técnico de F14 dentro del plan aprobado el 2026-11-12; revisable) · **Fecha:** 2026-11-16 · **Validación:** `[A]` con tests de ida y vuelta; `[H]` abrir los ficheros en otros programas y probar un `.enex` real
+- **Contexto:** F14 pide exportar a Markdown/HTML, volcar todo a JSON (B-02 se resolvió «JSON en v2»), importar carpetas de Markdown/`.txt` y exportaciones de Evernote. Ningún formato lo fija `docs/SPEC.md`.
+- **Decisión:**
+  - **Sin dependencias nuevas.** El lector XML (ENEX y ENML), base64 y MD5 (Evernote casa cada `<en-media>` con su recurso por el MD5 de los bytes; solo se usa para emparejar) son propios y pequeños: `domain/enex.rs`, `domain/codec.rs`. Alternativas descartadas: `quick-xml`, `base64`, `md-5`, `pulldown-cmark` (cuatro dependencias para un uso acotado, con el presupuesto de binario y la superficie de ataque en contra).
+  - **Markdown:** un `.md` por nota (carpetas de la aplicación = carpetas del disco, nombres saneados y sin repetir) con front matter `title`, `tags`, `created`, `updated`, un `# título` y el cuerpo. Las imágenes se copian a `adjuntos/<sha256>.<ext>` y se enlazan con rutas relativas. Al importar se leen esos mismos campos (también `date`/`modified` y etiquetas en lista, como Obsidian); un primer `# H1` pasa a ser el título.
+  - **HTML:** una página autocontenida por nota (imágenes en `data:`, sin scripts ni recursos remotos, texto siempre escapado, solo enlaces `http`/`https`/`mailto`).
+  - **JSON:** un solo archivo con carpetas, etiquetas, notas (documento como JSON, no como texto), tareas con recordatorios, plantillas y la lista de adjuntos (**solo metadatos**: las imágenes van en la copia `.agendo` o en la exportación Markdown). Incluye la papelera (`deletedAt`). No hay importación de este JSON: la restauración es la copia `.agendo` (F12-05).
+  - **ENEX:** cada archivo es una carpeta con el nombre del archivo (el formato no trae el cuaderno; Evernote nombra así el archivo). Se importan título, fechas, etiquetas, texto con formato, listas, casillas (`en-todo` → lista de tareas), tablas, citas, código e imágenes. Se admiten varios archivos a la vez.
+  - **Seguridad de la importación:** no se sigue ningún enlace simbólico ni se leen ficheros ocultos; una imagen solo se toma si está dentro de la carpeta elegida (`..` y rutas absolutas se rechazan) y no se descarga nada de la red; límites de 10 MB por texto, 20 MB por imagen, 800 MB por `.enex`, 50 000 archivos y anidamiento acotado en Markdown, XML y bloques (sin desbordar la pila con entradas hostiles). Los enlaces siguen la regla `http`/`https`/`mailto`.
+- **Limitaciones conocidas:** el tachado (`~~`) y el subrayado se pierden (el editor no tiene esas marcas); las referencias `taskRef`/`noteLink` se exportan como texto («Tarea: …», `[[título]]`) y no se reconstruyen al importar; los adjuntos que no son imágenes (PDF, audio) de un `.enex` no se importan y se cuentan como omitidos; importar dos veces la misma carpeta duplica las notas (no hay detección de duplicados); las notas importadas conservan sus fechas originales.
+- **Consecuencias:** no cambia el esquema ni hay migración. Quitar F14 solo exige retirar `exchange.rs`, `commands/exchange.rs`, los módulos de `domain/` y `repo/export.rs`, más la sección de Ajustes y las entradas de menú.
+
 ---
 
 ## Decisiones pendientes de producto

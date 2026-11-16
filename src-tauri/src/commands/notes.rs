@@ -68,7 +68,7 @@ pub struct NotePatchInput {
 }
 
 /// Validates a document and derives what is stored with it.
-fn derive(content_json: String) -> AppResult<(NoteContent, Vec<String>)> {
+pub(crate) fn derive(content_json: String) -> AppResult<(NoteContent, Vec<String>)> {
     let text = content::text_of(&content_json)?;
     let references = content::references_of(&content_json)?;
     let attachment_ids = content::attachment_ids_of(&content_json)?;

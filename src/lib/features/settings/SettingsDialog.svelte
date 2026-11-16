@@ -7,7 +7,7 @@
   import Modal from "../../shell/Modal.svelte";
   import SegmentedControl from "../../shell/SegmentedControl.svelte";
   import type { SettingsStore } from "../../stores/settings.svelte";
-  import type { EffectMode, ThemeMode } from "../../types";
+  import type { EffectMode, ExportFormat, ThemeMode } from "../../types";
 
   interface Props {
     store: SettingsStore;
@@ -16,6 +16,10 @@
     onRestored: () => void;
     pickSavePath?: (defaultName: string) => Promise<string | null>;
     pickOpenPath?: () => Promise<string | null>;
+    /** Folder to write exported notes into, or to read Markdown files from. */
+    pickFolder?: () => Promise<string | null>;
+    pickJsonPath?: (defaultName: string) => Promise<string | null>;
+    pickEnexPaths?: () => Promise<string[]>;
     now?: () => Date;
   }
 
@@ -32,6 +36,23 @@
     pickOpenPath = async () => {
       const chosen = await open({ multiple: false, directory: false, filters });
       return typeof chosen === "string" ? chosen : null;
+    },
+    pickFolder = async () => {
+      const chosen = await open({ directory: true, multiple: false });
+      return typeof chosen === "string" ? chosen : null;
+    },
+    pickJsonPath = (defaultName) =>
+      save({
+        defaultPath: defaultName,
+        filters: [{ name: t.settings.jsonFilter, extensions: ["json"] }],
+      }),
+    pickEnexPaths = async () => {
+      const chosen = await open({
+        multiple: true,
+        directory: false,
+        filters: [{ name: t.settings.enexFilter, extensions: ["enex"] }],
+      });
+      return Array.isArray(chosen) ? chosen : [];
     },
     now = () => new Date(),
   }: Props = $props();
@@ -74,6 +95,28 @@
       t.settings.backupFileName(toLocalIsoDate(now())),
     );
     if (path) await store.createBackup(path);
+  }
+
+  async function exportNotes(format: ExportFormat) {
+    const path = await pickFolder();
+    if (path) await store.exportNotes(format, path);
+  }
+
+  async function exportJson() {
+    const path = await pickJsonPath(
+      t.settings.jsonFileName(toLocalIsoDate(now())),
+    );
+    if (path) await store.exportJson(path);
+  }
+
+  async function importMarkdown() {
+    const path = await pickFolder();
+    if (path && (await store.importMarkdown(path))) onRestored();
+  }
+
+  async function importEnex() {
+    const paths = await pickEnexPaths();
+    if (paths.length > 0 && (await store.importEnex(paths))) onRestored();
   }
 
   async function restoreBackup() {
@@ -196,6 +239,56 @@
         </div>
       </div>
     {/if}
+  </section>
+
+  <section aria-labelledby="settings-exchange">
+    <h3 id="settings-exchange">{t.settings.exchange}</h3>
+    <p class="hint">{t.settings.exchangeHint}</p>
+
+    <div class="buttons">
+      <button
+        type="button"
+        class="btn"
+        disabled={store.busy}
+        onclick={() => exportNotes("markdown")}
+      >
+        {t.settings.exportMarkdown}
+      </button>
+      <button
+        type="button"
+        class="btn"
+        disabled={store.busy}
+        onclick={() => exportNotes("html")}
+      >
+        {t.settings.exportHtml}
+      </button>
+      <button
+        type="button"
+        class="btn"
+        disabled={store.busy}
+        onclick={exportJson}
+      >
+        {t.settings.exportJson}
+      </button>
+    </div>
+    <div class="buttons">
+      <button
+        type="button"
+        class="btn"
+        disabled={store.busy}
+        onclick={importMarkdown}
+      >
+        {t.settings.importMarkdown}
+      </button>
+      <button
+        type="button"
+        class="btn"
+        disabled={store.busy}
+        onclick={importEnex}
+      >
+        {t.settings.importEnex}
+      </button>
+    </div>
 
     {#if store.busy}
       <p class="hint" role="status">{t.settings.working}</p>
@@ -251,6 +344,7 @@
 
   .buttons {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-2);
     margin-top: var(--space-2);
   }

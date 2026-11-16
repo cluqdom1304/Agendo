@@ -9,7 +9,14 @@ import {
 } from "../../stores/settings.svelte";
 import SettingsDialog from "./SettingsDialog.svelte";
 
-function mount(options: { open?: string | null; save?: string | null } = {}) {
+function mount(
+  options: {
+    open?: string | null;
+    save?: string | null;
+    folder?: string | null;
+    enex?: string[];
+  } = {},
+) {
   const api = {
     settingsGet: vi.fn(async () => null),
     settingsSet: vi.fn(async () => undefined),
@@ -17,6 +24,20 @@ function mount(options: { open?: string | null; save?: string | null } = {}) {
     autostartSet: vi.fn(async () => undefined),
     backupCreate: vi.fn(async () => undefined),
     backupRestore: vi.fn(async () => undefined),
+    exportNotes: vi.fn(async () => ({ notes: 0, files: 0 })),
+    exportJson: vi.fn(async () => ({ notes: 0, files: 0 })),
+    importMarkdown: vi.fn(async () => ({
+      notes: 0,
+      folders: 0,
+      tags: 0,
+      skipped: 0,
+    })),
+    importEnex: vi.fn(async () => ({
+      notes: 0,
+      folders: 0,
+      tags: 0,
+      skipped: 0,
+    })),
   } satisfies SettingsApi;
   const effects: EffectRequester = {
     applied: "mica",
@@ -27,15 +48,31 @@ function mount(options: { open?: string | null; save?: string | null } = {}) {
   const onRestored = vi.fn();
   const pickSavePath = vi.fn(async () => options.save ?? null);
   const pickOpenPath = vi.fn(async () => options.open ?? null);
+  const pickFolder = vi.fn(async () => options.folder ?? null);
+  const pickJsonPath = vi.fn(async () => options.save ?? null);
+  const pickEnexPaths = vi.fn(async () => options.enex ?? []);
   render(SettingsDialog, {
     store,
     onClose,
     onRestored,
     pickSavePath,
     pickOpenPath,
+    pickFolder,
+    pickJsonPath,
+    pickEnexPaths,
     now: () => new Date(2026, 2, 9, 12, 0),
   });
-  return { api, store, onClose, onRestored, pickSavePath, pickOpenPath };
+  return {
+    api,
+    store,
+    onClose,
+    onRestored,
+    pickSavePath,
+    pickOpenPath,
+    pickFolder,
+    pickJsonPath,
+    pickEnexPaths,
+  };
 }
 
 describe("SettingsDialog", () => {
@@ -104,6 +141,83 @@ describe("SettingsDialog", () => {
     expect((await screen.findByRole("status")).textContent).toContain(
       "Copia de seguridad guardada",
     );
+  });
+
+  it("exports all the notes to the chosen folder in either format", async () => {
+    const { api } = mount({ folder: "C:/salida" });
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Exportar notas a Markdown…" }),
+    );
+    await waitFor(() =>
+      expect(api.exportNotes).toHaveBeenCalledWith(
+        "markdown",
+        "all",
+        null,
+        "C:/salida",
+      ),
+    );
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Exportar notas a HTML…" }),
+    );
+    await waitFor(() =>
+      expect(api.exportNotes).toHaveBeenLastCalledWith(
+        "html",
+        "all",
+        null,
+        "C:/salida",
+      ),
+    );
+  });
+
+  it("does nothing for the JSON export when the dialog is cancelled", async () => {
+    const cancelled = mount({ save: null });
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Exportar todo a JSON…" }),
+    );
+    await waitFor(() =>
+      expect(cancelled.pickJsonPath).toHaveBeenCalledWith(
+        "Agendo-2026-03-09.json",
+      ),
+    );
+    expect(cancelled.api.exportJson).not.toHaveBeenCalled();
+  });
+
+  it("imports a folder and Evernote files and reloads the views", async () => {
+    const { api, onRestored, pickFolder, pickEnexPaths } = mount({
+      folder: "C:/notas",
+      enex: ["C:/a.enex", "C:/b.enex"],
+    });
+    await fireEvent.click(
+      screen.getByRole("button", {
+        name: "Importar carpeta de Markdown o texto…",
+      }),
+    );
+    await waitFor(() =>
+      expect(api.importMarkdown).toHaveBeenCalledWith("C:/notas"),
+    );
+    await waitFor(() => expect(onRestored).toHaveBeenCalledTimes(1));
+    expect(pickFolder).toHaveBeenCalled();
+
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Importar desde Evernote…" }),
+    );
+    await waitFor(() =>
+      expect(api.importEnex).toHaveBeenCalledWith(["C:/a.enex", "C:/b.enex"]),
+    );
+    await waitFor(() => expect(onRestored).toHaveBeenCalledTimes(2));
+    expect(pickEnexPaths).toHaveBeenCalled();
+  });
+
+  it("does not reload the views when an import fails", async () => {
+    const { api, onRestored } = mount({ enex: ["C:/mal.enex"] });
+    api.importEnex.mockRejectedValue("VALIDATION: no es un .enex");
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Importar desde Evernote…" }),
+    );
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "no es un .enex",
+    );
+    expect(onRestored).not.toHaveBeenCalled();
   });
 
   it("asks for confirmation before choosing the file to restore", async () => {

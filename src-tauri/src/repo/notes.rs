@@ -244,6 +244,14 @@ pub fn create(tx: &Transaction<'_>, new: &NewNote) -> rusqlite::Result<Note> {
     get(tx, &new.id)?.ok_or(rusqlite::Error::QueryReturnedNoRows)
 }
 
+/// Sets `updated_at` as it is, for notes that come from another application with their own
+/// dates. Nothing else changes, and the search index does not depend on it.
+pub fn set_updated_at(tx: &Transaction<'_>, id: &str, updated_at: &str) -> rusqlite::Result<()> {
+    tx.prepare_cached("UPDATE notes SET updated_at = ?2 WHERE id = ?1")?
+        .execute(params![id, updated_at])?;
+    Ok(())
+}
+
 /// Applies `patch` to a live note. A new document replaces the references of the note too.
 /// Returns `None` if the note does not exist or is in the trash.
 pub fn update(

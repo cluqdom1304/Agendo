@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 12 de la V2.0.0 (editor avanzado y adjuntos)
+**Fase activa:** Fase 14 de la V2.0.0 (interoperabilidad)
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F13 cerrada en lo `[A]` (F13-01 a F13-07). Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fase 13» en `docs/manual-pruebas.md`; D-52 sigue `PROPOSED`. Siguiente fase: F14, solo con confirmación humana. Ítems `[H]` de F8–F12 siguen pendientes de validar.
-**Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 a 12 implementadas, pendientes de validación humana)
+**Siguiente tarea:** F14 cerrada en lo `[A]` (F14-01 a F14-04). Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fase 14» en `docs/manual-pruebas.md`. Siguiente fase: F15, solo con confirmación humana. Ítems `[H]` de F8–F13 siguen pendientes de validar; D-52 sigue `PROPOSED`.
+**Última actualización:** 2026-11-16 (V2.0.0 en curso: Fases 8 a 14 implementadas, pendientes de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -362,10 +362,17 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - Los tests de interfaz fallaron 3 de 517 una vez bajo carga en paralelo y pasaron en la repetición (517/517); no se tocó ninguno.
 
 ## Fase 14 — Interoperabilidad
-- [ ] F14-01 Exportar nota/carpeta a Markdown (con adjuntos) y HTML
-- [ ] F14-02 Exportar todo a JSON (B-02)
-- [ ] F14-03 Importar carpeta de Markdown y `.txt`
-- [ ] F14-04 Importar ENEX de Evernote (cuadernos → carpetas, etiquetas, imágenes, fechas)
+- [x] F14-01 Exportar nota/carpeta a Markdown (con adjuntos) y HTML
+- [x] F14-02 Exportar todo a JSON (B-02)
+- [x] F14-03 Importar carpeta de Markdown y `.txt`
+- [x] F14-04 Importar ENEX de Evernote (cuadernos → carpetas, etiquetas, imágenes, fechas)
+
+**Notas de la fase 14:**
+- **Estado:** IN_PROGRESS → AWAITING_HUMAN. El usuario pidió explícitamente implementar la Fase 14 (confirmación de fin de la F13). Decisiones y límites en **D-54** (`ACCEPTED`): sin dependencias nuevas (XML, base64 y MD5 propios), sin migración, sin red.
+- Estructura: `domain/markdown.rs` (escribe y lee Markdown, front matter y `.txt`), `domain/html.rs`, `domain/enex.rs` (XML tolerante + ENML → documento), `domain/codec.rs`, `repo/export.rs` (volcado JSON), `exchange.rs` (ficheros y base de datos) y `commands/exchange.rs` (`export_notes`, `export_json`, `import_markdown`, `import_enex`). Interfaz: sección «Exportar e importar» en Ajustes, «Exportar a Markdown/HTML…» en el menú «Más» de la nota y en el clic derecho de una carpeta. Tras importar se recargan etiquetas, tareas y, si estaba cargada, la vista de notas (`onRestored`).
+- F14-01: carpeta de destino elegida por el usuario; carpetas de la aplicación = carpetas del disco; imágenes a `adjuntos/` (Markdown, rutas relativas) o dentro del `.html` (`data:`). F14-02: un JSON con todo, papelera incluida; los adjuntos van solo como metadatos. F14-03: ruta de imagen contenida en la carpeta importada; título por front matter, `# H1` o nombre de archivo; fechas del front matter. F14-04: un archivo `.enex` = una carpeta con su nombre (el formato no trae el cuaderno); varios archivos a la vez.
+- **Límites conocidos** (también en D-54): se pierden tachado y subrayado; las referencias a tareas/notas se exportan como texto; los PDF de ENEX no se importan; reimportar duplica; el JSON no se reimporta.
+- **Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (433 de lib + 4 + 1 + 4, con los nuevos de F14: códecs, Markdown, HTML, ENEX, volcado JSON y exportar/importar con ida y vuelta), `npm run lint`, `npm run check` (0/0), `npm run test` (563 en 51 archivos), `npm run build` y `npm run size` (246,2 KB gzip de 250: quedan 3,8 KB). `cargo check --target x86_64-pc-windows-msvc` no hizo falta aparte: se compila en Windows. Los cuatro `[H]` y el de aspecto están en `docs/manual-pruebas.md`.
 
 ## Fase 15 — Cierre de 2.0.0
 - [ ] F15-01 Rendimiento con 10 000 notas (arranque, lista, búsqueda < 50 ms); registrar en `docs/metricas.md`

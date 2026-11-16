@@ -2,6 +2,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 import type {
+  ExportFormat,
+  ExportKind,
+  ExportReport,
+  ImportReport,
   Attachment,
   EffectApplied,
   EffectMode,
@@ -329,6 +333,27 @@ export function backupCreate(path: string): Promise<void> {
 
 export function backupRestore(path: string): Promise<void> {
   return invoke<void>("backup_restore", { path });
+}
+
+export function exportNotes(
+  format: ExportFormat,
+  kind: ExportKind,
+  id: string | null,
+  path: string,
+): Promise<ExportReport> {
+  return invoke<ExportReport>("export_notes", { format, kind, id, path });
+}
+
+export function exportJson(path: string): Promise<ExportReport> {
+  return invoke<ExportReport>("export_json", { path });
+}
+
+export function importMarkdown(path: string): Promise<ImportReport> {
+  return invoke<ImportReport>("import_markdown", { path });
+}
+
+export function importEnex(paths: string[]): Promise<ImportReport> {
+  return invoke<ImportReport>("import_enex", { paths });
 }
 
 export function autostartGet(): Promise<boolean> {

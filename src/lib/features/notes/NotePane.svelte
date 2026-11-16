@@ -8,11 +8,12 @@
   import TagMenu from "../tags/TagMenu.svelte";
   import type { NotesStore } from "../../stores/notes.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
-  import type { Note } from "../../types";
+  import type { ExportFormat, Note } from "../../types";
   import { attachmentAdd, attachmentRead } from "../../api";
   import { noteLinkIds, wordStats } from "./content";
   import ImagePreview from "./ImagePreview.svelte";
   import { ImageCache } from "./imageCache";
+  import { exportSelection } from "./exportNotes";
   import { formatNoteStamp } from "./format";
   import NoteFind from "./NoteFind.svelte";
   import NoteBacklinks from "./NoteBacklinks.svelte";
@@ -152,6 +153,8 @@
     { id: "convert", label: t.notesApp.convertChecklists },
     { id: "reminder", label: t.notesApp.reminder.open },
     { id: "history", label: t.notesApp.history.open },
+    { id: "exportMarkdown", label: t.notesApp.exportMarkdown, separated: true },
+    { id: "exportHtml", label: t.notesApp.exportHtml },
     { id: "delete", label: t.notesApp.delete, danger: true, separated: true },
   ];
 
@@ -246,11 +249,21 @@
     historyOpen = true;
   }
 
+  /** What is typed must be saved first, or the file would hold an older text. */
+  async function exportNote(format: ExportFormat) {
+    await titleSaver.flush();
+    await editor?.flush();
+    const notice = await exportSelection(format, "note", id);
+    if (notice) notes.notice = notice;
+  }
+
   function onMore(action: string) {
     if (action === "duplicate") void notes.duplicateNote(id);
     else if (action === "convert") void convertChecklists();
     else if (action === "history") void openHistory();
     else if (action === "reminder") reminderOpen = true;
+    else if (action === "exportMarkdown") void exportNote("markdown");
+    else if (action === "exportHtml") void exportNote("html");
     else if (action === "delete") void notes.trashNote(id);
   }
 </script>

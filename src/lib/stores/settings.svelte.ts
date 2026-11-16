@@ -1,7 +1,15 @@
 import * as backend from "../api";
 import { t } from "../i18n";
 import { applyTheme, parseTheme, resolveTheme } from "../theme";
-import type { EffectMode, SettingKey, ThemeMode } from "../types";
+import type {
+  EffectMode,
+  ExportFormat,
+  ExportKind,
+  ExportReport,
+  ImportReport,
+  SettingKey,
+  ThemeMode,
+} from "../types";
 import { windowEffect } from "./windowEffect.svelte";
 
 /** The slice of `api.ts` the store uses; tests pass a fake. */
@@ -12,6 +20,15 @@ export interface SettingsApi {
   autostartSet(enabled: boolean): Promise<void>;
   backupCreate(path: string): Promise<void>;
   backupRestore(path: string): Promise<void>;
+  exportNotes(
+    format: ExportFormat,
+    kind: ExportKind,
+    id: string | null,
+    path: string,
+  ): Promise<ExportReport>;
+  exportJson(path: string): Promise<ExportReport>;
+  importMarkdown(path: string): Promise<ImportReport>;
+  importEnex(paths: string[]): Promise<ImportReport>;
 }
 
 export interface EffectRequester {
@@ -33,6 +50,15 @@ export function describeError(raw: unknown): string {
   return code === "VALIDATION" || code === "NOT_FOUND" || code === "IO"
     ? message
     : t.errors[code];
+}
+
+function importedText(report: ImportReport): string {
+  return t.settings.imported(
+    report.notes,
+    report.folders,
+    report.tags,
+    report.skipped,
+  );
 }
 
 export interface SettingsNotice {
@@ -175,6 +201,32 @@ export class SettingsStore {
     return done;
   }
 
+  /** Writes every note into the folder `path` (F14-01). */
+  async exportNotes(format: ExportFormat, path: string): Promise<boolean> {
+    return this.#run(
+      () => this.#api.exportNotes(format, "all", null, path),
+      (report) => t.settings.exportedNotes(report.notes, report.files),
+    );
+  }
+
+  /** Writes all the data as one JSON file (F14-02). */
+  async exportJson(path: string): Promise<boolean> {
+    return this.#run(
+      () => this.#api.exportJson(path),
+      (report) => t.settings.exportedJson(report.notes),
+    );
+  }
+
+  /** Imports a folder of Markdown and text files (F14-03). */
+  async importMarkdown(path: string): Promise<boolean> {
+    return this.#run(() => this.#api.importMarkdown(path), importedText);
+  }
+
+  /** Imports Evernote exports, one folder per file (F14-04). */
+  async importEnex(paths: string[]): Promise<boolean> {
+    return this.#run(() => this.#api.importEnex(paths), importedText);
+  }
+
   async #save(key: SettingKey, value: string): Promise<void> {
     try {
       await this.#api.settingsSet(key, value);
@@ -190,12 +242,18 @@ export class SettingsStore {
     };
   }
 
-  async #run(action: () => Promise<void>, success: string): Promise<boolean> {
+  async #run<T>(
+    action: () => Promise<T>,
+    success: string | ((result: T) => string),
+  ): Promise<boolean> {
     this.busy = true;
     this.notice = null;
     try {
-      await action();
-      this.notice = { kind: "info", text: success };
+      const result = await action();
+      this.notice = {
+        kind: "info",
+        text: typeof success === "string" ? success : success(result),
+      };
       return true;
     } catch (error) {
       this.#fail(error);

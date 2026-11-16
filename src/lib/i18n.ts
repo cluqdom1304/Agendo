@@ -204,6 +204,12 @@ export const t = {
     taskReopen: (title: string) => `Reabrir «${title}»`,
     newTaskFromNote: "Nueva tarea desde la nota (Ctrl+Mayús+T)",
     convertChecklists: "Convertir casillas en tareas",
+    exportMarkdown: "Exportar a Markdown…",
+    exportHtml: "Exportar a HTML…",
+    exportFailed: "No se pudo exportar.",
+    exportedTo: (notes: number, files: number) =>
+      `${notes} ${notes === 1 ? "nota exportada" : "notas exportadas"}` +
+      (files > 0 ? ` y ${files} ${files === 1 ? "imagen" : "imágenes"}.` : "."),
     noChecklists: "No hay casillas que convertir.",
     converted: (count: number) =>
       count === 1
@@ -351,6 +357,8 @@ export const t = {
     newNoteHere: "Nueva nota aquí",
     templates: "Plantillas de nota…",
     newSubfolder: "Subcarpeta nueva…",
+    exportFolderMarkdown: "Exportar a Markdown…",
+    exportFolderHtml: "Exportar a HTML…",
     rename: "Renombrar…",
     deleteFolder: "Eliminar carpeta…",
     // etiquetas
@@ -635,6 +643,28 @@ export const t = {
     restoreChoose: "Elegir archivo…",
     restoreCancel: "Cancelar",
     restored: "Copia restaurada.",
+    exchange: "Exportar e importar",
+    exchangeHint:
+      "Saca tus notas a archivos que se leen en cualquier programa, o trae notas de otras aplicaciones. Las imágenes se guardan junto a las notas.",
+    exportMarkdown: "Exportar notas a Markdown…",
+    exportHtml: "Exportar notas a HTML…",
+    exportJson: "Exportar todo a JSON…",
+    importMarkdown: "Importar carpeta de Markdown o texto…",
+    importEnex: "Importar desde Evernote…",
+    jsonFileName: (date: string) => `Agendo-${date}.json`,
+    jsonFilter: "Datos en JSON",
+    enexFilter: "Exportación de Evernote",
+    exportedNotes: (notes: number, files: number) =>
+      `${notes} ${notes === 1 ? "nota exportada" : "notas exportadas"}` +
+      (files > 0 ? ` y ${files} ${files === 1 ? "imagen" : "imágenes"}.` : "."),
+    exportedJson: (notes: number) =>
+      `Datos guardados (${notes} ${notes === 1 ? "nota" : "notas"} y todas las tareas).`,
+    imported: (notes: number, folders: number, tags: number, skipped: number) =>
+      `${notes} ${notes === 1 ? "nota importada" : "notas importadas"}` +
+      ` (${folders} ${folders === 1 ? "carpeta" : "carpetas"} y ${tags} ${tags === 1 ? "etiqueta" : "etiquetas"} nuevas).` +
+      (skipped > 0
+        ? ` ${skipped} ${skipped === 1 ? "elemento no se pudo leer" : "elementos no se pudieron leer"}.`
+        : ""),
     working: "Trabajando…",
     failed: (message: string) => `No se pudo completar la acción. ${message}`,
   },

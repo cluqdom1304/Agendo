@@ -6,6 +6,7 @@ mod contract_tests;
 pub mod db;
 pub mod domain;
 pub mod error;
+pub mod exchange;
 pub mod ids;
 pub mod notify;
 pub mod repo;
@@ -130,6 +131,10 @@ pub fn run() {
             commands::attachments::attachment_read,
             commands::backup::backup_create,
             commands::backup::backup_restore,
+            commands::exchange::export_notes,
+            commands::exchange::export_json,
+            commands::exchange::import_markdown,
+            commands::exchange::import_enex,
             commands::autostart::autostart_get,
             commands::autostart::autostart_set
         ])
