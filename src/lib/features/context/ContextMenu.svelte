@@ -4,6 +4,7 @@
   import { t } from "../../i18n";
   import { contextMenu, type ContextEntry } from "./context.svelte";
   import { buildEntries, type ContextDeps } from "./entries";
+  import { clampStart, slideToFit } from "./placement";
   import { resolveTarget } from "./target";
 
   // The menu of the right click and of the Menu key / Shift+F10 (D-50). It is drawn by the
@@ -181,9 +182,9 @@
   // Keeps the menu inside the window, and the keyboard on its first entry.
   function place(node: HTMLElement, at: { x: number; y: number }) {
     const fit = (point: { x: number; y: number }) => {
-      const box = node.getBoundingClientRect();
-      node.style.left = `${Math.max(8, Math.min(point.x, window.innerWidth - box.width - 8))}px`;
-      node.style.top = `${Math.max(8, Math.min(point.y, window.innerHeight - box.height - 8))}px`;
+      // `offset*` ignores the scale of the opening animation, which made the box look smaller.
+      node.style.left = `${clampStart(point.x, node.offsetWidth, window.innerWidth)}px`;
+      node.style.top = `${clampStart(point.y, node.offsetHeight, window.innerHeight)}px`;
     };
     fit(at);
     node
@@ -198,10 +199,11 @@
   // would fall off the bottom.
   function fitSub(node: HTMLElement) {
     const box = node.getBoundingClientRect();
-    if (box.right > window.innerWidth - 8) node.classList.add("flip");
-    if (box.bottom > window.innerHeight - 8) {
-      node.style.marginTop = `${window.innerHeight - 8 - box.bottom}px`;
+    if (box.left + node.offsetWidth > window.innerWidth - 8) {
+      node.classList.add("flip");
     }
+    const shift = slideToFit(box.top, node.offsetHeight, window.innerHeight);
+    if (shift !== 0) node.style.marginTop = `${shift}px`;
   }
 </script>
 
@@ -322,7 +324,7 @@
     position: absolute;
     top: -5px;
     left: calc(100% + 2px);
-    max-height: min(360px, 70vh);
+    max-height: min(360px, calc(100vh - 16px));
     overflow-y: auto;
   }
 

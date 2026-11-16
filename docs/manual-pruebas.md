@@ -336,3 +336,6 @@ Movimiento y fluidez
 - [ ] (F15-03) Ejecutar `npm run e2e` (ver `e2e/README.md`): las tres especificaciones (`tareas`, `ajustes`, `notas`) pasan. Es la primera ejecución real de F6-06; anotar cualquier selector que falle.
 - [ ] (F15-04) El instalador `Agendo_2.0.0_x64-setup.exe` muestra la versión 2.0.0 en «Aplicaciones instaladas», reemplaza la 1.0.7 sin pedir confirmación y la ventana sigue mostrando «Agendo».
 - [ ] (Todas las fases V2) Recorrer las secciones «Notas V2 — Fase 8» a «Fase 14» de este archivo y marcar lo comprobado.
+
+## Versión 2.0.1 (`[H]`)
+- [ ] Clic derecho en una tarea, una nota, una carpeta y una etiqueta pegado al borde superior, inferior, izquierdo y derecho y en las esquinas: el menú entero queda a la vista, sin cortarse. Abrir un submenú («Mover a») cerca del borde inferior y del superior: se desliza para caber y se desplaza si hay muchas carpetas. Con la ventana al tamaño mínimo (720×480) ocurre lo mismo.
