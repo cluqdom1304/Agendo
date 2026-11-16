@@ -72,7 +72,9 @@
               title={t.notesApp.linkOpen(source.title || t.notesApp.untitled)}
               onclick={() => void notes.openNote(source.id)}
             >
-              {source.title || t.notesApp.untitled}
+              <span class="link">
+                {source.title || t.notesApp.untitled}
+              </span>
               {#if source.excerpt}
                 <span class="excerpt">{source.excerpt}</span>
               {/if}
@@ -138,26 +140,37 @@
     display: flex;
     align-items: baseline;
     gap: var(--space-2);
-    width: 100%;
+    box-sizing: border-box;
+    width: calc(100% + 2 * var(--space-2));
     min-height: 28px;
-    padding: 0;
-    overflow: hidden;
+    margin: 0 calc(var(--space-2) * -1);
+    padding: 4px var(--space-2);
     border: 0;
+    border-radius: var(--radius-small);
     background: transparent;
     color: var(--accent);
     font: inherit;
     font-size: 13px;
     text-align: left;
-    text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
+    transition: background-color var(--motion-instant) linear;
   }
 
   .name:hover {
-    text-decoration: underline;
+    background: var(--bg-hover);
+  }
+
+  .link {
+    flex: none;
+    max-width: 60%;
+    overflow: hidden;
+    font-weight: 500;
+    text-overflow: ellipsis;
   }
 
   .excerpt {
+    flex: 1;
     min-width: 0;
     overflow: hidden;
     color: var(--text-secondary);

@@ -459,6 +459,19 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Limitaciones conocidas:** el tachado (`~~`) y el subrayado se pierden (el editor no tiene esas marcas); las referencias `taskRef`/`noteLink` se exportan como texto («Tarea: …», `[[título]]`) y no se reconstruyen al importar; los adjuntos que no son imágenes (PDF, audio) de un `.enex` no se importan y se cuentan como omitidos; importar dos veces la misma carpeta duplica las notas (no hay detección de duplicados); las notas importadas conservan sus fechas originales.
 - **Consecuencias:** no cambia el esquema ni hay migración. Quitar F14 solo exige retirar `exchange.rs`, `commands/exchange.rs`, los módulos de `domain/` y `repo/export.rs`, más la sección de Ajustes y las entradas de menú.
 
+## D-55 — Repaso de diseño previo a la 2.0: una sola línea visual en lo añadido en la V2
+- **Estado:** ACCEPTED (petición del usuario) · **Fecha:** 2026-11-16 · **Validación visual:** pendiente `[H]`
+- **Contexto:** lo añadido en las fases 8 a 14 (notas, «Hoy», historial, plantillas, menús) se escribió después de D-39 y parte no seguía sus tokens: variables inexistentes (`--radius-sm`, `--surface-hover`, `--space-5`), colores fijos, botones sin la tipografía de la app y dos estilos de menú distintos. El usuario pide pulirlo con la línea de Apple de D-39, sin generar aún la versión.
+- **Decisión (amplía D-39; solo CSS y marcado, sin lógica, dependencias, IPC ni textos nuevos):**
+  - **Tokens nuevos** en los tres bloques de tema: `--highlight`, `--highlight-strong`, `--on-highlight` (resaltado y búsqueda en la nota), `--code-string/number/keyword/type` (colores del código) y `--diff-added/removed` (historial). Sustituyen a colores fijos y a un `@media (prefers-color-scheme)` que ignoraba el tema forzado en Ajustes.
+  - **Menús:** `Menu` y `TagMenu` resaltan la entrada bajo el puntero en color de acento, igual que el menú contextual (D-50) y la paleta; la marca de selección es un trazo, no el carácter «✓».
+  - **`Modal` admite `wide`** (760 px) para contenido a dos columnas; lo usa el historial, que antes se recortaba dentro del diálogo de 520 px.
+  - **«Hoy»:** fecha sobre un título grande y bloques en tarjetas agrupadas con filas separadas por una línea fina (como Ajustes); la nota del día es una fila con icono y flecha; el aviso de día vacío va dentro de su tarjeta.
+  - **Notas:** historial con la versión elegida teñida de acento y las diferencias en una tarjeta; plantillas en tarjeta con acciones secundarias discretas; enlaces entrantes y tareas de la nota con filas que responden al puntero; cita, regla y tablas con línea más visible; buscador de la nota y campo de enlace con el mismo anillo de foco que los formularios.
+  - **General:** selección de texto en el tinte de acento; cierre del aviso (`Toast`) dibujado en vez del carácter «×».
+- **Consecuencias:** CSS 18,6 KB gzip; JS 246,4 KB de 250 (**quedan 3,6 KB para la Fase 15**). La apariencia real es `[H]` (manual-pruebas § «Repaso de diseño previo a la 2.0»).
+- **Alternativas descartadas:** animaciones de salida y `backdrop-filter` (siguen descartadas por D-39 y D-01); rehacer los componentes de notas ya repasados (lista, panel y barra lateral ya seguían D-39).
+
 ---
 
 ## Decisiones pendientes de producto

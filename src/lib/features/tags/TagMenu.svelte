@@ -51,8 +51,7 @@
   >
     <span class="dot none"></span>
     <span class="name">{t.tags.noneOption}</span>
-    {#if values.length === 0}<span class="check" aria-hidden="true">✓</span
-      >{/if}
+    {#if values.length === 0}{@render tick()}{/if}
   </button>
   {#each tagsStore.tags as tag (tag.id)}
     <button
@@ -64,15 +63,32 @@
     >
       <span class="dot" style:background={tag.colorHex}></span>
       <span class="name">{tag.name}</span>
-      {#if values.includes(tag.id)}<span class="check" aria-hidden="true"
-          >✓</span
-        >{/if}
+      {#if values.includes(tag.id)}{@render tick()}{/if}
     </button>
   {/each}
   {#if tagsStore.tags.length === 0}
     <p class="hint">{t.tags.createHint}</p>
   {/if}
 </div>
+
+{#snippet tick()}
+  <svg
+    class="check"
+    viewBox="0 0 12 12"
+    width="11"
+    height="11"
+    aria-hidden="true"
+  >
+    <path
+      d="M2.5 6.4l2.3 2.3 4.7-5.2"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+{/snippet}
 
 <style>
   .menu {
@@ -111,13 +127,23 @@
     cursor: pointer;
   }
 
-  .item:hover {
-    background: var(--bg-control-hover);
+  .item:hover,
+  .item:focus-visible {
+    background: var(--accent);
+    color: var(--on-accent);
+    outline: none;
   }
 
-  .item:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: -2px;
+  /* On the accent the dot keeps its edge. */
+  .item:hover .dot,
+  .item:focus-visible .dot {
+    box-shadow: 0 0 0 1px var(--on-accent);
+  }
+
+  .item:hover .dot.none,
+  .item:focus-visible .dot.none {
+    border-color: var(--on-accent);
+    box-shadow: none;
   }
 
   .dot {
@@ -140,8 +166,13 @@
   }
 
   .check {
+    flex: none;
     color: var(--accent);
-    font-weight: 600;
+  }
+
+  .item:hover .check,
+  .item:focus-visible .check {
+    color: inherit;
   }
 
   .hint {

@@ -45,7 +45,7 @@
   }
 </script>
 
-<Modal label={l.title} closeLabel={l.close} {onClose}>
+<Modal label={l.title} closeLabel={l.close} wide {onClose}>
   <div class="box">
     <h2>{l.title}</h2>
 
@@ -122,7 +122,7 @@
   .box {
     display: grid;
     gap: var(--space-4);
-    width: min(760px, 90vw);
+    min-width: 0;
   }
 
   h2 {
@@ -149,7 +149,7 @@
   .list {
     display: grid;
     align-content: start;
-    gap: 2px;
+    gap: 1px;
     max-height: 50vh;
     margin: 0;
     padding: 0;
@@ -161,30 +161,43 @@
     display: grid;
     gap: 2px;
     width: 100%;
-    padding: var(--space-2);
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
+    padding: 6px var(--space-2);
+    border: 0;
+    border-radius: var(--radius-small);
     background: transparent;
     color: inherit;
+    font: inherit;
     text-align: left;
     cursor: pointer;
+    transition: background-color var(--motion-instant) linear;
   }
 
+  .version:hover {
+    background: var(--bg-hover);
+  }
+
+  /* The chosen version, tinted like the open note in the list. */
   .version[aria-pressed="true"] {
-    border-color: var(--border-subtle);
-    background: var(--surface-hover, rgb(127 127 127 / 12%));
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+
+  .version:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
   }
 
   .stamp {
-    font-size: 12px;
     color: var(--text-secondary);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
   }
 
   .vtitle {
     overflow: hidden;
+    font-size: 13px;
+    font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 500;
   }
 
   .preview {
@@ -196,31 +209,38 @@
 
   .diff {
     max-height: 45vh;
+    padding: var(--space-2) 0;
     overflow-y: auto;
+    border-radius: var(--radius-card);
+    background: var(--bg-control);
   }
 
   .line {
     display: flex;
     gap: var(--space-2);
     margin: 0;
-    padding: 2px var(--space-2);
+    min-height: 1.5em;
+    padding: 1px var(--space-3);
     overflow-wrap: anywhere;
     font-size: 13px;
   }
 
   .line.added {
-    background: rgb(46 160 67 / 18%);
+    background: var(--diff-added);
   }
 
   .line.removed {
-    background: rgb(218 54 51 / 18%);
+    background: var(--diff-removed);
+    color: var(--text-secondary);
     text-decoration: line-through;
   }
 
   .mark {
     flex: none;
     width: 1ch;
-    font-family: var(--font-mono, monospace);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    text-decoration: none;
   }
 
   .sr {

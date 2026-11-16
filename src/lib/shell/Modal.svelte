@@ -5,10 +5,12 @@
     label: string;
     closeLabel: string;
     onClose: () => void;
+    /** Room for two columns (a list next to its preview). */
+    wide?: boolean;
     children: Snippet;
   }
 
-  let { label, closeLabel, onClose, children }: Props = $props();
+  let { label, closeLabel, onClose, wide = false, children }: Props = $props();
 
   let dialog = $state<HTMLDivElement>();
 
@@ -60,6 +62,7 @@
   <div
     bind:this={dialog}
     class="dialog ui-form"
+    class:wide
     role="dialog"
     aria-modal="true"
     aria-label={label}
@@ -113,6 +116,10 @@
     box-shadow: var(--shadow-modal);
     outline: none;
     animation: sheet-in var(--motion-spring) var(--ease-spring);
+  }
+
+  .dialog.wide {
+    width: min(760px, calc(100vw - 2 * var(--space-6)));
   }
 
   .close {

@@ -370,7 +370,8 @@
 
   .tool:focus-visible,
   .link-action:focus-visible {
-    outline: 1.5px solid var(--accent);
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
   }
 
   .separator {
@@ -422,11 +423,15 @@
   }
 
   .link-input:focus-visible {
-    box-shadow: inset 0 0 0 1px var(--accent);
+    box-shadow:
+      inset 0 0 0 1px var(--accent),
+      0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
   }
 
   .link-input[aria-invalid="true"] {
-    box-shadow: inset 0 0 0 1px var(--danger);
+    box-shadow:
+      inset 0 0 0 1px var(--danger),
+      0 0 0 3px color-mix(in srgb, var(--danger) 30%, transparent);
   }
 
   .link-action {
@@ -438,7 +443,9 @@
     color: var(--accent);
     font: inherit;
     font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
+    transition: background-color var(--motion-instant) linear;
   }
 
   .link-action:hover {

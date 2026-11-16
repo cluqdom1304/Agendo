@@ -185,6 +185,14 @@
     align-items: center;
     gap: var(--space-2);
     min-height: 28px;
+    margin: 0 calc(var(--space-2) * -1);
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-small);
+    transition: background-color var(--motion-instant) linear;
+  }
+
+  .row:hover {
+    background: var(--bg-hover);
   }
 
   .check {
@@ -240,8 +248,8 @@
     cursor: pointer;
   }
 
-  .name:hover {
-    color: var(--accent);
+  .name {
+    align-self: stretch;
   }
 
   .done .name {

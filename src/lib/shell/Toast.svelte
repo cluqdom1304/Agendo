@@ -26,7 +26,15 @@
     </button>
   {/if}
   <button type="button" class="close" aria-label={closeLabel} onclick={onClose}>
-    &times;
+    <svg viewBox="0 0 10 10" width="9" height="9" aria-hidden="true">
+      <path
+        d="M1.5 1.5l7 7M8.5 1.5l-7 7"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+      />
+    </svg>
   </button>
 </div>
 
@@ -88,9 +96,17 @@
   }
 
   .close {
+    padding: 0;
     color: var(--text-secondary);
-    font-size: 16px;
-    line-height: 1;
+  }
+
+  .close:hover {
+    color: var(--text-primary);
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
   }
 
   @keyframes toast-in {

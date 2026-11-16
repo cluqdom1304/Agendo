@@ -76,7 +76,7 @@
                 </button>
                 <button
                   type="button"
-                  class="btn small"
+                  class="btn small quiet"
                   onclick={() =>
                     (renaming = { id: template.id, name: template.name })}
                 >
@@ -84,7 +84,7 @@
                 </button>
                 <button
                   type="button"
-                  class="btn small"
+                  class="btn small quiet"
                   disabled={notes.open === null}
                   onclick={() =>
                     void notes.saveOpenAsTemplate(template.name, template.id)}
@@ -93,7 +93,7 @@
                 </button>
                 <button
                   type="button"
-                  class="btn small danger"
+                  class="btn small quiet danger"
                   onclick={() => void notes.deleteTemplate(template.id)}
                 >
                   {l.delete}
@@ -139,7 +139,7 @@
   .box {
     display: grid;
     gap: var(--space-4);
-    min-width: min(520px, 90vw);
+    min-width: 0;
   }
 
   h2 {
@@ -152,7 +152,8 @@
 
   h3 {
     margin: 0;
-    font-size: 13px;
+    color: var(--text-secondary);
+    font-size: 12px;
     font-weight: 600;
   }
 
@@ -163,10 +164,11 @@
   }
 
   .list {
-    display: grid;
-    gap: var(--space-2);
     margin: 0;
     padding: 0;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--bg-control);
     list-style: none;
   }
 
@@ -175,11 +177,20 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-2);
+    gap: var(--space-1) var(--space-2);
+    min-height: 40px;
+    padding: 6px var(--space-2) 6px var(--space-3);
+  }
+
+  .item + .item {
+    box-shadow: inset 0 1px 0 var(--separator);
   }
 
   .name {
+    flex: 1;
+    min-width: 96px;
     overflow-wrap: anywhere;
+    font-size: 13px;
     font-weight: 500;
   }
 
@@ -188,7 +199,17 @@
   .actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .rename,
+  .actions {
     gap: var(--space-2);
+  }
+
+  .btn.quiet.danger {
+    color: var(--danger);
   }
 
   .rename {
@@ -207,8 +228,8 @@
   .save {
     display: grid;
     gap: var(--space-3);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--border-subtle);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--separator);
   }
 
   .block {

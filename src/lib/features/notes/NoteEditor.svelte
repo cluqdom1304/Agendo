@@ -555,6 +555,10 @@
     cursor: pointer;
   }
 
+  .suggestion:hover {
+    background: var(--bg-control-hover);
+  }
+
   .suggestion.active {
     background: var(--accent);
     color: var(--on-accent);
@@ -707,6 +711,10 @@
     line-height: 1.25;
   }
 
+  .surface :global(.tiptap > :first-child) {
+    margin-top: 0;
+  }
+
   .surface :global(.tiptap h1) {
     font-size: 1.7em;
     font-weight: 700;
@@ -725,14 +733,15 @@
   .surface :global(.tiptap blockquote) {
     margin: var(--space-3) 0;
     padding: 2px 0 2px var(--space-4);
-    border-left: 3px solid var(--separator);
+    border-left: 3px solid
+      color-mix(in srgb, var(--text-secondary) 45%, transparent);
     color: var(--text-secondary);
   }
 
   .surface :global(.tiptap hr) {
     margin: var(--space-4) 0;
     border: 0;
-    border-top: 1px solid var(--separator);
+    border-top: 1px solid var(--border-subtle);
   }
 
   .surface :global(.tiptap hr.ProseMirror-selectednode) {
@@ -742,7 +751,7 @@
   .surface :global(.tiptap mark) {
     padding: 0 2px;
     border-radius: 3px;
-    background: color-mix(in srgb, #ffd60a 45%, transparent);
+    background: var(--highlight);
     color: inherit;
   }
 
@@ -753,13 +762,7 @@
     border-radius: var(--radius-control);
     background: var(--bg-control);
     color: var(--text-primary);
-    font-family: var(
-      --font-mono,
-      ui-monospace,
-      "Cascadia Code",
-      Consolas,
-      monospace
-    );
+    font-family: var(--font-mono);
     font-size: 0.88em;
     line-height: 1.5;
     tab-size: 2;
@@ -777,39 +780,22 @@
     font-style: italic;
   }
 
+  /* Tokens, not a media query: the theme can be forced against the system's (F6-05). */
   .surface :global(.tok-string) {
-    color: #1f8f4a;
+    color: var(--code-string);
   }
 
   .surface :global(.tok-number) {
-    color: #c26a00;
+    color: var(--code-number);
   }
 
   .surface :global(.tok-keyword) {
-    color: #a540c9;
+    color: var(--code-keyword);
     font-weight: 600;
   }
 
   .surface :global(.tok-type) {
-    color: #0a6ebd;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .surface :global(.tok-string) {
-      color: #6bd68a;
-    }
-
-    .surface :global(.tok-number) {
-      color: #ffb15c;
-    }
-
-    .surface :global(.tok-keyword) {
-      color: #d49bff;
-    }
-
-    .surface :global(.tok-type) {
-      color: #6cb6ff;
-    }
+    color: var(--code-type);
   }
 
   .surface :global(.tiptap table) {
@@ -825,7 +811,7 @@
     position: relative;
     min-width: 40px;
     padding: 5px 8px;
-    border: 1px solid var(--separator);
+    border: 1px solid var(--border-subtle);
     vertical-align: top;
     text-align: left;
   }
@@ -846,12 +832,12 @@
 
   .surface :global(.find-match) {
     border-radius: 2px;
-    background: color-mix(in srgb, #ffd60a 40%, transparent);
+    background: var(--highlight);
   }
 
   .surface :global(.find-current) {
-    background: #ffd60a;
-    color: #1d1d1f;
+    background: var(--highlight-strong);
+    color: var(--on-highlight);
   }
 
   .as-page .surface :global(.tiptap) {
@@ -1134,6 +1120,8 @@
   .surface :global(.tiptap a) {
     color: var(--accent);
     text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    text-underline-offset: 2px;
     cursor: text;
   }
 </style>

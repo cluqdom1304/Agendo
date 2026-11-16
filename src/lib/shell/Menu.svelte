@@ -171,17 +171,22 @@
     cursor: pointer;
   }
 
-  .item:hover {
-    background: var(--bg-control-hover);
-  }
-
+  /* Solid accent, as in a system menu and in the context menu (D-50). */
+  .item:hover,
   .item:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: -2px;
+    background: var(--accent);
+    color: var(--on-accent);
+    outline: none;
   }
 
   .item.danger {
     color: var(--danger);
+  }
+
+  .item.danger:hover,
+  .item.danger:focus-visible {
+    background: var(--danger);
+    color: var(--on-danger);
   }
 
   /* The hairline sits in the gap above the item, clear of its hover background. */
@@ -211,5 +216,10 @@
   svg {
     flex: none;
     color: var(--accent);
+  }
+
+  .item:hover svg,
+  .item:focus-visible svg {
+    color: inherit;
   }
 </style>

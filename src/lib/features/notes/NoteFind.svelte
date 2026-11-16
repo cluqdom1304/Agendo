@@ -108,7 +108,14 @@
     padding: 3px 4px 3px var(--space-3);
     border-radius: var(--radius-control);
     background: var(--bg-control);
-    animation: fade-in var(--motion-fast) linear;
+    box-shadow: inset 0 0 0 0.5px var(--border-subtle);
+    animation: rise-in var(--motion-fast) var(--ease-out);
+  }
+
+  .find:focus-within {
+    box-shadow:
+      inset 0 0 0 1px var(--accent),
+      0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
   }
 
   .field {
@@ -146,11 +153,19 @@
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
+    transition:
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear,
+      transform var(--motion-instant) var(--ease-out);
   }
 
   .step:hover:not(:disabled) {
-    background: var(--bg-hover);
+    background: var(--bg-control-hover);
     color: var(--text-primary);
+  }
+
+  .step:active:not(:disabled) {
+    transform: scale(0.9);
   }
 
   .step:disabled {
@@ -159,7 +174,8 @@
   }
 
   .step:focus-visible {
-    outline: 1.5px solid var(--accent);
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
   }
 
   svg {

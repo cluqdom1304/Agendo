@@ -114,6 +114,15 @@
     color: var(--text-primary);
     box-shadow: var(--shadow-popover);
     cursor: pointer;
+    transition: transform var(--motion-instant) var(--ease-out);
+  }
+
+  .close:hover {
+    transform: scale(1.06);
+  }
+
+  .close:active {
+    transform: scale(0.92);
   }
 
   .close:focus-visible {
