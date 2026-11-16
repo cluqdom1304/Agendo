@@ -77,6 +77,12 @@ export function buildCommands(deps: CommandDeps): PaletteCommand[] {
       run: () => view.setSection("agenda"),
     },
     {
+      id: "go-today",
+      label: l.goToday,
+      shortcut: "Ctrl+Mayús+3",
+      run: () => view.setSection("today"),
+    },
+    {
       id: "go-notes",
       label: l.goNotes,
       shortcut: "Ctrl+Mayús+2",

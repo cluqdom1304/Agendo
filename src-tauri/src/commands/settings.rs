@@ -16,7 +16,7 @@ use crate::{
 pub const VIEW_MODE: &str = "view_mode";
 /// Colour theme: follow the system or force light or dark (F6-05).
 pub const THEME: &str = "theme";
-/// Which section is open: the agenda or the notes (V2 F8-07).
+/// Which section is open: the agenda, the notes or «Hoy» (V2 F8-07, F13-07).
 pub const APP_SECTION: &str = "app_section";
 /// What the notes list shows: `all`, `inbox`, `pinned` or `folder:<id>` (F8-07).
 pub const NOTES_SCOPE: &str = "notes_scope";
@@ -39,7 +39,7 @@ pub const DEFAULT_NOTIFY_TIME: &str = settings::NOTIFY_TIME_KEY;
 
 /// Whitelist: every setting with the values it accepts.
 const ALLOWED: [(&str, &[&str]); 4] = [
-    (APP_SECTION, &["agenda", "notes"]),
+    (APP_SECTION, &["agenda", "notes", "today"]),
     (VIEW_MODE, &["list", "day", "week", "month"]),
     (THEME, &["system", "light", "dark"]),
     (WINDOW_EFFECT, &["mica", "acrylic", "none"]),
@@ -142,6 +142,7 @@ mod tests {
     #[test]
     fn remembers_the_section_and_the_open_note() {
         let (state, _) = test_state();
+        set(&state, APP_SECTION, "today").expect("today");
         set(&state, APP_SECTION, "notes").expect("section");
         set(&state, NOTES_SCOPE, "folder:abc-123").expect("scope");
         set(&state, NOTES_OPEN, "").expect("clear");

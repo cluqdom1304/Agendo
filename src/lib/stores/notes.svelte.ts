@@ -303,6 +303,15 @@ export class NotesStore {
     }
   }
 
+  /** The pinned notes, most recently edited first, for «Hoy» (F13-07). */
+  async pinnedNotes(): Promise<NoteSummary[]> {
+    try {
+      return await this.#api.notesList({ scope: "pinned", sort: "updated" });
+    } catch {
+      return [];
+    }
+  }
+
   async reminderGet(noteId: string): Promise<NoteReminder | null> {
     try {
       return await this.#api.noteReminderGet(noteId);

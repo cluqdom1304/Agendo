@@ -7,9 +7,11 @@
   import {
     convertTaskToNote,
     createNoteForTask,
+    showDailyNote,
     showNote,
   } from "$lib/features/notes/navigation";
   import NotesView from "$lib/features/notes/NotesView.svelte";
+  import TodayView from "$lib/features/today/TodayView.svelte";
   import PaletteHost from "$lib/features/palette/PaletteHost.svelte";
   import type { PaletteMode } from "$lib/features/palette/palette";
   import TagDragGhost from "$lib/features/tags/TagDragGhost.svelte";
@@ -74,6 +76,7 @@
   const SECTION_OPTIONS: { value: Section; label: string }[] = [
     { value: "agenda", label: t.notesApp.agenda },
     { value: "notes", label: t.notesApp.notes },
+    { value: "today", label: t.notesApp.today },
   ];
 
   const SHORTCUT_VIEWS: Record<string, ViewMode> = {
@@ -166,9 +169,19 @@
       palette = shortcut === "openSearch" ? "all" : "notes";
       return;
     }
-    if (shortcut === "goAgenda" || shortcut === "goNotes") {
+    if (
+      shortcut === "goAgenda" ||
+      shortcut === "goNotes" ||
+      shortcut === "goToday"
+    ) {
       event.preventDefault();
-      viewStore.setSection(shortcut === "goAgenda" ? "agenda" : "notes");
+      viewStore.setSection(
+        shortcut === "goAgenda"
+          ? "agenda"
+          : shortcut === "goNotes"
+            ? "notes"
+            : "today",
+      );
       return;
     }
     const mode = shortcut ? SHORTCUT_VIEWS[shortcut] : undefined;
@@ -292,6 +305,17 @@
               viewStore.setSection("agenda");
               void openInList(task);
             }}
+          />
+        </div>
+      {:else if viewStore.section === "today"}
+        <div class="content scrolls" data-menu-area="agenda">
+          <TodayView
+            store={tasksStore}
+            notes={notesStore}
+            view={viewStore}
+            onOpenTask={(taskId) => (detailId = taskId)}
+            onOpenNote={(noteId) => void showNote(noteId)}
+            onOpenDaily={(date) => void showDailyNote(date)}
           />
         </div>
       {:else if viewStore.mode === "list"}

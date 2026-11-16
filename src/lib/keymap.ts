@@ -18,7 +18,8 @@ export type ShortcutId =
   | "viewWeek"
   | "viewMonth"
   | "goAgenda"
-  | "goNotes";
+  | "goNotes"
+  | "goToday";
 
 /** Where the keyboard focus is: a title input, the list itself (body or a row), or elsewhere. */
 export type FocusContext = "title" | "list" | "other";
@@ -64,6 +65,14 @@ export const BINDINGS: readonly Binding[] = [
     id: "goNotes",
     key: "2",
     code: "Digit2",
+    ctrl: true,
+    shift: true,
+    scope: "anywhere",
+  },
+  {
+    id: "goToday",
+    key: "3",
+    code: "Digit3",
     ctrl: true,
     shift: true,
     scope: "anywhere",

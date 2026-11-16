@@ -116,6 +116,7 @@ export const t = {
     sections: "Sección",
     agenda: "Agenda",
     notes: "Notas",
+    today: "Hoy",
     foldersHeading: "Notas",
     smartFolders: "Vistas de notas",
     toggleSidebar: "Mostrar u ocultar las carpetas",
@@ -414,6 +415,7 @@ export const t = {
       newNote: "Nueva nota",
       goAgenda: "Ir a la agenda",
       dailyNote: "Abrir la nota de hoy",
+      goToday: "Ir a Hoy",
       templates: "Plantillas de nota…",
       goNotes: "Ir a las notas",
       viewList: "Agenda: vista de lista",
@@ -435,6 +437,25 @@ export const t = {
     day: "Día",
     week: "Semana",
     month: "Mes",
+  },
+  today: {
+    title: "Hoy",
+    tasks: "Tareas de hoy",
+    pending: (count: number) =>
+      count === 0
+        ? "todo hecho"
+        : count === 1
+          ? "1 pendiente"
+          : `${count} pendientes`,
+    allDay: "Todo el día",
+    noTasksTitle: "Nada para hoy",
+    noTasksDescription: "No hay tareas con fecha de hoy.",
+    markDone: (title: string) => `Marcar «${title}» como hecha`,
+    markOpen: (title: string) => `Marcar «${title}» como pendiente`,
+    daily: "Nota del día",
+    openDaily: "Abrir la nota de hoy",
+    pinned: "Notas fijadas",
+    noPinned: "No tienes notas fijadas.",
   },
   calendar: {
     previous: "Anterior",

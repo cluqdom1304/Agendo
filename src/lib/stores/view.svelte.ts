@@ -26,7 +26,7 @@ export interface ViewStoreOptions {
   firstDay?: () => WeekDay;
 }
 
-export type Section = "agenda" | "notes";
+export type Section = "agenda" | "notes" | "today";
 
 /** Which view is showing (persisted in `settings`) and which date the calendar is centred on. */
 export class ViewStore {
@@ -69,10 +69,8 @@ export class ViewStore {
       this.mode = "list";
     }
     try {
-      this.section =
-        (await this.#api.settingsGet("app_section")) === "notes"
-          ? "notes"
-          : "agenda";
+      const saved = await this.#api.settingsGet("app_section");
+      this.section = saved === "notes" || saved === "today" ? saved : "agenda";
     } catch {
       this.section = "agenda";
     }

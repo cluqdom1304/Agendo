@@ -1,8 +1,8 @@
 # PROGRESS.md
 
 **Fase activa:** Fase 12 de la V2.0.0 (editor avanzado y adjuntos)
-**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F13-07 (vista «Hoy»). F13-05 queda bloqueada por B-05 hasta que el humano decida. Ítems `[H]` de F8–F12 siguen pendientes de validar.
+**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F13 cerrada en lo `[A]` salvo F13-05, bloqueada por B-05 (decisión de producto sobre recurrencia). Esperando que el humano valide los ítems `[H]` de «Notas V2 — Fase 13» en `docs/manual-pruebas.md` y resuelva B-05; D-52 sigue `PROPOSED`. Ítems `[H]` de F8–F12 siguen pendientes de validar.
 **Última actualización:** 2026-11-12 (V2.0.0 en curso: Fases 8 a 12 implementadas, pendientes de validación humana)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -346,7 +346,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F13-04 Recordatorios de nota (sin duplicar el motor de avisos)
 - [ ] F13-05 Tareas recurrentes (`tasks.rrule`, D-07; migración 007)
 - [x] F13-06 Acción «Marcar como hecha» en la notificación (B-01)
-- [ ] F13-07 Vista «Hoy»: tareas del día, nota diaria y notas fijadas
+- [x] F13-07 Vista «Hoy»: tareas del día, nota diaria y notas fijadas
 
 **Notas de la fase 13:**
 - **Estado:** IN_PROGRESS. El usuario pidió explícitamente implementar la Fase 13 (confirmación de fin de la F12).
@@ -355,7 +355,8 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - F13-03: migración `009_note_versions.sql` (`note_versions`, `ON DELETE CASCADE`). `notes::update` guarda como versión el documento que va a reemplazar si cambia, no está vacío y la última instantánea tiene ≥ 10 min (máx. 30 por nota; las más antiguas se descartan); cambiar solo el título no crea versión. Comandos `note_versions_list`, `note_version_get`, `note_version_restore`; restaurar guarda antes el documento actual (siempre, aunque haya una reciente), así que se puede deshacer. Interfaz: «Historial de versiones…» en el menú «Más» de la nota; lista de versiones, comparación por bloques de texto con la nota actual (`versionDiff.ts`, LCS; `+`/`−` además del color) y «Restaurar esta versión» (el editor se reconstruye con `notes.revision`). Antes de abrir se vacían los guardados pendientes de título y texto. Los valores 10 min / 30 son los «espaciadas / máximo N» de D-48 y quedan como constantes en `repo/versions.rs`.
 - F13-04: **ADR D-52 `PROPOSED`** (tabla `note_reminders`, migración `010_note_reminders.sql`; motivo: reconstruir `reminders` exigiría `DROP`). `due`/`next_after`/`mark_sent`/`expire_before` cubren tareas y notas, así que el planificador, los reintentos y la caducidad son los mismos; `DueReminder` y `Fired` llevan `taskId` o `noteId`. Comandos `note_reminder_get`/`note_reminder_set` (hora UTC; pasada o nota inexistente se rechaza; `null` quita). Interfaz: «Recordar esta nota…» en el menú «Más» (fecha y hora, por defecto mañana a las 09:00) y aviso en Notas cuando suena. Una nota en la papelera no avisa. Limitación: el aviso dentro de la aplicación solo se ve en la sección Notas; la notificación de Windows sale siempre.
 - F13-06 (B-01): los avisos de tarea llevan un botón «Marcar como hecha» (`tauri-plugin-notification` 2.8 admite acciones en escritorio: `register_action_types` + `on_action`, sin dependencias nuevas ni permisos de JS). La notificación lleva `taskId` / `noteId` como datos; `notify::perform_action` (pura y probada) decide: `done` completa esa tarea y emite `tasks:changed {ids}` (SPEC §7.4; la interfaz relee con `tasksStore.refresh()`), un clic (`tap`) muestra la ventana y emite `reminder:open` (la interfaz abre la tarea o la nota). Si la plataforma no dice de qué notificación se trata, no hace nada: nunca adivina qué tarea completar. Los avisos de nota no llevan botón. Lo que Windows informa de un clic depende del toast (según el plugin, solo mientras está en pantalla y no tras pasar al Centro de actividades): **solo verificable a mano (`[H]`)**; si el botón no aparece o no llega el identificador, el resto sigue funcionando como antes.
-- **Presupuesto:** JS 242,2 KB gzip tras F13-04 (241,3 tras F13-03) (239,9 tras F13-02; 238,7 tras F13-01) gzip de 250 tras F13-01; queda poco margen para F13-02…07 (cargar en diferido lo nuevo, D-49).
+- F13-07: nueva sección «Hoy» (`Ctrl+Mayús+3`, comando de paleta «Ir a Hoy»; se recuerda como las otras secciones: `app_section` admite `today`). `features/today/TodayView.svelte`: tareas con fecha de hoy (abiertas primero, por hora; casilla para completar; clic abre el detalle), «Abrir la nota de hoy» (la nota diaria de F13-01) y notas fijadas (`notes.pinnedNotes()`, clic abre la nota). Respeta el filtro de etiquetas de la barra lateral y se recalcula al volver el foco a la ventana (por si pasó la medianoche). No incluye tareas vencidas (fuera de lo pedido). El botón «Nueva tarea» flotante no aparece en esta sección.
+- **Presupuesto:** JS 243,5 KB gzip tras F13-07 (242,3 tras F13-06; 242,2 tras F13-04) (241,3 tras F13-03) (239,9 tras F13-02; 238,7 tras F13-01) gzip de 250 tras F13-01; queda poco margen para F13-02…07 (cargar en diferido lo nuevo, D-49).
 - Los tests de interfaz fallaron 3 de 517 una vez bajo carga en paralelo y pasaron en la repetición (517/517); no se tocó ninguno.
 
 ## Fase 14 — Interoperabilidad

@@ -128,3 +128,27 @@ describe("ViewStore", () => {
     expect(api.writes).toEqual(["day"]);
   });
 });
+
+describe("section «Hoy» (F13-07)", () => {
+  it("restores the saved section when it is today, notes or agenda, and falls back to agenda", async () => {
+    for (const [saved, expected] of [
+      ["today", "today"],
+      ["notes", "notes"],
+      ["agenda", "agenda"],
+      ["algo raro", "agenda"],
+      [null, "agenda"],
+    ] as const) {
+      const store = new ViewStore({ api: new FakeViewApi(saved) });
+      await store.load();
+      expect(store.section).toBe(expected);
+    }
+  });
+
+  it("saves the change of section", () => {
+    const api = new FakeViewApi();
+    const store = new ViewStore({ api });
+    store.setSection("today");
+    expect(store.section).toBe("today");
+    expect(api.writes).toContain("today");
+  });
+});
