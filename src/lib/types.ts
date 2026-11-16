@@ -155,6 +155,23 @@ export interface Note {
 }
 
 /** A note as listed: a short plain-text excerpt instead of the document. */
+/** A saved version of a note, as listed (F13-03). */
+export interface NoteVersionSummary {
+  id: string;
+  noteId: string;
+  title: string;
+  size: number;
+  createdAt: string;
+}
+
+export interface NoteVersion {
+  id: string;
+  noteId: string;
+  title: string;
+  contentJson: string;
+  createdAt: string;
+}
+
 /** A named document new notes can start from (F13-02). */
 export interface NoteTemplate {
   id: string;

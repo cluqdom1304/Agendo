@@ -8,6 +8,7 @@ import type {
   NotesListQuery,
   NoteSummary,
   NoteTemplate,
+  NoteVersion,
 } from "../../types";
 import type { NotesApi } from "../../stores/notes.svelte";
 
@@ -105,6 +106,27 @@ export class FakeNotesApi implements NotesApi {
     });
     this.notes = [created, ...this.notes];
     return created;
+  }
+  versions: NoteVersion[] = [];
+  async noteVersionsList(noteId: string) {
+    return this.versions
+      .filter((item) => item.noteId === noteId)
+      .map(({ contentJson, ...rest }) => ({
+        ...rest,
+        size: contentJson.length,
+      }));
+  }
+  async noteVersionGet(id: string) {
+    const found = this.versions.find((item) => item.id === id);
+    if (!found) throw "NOT_FOUND: no existe";
+    return found;
+  }
+  async noteVersionRestore(id: string) {
+    const version = await this.noteVersionGet(id);
+    return this.noteUpdate(version.noteId, {
+      title: version.title,
+      contentJson: version.contentJson,
+    });
   }
   templates: NoteTemplate[] = [];
   async templateList() {

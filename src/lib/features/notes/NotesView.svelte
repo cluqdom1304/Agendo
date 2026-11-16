@@ -97,7 +97,7 @@
     <div class="pane">
       {#if notes.open}
         <!-- Restoring the open note of the trash rebuilds the pane, now editable. -->
-        {#key `${notes.open.id}:${notes.openInTrash}`}
+        {#key `${notes.open.id}:${notes.openInTrash}:${notes.revision}`}
           <NotePane {notes} note={notes.open} {tasks} {onPreviewTask} />
         {/key}
       {:else}

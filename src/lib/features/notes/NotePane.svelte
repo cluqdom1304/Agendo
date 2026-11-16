@@ -16,6 +16,7 @@
   import { formatNoteStamp } from "./format";
   import NoteFind from "./NoteFind.svelte";
   import NoteBacklinks from "./NoteBacklinks.svelte";
+  import NoteHistory from "./NoteHistory.svelte";
   import NoteEditor from "./NoteEditor.svelte";
   import { NoteSaver } from "./noteSaver";
   import NoteTaskDialog from "./NoteTaskDialog.svelte";
@@ -148,6 +149,7 @@
   const MORE_ITEMS: MenuItem[] = [
     { id: "duplicate", label: t.notesApp.duplicate },
     { id: "convert", label: t.notesApp.convertChecklists },
+    { id: "history", label: t.notesApp.history.open },
     { id: "delete", label: t.notesApp.delete, danger: true, separated: true },
   ];
 
@@ -232,9 +234,19 @@
   const saveContent = (contentJson: string) =>
     notes.saveContent(id, contentJson);
 
+  let historyOpen = $state(false);
+
+  /** What is typed must be saved first, or the history would compare an older text. */
+  async function openHistory() {
+    await titleSaver.flush();
+    await editor?.flush();
+    historyOpen = true;
+  }
+
   function onMore(action: string) {
     if (action === "duplicate") void notes.duplicateNote(id);
     else if (action === "convert") void convertChecklists();
+    else if (action === "history") void openHistory();
     else if (action === "delete") void notes.trashNote(id);
   }
 </script>
@@ -481,6 +493,13 @@
         </p>
       {/if}
       <NoteBacklinks {notes} noteId={id} />
+      {#if historyOpen}
+        <NoteHistory
+          {notes}
+          note={current}
+          onClose={() => (historyOpen = false)}
+        />
+      {/if}
       <NoteTasksPanel
         {tasks}
         noteId={id}

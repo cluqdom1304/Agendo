@@ -250,6 +250,27 @@ export const t = {
     createFailed: "No se pudo crear la nota.",
     dailyTitle: (date: string) => `Nota del ${date}`,
     dailyFailed: "No se pudo abrir la nota del día.",
+    history: {
+      title: "Historial de versiones",
+      close: "Cerrar",
+      loading: "Cargando versiones…",
+      empty:
+        "Esta nota aún no tiene versiones anteriores. Se guardan solas mientras la editas.",
+      listLabel: "Versiones guardadas",
+      pick: "Elige una versión para compararla con la nota actual.",
+      identical: "Esta versión es igual que la nota actual.",
+      changes: (count: number) =>
+        count === 1
+          ? "1 diferencia respecto a la nota actual."
+          : `${count} diferencias respecto a la nota actual.`,
+      diffLabel: "Diferencias con la nota actual",
+      added: "Añadido en la nota actual",
+      removed: "Solo en esta versión",
+      restore: "Restaurar esta versión",
+      restored: "Versión restaurada. El texto anterior queda en el historial.",
+      failed: "No se pudo completar la operación con el historial.",
+      open: "Historial de versiones…",
+    },
     templates: {
       title: "Plantillas de nota",
       close: "Cerrar plantillas",

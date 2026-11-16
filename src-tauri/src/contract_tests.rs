@@ -19,8 +19,8 @@ use crate::{
     repo::{
         find::FoundItem,
         model::{
-            Folder, FolderWithCount, Note, NoteSummary, NoteTemplate, Reminder, Tag, TagWithCount,
-            Task,
+            Folder, FolderWithCount, Note, NoteSummary, NoteTemplate, NoteVersion,
+            NoteVersionSummary, Reminder, Tag, TagWithCount, Task,
         },
         search::SearchHit,
     },
@@ -150,6 +150,20 @@ fn current() -> Value {
         "folderWithCount": FolderWithCount { folder: folder(), note_count: 3 },
         "note": note(true),
         "noteInInbox": note(false),
+        "noteVersionSummary": NoteVersionSummary {
+            id: "version-1".into(),
+            note_id: "note-1".into(),
+            title: "Apuntes de clase".into(),
+            size: 120,
+            created_at: "2026-03-10T10:00:00Z".into(),
+        },
+        "noteVersion": NoteVersion {
+            id: "version-1".into(),
+            note_id: "note-1".into(),
+            title: "Apuntes de clase".into(),
+            content_json: r#"{"type":"doc","content":[]}"#.into(),
+            created_at: "2026-03-10T10:00:00Z".into(),
+        },
         "noteTemplate": NoteTemplate {
             id: "template-1".into(),
             name: "Reunión".into(),

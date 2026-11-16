@@ -118,6 +118,29 @@ pub struct TagInput {
     pub now: String,
 }
 
+/// A saved version of a note, as listed: no document (F13-03).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteVersionSummary {
+    pub id: String,
+    pub note_id: String,
+    pub title: String,
+    /// Length of the stored document, to tell versions apart at a glance.
+    pub size: i64,
+    pub created_at: String,
+}
+
+/// A saved version of a note with its document.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteVersion {
+    pub id: String,
+    pub note_id: String,
+    pub title: String,
+    pub content_json: String,
+    pub created_at: String,
+}
+
 /// A named document new notes can start from (F13-02).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -14,6 +14,8 @@ import type {
   NotePatch,
   NoteSummary,
   NoteTemplate,
+  NoteVersion,
+  NoteVersionSummary,
   NotesListQuery,
   ReminderFired,
   ReminderInput,
@@ -215,6 +217,20 @@ export function noteCreate(input: NoteCreateInput = {}): Promise<Note> {
 
 export function noteDailyOpen(date: string, title: string): Promise<Note> {
   return invoke<Note>("note_daily_open", { date, title });
+}
+
+export function noteVersionsList(
+  noteId: string,
+): Promise<NoteVersionSummary[]> {
+  return invoke<NoteVersionSummary[]>("note_versions_list", { noteId });
+}
+
+export function noteVersionGet(id: string): Promise<NoteVersion> {
+  return invoke<NoteVersion>("note_version_get", { id });
+}
+
+export function noteVersionRestore(id: string): Promise<Note> {
+  return invoke<Note>("note_version_restore", { id });
 }
 
 export function templateList(): Promise<NoteTemplate[]> {

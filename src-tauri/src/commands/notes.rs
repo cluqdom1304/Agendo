@@ -15,6 +15,7 @@ use crate::{
         model::{NewNote, Note, NoteContent, NotePatch, NoteSummary},
         note_tags,
         notes::{self, Scope, Sort},
+        versions,
     },
     state::{AppState, run_blocking},
 };
@@ -170,6 +171,17 @@ pub fn daily_open(state: &AppState, date: &str, title: &str) -> AppResult<Note> 
 }
 
 pub fn update(state: &AppState, id: &str, patch: NotePatchInput) -> AppResult<Note> {
+    update_with(state, id, patch, false)
+}
+
+/// `update`, where `force_snapshot` keeps the replaced document as a version even if a recent
+/// one exists (restoring a version, F13-03).
+pub fn update_with(
+    state: &AppState,
+    id: &str,
+    patch: NotePatchInput,
+    force_snapshot: bool,
+) -> AppResult<Note> {
     if let Some(title) = &patch.title {
         validation::validate_title(title)?;
     }
@@ -182,9 +194,25 @@ pub fn update(state: &AppState, id: &str, patch: NotePatchInput) -> AppResult<No
         content,
     };
     let now = state.clock.now_string();
+    let due_before = dates::format_instant(
+        state.clock.now() - chrono::Duration::minutes(versions::SNAPSHOT_EVERY_MINUTES),
+    );
+    let version_id = state.ids.new_id();
     state.db.write(|tx| {
         if repo_patch.title.is_none() && repo_patch.content.is_none() {
             return notes::get(tx, id)?.ok_or_else(|| note_not_found(id));
+        }
+        if let Some(content) = &repo_patch.content {
+            let current = notes::get(tx, id)?.ok_or_else(|| note_not_found(id))?;
+            versions::capture(
+                tx,
+                &version_id,
+                &current,
+                &content.json,
+                &now,
+                &due_before,
+                force_snapshot,
+            )?;
         }
         let note = notes::update(tx, id, &repo_patch, &now)?.ok_or_else(|| note_not_found(id))?;
         if let Some(ids) = &attachment_ids {

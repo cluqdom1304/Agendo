@@ -10,4 +10,5 @@ pub mod startup;
 pub mod tags;
 pub mod tasks;
 pub mod templates;
+pub mod versions;
 pub mod window;

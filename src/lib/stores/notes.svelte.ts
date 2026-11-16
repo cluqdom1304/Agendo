@@ -14,6 +14,8 @@ import type {
   NotesListQuery,
   NoteSummary,
   NoteTemplate,
+  NoteVersion,
+  NoteVersionSummary,
   FoundItem,
 } from "../types";
 
@@ -29,6 +31,9 @@ export interface NotesApi {
   noteGet(id: string): Promise<Note>;
   noteCreate(input?: NoteCreateInput): Promise<Note>;
   noteDailyOpen(date: string, title: string): Promise<Note>;
+  noteVersionsList(noteId: string): Promise<NoteVersionSummary[]>;
+  noteVersionGet(id: string): Promise<NoteVersion>;
+  noteVersionRestore(id: string): Promise<Note>;
   templateList(): Promise<NoteTemplate[]>;
   templateSave(input: {
     id?: string;
@@ -114,6 +119,8 @@ export class NotesStore {
   /** Templates for new notes (F13-02), loaded when the dialog opens. */
   templates = $state.raw<NoteTemplate[]>([]);
   templatesOpen = $state(false);
+  /** Grows when the open note is replaced from outside the editor (a restored version). */
+  revision = $state(0);
   /** Notes sent to the trash in this session, newest last, to bring them back. */
   undoStack = $state.raw<string[]>([]);
   /** Folders whose children are shown. */
@@ -287,6 +294,40 @@ export class NotesStore {
     } catch {
       this.#fail(t.notesApp.createFailed);
       return null;
+    }
+  }
+
+  async versionList(noteId: string): Promise<NoteVersionSummary[]> {
+    try {
+      return await this.#api.noteVersionsList(noteId);
+    } catch {
+      this.#fail(t.notesApp.history.failed);
+      return [];
+    }
+  }
+
+  async versionGet(id: string): Promise<NoteVersion | null> {
+    try {
+      return await this.#api.noteVersionGet(id);
+    } catch {
+      this.#fail(t.notesApp.history.failed);
+      return null;
+    }
+  }
+
+  /** Puts a version back in its note; the editor is rebuilt with the restored text. */
+  async restoreVersion(id: string): Promise<boolean> {
+    try {
+      const restored = await this.#api.noteVersionRestore(id);
+      this.titles.set(restored.id, restored.title);
+      this.#adopt(restored);
+      this.revision += 1;
+      await this.#refreshList().catch(() => undefined);
+      this.notice = { kind: "info", message: t.notesApp.history.restored };
+      return true;
+    } catch {
+      this.#fail(t.notesApp.history.failed);
+      return false;
     }
   }
 

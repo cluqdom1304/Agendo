@@ -285,6 +285,11 @@
   });
 
   /** Puts a reference to the task after the cursor. */
+  /** Saves what is pending now (before the history restores another document). */
+  export function flush(): Promise<void> {
+    return saver.flush();
+  }
+
   export function insertTaskRef(taskId: string): void {
     handle?.insertTaskRef(taskId);
   }

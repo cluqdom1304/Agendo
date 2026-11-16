@@ -125,6 +125,20 @@
     "name": "Reunión",
     "updatedAt": "2026-03-10T11:00:00Z"
   },
+  "noteVersion": {
+    "contentJson": "{\"type\":\"doc\",\"content\":[]}",
+    "createdAt": "2026-03-10T10:00:00Z",
+    "id": "version-1",
+    "noteId": "note-1",
+    "title": "Apuntes de clase"
+  },
+  "noteVersionSummary": {
+    "createdAt": "2026-03-10T10:00:00Z",
+    "id": "version-1",
+    "noteId": "note-1",
+    "size": 120,
+    "title": "Apuntes de clase"
+  },
   "rangeOutput": [
     {
       "completedAt": "2026-03-12T08:00:00Z",

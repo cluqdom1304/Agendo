@@ -17,6 +17,7 @@ pub mod settings;
 pub mod tags;
 pub mod tasks;
 pub mod templates;
+pub mod versions;
 
 #[cfg(test)]
 mod random_ops_tests;
