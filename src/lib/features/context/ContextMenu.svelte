@@ -197,7 +197,10 @@
 
   // A submenu opens to the right, or to the left when there is no room, and slides up if it
   // would fall off the bottom.
-  function fitSub(node: HTMLElement) {
+  function fitSub(node: HTMLElement, depth: number) {
+    // The first panel is placed by `place`, which runs after this action (children mount first):
+    // measuring it here would read a box that has no position yet and push it out of the window.
+    if (depth === 0) return;
     const box = node.getBoundingClientRect();
     if (box.left + node.offsetWidth > window.innerWidth - 8) {
       node.classList.add("flip");
@@ -233,7 +236,7 @@
     role="menu"
     aria-label={current?.label}
     data-depth={depth}
-    use:fitSub
+    use:fitSub={depth}
   >
     {#each list as entry (entry.id)}
       <div class="slot">
