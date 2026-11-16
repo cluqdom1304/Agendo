@@ -229,6 +229,15 @@ export class TasksStore {
     }
   }
 
+  /** Reads everything again, after a change made behind the interface's back. */
+  async refresh(): Promise<void> {
+    try {
+      this.tasks = await this.#fetchAll();
+    } catch (error) {
+      this.#report(error);
+    }
+  }
+
   async #fetchAll(): Promise<Task[]> {
     const [todo, agenda] = await Promise.all([
       this.#api.tasksList({ view: "todo" }),

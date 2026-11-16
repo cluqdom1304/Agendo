@@ -69,6 +69,19 @@ El agente registra aquí cualquier bloqueo, ambigüedad de producto o test que n
 - **Estado:** RESUELTO
 - **Resolución humana:** 2026-11-09, a petición del usuario: opción 2 (duración, ver D-33).
 
+## B-05 — Tareas recurrentes: qué ocurre al completar y qué reglas se admiten
+- **Fecha:** 2026-11-16
+- **Tarea afectada:** F13-05
+- **Tipo:** DECISION_PRODUCTO
+- **Causa:** D-07 solo reserva la columna `tasks.rrule`; no define el comportamiento. La recurrencia afecta a completar, a la ordenación, a los avisos (D-32 ya repite avisos sueltos) y a la papelera, y el resultado cambia lo que ve el usuario.
+- **Intentos:** revisado el esquema (`rrule TEXT NULL` desde la 001), D-07 y D-32 (avisos periódicos). No hay ninguna regla escrita sobre completar una tarea repetida.
+- **Opciones:**
+  1. **Siguiente ocurrencia (recomendada):** al completar una tarea repetida, esa tarea queda hecha (historial) y se crea otra igual con la fecha siguiente. Reglas: cada N días/semanas/meses/años (con días de la semana opcionales para semanal), `rrule` guardado como un subconjunto de RFC 5545 (`FREQ`, `INTERVAL`, `BYDAY`, `COUNT`, `UNTIL`). Avisos relativos a la fecha se recalculan en la nueva; los de hora fija no se copian.
+  2. **Misma tarea que avanza:** al completar, la tarea no se marca hecha: su fecha salta a la siguiente ocurrencia. Más simple de modelar (una fila), pero no deja historial de lo hecho y «Completadas» no refleja nada.
+- **Recomendación del agente:** opción 1, con migración nueva para la regla (usa `rrule`, sin tocar datos) y el cálculo de la siguiente ocurrencia en `domain/` con tests de calendario (fin de mes, años bisiestos, cambio horario).
+- **Estado:** ABIERTO
+- **Resolución humana:**
+
 ---
 
 ## Resueltos

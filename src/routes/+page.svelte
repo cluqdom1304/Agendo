@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
 
-  import { onReminderFired } from "$lib/api";
+  import { onReminderFired, onReminderOpen, onTasksChanged } from "$lib/api";
   import ContextMenu from "$lib/features/context/ContextMenu.svelte";
   import FolderSidebar from "$lib/features/notes/FolderSidebar.svelte";
   import {
@@ -117,8 +117,15 @@
       if (fired.taskId) return tasksStore.onReminderFired(fired.taskId);
       if (fired.noteId) return notesStore.onReminderFired(fired.noteId);
     });
+    const unlistenChanged = onTasksChanged(() => void tasksStore.refresh());
+    const unlistenOpen = onReminderOpen((target) => {
+      if (target.taskId) void showTask(target.taskId);
+      else if (target.noteId) void showNote(target.noteId);
+    });
     return () => {
       void unlisten.then((stop) => stop());
+      void unlistenChanged.then((stop) => stop());
+      void unlistenOpen.then((stop) => stop());
       tasksStore.dispose();
     };
   });

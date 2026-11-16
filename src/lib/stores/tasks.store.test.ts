@@ -490,3 +490,14 @@ describe("reminders", () => {
     expect(store.find("a")?.reminders[0].isSent).toBe(true);
   });
 });
+
+describe("refresh", () => {
+  it("reads the tasks again after a change made outside the interface", async () => {
+    const { api, store } = setup();
+    await store.load();
+    expect(store.find("a")?.isCompleted).toBe(false);
+    api.tasks = api.tasks.map((task) => ({ ...task, isCompleted: true }));
+    await store.refresh();
+    expect(store.find("a")?.isCompleted).toBe(true);
+  });
+});

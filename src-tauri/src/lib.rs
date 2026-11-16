@@ -67,6 +67,7 @@ pub fn run() {
             }
             app.manage(Arc::clone(&state));
             let handle = app.handle().clone();
+            notify::install_actions(&handle, Arc::clone(&state));
             tauri::async_runtime::spawn(scheduler::run(
                 state,
                 Arc::new(TauriNotifier(handle.clone())),

@@ -131,6 +131,25 @@ export function remindersSet(
   return invoke<Task>("reminders_set", { taskId, reminders });
 }
 
+/** Tasks changed outside the interface, e.g. from a notification button (SPEC §7.4). */
+export function onTasksChanged(
+  handler: (changed: { ids: string[] }) => void,
+): Promise<UnlistenFn> {
+  return listen<{ ids: string[] }>("tasks:changed", (event) =>
+    handler(event.payload),
+  );
+}
+
+/** The user clicked a notification: show the task or the note it is about (F13-06). */
+export function onReminderOpen(
+  handler: (target: { taskId?: string | null; noteId?: string | null }) => void,
+): Promise<UnlistenFn> {
+  return listen<{ taskId?: string | null; noteId?: string | null }>(
+    "reminder:open",
+    (event) => handler(event.payload),
+  );
+}
+
 /** Calls `handler` each time the scheduler delivers a reminder (SPEC §7.4). */
 export function onReminderFired(
   handler: (fired: ReminderFired) => void,
