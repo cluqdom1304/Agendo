@@ -3,6 +3,7 @@ pub mod autostart;
 pub mod backup;
 pub mod exchange;
 pub mod folders;
+pub mod info;
 pub mod note_reminders;
 pub mod notes;
 pub mod reminders;

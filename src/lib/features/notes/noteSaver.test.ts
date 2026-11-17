@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { NoteSaver } from "./noteSaver";
+import { flushAllSavers, NoteSaver } from "./noteSaver";
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -68,5 +68,26 @@ describe("NoteSaver", () => {
     await saver.flush();
     expect(save).toHaveBeenCalledTimes(2);
     expect(saver.dirty).toBe(false);
+  });
+});
+
+describe("flushAllSavers", () => {
+  it("saves the text of every note that is still waiting for its delay", async () => {
+    const saved: string[] = [];
+    const a = new NoteSaver(
+      async (json) => void saved.push(`a:${json}`),
+      10_000,
+    );
+    const b = new NoteSaver(
+      async (json) => void saved.push(`b:${json}`),
+      10_000,
+    );
+    a.schedule("1");
+    b.schedule("2");
+    await flushAllSavers();
+    expect(saved.sort()).toEqual(["a:1", "b:2"]);
+    saved.length = 0;
+    await flushAllSavers();
+    expect(saved).toEqual([]);
   });
 });

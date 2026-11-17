@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 import type {
+  AppInfo,
   ExportFormat,
   ExportKind,
   ExportReport,
@@ -362,4 +363,8 @@ export function autostartGet(): Promise<boolean> {
 
 export function autostartSet(enabled: boolean): Promise<void> {
   return invoke<void>("autostart_set", { enabled });
+}
+
+export function appInfo(): Promise<AppInfo> {
+  return invoke<AppInfo>("app_info");
 }

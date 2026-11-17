@@ -162,9 +162,9 @@ describe("deleting with undo", () => {
 });
 
 describe("creating and editing", () => {
-  it("Ctrl+N opens a focused draft; Enter saves it and opens the next one", async () => {
+  it("Ctrl+Shift+N opens a focused draft; Enter saves it and opens the next one", async () => {
     const { api } = await mount([makeTask({ id: "a", title: "Existente" })]);
-    await key({ key: "n", ctrlKey: true });
+    await key({ key: "n", ctrlKey: true, shiftKey: true });
     const input = screen.getByPlaceholderText(
       "Nueva tarea",
     ) as HTMLInputElement;
@@ -194,7 +194,7 @@ describe("creating and editing", () => {
 
   it("Esc discards a draft", async () => {
     const { api } = await mount([makeTask({ id: "a", title: "Existente" })]);
-    await key({ key: "n", ctrlKey: true });
+    await key({ key: "n", ctrlKey: true, shiftKey: true });
     const input = screen.getByPlaceholderText("Nueva tarea");
     await fireEvent.input(input, { target: { value: "No guardar" } });
     await key({ key: "Escape" }, input);

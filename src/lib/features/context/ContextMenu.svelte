@@ -4,7 +4,7 @@
   import { t } from "../../i18n";
   import { contextMenu, type ContextEntry } from "./context.svelte";
   import { buildEntries, type ContextDeps } from "./entries";
-  import { clampStart, slideToFit } from "./placement";
+  import { clampStart, slideToFit, subSidePlacement } from "./placement";
   import { resolveTarget } from "./target";
 
   // The menu of the right click and of the Menu key / Shift+F10 (D-50). It is drawn by the
@@ -202,9 +202,15 @@
     // measuring it here would read a box that has no position yet and push it out of the window.
     if (depth === 0) return;
     const box = node.getBoundingClientRect();
-    if (box.left + node.offsetWidth > window.innerWidth - 8) {
-      node.classList.add("flip");
-    }
+    const parent = (node.parentElement ?? node).getBoundingClientRect();
+    const side = subSidePlacement(
+      parent.left,
+      parent.right,
+      node.offsetWidth,
+      window.innerWidth,
+    );
+    if (side.flip) node.classList.add("flip");
+    if (side.shift !== 0) node.style.translate = `${side.shift}px 0`;
     const shift = slideToFit(box.top, node.offsetHeight, window.innerHeight);
     if (shift !== 0) node.style.marginTop = `${shift}px`;
   }

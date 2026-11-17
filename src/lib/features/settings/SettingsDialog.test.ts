@@ -9,12 +9,30 @@ import {
 } from "../../stores/settings.svelte";
 import SettingsDialog from "./SettingsDialog.svelte";
 
+const info = {
+  version: "2.0.2",
+  tauriVersion: "2.9.0",
+  webviewVersion: null,
+  sqliteVersion: "3.50.0",
+  schemaVersion: 11,
+  os: "windows",
+  arch: "x86_64",
+  build: "release" as const,
+  dataDir: "C:/Datos/agendo",
+  databaseBytes: 2048,
+  tasks: 12,
+  notes: 3,
+  tags: 4,
+  attachments: 0,
+};
+
 function mount(
   options: {
     open?: string | null;
     save?: string | null;
     folder?: string | null;
     enex?: string[];
+    loadInfo?: () => Promise<typeof info>;
   } = {},
 ) {
   const api = {
@@ -61,6 +79,7 @@ function mount(
     pickJsonPath,
     pickEnexPaths,
     now: () => new Date(2026, 2, 9, 12, 0),
+    ...(options.loadInfo ? { loadInfo: options.loadInfo } : {}),
   });
   return {
     api,
@@ -256,5 +275,35 @@ describe("SettingsDialog", () => {
       "está dañado",
     );
     expect(onRestored).not.toHaveBeenCalled();
+  });
+});
+
+describe("application info", () => {
+  it("shows the version and the public figures when the button is pressed", async () => {
+    const loadInfo = vi.fn(async () => info);
+    mount({ loadInfo });
+    expect(screen.queryByText("2.0.2")).toBeNull();
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Información de la aplicación" }),
+    );
+    expect(await screen.findByText("2.0.2")).toBeTruthy();
+    expect(screen.getByText("2 KB")).toBeTruthy();
+    expect(screen.getByText("C:/Datos/agendo")).toBeTruthy();
+    expect(screen.getByText("No disponible")).toBeTruthy();
+    expect(loadInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it("says so when the information cannot be read", async () => {
+    mount({
+      loadInfo: async () => {
+        throw new Error("IO: sin acceso");
+      },
+    });
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Información de la aplicación" }),
+    );
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "No se pudo leer",
+    );
   });
 });

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
+  import { flushAllSavers } from "../features/notes/noteSaver";
   import { t } from "../i18n";
 
   async function run(action: (appWindow: Window) => Promise<void>) {
@@ -47,7 +48,12 @@
     class="control close"
     aria-label={t.window.close}
     title={t.window.close}
-    onclick={() => run((appWindow) => appWindow.close())}
+    onclick={() =>
+      run(async (appWindow) => {
+        // Text typed in the last 400 ms is still waiting for its debounced save.
+        await flushAllSavers();
+        await appWindow.close();
+      })}
   >
     <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
       <path

@@ -19,3 +19,24 @@ export function slideToFit(top: number, size: number, limit: number): number {
   const shift = Math.min(0, limit - EDGE - (top + size));
   return Math.max(shift, EDGE - top);
 }
+
+/**
+ * Which side a submenu opens on and how far it must slide sideways so it stays inside the window.
+ * It prefers the right of its parent, then the left; when neither fits it takes the side with more
+ * room and slides back in, so it is never cut by an edge (the sidebar sits against the left one).
+ */
+export function subSidePlacement(
+  parentLeft: number,
+  parentRight: number,
+  size: number,
+  limit: number,
+): { flip: boolean; shift: number } {
+  const GAP = 2;
+  const rightOverflow = Math.max(0, parentRight + GAP + size - (limit - EDGE));
+  const leftOverflow = Math.max(0, EDGE - (parentLeft - GAP - size));
+  if (rightOverflow === 0) return { flip: false, shift: 0 };
+  if (leftOverflow === 0) return { flip: true, shift: 0 };
+  return rightOverflow <= leftOverflow
+    ? { flip: false, shift: -rightOverflow }
+    : { flip: true, shift: leftOverflow };
+}

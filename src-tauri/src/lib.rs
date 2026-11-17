@@ -159,7 +159,8 @@ pub fn run() {
             commands::exchange::import_markdown,
             commands::exchange::import_enex,
             commands::autostart::autostart_get,
-            commands::autostart::autostart_set
+            commands::autostart::autostart_set,
+            commands::info::app_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

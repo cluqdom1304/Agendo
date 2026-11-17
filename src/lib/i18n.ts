@@ -522,8 +522,7 @@ export const t = {
   },
   newTask: {
     button: "Nueva tarea",
-    buttonHint:
-      "Nueva tarea con fecha, avisos y descripción. Ctrl+N crea una en línea.",
+    buttonHint: "Nueva tarea con fecha, avisos y descripción (Ctrl+N).",
     title: "Nueva tarea",
     titleLabel: "Título",
     titlePlaceholder: "¿Qué hay que hacer?",
@@ -629,6 +628,29 @@ export const t = {
     autostart: "Iniciar con Windows",
     autostartHint:
       "La aplicación se abrirá al iniciar sesión. Desactivado por defecto.",
+    about: "Acerca de",
+    aboutButton: "Información de la aplicación",
+    aboutLoading: "Leyendo la información…",
+    aboutFailed: "No se pudo leer la información de la aplicación.",
+    aboutPrivacy:
+      "Todo se guarda en este equipo: la aplicación no tiene cuentas, telemetría ni conexión a internet.",
+    aboutRows: {
+      version: "Versión",
+      build: "Compilación",
+      os: "Sistema",
+      webview: "Motor web (WebView2)",
+      tauri: "Tauri",
+      sqlite: "SQLite",
+      schema: "Esquema de la base de datos",
+      dataDir: "Carpeta de datos",
+      size: "Tamaño de la base de datos",
+      tasks: "Tareas",
+      notes: "Notas",
+      tags: "Etiquetas",
+      attachments: "Archivos adjuntos",
+    },
+    aboutBuild: { release: "Versión instalada", debug: "Desarrollo" },
+    aboutUnknown: "No disponible",
     backups: "Copias de seguridad",
     backupHint:
       "Guarda tus tareas, notas e imágenes en un archivo .agendo o recupéralos desde uno (también acepta las copias .sqlite de versiones anteriores).",

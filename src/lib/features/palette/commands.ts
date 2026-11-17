@@ -15,10 +15,12 @@ export interface CommandDeps {
   notes: NotesStore;
   tasks: TasksStore;
   tags: TagsStore;
+  /** Opens the full creation dialog (the one Ctrl+N opens). */
+  newTask?: () => void;
 }
 
 export function buildCommands(deps: CommandDeps): PaletteCommand[] {
-  const { view, notes, tasks, tags } = deps;
+  const { view, notes, tasks, tags, newTask } = deps;
   const l = t.palette.commands;
 
   const inAgenda = (action: () => void) => () => {
@@ -36,7 +38,9 @@ export function buildCommands(deps: CommandDeps): PaletteCommand[] {
       id: "new-task",
       label: l.newTask,
       shortcut: "Ctrl+N",
-      run: inAgenda(() => tasks.startDraft(tasks.defaultTarget())),
+      run: inAgenda(() =>
+        newTask ? newTask() : tasks.startDraft(tasks.defaultTarget()),
+      ),
     },
     {
       id: "new-task-today",

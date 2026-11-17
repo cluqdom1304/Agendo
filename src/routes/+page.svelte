@@ -186,6 +186,20 @@
       );
       return;
     }
+    if (shortcut === "newTask" && viewStore.section === "agenda") {
+      // A dialog already on top (settings, a task) owns the keyboard.
+      if (document.querySelector('[aria-modal="true"]')) return;
+      event.preventDefault();
+      const target = tasksStore.defaultTarget();
+      openNewTask(
+        viewStore.mode !== "list"
+          ? null
+          : target.section === "agenda"
+            ? target.date
+            : null,
+      );
+      return;
+    }
     const mode = shortcut ? SHORTCUT_VIEWS[shortcut] : undefined;
     if (!mode || viewStore.section !== "agenda") return;
     event.preventDefault();
@@ -347,6 +361,7 @@
   <PaletteHost
     mode={palette}
     onTask={(taskId) => void showTask(taskId)}
+    onNewTask={() => openNewTask()}
     onClose={() => (palette = null)}
   />
 {/if}

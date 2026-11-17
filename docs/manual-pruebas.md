@@ -339,3 +339,10 @@ Movimiento y fluidez
 
 ## Versión 2.0.1 (`[H]`)
 - [ ] Clic derecho en una tarea, una nota, una carpeta y una etiqueta pegado al borde superior, inferior, izquierdo y derecho y en las esquinas: el menú entero queda a la vista, sin cortarse. Abrir un submenú («Mover a») cerca del borde inferior y del superior: se desliza para caber y se desplaza si hay muchas carpetas. Con la ventana al tamaño mínimo (720×480) ocurre lo mismo.
+
+## Versión 2.0.2 (`[H]`)
+- [ ] Ctrl+N en la agenda (lista, día, semana y mes) abre el diálogo «Nueva tarea» con el título enfocado; con un diálogo ya abierto no abre otro; Ctrl+Mayús+N sigue creando un borrador en línea de hoy. En «Notas» Ctrl+N sigue creando una nota.
+- [ ] Escribir una palabra mal en la descripción de una tarea y en el editor de una nota: el subrayado rojo aparece al escribir y desaparece al quitar el foco; vuelve al recuperarlo.
+- [ ] Clic derecho en una tarea pegada a la barra lateral › «Etiquetas»: el submenú se ve entero, sin cortarse con la barra izquierda ni con el borde derecho.
+- [ ] Ajustes › «Acerca de» › «Información de la aplicación»: muestra versión 2.0.2, sistema, WebView2, Tauri, SQLite, esquema (11), carpeta de datos (la `.dev` con `tauri dev`), tamaño y recuentos coherentes con lo que hay.
+- [ ] Escribir en una nota y pulsar enseguida el botón de cerrar de la ventana: al reabrir, el último texto está.

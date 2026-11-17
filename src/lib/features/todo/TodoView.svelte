@@ -49,9 +49,6 @@
     const id = row?.dataset.taskId;
 
     switch (shortcut) {
-      case "newTask":
-        store.startDraft(store.defaultTarget());
-        break;
       case "newTaskToday":
         store.startDraft(store.todayTarget());
         break;

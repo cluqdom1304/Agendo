@@ -16,16 +16,19 @@
     mode: PaletteMode;
     /** Shows the task in the agenda (the page knows how to reveal it). */
     onTask: (taskId: string) => void;
+    /** Opens the creation dialog. */
+    onNewTask?: () => void;
     onClose: () => void;
   }
 
-  let { mode, onTask, onClose }: Props = $props();
+  let { mode, onTask, onNewTask, onClose }: Props = $props();
 
   const commands = buildCommands({
     view: viewStore,
     notes: notesStore,
     tasks: tasksStore,
     tags: tagsStore,
+    newTask: () => onNewTask?.(),
   });
 
   // The recent notes are known by id: their titles are looked up when the palette opens.

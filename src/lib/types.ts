@@ -309,3 +309,21 @@ export type ThemeMode = "system" | "light" | "dark";
 
 /** What the main area shows (F-10). */
 export type ViewMode = "list" | "day" | "week" | "month";
+
+/** Public facts about the installation, shown in Ajustes › Información (`app_info`). */
+export interface AppInfo {
+  version: string;
+  tauriVersion: string;
+  webviewVersion: string | null;
+  sqliteVersion: string;
+  schemaVersion: number;
+  os: string;
+  arch: string;
+  build: "release" | "debug";
+  dataDir: string;
+  databaseBytes: number;
+  tasks: number;
+  notes: number;
+  tags: number;
+  attachments: number;
+}

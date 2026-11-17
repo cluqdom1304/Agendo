@@ -1,6 +1,6 @@
 {
   "name": "agendo",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Agenda y editor de notas de escritorio para Windows 11. 100 % local, sin cuentas ni telemetría.",
   "type": "module",
   "scripts": {
