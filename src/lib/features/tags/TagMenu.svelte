@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from "../../i18n";
+  import { dropdownPosition } from "../context/placement";
   import { tagsStore } from "../../stores/tags.svelte";
 
   interface Props {
@@ -27,6 +28,29 @@
     onClose();
   }
 
+  // Fixed to the window, not to the row: the row can sit anywhere (next to the sidebar, near the
+  // bottom), and an absolute menu was cut by whatever was beside it.
+  function place(node: HTMLElement) {
+    const anchor = node.parentElement?.getBoundingClientRect();
+    if (!anchor) return;
+    const { left, top } = dropdownPosition(
+      anchor,
+      { width: node.offsetWidth, height: node.offsetHeight },
+      { width: window.innerWidth, height: window.innerHeight },
+    );
+    node.style.left = `${left}px`;
+    node.style.top = `${top}px`;
+    // A fixed menu does not follow its row when the list scrolls.
+    const onScroll = (event: Event) => {
+      if (event.target instanceof Node && node.contains(event.target)) return;
+      onClose();
+    };
+    window.addEventListener("scroll", onScroll, true);
+    return {
+      destroy: () => window.removeEventListener("scroll", onScroll, true),
+    };
+  }
+
   // The menu stays open so several tags can be ticked one after another.
   function toggle(tagId: string) {
     onChange(
@@ -37,9 +61,19 @@
   }
 </script>
 
-<svelte:window onpointerdown={onPointerDown} onkeydown={onKeydown} />
+<svelte:window
+  onpointerdown={onPointerDown}
+  onkeydown={onKeydown}
+  onresize={onClose}
+/>
 
-<div bind:this={menu} class="menu" role="menu" aria-label={t.tags.menu}>
+<div
+  bind:this={menu}
+  use:place
+  class="menu"
+  role="menu"
+  aria-label={t.tags.menu}
+>
   <button
     type="button"
     role="menuitem"
@@ -92,10 +126,8 @@
 
 <style>
   .menu {
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    z-index: 20;
+    position: fixed;
+    z-index: 40;
     display: flex;
     flex-direction: column;
     gap: 1px;

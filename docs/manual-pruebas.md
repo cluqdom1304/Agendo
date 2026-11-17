@@ -346,3 +346,6 @@ Movimiento y fluidez
 - [ ] Clic derecho en una tarea pegada a la barra lateral › «Etiquetas»: el submenú se ve entero, sin cortarse con la barra izquierda ni con el borde derecho.
 - [ ] Ajustes › «Acerca de» › «Información de la aplicación»: muestra versión 2.0.2, sistema, WebView2, Tauri, SQLite, esquema (10), carpeta de datos (la `.dev` con `tauri dev`), tamaño y recuentos coherentes con lo que hay.
 - [ ] Escribir en una nota y pulsar enseguida el botón de cerrar de la ventana: al reabrir, el último texto está.
+
+## Versión 2.0.3 (`[H]`)
+- [ ] En la lista, pulsar el icono de etiqueta de una tarea (con la barra lateral abierta y también con la ventana al tamaño mínimo): el menú se ve entero, sin cortarse con la barra izquierda ni con el borde derecho; en una tarea del final de la lista se abre hacia arriba. Marcar varias etiquetas seguidas lo mantiene abierto; desplazar la lista o cambiar el tamaño de la ventana lo cierra. Lo mismo en el editor de notas.

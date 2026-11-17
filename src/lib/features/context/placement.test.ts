@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { clampStart, slideToFit, subSidePlacement } from "./placement";
+import {
+  clampStart,
+  dropdownPosition,
+  slideToFit,
+  subSidePlacement,
+} from "./placement";
 
 describe("clampStart", () => {
   it("keeps a menu that fits where it was asked", () => {
@@ -57,5 +62,40 @@ describe("subSidePlacement", () => {
     const narrow = subSidePlacement(300, 500, 420, 600);
     expect(narrow.flip).toBe(true);
     expect(300 - 2 - 420 + narrow.shift).toBeGreaterThanOrEqual(8);
+  });
+});
+
+describe("dropdownPosition", () => {
+  const limit = { width: 1000, height: 700 };
+  const size = { width: 200, height: 200 };
+
+  it("hangs below the button, aligned to its right edge", () => {
+    expect(
+      dropdownPosition({ top: 100, bottom: 130, right: 600 }, size, limit),
+    ).toEqual({ left: 400, top: 136 });
+  });
+
+  it("never starts left of the window margin, even from a button near the left edge", () => {
+    const { left } = dropdownPosition(
+      { top: 100, bottom: 130, right: 90 },
+      size,
+      limit,
+    );
+    expect(left).toBe(8);
+  });
+
+  it("opens above the button when there is no room below", () => {
+    expect(
+      dropdownPosition({ top: 600, bottom: 630, right: 600 }, size, limit),
+    ).toEqual({ left: 400, top: 394 });
+  });
+
+  it("stays inside the window when there is no room above or below", () => {
+    const { top } = dropdownPosition(
+      { top: 100, bottom: 130, right: 600 },
+      { width: 200, height: 650 },
+      limit,
+    );
+    expect(top).toBe(42);
   });
 });

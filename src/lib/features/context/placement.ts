@@ -40,3 +40,22 @@ export function subSidePlacement(
     ? { flip: false, shift: -rightOverflow }
     : { flip: true, shift: leftOverflow };
 }
+
+/**
+ * Where a dropdown of `width` × `height` hangs from the `anchor` button, as window coordinates:
+ * aligned to the button's right edge and below it, pulled inside the window sideways, and above
+ * the button when it would fall off the bottom and there is room above.
+ */
+export function dropdownPosition(
+  anchor: { top: number; bottom: number; right: number },
+  size: { width: number; height: number },
+  limit: { width: number; height: number },
+  gap = 6,
+): { left: number; top: number } {
+  const left = clampStart(anchor.right - size.width, size.width, limit.width);
+  const below = anchor.bottom + gap;
+  const above = anchor.top - gap - size.height;
+  const fitsBelow = below + size.height <= limit.height - EDGE;
+  const top = fitsBelow || above < EDGE ? below : above;
+  return { left, top: clampStart(top, size.height, limit.height) };
+}
