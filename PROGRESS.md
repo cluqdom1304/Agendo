@@ -1,8 +1,8 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 16 de la 2.1.0 en curso (F16-01 a 05 y 08 hechas); la 2.0.3 está publicada
+**Fase activa:** Fase 16 de la 2.1.0 en curso (F16-01 a 06 y 08 hechas); la 2.0.3 está publicada
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F16-06. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
+**Siguiente tarea:** F16-07. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-16 (V2.0.0 cerrada y publicada)
 **Última actualización:** 2026-11-18 (plan de la 2.1.0 aprobado y documentación preparada; código sin tocar)
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -445,7 +445,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F16-03 `[A]` Ejecutable: revisar `opt-level` (`s`/`z` frente a `3`), `codegen-units = 1`, `lto = "fat"`, `panic = "abort"` solo si no rompe D-24 y features de dependencias; registrar tamaño antes y después.
 - [x] F16-04 `[A]` Comprobar si la agenda está virtualizada (SPEC §4.2: > 200 bloques) y, si no, virtualizarla por ventana; test con 10 000 tareas.
 - [x] F16-05 `[A]` Pruebas de escala en build **release** (hoy solo en depuración): 10 000 notas y 10 000 tareas; registrar en `docs/metricas.md`.
-- [ ] F16-06 `[A]` Script de medida de N-01 (arranque hasta primer pintado) y N-02 (RAM en reposo); la ejecución real es `[H]`.
+- [x] F16-06 `[A]` Script de medida de N-01 (arranque hasta primer pintado) y N-02 (RAM en reposo); la ejecución real es `[H]`.
 - [ ] F16-07 `[A]` Estabilizar el test intermitente de `NoteEditor` («loads TipTap lazily») sin saltarlo ni subir su tiempo límite a ciegas.
 - [x] F16-08 `[A]` Aplicar D-56 (aceptado): actualizar el script de presupuesto (`npm run size`) y la tabla de Métricas (no se edita `docs/SPEC.md`).
 - [ ] F16-09 `[H]` Medir N-01/N-02 y la fluidez con datos reales en Windows 11; ejecutar por fin `npm run e2e` (F6-06 y F15-03).

@@ -93,3 +93,8 @@ Prueba con 10 000 tareas: 150 filas en el DOM. La fluidez real al desplazar es `
 | Tareas: un mes | < 30 ms | 1,5 ms |
 
 En depuración la prueba de tareas usa 1 000 y no comprueba tiempos (comparte CPU con otras pruebas de tiempo).
+
+**F16-06:** `npm run measure` (`scripts/measure-startup.ps1`) arranca la versión release varias veces con una carpeta de datos
+temporal (`MIAGENDA_DATA_DIR`, sin tocar los datos reales) y da el tiempo hasta la ventana visible (N-01) y la memoria
+en reposo (proceso principal y con WebView2, N-02). Exige cerrar antes cualquier instancia de Agendo (instancia única). La ejecución
+real y su valor siguen siendo `[H]` (F16-09); la ventana visible aproxima, no sustituye, el primer pintado.

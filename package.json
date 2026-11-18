@@ -12,6 +12,7 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "size": "node scripts/size-check.mjs",
     "audit": "node scripts/bundle-audit.mjs",
+    "measure": "powershell -NoProfile -File scripts/measure-startup.ps1",
     "e2e": "wdio run e2e/wdio.conf.mjs",
     "test": "vitest run",
     "lint": "prettier --check . && eslint .",
