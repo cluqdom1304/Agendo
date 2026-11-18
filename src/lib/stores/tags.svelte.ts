@@ -70,9 +70,23 @@ export class TagsStore {
     return !this.hidden.has(key);
   }
 
+  /** Ids of the subtags of `id` (D-06: one level), empty for a subtag or an unknown tag. */
+  childrenOf(id: string): string[] {
+    return this.tags.filter((tag) => tag.parentId === id).map((tag) => tag.id);
+  }
+
+  /** The tag and its subtags: what filtering by it includes (F17-07). */
+  withChildren(id: string): string[] {
+    return [id, ...this.childrenOf(id)];
+  }
+
+  /** Checking or unchecking a tag does the same to its subtags; a subtag only itself. */
   toggle(key: string): void {
-    if (this.hidden.has(key)) this.hidden.delete(key);
-    else this.hidden.add(key);
+    const show = this.hidden.has(key);
+    for (const id of this.withChildren(key)) {
+      if (show) this.hidden.delete(id);
+      else this.hidden.add(id);
+    }
   }
 
   showAll(): void {
@@ -85,10 +99,10 @@ export class TagsStore {
     for (const tag of this.tags) this.hidden.add(tag.id);
   }
 
-  /** Shows only `key`. */
+  /** Shows only `key` and its subtags. */
   only(key: string): void {
     this.hideAll();
-    this.hidden.delete(key);
+    for (const id of this.withChildren(key)) this.hidden.delete(id);
   }
 
   /** The colour a new tag starts with: the first preset not used yet, else cycling. */

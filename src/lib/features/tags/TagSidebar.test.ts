@@ -84,6 +84,38 @@ describe("TagSidebar", () => {
     expect(counts).toEqual(["2", "0", "1"]);
   });
 
+  it("counts a subtag's tasks under its parent and unchecks the whole group (F17-07)", async () => {
+    const api = new FakeTagsApi();
+    api.tags = [
+      tag("sma", "SMA", 0),
+      { ...tag("t1", "Tema 1", 1), parentId: "sma" },
+      tag("otra", "Otra", 2),
+    ];
+    const tags = new TagsStore(api);
+    await tags.load();
+    const tasks = new TasksStore({
+      api: new FakeApi([
+        makeTask({ id: "1", tagIds: ["t1"] }),
+        makeTask({ id: "2", tagIds: ["sma", "t1"] }),
+        makeTask({ id: "3", tagIds: ["otra"] }),
+      ]),
+      settleMs: () => 0,
+    });
+    tasks.filter = (task) => tags.isVisible(task);
+    await tasks.load();
+    render(TagSidebar, { tags, tasks, open: true });
+
+    const counts = Array.from(document.querySelectorAll(".count")).map(
+      (node) => node.textContent,
+    );
+    // SMA counts both tasks once; Tema 1 two; Otra one; nothing is untagged.
+    expect(counts).toEqual(["2", "2", "1", "0"]);
+
+    await fireEvent.click(box("SMA"));
+    expect((box("Tema 1") as HTMLInputElement).checked).toBe(false);
+    expect(tasks.visibleTasks.map((task) => task.id)).toEqual(["3"]);
+  });
+
   it("starts with everything checked and filters as boxes are unchecked", async () => {
     const { tags, tasks } = await mount();
     expect((box("Mates") as HTMLInputElement).checked).toBe(true);

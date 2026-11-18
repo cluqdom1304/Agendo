@@ -364,6 +364,7 @@ Fase 17 — mejoras de lo existente (F17-10)
 - [ ] F17-03: Ctrl+clic en tres tareas y Mayús+clic para un rango; comprobar el tinte de selección, la barra inferior (no tapa el aviso de deshacer) y que Completar, Etiquetar, Mover al día y Eliminar actúan sobre todas; un solo «Deshacer» (botón y Ctrl+Z) lo revierte; Esc quita la selección.
 - [ ] F17-04: en una nota, tachar y subrayar texto con los botones y con Ctrl+U / Ctrl+Mayús+S; exportar a Markdown y a HTML y abrir los archivos en otro programa (VS Code, navegador) comprobando que se ven; importar ese `.md` de vuelta.
 - [ ] F17-06: importar dos veces la misma carpeta de Markdown y un `.enex` real; la segunda vez el aviso debe decir que las notas ya estaban importadas y no deben aparecer copias. Editar un archivo y reimportar: entra como nota nueva.
+- [ ] F17-07: crear una etiqueta «SMA» con dos subetiquetas; comprobar que desmarcar «SMA» oculta las tareas de las hijas, que «Solo» en «SMA» muestra las de sus hijas y que el contador del padre suma las de las hijas.
 - [ ] _El resto se detalla al implementar F17-02 a F17-09._
 
 Fase 18 — resumen semanal (F18-04)

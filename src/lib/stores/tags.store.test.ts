@@ -90,6 +90,38 @@ describe("TagsStore", () => {
     expect(store.filtered).toBe(false);
   });
 
+  it("filtering by a parent tag includes its subtags (F17-07)", async () => {
+    const { store } = await setup([
+      makeTag("sma"),
+      makeTag("tema1", { parentId: "sma" }),
+      makeTag("tema2", { parentId: "sma" }),
+      makeTag("otra"),
+    ]);
+    expect(store.childrenOf("sma")).toEqual(["tema1", "tema2"]);
+    expect(store.childrenOf("tema1")).toEqual([]);
+
+    store.toggle("sma");
+    expect([...store.hidden].sort()).toEqual(["sma", "tema1", "tema2"]);
+    store.toggle("sma");
+    expect(store.filtered).toBe(false);
+
+    // A subtag alone does not touch its parent or its siblings.
+    store.toggle("tema1");
+    expect([...store.hidden]).toEqual(["tema1"]);
+    store.showAll();
+
+    store.only("sma");
+    expect(store.isChecked("sma")).toBe(true);
+    expect(store.isChecked("tema2")).toBe(true);
+    expect(store.isChecked("otra")).toBe(false);
+    expect(store.isVisible(makeTask({ id: "1", tagIds: ["tema2"] }))).toBe(
+      true,
+    );
+    expect(store.isVisible(makeTask({ id: "2", tagIds: ["otra"] }))).toBe(
+      false,
+    );
+  });
+
   it("treats a task whose tag is unknown as untagged", async () => {
     const { store } = await setup();
     const orphan = makeTask({ id: "1", tagIds: ["gone"] });

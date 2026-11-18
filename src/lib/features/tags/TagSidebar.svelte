@@ -28,7 +28,13 @@
       if (task.isCompleted) continue;
       // A task with several tags counts under each of them.
       const own = tags.tagsOf(task);
-      for (const key of own.length > 0 ? own.map((tag) => tag.id) : [NO_TAG]) {
+      // A task with a subtag also counts under its parent, once.
+      const keys = new Set<string>(); // eslint-disable-line svelte/prefer-svelte-reactivity
+      for (const tag of own) {
+        keys.add(tag.id);
+        if (tag.parentId) keys.add(tag.parentId);
+      }
+      for (const key of keys.size > 0 ? keys : [NO_TAG]) {
         result.set(key, (result.get(key) ?? 0) + 1);
       }
     }
