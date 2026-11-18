@@ -1143,18 +1143,20 @@ fn parse_inline(text: &str, marks: &[Value], depth: usize) -> Vec<Value> {
             i = end + 2;
             continue;
         }
-        if c == '<' && depth < MAX_INLINE_DEPTH && starts_with_tag(&chars[i..], "<u>") {
-            if let Some(end) = find_tag(&chars, i + 3, "</u>") {
-                flush(&mut buffer, &mut out);
-                let inner: String = chars[i + 3..end].iter().collect();
-                out.extend(parse_inline(
-                    &inner,
-                    &add_mark(marks, json!({ "type": "underline" })),
-                    depth + 1,
-                ));
-                i = end + 4;
-                continue;
-            }
+        if c == '<'
+            && depth < MAX_INLINE_DEPTH
+            && starts_with_tag(&chars[i..], "<u>")
+            && let Some(end) = find_tag(&chars, i + 3, "</u>")
+        {
+            flush(&mut buffer, &mut out);
+            let inner: String = chars[i + 3..end].iter().collect();
+            out.extend(parse_inline(
+                &inner,
+                &add_mark(marks, json!({ "type": "underline" })),
+                depth + 1,
+            ));
+            i = end + 4;
+            continue;
         }
         if c == '<' {
             let rest: String = chars[i..chars.len().min(i + 6)].iter().collect();
