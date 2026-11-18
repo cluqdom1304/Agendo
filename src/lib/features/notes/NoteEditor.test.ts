@@ -1,11 +1,17 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { installLayoutStubs } from "../../testing";
 import NoteEditor from "./NoteEditor.svelte";
 
 installLayoutStubs();
+
+// The first import of TipTap is a cold transform that, with every test file running in parallel,
+// took longer than `findByRole` waits. It is paid here, outside the first test's own time.
+beforeAll(async () => {
+  await import("./editor");
+}, 30_000);
 
 const doc = (text: string) =>
   JSON.stringify({

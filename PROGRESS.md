@@ -1,10 +1,10 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 16 de la 2.1.0 en curso (F16-01 a 06 y 08 hechas); la 2.0.3 está publicada
-**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F16-07. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
+**Fase activa:** Fase 16 de la 2.1.0 (todas las tareas `[A]` hechas; falta F16-09 `[H]`); la 2.0.3 está publicada
+**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F16-09 `[H]` (medir con `npm run measure` y ejecutar `npm run e2e`); después, Fase 17 solo con confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-16 (V2.0.0 cerrada y publicada)
-**Última actualización:** 2026-11-18 (plan de la 2.1.0 aprobado y documentación preparada; código sin tocar)
+**Última actualización:** 2026-11-18 (Fase 16: tareas `[A]` completas)
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
 ---
@@ -446,7 +446,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F16-04 `[A]` Comprobar si la agenda está virtualizada (SPEC §4.2: > 200 bloques) y, si no, virtualizarla por ventana; test con 10 000 tareas.
 - [x] F16-05 `[A]` Pruebas de escala en build **release** (hoy solo en depuración): 10 000 notas y 10 000 tareas; registrar en `docs/metricas.md`.
 - [x] F16-06 `[A]` Script de medida de N-01 (arranque hasta primer pintado) y N-02 (RAM en reposo); la ejecución real es `[H]`.
-- [ ] F16-07 `[A]` Estabilizar el test intermitente de `NoteEditor` («loads TipTap lazily») sin saltarlo ni subir su tiempo límite a ciegas.
+- [x] F16-07 `[A]` Estabilizar el test intermitente de `NoteEditor` («loads TipTap lazily») sin saltarlo ni subir su tiempo límite a ciegas.
 - [x] F16-08 `[A]` Aplicar D-56 (aceptado): actualizar el script de presupuesto (`npm run size`) y la tabla de Métricas (no se edita `docs/SPEC.md`).
 - [ ] F16-09 `[H]` Medir N-01/N-02 y la fluidez con datos reales en Windows 11; ejecutar por fin `npm run e2e` (F6-06 y F15-03).
 
