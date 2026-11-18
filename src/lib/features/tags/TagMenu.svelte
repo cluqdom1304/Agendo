@@ -28,11 +28,13 @@
     onClose();
   }
 
-  // Fixed to the window, not to the row: the row can sit anywhere (next to the sidebar, near the
-  // bottom), and an absolute menu was cut by whatever was beside it.
+  // Fixed to the window and moved under <body>: inside the row it was still cut by the scrolling,
+  // animated ancestors of the list (a fixed box is clipped or trapped by any of them), and the
+  // sidebar painted over its left edge.
   function place(node: HTMLElement) {
     const anchor = node.parentElement?.getBoundingClientRect();
     if (!anchor) return;
+    document.body.appendChild(node);
     const { left, top } = dropdownPosition(
       anchor,
       { width: node.offsetWidth, height: node.offsetHeight },
@@ -47,7 +49,10 @@
     };
     window.addEventListener("scroll", onScroll, true);
     return {
-      destroy: () => window.removeEventListener("scroll", onScroll, true),
+      destroy: () => {
+        window.removeEventListener("scroll", onScroll, true);
+        node.remove();
+      },
     };
   }
 
