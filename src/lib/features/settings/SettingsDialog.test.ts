@@ -49,12 +49,14 @@ function mount(
       folders: 0,
       tags: 0,
       skipped: 0,
+      duplicates: 0,
     })),
     importEnex: vi.fn(async () => ({
       notes: 0,
       folders: 0,
       tags: 0,
       skipped: 0,
+      duplicates: 0,
     })),
   } satisfies SettingsApi;
   const effects: EffectRequester = {

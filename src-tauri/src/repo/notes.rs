@@ -244,6 +244,28 @@ pub fn create(tx: &Transaction<'_>, new: &NewNote) -> rusqlite::Result<Note> {
     get(tx, &new.id)?.ok_or(rusqlite::Error::QueryReturnedNoRows)
 }
 
+/// Remembers where an imported note came from, so importing it again can recognise it (F17-06).
+pub fn set_import_source(
+    tx: &Transaction<'_>,
+    id: &str,
+    origin: &str,
+    hash: &str,
+) -> rusqlite::Result<()> {
+    tx.prepare_cached("UPDATE notes SET import_origin = ?2, import_hash = ?3 WHERE id = ?1")?
+        .execute(params![id, origin, hash])?;
+    Ok(())
+}
+
+/// Origin and hash of the live notes that were imported.
+pub fn import_sources(conn: &Connection) -> rusqlite::Result<Vec<(String, String)>> {
+    conn.prepare_cached(
+        "SELECT import_origin, import_hash FROM notes
+         WHERE import_origin IS NOT NULL AND import_hash IS NOT NULL AND deleted_at IS NULL",
+    )?
+    .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+    .collect()
+}
+
 /// Sets `updated_at` as it is, for notes that come from another application with their own
 /// dates. Nothing else changes, and the search index does not depend on it.
 pub fn set_updated_at(tx: &Transaction<'_>, id: &str, updated_at: &str) -> rusqlite::Result<()> {

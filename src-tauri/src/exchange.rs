@@ -93,6 +93,8 @@ pub struct ImportReport {
     pub tags: usize,
     /// Files, notes or images that could not be read and were left out.
     pub skipped: usize,
+    /// Notes already imported earlier (same origin and content), left out (F17-06).
+    pub duplicates: usize,
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -424,13 +426,21 @@ struct Catalog {
     tags: HashMap<String, String>,
     new_folders: usize,
     new_tags: usize,
+    /// Origin and content hash of the notes imported before, and of those imported now.
+    known: HashSet<(String, String)>,
 }
 
 impl Catalog {
     fn load(state: &AppState) -> AppResult<Self> {
         let folders = state.db.read(|conn| Ok(repo::folders::list(conn)?))?;
         let tag_list = state.db.read(|conn| Ok(tags::list(conn)?))?;
+        let known = state
+            .db
+            .read(|conn| Ok(notes::import_sources(conn)?))?
+            .into_iter()
+            .collect();
         Ok(Self {
+            known,
             folders: folders
                 .into_iter()
                 .map(|entry| {
@@ -508,6 +518,8 @@ struct Incoming {
     tags: Vec<String>,
     created: Option<String>,
     updated: Option<String>,
+    /// Where it came from and a hash of what it said (F17-06).
+    source: Option<(String, String)>,
 }
 
 fn store_note(
@@ -532,6 +544,7 @@ fn store_note(
     let json = serde_json::to_string(&incoming.document)
         .map_err(|e| AppError::Internal(format!("documento no válido: {e}")))?;
     let (document, attachment_ids) = derive(json)?;
+    let source = incoming.source;
     let tag_ids: Vec<String> = incoming
         .tags
         .iter()
@@ -557,8 +570,19 @@ fn store_note(
         if updated != created {
             notes::set_updated_at(tx, &note.id, &updated)?;
         }
+        if let Some((origin, hash)) = &source {
+            notes::set_import_source(tx, &note.id, origin, hash)?;
+        }
         Ok(())
-    })
+    })?;
+    if let Some(source) = source {
+        catalog.known.insert(source);
+    }
+    Ok(())
+}
+
+fn content_hash(parts: &[&str]) -> String {
+    attachments::hash_of(parts.join("|").as_bytes())
 }
 
 fn stored_image(state: &AppState, dir: &Path, bytes: &[u8]) -> Option<ImageFile> {
@@ -650,6 +674,23 @@ fn collect_files(
     }
 }
 
+/// The file's place inside the imported folder, with `/` separators on every system, or just its
+/// name when a single file was chosen.
+fn origin_of(path: &Path, source: &Path) -> String {
+    let relative = path
+        .strip_prefix(source)
+        .ok()
+        .filter(|r| !r.as_os_str().is_empty());
+    let shown = relative
+        .or_else(|| path.file_name().map(Path::new))
+        .unwrap_or(path);
+    shown
+        .components()
+        .map(|part| part.as_os_str().to_string_lossy().into_owned())
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
 fn is_text_note(path: &Path) -> bool {
     path.extension().and_then(|e| e.to_str()).is_some_and(|e| {
         ["md", "markdown", "txt"]
@@ -695,6 +736,12 @@ pub fn import_text_files(
             report.skipped += 1;
             continue;
         };
+        let origin = format!("file:{}", origin_of(&file.path, source));
+        let hash = attachments::hash_of(&bytes);
+        if catalog.known.contains(&(origin.clone(), hash.clone())) {
+            report.duplicates += 1;
+            continue;
+        }
         let text = String::from_utf8_lossy(&bytes);
         let stem = file
             .path
@@ -718,6 +765,7 @@ pub fn import_text_files(
                 tags: Vec::new(),
                 created: None,
                 updated: None,
+                source: Some((origin, hash)),
             }
         } else {
             let (front, body) = markdown::split_front_matter(&text);
@@ -751,6 +799,7 @@ pub fn import_text_files(
                 tags: front.tags,
                 created: front.created.as_deref().and_then(instant_of),
                 updated: front.updated.as_deref().and_then(instant_of),
+                source: Some((origin, hash)),
             }
         };
         report.skipped += missing_images;
@@ -826,18 +875,29 @@ pub fn import_enex_files(
             .file_stem()
             .map(|stem| stem.to_string_lossy().into_owned())
             .unwrap_or_default();
-        let folder = catalog.folder(state, &[notebook])?;
+        let folder = catalog.folder(state, std::slice::from_ref(&notebook))?;
         let mut failed = 0usize;
         let mut dropped = 0usize;
         let mut stored = 0usize;
         read_notes(&text, state, attachments_dir, &mut |note| {
             dropped += note.dropped_files;
+            let origin = format!(
+                "enex:{notebook}:{}:{}",
+                note.created.as_deref().unwrap_or(""),
+                note.title
+            );
+            let hash = content_hash(&[&note.title, &note.document.to_string()]);
+            if catalog.known.contains(&(origin.clone(), hash.clone())) {
+                report.duplicates += 1;
+                return;
+            }
             let incoming = Incoming {
                 title: note.title,
                 document: note.document,
                 tags: note.tags,
                 created: note.created,
                 updated: note.updated,
+                source: Some((origin, hash)),
             };
             match store_note(state, &mut catalog, folder.as_deref(), incoming) {
                 Ok(()) => stored += 1,
@@ -1064,7 +1124,8 @@ mod tests {
                 notes: 1,
                 folders: 1,
                 tags: 1,
-                skipped: 0
+                skipped: 0,
+                duplicates: 0
             }
         );
         let imported = &all_notes(&target)[0];
@@ -1077,6 +1138,52 @@ mod tests {
         assert!(attachments::path_of(&target_files, &image.id).exists());
         assert_eq!(imported.tag_ids.len(), 1);
         assert!(imported.folder_id.is_some());
+    }
+
+    #[test]
+    fn importing_the_same_folder_again_skips_what_it_already_has() {
+        let (state, _) = test_state();
+        let dir = TempDir::new();
+        let base = dir.database().parent().expect("parent").to_path_buf();
+        let source = base.join("src");
+        fs::create_dir_all(source.join("a")).expect("dirs");
+        fs::write(source.join("uno.md"), "primera").expect("uno");
+        fs::write(source.join("a").join("dos.txt"), "segunda").expect("dos");
+        let files = base.join("files");
+
+        let first = import_text_files(&state, &files, &source).expect("first");
+        assert_eq!((first.notes, first.duplicates), (2, 0));
+        let again = import_text_files(&state, &files, &source).expect("again");
+        assert_eq!((again.notes, again.duplicates), (0, 2));
+        assert_eq!(all_notes(&state).len(), 2);
+
+        // A file that changed is new content: it comes in as its own note.
+        fs::write(source.join("uno.md"), "primera, corregida").expect("edit");
+        let edited = import_text_files(&state, &files, &source).expect("edited");
+        assert_eq!((edited.notes, edited.duplicates), (1, 1));
+        assert_eq!(all_notes(&state).len(), 3);
+
+        // A note the user deleted can be imported again.
+        let gone = all_notes(&state)
+            .into_iter()
+            .find(|note| note.content_json.contains("segunda"))
+            .expect("note");
+        crate::commands::notes::delete(&state, &gone.id).expect("delete");
+        let back = import_text_files(&state, &files, &source).expect("back");
+        assert_eq!((back.notes, back.duplicates), (1, 1));
+    }
+
+    #[test]
+    fn the_same_file_in_two_places_is_not_a_duplicate() {
+        let (state, _) = test_state();
+        let dir = TempDir::new();
+        let base = dir.database().parent().expect("parent").to_path_buf();
+        let source = base.join("src");
+        fs::create_dir_all(source.join("a")).expect("dirs");
+        fs::write(source.join("x.md"), "igual").expect("x");
+        fs::write(source.join("a").join("x.md"), "igual").expect("y");
+        let report = import_text_files(&state, &base.join("files"), &source).expect("import");
+        assert_eq!((report.notes, report.duplicates), (2, 0));
     }
 
     #[test]
@@ -1154,7 +1261,8 @@ mod tests {
                 notes: 2,
                 folders: 1,
                 tags: 1,
-                skipped: 0
+                skipped: 0,
+                duplicates: 0
             }
         );
         let notes = all_notes(&state);
@@ -1163,6 +1271,11 @@ mod tests {
         assert_eq!(recipe.updated_at, "2021-01-02T03:04:05Z");
         assert_eq!(recipe.tag_ids.len(), 1);
         assert!(notes.iter().any(|n| n.title == "Sin título"));
+
+        let again = import_enex_files(&state, &base.join("files"), &[base.join("Cocina.enex")]);
+        let again = again.expect("again");
+        assert_eq!((again.notes, again.duplicates), (0, 2));
+        assert_eq!(all_notes(&state).len(), 2);
         assert!(recipe.content_json.contains("\"image\""));
 
         let bad = base.join("mal.enex");

@@ -198,6 +198,8 @@ export interface ImportReport {
   folders: number;
   tags: number;
   skipped: number;
+  /** Notes already imported before (same origin and content), left out (F17-06). */
+  duplicates: number;
 }
 
 export type ExportFormat = "markdown" | "html";

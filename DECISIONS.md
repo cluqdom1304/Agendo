@@ -509,3 +509,13 @@ Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`
   - **Markdown:** tachado `~~texto~~` (estándar de GFM, que el lector ya aceptaba y descartaba) y subrayado `<u>texto</u>` (Markdown no tiene sintaxis propia). Un `<u>` escrito como texto se escapa y no cambia de significado.
   - **HTML:** `<s>` y `<u>`. **ENEX:** `<s>`, `<strike>`, `<del>`, `<u>`, `<ins>` y los estilos `text-decoration: line-through | underline`.
 - **Consecuencias:** cierra la limitación de D-54 sobre el tachado y el subrayado. Sin cambio de esquema ni de IPC (`content_json` ya guarda marcas arbitrarias). JS +0,6 KB gzip.
+
+## D-59 — Importación sin duplicados: origen y huella (migración 011, F17-06)
+- **Estado:** ACCEPTED (dentro del plan de la 2.1.0) · **Fecha:** 2026-11-18 · **Validación:** `[A]` tests de importación repetida; `[H]` importar dos veces una carpeta real
+- **Decisión:** `notes` gana `import_origin` y `import_hash` (nulos para las notas creadas en la aplicación; migración aditiva con índice parcial).
+  - **Origen:** Markdown/texto, `file:` + la ruta del archivo dentro de la carpeta elegida (con `/`, o solo el nombre si se eligió un archivo); ENEX, `enex:<cuaderno>:<fecha de creación>:<título>`.
+  - **Huella:** SHA-256 de los bytes del archivo (Markdown/texto) o del título y el documento ya convertido (ENEX). Se reutiliza `attachments::hash_of`: sin dependencias nuevas.
+  - **Regla:** se omite una nota solo si existe una **viva** con el mismo origen **y** la misma huella. Si el archivo cambió, entra como nota nueva (no se pisa nada del usuario); si la nota importada está en la papelera, se puede volver a importar. El mismo contenido en dos rutas distintas no es duplicado.
+  - `ImportReport` gana `duplicates` y Ajustes lo cuenta en el aviso.
+- **Consecuencias:** cierra la limitación de D-54 («importar dos veces duplica las notas»). Una copia de seguridad anterior se migra al restaurarse.
+- **Alternativas descartadas:** comparar solo por título (falsos positivos); sobrescribir la nota existente cuando cambia el archivo (pérdida de ediciones hechas en la app).

@@ -1,8 +1,8 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 17 de la 2.1.0 (en curso: F17-01 a F17-05 hechas); la 2.0.3 está publicada
+**Fase activa:** Fase 17 de la 2.1.0 (en curso: F17-01 a F17-06 hechas); la 2.0.3 está publicada
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F17-06. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
+**Siguiente tarea:** F17-07. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-16 (V2.0.0 cerrada y publicada)
 **Última actualización:** 2026-11-18 (Fase 16: tareas `[A]` completas)
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -456,7 +456,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F17-03 `[A]` Selección múltiple en la lista (Mayús/Ctrl + clic): completar, etiquetar, mover de día y borrar en lote, con un único deshacer.
 - [x] F17-04 `[A]` Editor: marcas de tachado y subrayado; el import/export de Markdown y ENEX deja de perderlas (cierra una limitación de D-54).
 - [x] F17-05 `[A]` Buscar dentro de la nota (Ctrl+F) con resaltado, reutilizando los tokens `--highlight` (D-55).
-- [ ] F17-06 `[A]` Importación sin duplicados: reconocer notas ya importadas (origen + hash) y omitirlas; migración 011 si hace falta una columna de origen.
+- [x] F17-06 `[A]` Importación sin duplicados: reconocer notas ya importadas (origen + hash) y omitirlas; migración 011 si hace falta una columna de origen.
 - [ ] F17-07 `[A]` Etiquetas: interfaz para la jerarquía de un nivel (`parentId` ya existe, D-06); filtrar por la etiqueta padre incluye las hijas.
 - [ ] F17-08 `[A]` Búsqueda: vistas guardadas (p. ej. `is:pending tag:SMA`) y filtro por rango de fechas.
 - [ ] F17-09 `[A]` Copia de seguridad automática programada con rotación de las últimas N copias (Ajustes), reutilizando `.agendo` (D-47).
@@ -468,6 +468,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - F17-03: selección múltiple con Ctrl/Cmd+clic (alternar) y Mayús+clic (rango en el orden de la lista; `store.visibleOrder`); `SelectionBar` con Completar/Reabrir, Etiquetar, Mover al día, Eliminar y Quitar selección; Esc la limpia. La lógica vive en `stores/taskBatch.svelte.ts` (`TaskBatch`) y usa las mismas llamadas IPC que las acciones sueltas, sin comandos nuevos; cada lote deja **un** deshacer (aviso y Ctrl+Z) que revierte todo. Limitación: deshacer «completar» sobre una tarea periódica la reabre pero no borra la siguiente ocurrencia ya creada. 5 tests de store y 2 de componente.
 - F17-04 (D-58): marcas `strike` y `underline` en el editor (botones S y U en la barra, Ctrl+U y Ctrl+Mayús+S); Markdown `~~x~~` y `<u>x</u>` (ida y vuelta probada), HTML `<s>`/`<u>`, ENEX `s/strike/del/u/ins` y estilos `text-decoration`. Dependencias `@tiptap/extension-strike` y `-underline` 3.33.0. JS 266,7 KB.
 - F17-05: ya estaba hecha antes de la Fase 17 (`NotePane` abre el buscador con Ctrl+F, `noteSearch.ts` resalta con `find-match`/`find-current` sobre los tokens `--highlight` de D-55, y `NotePane.test.ts` y `advanced.test.ts` la cubren: ignora mayúsculas y acentos, recorre y da la vuelta). No se tocó código; se verificó que los tests siguen en verde (596).
+- F17-06 (D-59): migración 011 (`notes.import_origin`, `import_hash`, aditiva); las importaciones de Markdown/texto y ENEX omiten las notas vivas con el mismo origen y la misma huella y las cuentan en `ImportReport.duplicates` (aviso de Ajustes). 3 tests nuevos de importación repetida (carpeta, cambio de archivo, nota borrada, misma nota en dos rutas, ENEX) y 1 de Ajustes; los tests de versión pasan a 11.
 
 ## Fase 18 — Resumen semanal (única función nueva elegida por el usuario)
 - [ ] F18-01 `[A]` Consulta y dominio del resumen: tareas completadas, pendientes y vencidas de una semana, agrupadas por etiqueta; inicio de semana configurable (lunes por defecto) vía `domain/dates.rs` y `Clock`.

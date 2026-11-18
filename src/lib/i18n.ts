@@ -729,11 +729,20 @@ export const t = {
       (files > 0 ? ` y ${files} ${files === 1 ? "imagen" : "imágenes"}.` : "."),
     exportedJson: (notes: number) =>
       `Datos guardados (${notes} ${notes === 1 ? "nota" : "notas"} y todas las tareas).`,
-    imported: (notes: number, folders: number, tags: number, skipped: number) =>
+    imported: (
+      notes: number,
+      folders: number,
+      tags: number,
+      skipped: number,
+      duplicates: number,
+    ) =>
       `${notes} ${notes === 1 ? "nota importada" : "notas importadas"}` +
       ` (${folders} ${folders === 1 ? "carpeta" : "carpetas"} y ${tags} ${tags === 1 ? "etiqueta" : "etiquetas"} nuevas).` +
       (skipped > 0
         ? ` ${skipped} ${skipped === 1 ? "elemento no se pudo leer" : "elementos no se pudieron leer"}.`
+        : "") +
+      (duplicates > 0
+        ? ` ${duplicates} ${duplicates === 1 ? "nota ya estaba importada y se omitió" : "notas ya estaban importadas y se omitieron"}.`
         : ""),
     working: "Trabajando…",
     failed: (message: string) => `No se pudo completar la acción. ${message}`,

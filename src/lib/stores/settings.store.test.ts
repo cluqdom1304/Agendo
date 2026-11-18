@@ -25,12 +25,14 @@ function setup(saved: Partial<Record<SettingKey, string>> = {}) {
       folders: 0,
       tags: 0,
       skipped: 0,
+      duplicates: 0,
     })),
     importEnex: vi.fn(async () => ({
       notes: 0,
       folders: 0,
       tags: 0,
       skipped: 0,
+      duplicates: 0,
     })),
   } satisfies SettingsApi;
   const applied: ThemeMode[] = [];
@@ -189,6 +191,7 @@ describe("SettingsStore", () => {
       folders: 1,
       tags: 0,
       skipped: 1,
+      duplicates: 0,
     });
     expect(await store.importMarkdown("C:/notas")).toBe(true);
     expect(store.notice?.text).toBe(
@@ -200,11 +203,24 @@ describe("SettingsStore", () => {
       folders: 1,
       tags: 1,
       skipped: 0,
+      duplicates: 0,
     });
     expect(await store.importEnex(["C:/a.enex"])).toBe(true);
     expect(api.importEnex).toHaveBeenCalledWith(["C:/a.enex"]);
     expect(store.notice?.text).toBe(
       "1 nota importada (1 carpeta y 1 etiqueta nuevas).",
+    );
+
+    api.importMarkdown.mockResolvedValue({
+      notes: 0,
+      folders: 0,
+      tags: 0,
+      skipped: 0,
+      duplicates: 3,
+    });
+    expect(await store.importMarkdown("C:/notas")).toBe(true);
+    expect(store.notice?.text).toContain(
+      "3 notas ya estaban importadas y se omitieron.",
     );
   });
 

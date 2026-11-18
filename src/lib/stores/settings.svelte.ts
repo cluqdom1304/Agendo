@@ -58,6 +58,7 @@ function importedText(report: ImportReport): string {
     report.folders,
     report.tags,
     report.skipped,
+    report.duplicates,
   );
 }
 
