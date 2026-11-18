@@ -80,3 +80,16 @@ pánico desenrolle y revierta la transacción abierta (D-24 y su test). El efect
 **F16-04 (2026-11-18):** la agenda no estaba virtualizada. Las listas de más de 200 filas se montan por trozos de 50
 (`WindowedChunk`, `IntersectionObserver` con margen de 1500 px; altura medida al salir de pantalla, fila seleccionada siempre montada).
 Prueba con 10 000 tareas: 150 filas en el DOM. La fluidez real al desplazar es `[H]` (F16-09).
+
+**F16-05 (2026-11-18, build release con `opt-level = "s"` + LTO fat, `cargo test --release scale_tests -- --nocapture`):**
+
+| Medida (10 000 elementos) | Límite | Resultado |
+|---|---|---|
+| Lista de todas las notas | < 250 ms | 19,7 ms |
+| Lista de una carpeta | < 50 ms | 1,2 ms |
+| Búsqueda (peor de 4) | < 50 ms | 12,1 ms |
+| Abrir la base con 10 000 notas | < 200 ms | 2,1 ms |
+| Tareas: POR HACER / AGENDA completa | < 250 ms | 12,6 ms / 11,7 ms |
+| Tareas: un mes | < 30 ms | 1,5 ms |
+
+En depuración la prueba de tareas usa 1 000 y no comprueba tiempos (comparte CPU con otras pruebas de tiempo).

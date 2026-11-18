@@ -93,6 +93,70 @@ fn ten_thousand_notes_list_and_search_fast() {
     );
 }
 
+fn seed_tasks(conn: &Connection, count: u32) {
+    // Half without a date, half spread over 365 days; one in ten has a reminder-less time.
+    conn.execute(
+        "WITH RECURSIVE n(i) AS (SELECT 0 UNION ALL SELECT i + 1 FROM n WHERE i < ?1 - 1)
+         INSERT INTO tasks (id, title, due_date, due_time, position, created_at, updated_at)
+         SELECT 't' || i, 'Tarea número ' || i,
+                CASE WHEN i % 2 = 0 THEN NULL
+                     ELSE strftime('%Y-%m-%d', ?2, '+' || (i % 365) || ' days') END,
+                CASE WHEN i % 10 = 1 THEN '09:30' ELSE NULL END,
+                i, ?2, ?2
+         FROM n",
+        params![count, NOW],
+    )
+    .expect("tasks");
+}
+
+/// F16-05: the three task queries stay fast with 10 000 tasks.
+#[test]
+fn ten_thousand_tasks_list_fast() {
+    use super::tasks::{self, Query};
+
+    // Debug builds share the CPU with the other timing tests, so they only check that the
+    // queries work on a smaller set; the 10 000-task limits are checked in release builds.
+    let (count, runs) = if cfg!(debug_assertions) {
+        (1_000, 1)
+    } else {
+        (10_000, 5)
+    };
+    let conn = db::open_in_memory(&MIGRATIONS).expect("database");
+    seed_tasks(&conn, count);
+
+    let mut todo = 0;
+    let list_todo = best_of(runs, || {
+        todo = tasks::list(&conn, Query::Todo, None).expect("todo").len();
+    });
+    let mut agenda = 0;
+    let list_agenda = best_of(runs, || {
+        agenda = tasks::list(&conn, Query::Agenda, None)
+            .expect("agenda")
+            .len();
+    });
+    let list_month = best_of(runs, || {
+        let month = tasks::list(
+            &conn,
+            Query::Range {
+                from: "2026-02-01",
+                to: "2026-02-28",
+            },
+            None,
+        )
+        .expect("month");
+        assert!(!month.is_empty());
+    });
+    assert_eq!((todo, agenda), (count as usize / 2, count as usize / 2));
+    eprintln!(
+        "F16-05 {count} tasks: todo {list_todo:?}, agenda {list_agenda:?}, month {list_month:?}"
+    );
+    if !cfg!(debug_assertions) {
+        assert!(list_todo.as_millis() < 250, "todo took {list_todo:?}");
+        assert!(list_agenda.as_millis() < 250, "agenda took {list_agenda:?}");
+        assert!(list_month.as_millis() < 30, "month took {list_month:?}");
+    }
+}
+
 /// Start-up with 10 000 notes: open the file, check the schema, no migration pending.
 #[test]
 fn opening_a_database_with_ten_thousand_notes_is_fast() {
