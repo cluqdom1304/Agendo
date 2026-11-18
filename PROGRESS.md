@@ -1,8 +1,8 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 17 de la 2.1.0 (en curso: F17-01 hecha); la 2.0.3 está publicada
+**Fase activa:** Fase 17 de la 2.1.0 (en curso: F17-01 y F17-02 hechas); la 2.0.3 está publicada
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F17-02. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
+**Siguiente tarea:** F17-03. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-16 (V2.0.0 cerrada y publicada)
 **Última actualización:** 2026-11-18 (Fase 16: tareas `[A]` completas)
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -452,7 +452,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 
 ## Fase 17 — Mejorar lo que ya existe
 - [x] F17-01 `[A]` Recurrencia ampliada (ADR propio: D-32 descartó RRULE completo): días de la semana, «cada N», «hasta fecha» y «N veces»; sin RRULE completo.
-- [ ] F17-02 `[A]` Notificación con «Posponer» (10 min / 1 h / mañana) junto a «Marcar como hecha»; reutiliza `reminders`, sin tabla nueva si es posible.
+- [x] F17-02 `[A]` Notificación con «Posponer» (10 min / 1 h / mañana) junto a «Marcar como hecha»; reutiliza `reminders`, sin tabla nueva si es posible.
 - [ ] F17-03 `[A]` Selección múltiple en la lista (Mayús/Ctrl + clic): completar, etiquetar, mover de día y borrar en lote, con un único deshacer.
 - [ ] F17-04 `[A]` Editor: marcas de tachado y subrayado; el import/export de Markdown y ENEX deja de perderlas (cierra una limitación de D-54).
 - [ ] F17-05 `[A]` Buscar dentro de la nota (Ctrl+F) con resaltado, reutilizando los tokens `--highlight` (D-55).
@@ -464,6 +464,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 
 **Verificaciones [A] de la Fase 17:**
 - F17-01 (D-57): `domain/recurrence.rs` gana `BYDAY` (solo semanal) y `COUNT` (1–999, excluyente con `UNTIL`) y `Rule::successor`; `spawn_next_occurrence` guarda la regla con una repetición menos. «Cada N» y «hasta fecha» ya existían desde F13-05. Interfaz: siete botones de día y «Número de veces» en `TaskDialog`; `describeRule` los explica. Tests nuevos: 3 de dominio, 1 de comando (serie con `COUNT=3` y `BYDAY`), 2 de `recurrence.test.ts` y 1 de `TaskDialog.test.ts`. Sin migración.
+- F17-02: la notificación de tareas ofrece «Posponer 10 min», «Posponer 1 h» y «Posponer a mañana» (9:00 locales) además de «Marcar como hecha». Posponer añade un recordatorio de hora personalizada (`repo::reminders::insert_custom`) sin tabla ni migración nuevas y sin tocar los existentes; no actúa sobre tareas completadas, borradas o desconocidas. 2 tests nuevos en `notify`. Cuántos botones muestra Windows y su orden es `[H]`.
 
 ## Fase 18 — Resumen semanal (única función nueva elegida por el usuario)
 - [ ] F18-01 `[A]` Consulta y dominio del resumen: tareas completadas, pendientes y vencidas de una semana, agrupadas por etiqueta; inicio de semana configurable (lunes por defecto) vía `domain/dates.rs` y `Clock`.

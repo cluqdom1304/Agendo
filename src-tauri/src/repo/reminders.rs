@@ -196,6 +196,23 @@ pub fn replace_unsent(
     Ok(())
 }
 
+/// Adds one unsent reminder at a custom time without touching the ones the task already has
+/// (a snoozed notification, F17-02).
+pub fn insert_custom(
+    tx: &Transaction<'_>,
+    id: &str,
+    task_id: &str,
+    notify_at: &str,
+    now: &str,
+) -> rusqlite::Result<()> {
+    tx.prepare_cached(
+        "INSERT INTO reminders (id, task_id, notify_at, offset_minutes, created_at)
+         VALUES (?1, ?2, ?3, NULL, ?4)",
+    )?
+    .execute(params![id, task_id, notify_at, now])?;
+    Ok(())
+}
+
 /// A reminder that belongs to a repeating series, as stored.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SeriesMember {

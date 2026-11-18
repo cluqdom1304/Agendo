@@ -3,12 +3,22 @@
 
 use std::sync::Arc;
 
+use chrono::{Duration, Local, NaiveTime, TimeZone};
 use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 use tauri_plugin_notification::{Action, ActionType, NotificationExt};
 
-use crate::{commands::tasks, error::AppError, repo::reminders::DueReminder, state::AppState};
+use crate::{
+    commands::tasks,
+    domain::dates,
+    error::AppError,
+    repo::{
+        self,
+        reminders::{self as reminder_repo, DueReminder},
+    },
+    state::AppState,
+};
 
 /// Longest piece of the notes shown in a notification, in characters.
 const SNIPPET_CHARS: usize = 100;
@@ -26,6 +36,17 @@ pub const OPEN_EVENT: &str = "reminder:open";
 const TASK_ACTIONS: &str = "task-reminder";
 const ACTION_DONE: &str = "done";
 const ACTION_DONE_TITLE: &str = "Marcar como hecha";
+/// Snooze buttons (F17-02): the id says for how long.
+const ACTION_SNOOZE_10: &str = "snooze-10m";
+const ACTION_SNOOZE_HOUR: &str = "snooze-1h";
+const ACTION_SNOOZE_TOMORROW: &str = "snooze-tomorrow";
+const SNOOZE_BUTTONS: [(&str, &str); 3] = [
+    (ACTION_SNOOZE_10, "Posponer 10 min"),
+    (ACTION_SNOOZE_HOUR, "Posponer 1 h"),
+    (ACTION_SNOOZE_TOMORROW, "Posponer a mañana"),
+];
+/// Local time at which a task snoozed to tomorrow sounds again.
+const TOMORROW_AT: (u32, u32) = (9, 0);
 /// Keys of what a notification carries so that an action knows what it belongs to.
 const EXTRA_TASK: &str = "taskId";
 const EXTRA_NOTE: &str = "noteId";
@@ -138,6 +159,8 @@ impl<R: Runtime> Notifier for TauriNotifier<R> {
 pub enum ActionOutcome {
     /// The task was marked as done.
     Completed(String),
+    /// The notification was postponed: a new reminder of the task will sound later.
+    Snoozed(String),
     /// Bring the app forward on this task or note.
     Open {
         task_id: Option<String>,
@@ -165,6 +188,15 @@ pub fn perform_action(
             Err(_) => ActionOutcome::Ignored,
         };
     }
+    if SNOOZE_BUTTONS.iter().any(|(id, _)| *id == action_id) {
+        let Some(id) = task_id else {
+            return ActionOutcome::Ignored;
+        };
+        return match snooze(state, id, action_id, &Local) {
+            Ok(()) => ActionOutcome::Snoozed(id.to_string()),
+            Err(_) => ActionOutcome::Ignored,
+        };
+    }
     if task_id.is_none() && note_id.is_none() {
         return ActionOutcome::Ignored;
     }
@@ -174,15 +206,49 @@ pub fn perform_action(
     }
 }
 
+/// Adds a reminder of the task 10 minutes or an hour from now, or at `TOMORROW_AT` tomorrow in
+/// `zone`. The reminders the task already has stay as they are.
+fn snooze<Tz: TimeZone>(
+    state: &AppState,
+    task_id: &str,
+    action_id: &str,
+    zone: &Tz,
+) -> Result<(), AppError> {
+    let now = state.clock.now();
+    let at = match action_id {
+        ACTION_SNOOZE_10 => now + Duration::minutes(10),
+        ACTION_SNOOZE_HOUR => now + Duration::hours(1),
+        ACTION_SNOOZE_TOMORROW => {
+            let tomorrow = dates::utc_to_local(zone, now).date() + Duration::days(1);
+            let time = NaiveTime::from_hms_opt(TOMORROW_AT.0, TOMORROW_AT.1, 0)
+                .ok_or_else(|| AppError::Internal("hora de «mañana» no válida".into()))?;
+            dates::local_to_utc(zone, tomorrow, time)?
+        }
+        _ => return Err(AppError::Internal("acción de posponer desconocida".into())),
+    };
+    let notify_at = dates::format_instant(at);
+    let created = state.clock.now_string();
+    state.db.write(|tx| {
+        let task = repo::tasks::get(tx, task_id)?
+            .filter(|task| !task.is_completed)
+            .ok_or_else(|| AppError::NotFound("tarea no encontrada".into()))?;
+        reminder_repo::insert_custom(tx, &state.ids.new_id(), &task.id, &notify_at, &created)?;
+        Ok(())
+    })?;
+    state.wake.notify_one();
+    Ok(())
+}
+
 /// Registers the button of task notifications and reacts to it (F13-06, B-01). What Windows
 /// reports for a click depends on the toast, so this is validated by hand (`[H]`).
 pub fn install_actions<R: Runtime>(app: &AppHandle<R>, state: Arc<AppState>) {
-    let button = Action::builder(ACTION_DONE, ACTION_DONE_TITLE).build();
-    let types = vec![
-        ActionType::builder(TASK_ACTIONS)
-            .actions(vec![button])
-            .build(),
-    ];
+    let mut buttons = vec![Action::builder(ACTION_DONE, ACTION_DONE_TITLE).build()];
+    buttons.extend(
+        SNOOZE_BUTTONS
+            .iter()
+            .map(|(id, title)| Action::builder(*id, *title).build()),
+    );
+    let types = vec![ActionType::builder(TASK_ACTIONS).actions(buttons).build()];
     if let Err(error) = app.notification().register_action_types(types) {
         eprintln!("[notify] no se pudieron registrar las acciones: {error}");
         return;
@@ -202,7 +268,7 @@ pub fn install_actions<R: Runtime>(app: &AppHandle<R>, state: Arc<AppState>) {
             text(EXTRA_NOTE),
         );
         match outcome {
-            ActionOutcome::Completed(id) => {
+            ActionOutcome::Completed(id) | ActionOutcome::Snoozed(id) => {
                 let _ = handle.emit(TASKS_CHANGED_EVENT, serde_json::json!({ "ids": [id] }));
             }
             ActionOutcome::Open { task_id, note_id } => {
@@ -335,6 +401,62 @@ Primera línea segunda línea"
         )
         .expect("task")
         .id
+    }
+
+    fn unsent_times(state: &AppState, id: &str) -> Vec<String> {
+        let mut times: Vec<String> = state
+            .db
+            .read(|conn| Ok(reminder_repo::for_task(conn, id)?))
+            .expect("reminders")
+            .into_iter()
+            .filter(|reminder| !reminder.is_sent)
+            .map(|reminder| reminder.notify_at)
+            .collect();
+        times.sort();
+        times
+    }
+
+    #[test]
+    fn snooze_buttons_add_a_reminder_later_and_keep_the_others() {
+        let (state, _) = crate::state::test_state();
+        let id = task_in(&state, "Entregar");
+        assert_eq!(
+            perform_action(&state, ACTION_SNOOZE_10, Some(&id), None),
+            ActionOutcome::Snoozed(id.clone())
+        );
+        assert_eq!(
+            perform_action(&state, ACTION_SNOOZE_HOUR, Some(&id), None),
+            ActionOutcome::Snoozed(id.clone())
+        );
+        assert_eq!(
+            unsent_times(&state, &id),
+            ["2026-03-10T10:10:00Z", "2026-03-10T11:00:00Z"]
+        );
+    }
+
+    #[test]
+    fn snoozing_to_tomorrow_uses_nine_local_time_and_refuses_unknown_or_finished_tasks() {
+        let (state, _) = crate::state::test_state();
+        let id = task_in(&state, "Entregar");
+        let madrid = chrono::FixedOffset::east_opt(3600).expect("offset");
+        snooze(&state, &id, ACTION_SNOOZE_TOMORROW, &madrid).expect("snooze");
+        assert_eq!(unsent_times(&state, &id), ["2026-03-11T08:00:00Z"]);
+
+        assert_eq!(
+            perform_action(&state, ACTION_SNOOZE_10, None, None),
+            ActionOutcome::Ignored
+        );
+        assert_eq!(
+            perform_action(&state, ACTION_SNOOZE_10, Some("no-existe"), None),
+            ActionOutcome::Ignored
+        );
+        tasks::complete(&state, &id, true, None).expect("done");
+        assert_eq!(
+            perform_action(&state, ACTION_SNOOZE_10, Some(&id), None),
+            ActionOutcome::Ignored,
+            "a finished task is not brought back"
+        );
+        assert!(snooze(&state, &id, "otra", &madrid).is_err());
     }
 
     #[test]
