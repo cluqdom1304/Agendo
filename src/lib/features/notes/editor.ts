@@ -8,6 +8,8 @@ import { Code } from "@tiptap/extension-code";
 import { Document } from "@tiptap/extension-document";
 import { HardBreak } from "@tiptap/extension-hard-break";
 import { Italic } from "@tiptap/extension-italic";
+import { Strike } from "@tiptap/extension-strike";
+import { Underline } from "@tiptap/extension-underline";
 import { Blockquote } from "@tiptap/extension-blockquote";
 import { CodeBlock } from "@tiptap/extension-code-block";
 import { Heading } from "@tiptap/extension-heading";
@@ -51,6 +53,8 @@ export const EMPTY_NOTE = '{"type":"doc","content":[]}';
 export type ToggleName =
   | "bold"
   | "italic"
+  | "underline"
+  | "strike"
   | "code"
   | "bulletList"
   | "orderedList"
@@ -82,6 +86,8 @@ export interface FindState {
 export interface ToolbarState {
   bold: boolean;
   italic: boolean;
+  underline: boolean;
+  strike: boolean;
   code: boolean;
   bulletList: boolean;
   orderedList: boolean;
@@ -207,6 +213,8 @@ function toolbarState(editor: Editor): ToolbarState {
   return {
     bold: editor.isActive("bold"),
     italic: editor.isActive("italic"),
+    underline: editor.isActive("underline"),
+    strike: editor.isActive("strike"),
     code: editor.isActive("code"),
     bulletList: editor.isActive("bulletList"),
     orderedList: editor.isActive("orderedList"),
@@ -322,6 +330,8 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
       HardBreak,
       Bold,
       Italic,
+      Underline,
+      Strike,
       Code,
       BulletList,
       OrderedList,
@@ -590,6 +600,12 @@ export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {
           break;
         case "italic":
           chain.toggleItalic().run();
+          break;
+        case "underline":
+          chain.toggleUnderline().run();
+          break;
+        case "strike":
+          chain.toggleStrike().run();
           break;
         case "code":
           chain.toggleCode().run();

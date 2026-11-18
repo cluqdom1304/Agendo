@@ -371,6 +371,8 @@ impl Converter<'_> {
             "b" | "strong" => inner = add_mark(marks, json!({ "type": "bold" })),
             "i" | "em" => inner = add_mark(marks, json!({ "type": "italic" })),
             "code" | "tt" => inner = add_mark(marks, json!({ "type": "code" })),
+            "s" | "strike" | "del" => inner = add_mark(marks, json!({ "type": "strike" })),
+            "u" | "ins" => inner = add_mark(marks, json!({ "type": "underline" })),
             "a" => {
                 if let Some(href) = element.attr("href").filter(|href| is_allowed_link(href)) {
                     inner = add_mark(marks, json!({ "type": "link", "attrs": { "href": href } }));
@@ -385,6 +387,12 @@ impl Converter<'_> {
             }
             if style.contains("font-style:italic") {
                 inner = add_mark(&inner, json!({ "type": "italic" }));
+            }
+            if style.contains("text-decoration:line-through") {
+                inner = add_mark(&inner, json!({ "type": "strike" }));
+            }
+            if style.contains("text-decoration:underline") {
+                inner = add_mark(&inner, json!({ "type": "underline" }));
             }
             if style.contains("-evernote-highlight:true") {
                 inner = add_mark(&inner, json!({ "type": "highlight" }));
@@ -890,6 +898,18 @@ mod tests {
                 { "type": "paragraph", "content": [{ "type": "text", "text": "Fin" }] },
             ])
         );
+    }
+
+    #[test]
+    fn strike_and_underline_become_marks() {
+        let blocks = convert(
+            "<en-note><div><s>a</s><u>b</u><span style=\"text-decoration: line-through;\">c</span><span style=\"text-decoration: underline;\">d</span></div></en-note>",
+        );
+        let content = &blocks[0]["content"];
+        assert_eq!(content[0]["marks"][0]["type"], "strike");
+        assert_eq!(content[1]["marks"][0]["type"], "underline");
+        assert_eq!(content[2]["marks"][0]["type"], "strike");
+        assert_eq!(content[3]["marks"][0]["type"], "underline");
     }
 
     #[test]

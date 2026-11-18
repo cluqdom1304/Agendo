@@ -266,10 +266,19 @@ fn marked(text: &str, marks: &[&Value]) -> String {
             return text.to_string();
         }
         let mut wrapped = escape_text(body);
-        for (name, delimiter) in [("highlight", "=="), ("italic", "*"), ("bold", "**")] {
+        for (name, delimiter) in [
+            ("strike", "~~"),
+            ("highlight", "=="),
+            ("italic", "*"),
+            ("bold", "**"),
+        ] {
             if has_mark(marks, name) {
                 wrapped = format!("{delimiter}{wrapped}{delimiter}");
             }
+        }
+        // Markdown has no underline: the HTML tag is the usual way to write it.
+        if has_mark(marks, "underline") {
+            wrapped = format!("<u>{wrapped}</u>");
         }
         format!("{leading}{wrapped}{trailing}")
     };
@@ -283,6 +292,20 @@ fn marked(text: &str, marks: &[&Value]) -> String {
         }
         None => core,
     }
+}
+
+fn starts_with_tag(chars: &[char], tag: &str) -> bool {
+    let wanted: Vec<char> = tag.chars().collect();
+    chars.len() >= wanted.len()
+        && chars
+            .iter()
+            .zip(&wanted)
+            .all(|(found, expected)| found.eq_ignore_ascii_case(expected))
+}
+
+/// Index of the next `tag` at or after `from`.
+fn find_tag(chars: &[char], from: usize, tag: &str) -> Option<usize> {
+    (from..chars.len()).find(|&index| starts_with_tag(&chars[index..], tag))
 }
 
 fn encode_url(url: &str) -> String {
@@ -1114,15 +1137,24 @@ fn parse_inline(text: &str, marks: &[Value], depth: usize) -> Vec<Value> {
         {
             flush(&mut buffer, &mut out);
             let inner: String = chars[i + 2..end].iter().collect();
-            // `==` is a highlight; `~~` (strike-through) has no mark here and keeps the text.
-            let inner_marks = if c == '=' {
-                add_mark(marks, json!({ "type": "highlight" }))
-            } else {
-                marks.to_vec()
-            };
+            let mark = if c == '=' { "highlight" } else { "strike" };
+            let inner_marks = add_mark(marks, json!({ "type": mark }));
             out.extend(parse_inline(&inner, &inner_marks, depth + 1));
             i = end + 2;
             continue;
+        }
+        if c == '<' && depth < MAX_INLINE_DEPTH && starts_with_tag(&chars[i..], "<u>") {
+            if let Some(end) = find_tag(&chars, i + 3, "</u>") {
+                flush(&mut buffer, &mut out);
+                let inner: String = chars[i + 3..end].iter().collect();
+                out.extend(parse_inline(
+                    &inner,
+                    &add_mark(marks, json!({ "type": "underline" })),
+                    depth + 1,
+                ));
+                i = end + 4;
+                continue;
+            }
         }
         if c == '<' {
             let rest: String = chars[i..chars.len().min(i + 6)].iter().collect();
@@ -1348,7 +1380,52 @@ mod tests {
         assert_eq!(texts[6], ("d".into(), vec!["code".into()]));
         assert_eq!(texts[8], ("e".into(), vec!["highlight".into()]));
         assert_eq!(texts[10], ("f".into(), vec!["link".into()]));
-        assert_eq!(texts[11], (" g snake_case_name".into(), vec![]));
+        assert_eq!(texts[11], (" ".into(), vec![]));
+        assert_eq!(texts[12], ("g".into(), vec!["strike".into()]));
+        assert_eq!(texts[13], (" snake_case_name".into(), vec![]));
+    }
+
+    #[test]
+    fn strike_and_underline_survive_a_round_trip() {
+        let original = doc(json!([{ "type": "paragraph", "content": [
+            { "type": "text", "text": "a ", "marks": [] },
+            { "type": "text", "text": "tachado", "marks": [{ "type": "strike" }] },
+            { "type": "text", "text": " y ", "marks": [] },
+            { "type": "text", "text": "subrayado", "marks": [{ "type": "underline" }] },
+            { "type": "text", "text": " ", "marks": [] },
+            { "type": "text", "text": "ambos", "marks": [{ "type": "bold" }, { "type": "strike" }, { "type": "underline" }] },
+        ]}]));
+        let text = write(&original);
+        assert_eq!(
+            text,
+            "a ~~tachado~~ y <u>subrayado</u> <u>**~~ambos~~**</u>"
+        );
+        let again = read(&text);
+        let flat = |value: &Value| -> Vec<(String, Vec<String>)> {
+            value["content"][0]["content"]
+                .as_array()
+                .map(|nodes| {
+                    nodes
+                        .iter()
+                        .map(|node| {
+                            let mut names: Vec<String> = node["marks"]
+                                .as_array()
+                                .map(|marks| marks.iter().map(|m| kind(m).to_string()).collect())
+                                .unwrap_or_default();
+                            names.sort();
+                            (node["text"].as_str().unwrap_or("").to_string(), names)
+                        })
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        assert_eq!(flat(&again), flat(&original));
+    }
+
+    #[test]
+    fn a_literal_underline_tag_in_text_stays_text() {
+        let original = doc(json!([paragraph("escribe <u>así</u> sin efecto")]));
+        assert_eq!(read(&write(&original)), original);
     }
 
     #[test]

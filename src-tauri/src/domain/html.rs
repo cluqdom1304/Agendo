@@ -192,6 +192,8 @@ fn inline(nodes: &[Value], labels: &Labels<'_>) -> String {
 fn wrap(mut html: String, marks: &[Value]) -> String {
     for (name, tag) in [
         ("code", "code"),
+        ("strike", "s"),
+        ("underline", "u"),
         ("highlight", "mark"),
         ("italic", "em"),
         ("bold", "strong"),
@@ -253,6 +255,10 @@ mod tests {
         ]}]});
         let page = to_html(&doc, "t", &labels());
         assert!(page.contains("<strong><em>a</em></strong>"));
+        let marked = json!({ "type": "doc", "content": [{ "type": "paragraph", "content": [
+            { "type": "text", "text": "x", "marks": [{ "type": "strike" }, { "type": "underline" }] },
+        ]}]});
+        assert!(to_html(&marked, "t", &labels()).contains("<u><s>x</s></u>"));
         assert!(page.contains(
             "<a href=\"https://x.es/?a=1&amp;b=&quot;2&quot;\" rel=\"noopener noreferrer\">web</a>"
         ));

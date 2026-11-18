@@ -110,6 +110,10 @@
     <span class="glyph bold" aria-hidden="true">B</span>
   {:else if kind === "italic"}
     <span class="glyph italic" aria-hidden="true">I</span>
+  {:else if kind === "underline"}
+    <span class="glyph underline" aria-hidden="true">U</span>
+  {:else if kind === "strike"}
+    <span class="glyph strike" aria-hidden="true">S</span>
   {:else if kind === "heading"}
     <span class="glyph" aria-hidden="true">
       H{#if formats.heading}<sub>{formats.heading}</sub>{/if}
@@ -191,6 +195,8 @@
 <div class="toolbar" role="toolbar" aria-label={t.notes.toolbar}>
   {@render toggle("bold", t.notes.bold, formats.bold)}
   {@render toggle("italic", t.notes.italic, formats.italic)}
+  {@render toggle("underline", t.notes.underline, formats.underline)}
+  {@render toggle("strike", t.notes.strike, formats.strike)}
   {@render toggle("code", t.notes.code, formats.code)}
   <button
     type="button"
@@ -339,6 +345,14 @@
 
   .glyph.bold {
     font-weight: 700;
+  }
+
+  .glyph.underline {
+    text-decoration: underline;
+  }
+
+  .glyph.strike {
+    text-decoration: line-through;
   }
 
   .glyph.italic {

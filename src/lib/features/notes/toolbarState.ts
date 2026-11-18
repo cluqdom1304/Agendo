@@ -4,6 +4,8 @@ import type { ToolbarState } from "./editor";
 export const IDLE_TOOLBAR: ToolbarState = {
   bold: false,
   italic: false,
+  underline: false,
+  strike: false,
   code: false,
   bulletList: false,
   orderedList: false,

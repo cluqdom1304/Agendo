@@ -92,6 +92,8 @@ export const t = {
     toolbar: "Formato de las notas",
     bold: "Negrita (Ctrl+B)",
     italic: "Cursiva (Ctrl+I)",
+    underline: "Subrayado (Ctrl+U)",
+    strike: "Tachado (Ctrl+Mayús+S)",
     code: "Código (Ctrl+E)",
     link: "Enlace (Ctrl+L)",
     bulletList: "Lista con viñetas",

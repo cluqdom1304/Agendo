@@ -155,6 +155,29 @@ describe("the advanced editor", () => {
     expect(box.textContent).toBe("Texto");
   });
 
+  it("draws strike-through and underline marks and offers their toggles (F17-04)", async () => {
+    const { component, box } = await mount(
+      JSON.stringify({
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              { type: "text", text: "viejo", marks: [{ type: "strike" }] },
+              { type: "text", text: " nuevo", marks: [{ type: "underline" }] },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(box.querySelector("s")?.textContent).toBe("viejo");
+    expect(box.querySelector("u")?.textContent).toBe(" nuevo");
+    expect(() => {
+      component.toggle("strike");
+      component.toggle("underline");
+    }).not.toThrow();
+  });
+
   it("finds ignoring case and accents, walks the matches and wraps", async () => {
     const { component, box } = await mount(
       doc(

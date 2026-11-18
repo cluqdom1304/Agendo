@@ -501,3 +501,11 @@ Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`
   - `COUNT=n` (1–999) son las ocurrencias que quedan **contando la tarea que lleva la regla**; al completarla, la siguiente nace con `n-1` y con `COUNT=1` la serie termina. Completar tarde no consume repeticiones. `UNTIL` y `COUNT` son excluyentes (como en el RFC).
 - **Consecuencias:** sin dependencias ni cambios de esquema ni de contrato IPC (`rrule` sigue siendo `string`). Las reglas guardadas antes se leen igual. La interfaz ofrece siete botones de día y un campo «Número de veces», que se vacían entre sí con «Hasta».
 - **Alternativas descartadas:** RRULE completa (`BYSETPOS`, `BYMONTH` libre, `EXDATE`…); guardar la fecha de fin calculada en lugar de un contador (cambiaría al mover la tarea).
+
+## D-58 — Tachado y subrayado en el editor (F17-04)
+- **Estado:** ACCEPTED (dentro del plan de la 2.1.0) · **Fecha:** 2026-11-18 · **Validación:** `[A]` tests de ida y vuelta; `[H]` abrir los `.md`/`.html` exportados en otros programas
+- **Decisión:** dos marcas nuevas, `strike` y `underline`, en el editor de notas y en el de tareas.
+  - **Dependencias** (CLAUDE.md §6): `@tiptap/extension-strike` y `@tiptap/extension-underline`, ambas `3.33.0` como el resto de TipTap. Alternativa descartada: escribir las marcas a mano (más código propio que mantener para algo que la librería ya hace con sus atajos Ctrl+U y Ctrl+Mayús+S).
+  - **Markdown:** tachado `~~texto~~` (estándar de GFM, que el lector ya aceptaba y descartaba) y subrayado `<u>texto</u>` (Markdown no tiene sintaxis propia). Un `<u>` escrito como texto se escapa y no cambia de significado.
+  - **HTML:** `<s>` y `<u>`. **ENEX:** `<s>`, `<strike>`, `<del>`, `<u>`, `<ins>` y los estilos `text-decoration: line-through | underline`.
+- **Consecuencias:** cierra la limitación de D-54 sobre el tachado y el subrayado. Sin cambio de esquema ni de IPC (`content_json` ya guarda marcas arbitrarias). JS +0,6 KB gzip.
