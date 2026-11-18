@@ -519,3 +519,11 @@ Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`
   - `ImportReport` gana `duplicates` y Ajustes lo cuenta en el aviso.
 - **Consecuencias:** cierra la limitación de D-54 («importar dos veces duplica las notas»). Una copia de seguridad anterior se migra al restaurarse.
 - **Alternativas descartadas:** comparar solo por título (falsos positivos); sobrescribir la nota existente cuando cambia el archivo (pérdida de ediciones hechas en la app).
+
+## D-60 — Búsquedas guardadas y filtro por fechas (F17-08)
+- **Estado:** ACCEPTED (dentro del plan de la 2.1.0) · **Fecha:** 2026-11-18 · **Validación:** `[A]` tests; `[H]` uso de la paleta en Windows 11
+- **Decisión:**
+  - **Fechas:** dos filtros más en la búsqueda unificada de F11-03, `desde:AAAA-MM-DD` y `hasta:AAAA-MM-DD` (extremos incluidos). En tareas filtran por su día; en notas, por el día UTC de su última modificación. Una tarea sin fecha queda fuera si hay filtro; las etiquetas no tienen fecha y se omiten. Una fecha inválida no encuentra nada; con el valor aún sin escribir (`desde:`) el filtro no actúa. Se añaden los alias `is:pending` e `is:done`.
+  - **Vistas guardadas:** una búsqueda guardada es el **texto** de la consulta (`is:pendiente tag:SMA`), con filtros incluidos, y se guarda como lista JSON en el ajuste `saved_searches` (sin tabla ni migración). Límites: 20 búsquedas de hasta 200 caracteres, sin caracteres de control; el backend lo valida. Aparecen en la paleta (Ctrl+K) con la caja vacía; elegir una rellena la caja y busca; «Guardar esta búsqueda» aparece junto al estado y la ✕ de cada fila la quita.
+- **Consecuencias:** sin dependencias ni cambio de esquema. Las búsquedas viajan en la copia de seguridad con el resto de ajustes.
+- **Alternativas descartadas:** guardar la búsqueda con un nombre propio (más interfaz para poco valor: el texto ya la describe); tabla nueva (el ajuste basta para 20 textos).

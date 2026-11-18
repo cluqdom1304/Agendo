@@ -15,6 +15,7 @@ export interface PaletteCommand {
 
 export type PaletteRow =
   | { kind: "command"; key: string; command: PaletteCommand }
+  | { kind: "view"; key: string; query: string }
   | {
       kind: "note";
       key: string;
@@ -42,7 +43,8 @@ export type PaletteRow =
       pending: number;
     };
 
-export type GroupId = "commands" | "recent" | "notes" | "tasks" | "tags";
+export type GroupId =
+  "views" | "commands" | "recent" | "notes" | "tasks" | "tags";
 
 export interface PaletteGroup {
   id: GroupId;
@@ -165,11 +167,13 @@ export interface BuildInput {
   /** Notes opened lately, most recent first. */
   recent: readonly { id: string; title: string }[];
   found: readonly FoundItem[];
+  /** Saved searches (F17-08), shown while nothing is typed. */
+  views?: readonly string[];
 }
 
 /** The groups of rows to draw, in order, without empty ones. */
 export function buildGroups(input: BuildInput): PaletteGroup[] {
-  const { mode, plan, commands, recent, found } = input;
+  const { mode, plan, commands, recent, found, views = [] } = input;
   const groups: PaletteGroup[] = [];
   const add = (id: GroupId, rows: PaletteRow[]) => {
     if (rows.length > 0) groups.push({ id, rows });
@@ -200,6 +204,10 @@ export function buildGroups(input: BuildInput): PaletteGroup[] {
     return groups;
   }
   if (plan.text === "") {
+    add(
+      "views",
+      views.map((query) => ({ kind: "view", key: `view:${query}`, query })),
+    );
     add("recent", recentRows);
     add("commands", commandRows(commands));
     return groups;

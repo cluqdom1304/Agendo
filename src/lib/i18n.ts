@@ -402,12 +402,15 @@ export const t = {
     placeholderNotes: "Ir a una nota",
     results: "Resultados",
     hintAll:
-      "Escribe para buscar. Usa > para comandos y tag:, in: o is: para filtrar.",
+      "Escribe para buscar. Usa > para comandos y tag:, in:, is:, desde: o hasta: para filtrar.",
     hintNotes: "Escribe el título de una nota. Usa tag: o in: para filtrar.",
     empty: "Sin resultados",
     failed: "La búsqueda ha fallado.",
     resultCount: (count: number) =>
       count === 1 ? "1 resultado" : `${count} resultados`,
+    groupViews: "Búsquedas guardadas",
+    saveView: "Guardar esta búsqueda",
+    deleteView: (query: string) => `Quitar la búsqueda guardada «${query}»`,
     groupCommands: "Comandos",
     groupRecent: "Recientes",
     groupNotes: "Notas",

@@ -304,7 +304,8 @@ export type SettingKey =
   | "app_section"
   | "notes_scope"
   | "notes_open"
-  | "notes_recent";
+  | "notes_recent"
+  | "saved_searches";
 
 /** Colour theme: follow the system or force one (F6-05). */
 export type ThemeMode = "system" | "light" | "dark";

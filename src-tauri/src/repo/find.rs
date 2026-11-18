@@ -3,6 +3,8 @@
 //!
 //! - `tag:nombre`: carries the tag or one of its subtags (repeat it to require several).
 //! - `in:carpeta`: notes in the folder or its subfolders.
+//! - `desde:AAAA-MM-DD` / `hasta:AAAA-MM-DD`: tasks whose day, or notes last changed (UTC day),
+//!   fall inside the range, both ends included (F17-08).
 //! - `is:tarea`, `is:nota`, `is:etiqueta`: only that kind. `is:hecha` / `is:pendiente` (tasks)
 //!   and `is:fijada` (notes) narrow by state.
 //!
@@ -12,6 +14,7 @@ use rusqlite::{Connection, params_from_iter, types::Value};
 use serde::Serialize;
 
 use super::{model::Tag, search::match_expression};
+use crate::domain::dates;
 
 /// One result, tagged by what it is so the UI can group and open it.
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -54,6 +57,9 @@ pub struct ParsedQuery {
     pub tag_items: bool,
     pub completed: Option<bool>,
     pub pinned: bool,
+    /// `desde:` and `hasta:` as `YYYY-MM-DD`.
+    pub from: Option<String>,
+    pub to: Option<String>,
     /// An `is:` value was not understood or the filters exclude every kind: nothing can match.
     pub impossible: bool,
 }
@@ -112,6 +118,22 @@ pub fn parse(input: &str) -> ParsedQuery {
             if !value.is_empty() {
                 query.tags.push(value.to_string());
             }
+        } else if let Some(value) = lower
+            .strip_prefix("desde:")
+            .map(|value| (true, value))
+            .or_else(|| lower.strip_prefix("hasta:").map(|value| (false, value)))
+        {
+            let (is_from, value) = value;
+            // Still being typed: nothing to narrow yet.
+            if !value.is_empty() {
+                if dates::parse_date(value).is_err() {
+                    query.impossible = true;
+                } else if is_from {
+                    query.from = Some(value.to_string());
+                } else {
+                    query.to = Some(value.to_string());
+                }
+            }
         } else if let Some(value) = lower.strip_prefix("in:") {
             if !value.is_empty() {
                 query.folder = Some(value.to_string());
@@ -131,12 +153,12 @@ pub fn parse(input: &str) -> ParsedQuery {
                     query.tasks = false;
                     query.notes = false;
                 }
-                "hecha" | "hechas" | "completada" => {
+                "hecha" | "hechas" | "completada" | "done" => {
                     query.completed = Some(true);
                     query.notes = false;
                     query.tag_items = false;
                 }
-                "pendiente" | "pendientes" => {
+                "pendiente" | "pendientes" | "pending" => {
                     query.completed = Some(false);
                     query.notes = false;
                     query.tag_items = false;
@@ -160,6 +182,9 @@ pub fn parse(input: &str) -> ParsedQuery {
         query.tasks = false;
         query.tag_items = false;
     }
+    if query.from.is_some() || query.to.is_some() {
+        query.tag_items = false;
+    }
     query.text = text.join(" ");
     query
 }
@@ -170,6 +195,8 @@ impl ParsedQuery {
             || self.folder.is_some()
             || self.completed.is_some()
             || self.pinned
+            || self.from.is_some()
+            || self.to.is_some()
             || !(self.tasks && self.notes && self.tag_items)
     }
 }
@@ -309,7 +336,7 @@ pub fn find(conn: &Connection, input: &str, limit: u32) -> rusqlite::Result<Vec<
             expression.as_deref(),
             &tag_groups,
             folder_roots.as_deref(),
-            query.pinned,
+            &query,
             limit,
             &mut items,
         )?;
@@ -320,6 +347,7 @@ pub fn find(conn: &Connection, input: &str, limit: u32) -> rusqlite::Result<Vec<
             expression.as_deref(),
             &tag_groups,
             query.completed,
+            (&query.from, &query.to),
             limit,
             &mut items,
         )?;
@@ -341,11 +369,25 @@ fn tag_clauses(link_table: &str, key: &str, owner: &str, groups: usize, first: u
         .collect()
 }
 
+/// ` AND (...)` for `desde:`/`hasta:` over `column`, with two placeholders starting at `first`.
+fn range_clause(column: &str, first: usize) -> String {
+    format!(
+        " AND (?{first} IS NULL OR {column} >= ?{first}) AND (?{second} IS NULL OR {column} <= ?{second})",
+        second = first + 1
+    )
+}
+
+fn range_values(range: (&Option<String>, &Option<String>)) -> [Value; 2] {
+    let value = |end: &Option<String>| end.clone().map_or(Value::Null, Value::Text);
+    [value(range.0), value(range.1)]
+}
+
 fn tasks(
     conn: &Connection,
     expression: Option<&str>,
     groups: &[String],
     completed: Option<bool>,
+    range: (&Option<String>, &Option<String>),
     limit: u32,
     items: &mut Vec<FoundItem>,
 ) -> rusqlite::Result<()> {
@@ -355,26 +397,30 @@ fn tasks(
         values.push(Value::Integer(i64::from(limit)));
         values.push(completed.map_or(Value::Null, |done| Value::Integer(i64::from(done))));
         values.extend(groups.iter().cloned().map(Value::Text));
+        values.extend(range_values(range));
         format!(
             "SELECT t.id, t.title, snippet(tasks_fts, 2, '', '', '…', 12), t.due_date, t.is_completed
              FROM tasks_fts JOIN tasks t ON t.id = tasks_fts.task_id
              WHERE tasks_fts MATCH ?1 AND t.deleted_at IS NULL
-               AND (?3 IS NULL OR t.is_completed = ?3){}
+               AND (?3 IS NULL OR t.is_completed = ?3){}{}
              ORDER BY bm25(tasks_fts, 0.0, 4.0, 1.0), t.is_completed, t.id
              LIMIT ?2",
-            tag_clauses("task_tags", "task_id", "t.id", groups.len(), 4)
+            tag_clauses("task_tags", "task_id", "t.id", groups.len(), 4),
+            range_clause("t.due_date", 4 + groups.len())
         )
     } else {
         values.push(Value::Integer(i64::from(limit)));
         values.push(completed.map_or(Value::Null, |done| Value::Integer(i64::from(done))));
         values.extend(groups.iter().cloned().map(Value::Text));
+        values.extend(range_values(range));
         format!(
             "SELECT t.id, t.title, '', t.due_date, t.is_completed
              FROM tasks t
-             WHERE t.deleted_at IS NULL AND (?2 IS NULL OR t.is_completed = ?2){}
+             WHERE t.deleted_at IS NULL AND (?2 IS NULL OR t.is_completed = ?2){}{}
              ORDER BY t.is_completed, t.updated_at DESC, t.id
              LIMIT ?1",
-            tag_clauses("task_tags", "task_id", "t.id", groups.len(), 3)
+            tag_clauses("task_tags", "task_id", "t.id", groups.len(), 3),
+            range_clause("t.due_date", 3 + groups.len())
         )
     };
     let mut statement = conn.prepare(&sql)?;
@@ -398,10 +444,11 @@ fn notes(
     expression: Option<&str>,
     groups: &[String],
     folder_roots: Option<&str>,
-    pinned: bool,
+    query: &ParsedQuery,
     limit: u32,
     items: &mut Vec<FoundItem>,
 ) -> rusqlite::Result<()> {
+    let (pinned, range) = (query.pinned, (&query.from, &query.to));
     const IN_FOLDER: &str = "(?4 IS NULL OR n.folder_id IN (
             WITH RECURSIVE down(id) AS (
                 SELECT value FROM json_each(?4)
@@ -416,14 +463,16 @@ fn notes(
         values.push(Value::Integer(i64::from(pinned)));
         values.push(folder);
         values.extend(groups.iter().cloned().map(Value::Text));
+        values.extend(range_values(range));
         format!(
             "SELECT n.id, n.title, snippet(notes_fts, 2, '', '', '…', 12), n.folder_id, n.is_pinned
              FROM notes_fts JOIN notes n ON n.id = notes_fts.note_id
              WHERE notes_fts MATCH ?1 AND n.deleted_at IS NULL
-               AND (?3 = 0 OR n.is_pinned = 1) AND {IN_FOLDER}{}
+               AND (?3 = 0 OR n.is_pinned = 1) AND {IN_FOLDER}{}{}
              ORDER BY bm25(notes_fts, 0.0, 4.0, 1.0), n.is_pinned DESC, n.id
              LIMIT ?2",
-            tag_clauses("note_tags", "note_id", "n.id", groups.len(), 5)
+            tag_clauses("note_tags", "note_id", "n.id", groups.len(), 5),
+            range_clause("substr(n.updated_at, 1, 10)", 5 + groups.len())
         )
     } else {
         // Without text there is no index to ask: the first words of the note stand in.
@@ -432,15 +481,17 @@ fn notes(
         values.push(Value::Integer(i64::from(pinned)));
         values.push(folder);
         values.extend(groups.iter().cloned().map(Value::Text));
+        values.extend(range_values(range));
         format!(
             "SELECT n.id, n.title, replace(substr(n.content_text, 1, 120), char(10), ' '),
                     n.folder_id, n.is_pinned
              FROM notes n
              WHERE ?1 IS NULL AND n.deleted_at IS NULL
-               AND (?3 = 0 OR n.is_pinned = 1) AND {IN_FOLDER}{}
+               AND (?3 = 0 OR n.is_pinned = 1) AND {IN_FOLDER}{}{}
              ORDER BY n.is_pinned DESC, n.updated_at DESC, n.id
              LIMIT ?2",
-            tag_clauses("note_tags", "note_id", "n.id", groups.len(), 5)
+            tag_clauses("note_tags", "note_id", "n.id", groups.len(), 5),
+            range_clause("substr(n.updated_at, 1, 10)", 5 + groups.len())
         )
     };
     let mut statement = conn.prepare(&sql)?;
@@ -575,6 +626,54 @@ mod tests {
         let query = parse("is:nota is:tarea");
         assert!(!query.tasks && !query.notes);
         assert!(parse("in:clase").folder.is_some() && !parse("in:clase").tasks);
+    }
+
+    #[test]
+    fn date_range_filters_tasks_by_day_and_notes_by_last_change() {
+        let conn = database();
+        task(&conn, "t1", "Informe uno", false, &["g1"]);
+        task(&conn, "t2", "Informe dos", false, &[]);
+        task(&conn, "t3", "Informe sin fecha", false, &[]);
+        for (id, day) in [("t1", "2026-03-05"), ("t2", "2026-04-20")] {
+            conn.execute(
+                "UPDATE tasks SET due_date = ?2 WHERE id = ?1",
+                params![id, day],
+            )
+            .expect("date");
+        }
+        note(&conn, "n1", "Informe nota", None, false, &[]);
+        conn.execute(
+            "UPDATE notes SET updated_at = '2026-03-31T23:00:00Z' WHERE id = 'n1'",
+            [],
+        )
+        .expect("note date");
+
+        assert_eq!(
+            sorted(found(&conn, "informe")),
+            ["g:g2", "n:n1", "t:t1", "t:t2", "t:t3"]
+        );
+        assert_eq!(
+            sorted(found(&conn, "informe desde:2026-03-01 hasta:2026-03-31")),
+            ["n:n1", "t:t1"]
+        );
+        assert_eq!(found(&conn, "informe desde:2026-04-01"), ["t:t2"]);
+        assert_eq!(found(&conn, "informe hasta:2026-03-05 is:tarea"), ["t:t1"]);
+        // Both ends are included, and it combines with the other filters.
+        assert_eq!(
+            found(
+                &conn,
+                "informe desde:2026-03-05 hasta:2026-03-05 tag:trabajo"
+            ),
+            ["t:t1"]
+        );
+        // Without text the range alone is a search; tags are not dated, so they drop out.
+        assert_eq!(
+            sorted(found(&conn, "desde:2026-03-01 hasta:2026-03-31")),
+            ["n:n1", "t:t1"]
+        );
+        // A half-typed or invalid date does not match anything surprising.
+        assert!(found(&conn, "informe desde:2026-13-40").is_empty());
+        assert_eq!(found(&conn, "informe hasta:").len(), 5);
     }
 
     #[test]

@@ -20,6 +20,10 @@
     commands: PaletteCommand[];
     /** Notes opened lately, most recent first. */
     recent: { id: string; title: string }[];
+    /** Saved searches; choosing one fills the box with it (F17-08). */
+    views?: string[];
+    onSaveView?: (query: string) => void;
+    onDeleteView?: (query: string) => void;
     onNote: (id: string) => void;
     onTask: (id: string) => void;
     onTag: (id: string) => void;
@@ -31,6 +35,9 @@
     search,
     commands,
     recent,
+    views = [],
+    onSaveView,
+    onDeleteView,
     onNote,
     onTask,
     onTag,
@@ -47,9 +54,19 @@
   let latest = 0;
 
   const plan = $derived(planQuery(query, mode));
-  const groups = $derived(buildGroups({ mode, plan, commands, recent, found }));
+  const groups = $derived(
+    buildGroups({ mode, plan, commands, recent, found, views }),
+  );
+  const canSave = $derived(
+    mode === "all" &&
+      !plan.commandsOnly &&
+      plan.text !== "" &&
+      !views.includes(plan.text) &&
+      onSaveView !== undefined,
+  );
   const rows = $derived(groups.flatMap((group) => group.rows));
   const groupTitles = $derived({
+    views: t.palette.groupViews,
     commands: t.palette.groupCommands,
     recent: t.palette.groupRecent,
     notes: t.palette.groupNotes,
@@ -108,6 +125,11 @@
 
   function choose(row: PaletteRow | undefined) {
     if (!row) return;
+    if (row.kind === "view") {
+      query = row.query;
+      onInput();
+      return;
+    }
     onClose();
     if (row.kind === "command") row.command.run();
     else if (row.kind === "note") onNote(row.id);
@@ -147,9 +169,11 @@
   const titleOf = (row: PaletteRow): string =>
     row.kind === "command"
       ? row.command.label
-      : row.kind === "tag"
-        ? row.name
-        : row.title || t.palette.untitled;
+      : row.kind === "view"
+        ? row.query
+        : row.kind === "tag"
+          ? row.name
+          : row.title || t.palette.untitled;
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -203,7 +227,25 @@
             onclick={() => choose(row)}
           >
             <span class="lead" aria-hidden="true">
-              {#if row.kind === "tag"}
+              {#if row.kind === "view"}
+                <svg viewBox="0 0 16 16" width="14" height="14">
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                  />
+                  <path
+                    d="M10 10l3.5 3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              {:else if row.kind === "tag"}
                 <span class="dot" style:background={row.color}></span>
               {:else if row.kind === "task"}
                 <span class="box" class:done={row.done}></span>
@@ -234,7 +276,20 @@
               {titleOf(row)}
             </span>
             <span class="detail">
-              {#if row.kind === "command"}
+              {#if row.kind === "view"}
+                <button
+                  type="button"
+                  class="forget"
+                  aria-label={t.palette.deleteView(row.query)}
+                  title={t.palette.deleteView(row.query)}
+                  onclick={(event) => {
+                    event.stopPropagation();
+                    onDeleteView?.(row.query);
+                  }}
+                >
+                  ✕
+                </button>
+              {:else if row.kind === "command"}
                 {#if row.command.shortcut}
                   <kbd>{row.command.shortcut}</kbd>
                 {/if}
@@ -244,7 +299,7 @@
                 {t.palette.tagCounts(row.notes, row.pending)}
               {/if}
             </span>
-            {#if row.kind !== "command" && row.kind !== "tag" && row.snippet}
+            {#if (row.kind === "note" || row.kind === "task") && row.snippet}
               <span class="snippet">{row.snippet}</span>
             {/if}
           </li>
@@ -253,6 +308,15 @@
     </ul>
 
     <p class="status" role="status">{status}</p>
+    {#if canSave}
+      <button
+        type="button"
+        class="save"
+        onclick={() => onSaveView?.(plan.text)}
+      >
+        {t.palette.saveView}
+      </button>
+    {/if}
   </div>
 </div>
 
@@ -399,6 +463,24 @@
 
   .hit.active .box {
     border-color: var(--on-accent);
+  }
+
+  .save,
+  .forget {
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .save {
+    margin: 0 var(--space-4) var(--space-3);
+  }
+
+  .forget {
+    color: var(--text-secondary);
   }
 
   .status {

@@ -26,6 +26,13 @@ pub const NOTES_OPEN: &str = "notes_open";
 /// Ids of the notes opened last, most recent first, separated by commas (F11-05).
 pub const NOTES_RECENT: &str = "notes_recent";
 
+/// Saved searches of the palette: a JSON list of query texts (F17-08).
+pub const SAVED_SEARCHES: &str = "saved_searches";
+
+/// Most saved searches, and the longest one.
+const MAX_SAVED_SEARCHES: usize = 20;
+const MAX_SEARCH_CHARS: usize = 200;
+
 /// Longest free-form value (an id plus a prefix).
 const MAX_FREE_VALUE: usize = 64;
 /// Longest list of recent notes: a dozen ids and their separators.
@@ -46,7 +53,7 @@ const ALLOWED: [(&str, &[&str]); 4] = [
 ];
 
 fn allowed_values(key: &str) -> AppResult<&'static [&'static str]> {
-    if key == DEFAULT_NOTIFY_TIME || is_free_form(key) {
+    if key == DEFAULT_NOTIFY_TIME || key == SAVED_SEARCHES || is_free_form(key) {
         return Ok(&[]);
     }
     ALLOWED
@@ -61,8 +68,21 @@ fn is_free_form(key: &str) -> bool {
     key == NOTES_SCOPE || key == NOTES_OPEN || key == NOTES_RECENT
 }
 
+fn saved_searches_are_valid(value: &str) -> bool {
+    serde_json::from_str::<Vec<String>>(value).is_ok_and(|list| {
+        list.len() <= MAX_SAVED_SEARCHES
+            && list.iter().all(|text| {
+                !text.trim().is_empty()
+                    && text.chars().count() <= MAX_SEARCH_CHARS
+                    && !text.chars().any(char::is_control)
+            })
+    })
+}
+
 fn validate(key: &str, value: &str) -> AppResult<()> {
-    let valid = if is_free_form(key) {
+    let valid = if key == SAVED_SEARCHES {
+        saved_searches_are_valid(value)
+    } else if is_free_form(key) {
         let longest = if key == NOTES_RECENT {
             MAX_RECENT_VALUE
         } else {
@@ -127,6 +147,37 @@ mod tests {
 
     fn code<T>(result: AppResult<T>) -> &'static str {
         result.err().map(|error| error.code()).unwrap_or("OK")
+    }
+
+    #[test]
+    fn saved_searches_are_a_short_list_of_plain_texts() {
+        let (state, _) = test_state();
+        assert_eq!(get(&state, SAVED_SEARCHES).expect("get"), None);
+        let ok = r#"["is:pendiente tag:SMA","desde:2026-01-01 informe"]"#;
+        set(&state, SAVED_SEARCHES, ok).expect("set");
+        assert_eq!(
+            get(&state, SAVED_SEARCHES).expect("get").as_deref(),
+            Some(ok)
+        );
+        set(&state, SAVED_SEARCHES, "[]").expect("empty list");
+
+        let too_many = serde_json::to_string(&vec!["a"; 21]).expect("json");
+        let too_long = serde_json::to_string(&vec!["a".repeat(201)]).expect("json");
+        for bad in [
+            "no es json",
+            r#"{"a":1}"#,
+            r#"[1,2]"#,
+            r#"["  "]"#,
+            r#"["ab"]"#,
+            too_many.as_str(),
+            too_long.as_str(),
+        ] {
+            assert_eq!(
+                code(set(&state, SAVED_SEARCHES, bad)),
+                "VALIDATION",
+                "{bad}"
+            );
+        }
     }
 
     #[test]

@@ -365,6 +365,7 @@ Fase 17 — mejoras de lo existente (F17-10)
 - [ ] F17-04: en una nota, tachar y subrayar texto con los botones y con Ctrl+U / Ctrl+Mayús+S; exportar a Markdown y a HTML y abrir los archivos en otro programa (VS Code, navegador) comprobando que se ven; importar ese `.md` de vuelta.
 - [ ] F17-06: importar dos veces la misma carpeta de Markdown y un `.enex` real; la segunda vez el aviso debe decir que las notas ya estaban importadas y no deben aparecer copias. Editar un archivo y reimportar: entra como nota nueva.
 - [ ] F17-07: crear una etiqueta «SMA» con dos subetiquetas; comprobar que desmarcar «SMA» oculta las tareas de las hijas, que «Solo» en «SMA» muestra las de sus hijas y que el contador del padre suma las de las hijas.
+- [ ] F17-08: en Ctrl+K escribir `is:pendiente tag:SMA` y «Guardar esta búsqueda»; reabrir la paleta con la caja vacía, comprobar que aparece en «Búsquedas guardadas», que al elegirla busca y que la ✕ la quita. Probar `informe desde:2026-03-01 hasta:2026-03-31` y comprobar que respeta el rango.
 - [ ] _El resto se detalla al implementar F17-02 a F17-09._
 
 Fase 18 — resumen semanal (F18-04)

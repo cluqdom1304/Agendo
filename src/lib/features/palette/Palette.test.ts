@@ -199,4 +199,46 @@ describe("Palette", () => {
     expect(screen.getAllByText("Apuntes recientes")).toHaveLength(1);
     expect(screen.queryByText("Nueva tarea")).toBeNull();
   });
+
+  it("keeps, runs and forgets saved searches (F17-08)", async () => {
+    const search = vi.fn(async () => []);
+    const onSaveView = vi.fn();
+    const onDeleteView = vi.fn();
+    render(Palette, {
+      mode: "all",
+      search,
+      commands: [],
+      recent: [],
+      views: ["is:pendiente tag:SMA"],
+      onSaveView,
+      onDeleteView,
+      onNote: vi.fn(),
+      onTask: vi.fn(),
+      onTag: vi.fn(),
+      onClose: vi.fn(),
+    });
+    const input = screen.getByRole("combobox") as HTMLInputElement;
+    expect(screen.getByText("Búsquedas guardadas")).toBeTruthy();
+
+    // Choosing one fills the box and searches; the dialog stays open.
+    await fireEvent.click(screen.getByText("is:pendiente tag:SMA"));
+    expect(input.value).toBe("is:pendiente tag:SMA");
+    await waitFor(() =>
+      expect(search).toHaveBeenCalledWith("is:pendiente tag:SMA"),
+    );
+    // An already saved search is not offered again.
+    expect(screen.queryByText("Guardar esta búsqueda")).toBeNull();
+
+    await type(input, "desde:2026-03-01 informe");
+    await fireEvent.click(screen.getByText("Guardar esta búsqueda"));
+    expect(onSaveView).toHaveBeenCalledWith("desde:2026-03-01 informe");
+
+    await type(input, "");
+    await fireEvent.click(
+      screen.getByRole("button", {
+        name: "Quitar la búsqueda guardada «is:pendiente tag:SMA»",
+      }),
+    );
+    expect(onDeleteView).toHaveBeenCalledWith("is:pendiente tag:SMA");
+  });
 });

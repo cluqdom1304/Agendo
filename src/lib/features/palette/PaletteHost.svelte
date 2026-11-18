@@ -3,6 +3,7 @@
 
   import { searchAll } from "../../api";
   import { notesStore } from "../../stores/notes.svelte";
+  import { savedSearches } from "../../stores/savedSearches.svelte";
   import { tagsStore } from "../../stores/tags.svelte";
   import { tasksStore } from "../../stores/tasks.svelte";
   import { viewStore } from "../../stores/view.svelte";
@@ -33,6 +34,7 @@
 
   // The recent notes are known by id: their titles are looked up when the palette opens.
   onMount(() => {
+    void savedSearches.load();
     void notesStore
       .ensureLoaded()
       .then(() => notesStore.ensureTitles(notesStore.recent));
@@ -52,6 +54,9 @@
   search={(query) => searchAll(query)}
   {commands}
   recent={notesStore.recentNotes()}
+  views={savedSearches.items}
+  onSaveView={(query) => void savedSearches.add(query)}
+  onDeleteView={(query) => void savedSearches.remove(query)}
   onNote={(id) => void showNote(id)}
   {onTask}
   onTag={openTag}
