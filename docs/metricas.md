@@ -72,3 +72,7 @@ menú contextual, paleta y diálogos de tarea/ajustes. El JS total sube a 263,4 
 | N-03 | Ejecutable release | < 15 MB | **< 18 MB** | 15 363 072 B (≈ 15,36 MB) | ≤ 15,4 MB (no crecer; F16-03 busca bajar) | _pendiente_ |
 | N-04 | JS gzip | < 250 KB | **< 300 KB** | 246,4 KB | **≤ 285 KB** | _pendiente_ |
 | — | 10 000 notas y 10 000 tareas en build **release** | — | lista < 250 ms, búsqueda < 50 ms, mes < 30 ms | solo build de depuración | medido en release (F16-05) | _pendiente_ |
+
+**F16-03 (2026-11-18):** perfil release `opt-level = "s"` + `lto = "fat"` (antes `3` + `thin`):
+`agendo.exe` 15 419 392 B → **10 516 992 B** (−4,9 MB). `panic = "abort"` descartado: `state.rs` depende de que el
+pánico desenrolle y revierta la transacción abierta (D-24 y su test). El efecto en velocidad se mide en F16-05.
