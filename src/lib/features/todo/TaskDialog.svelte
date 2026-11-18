@@ -4,9 +4,12 @@
   import { draftReminders, pending, toInput } from "../../reminders";
   import {
     buildRule,
+    clampCount,
     clampInterval,
+    DAY_CODES,
     FREQS,
     parseRule,
+    type DayCode,
     type Freq,
   } from "../../recurrence";
   import {
@@ -60,6 +63,14 @@
   let repeatFreq = $state<Freq | "">(startRepeat?.freq ?? "");
   let repeatInterval = $state<number | null>(startRepeat?.interval ?? 1);
   let repeatUntil = $state(startRepeat?.until ?? "");
+  let repeatDays = $state<DayCode[]>(startRepeat?.days ?? []);
+  let repeatCount = $state<number | null>(startRepeat?.count ?? null);
+
+  function toggleDay(code: DayCode) {
+    repeatDays = repeatDays.includes(code)
+      ? repeatDays.filter((day) => day !== code)
+      : [...repeatDays, code];
+  }
   let description = $state("");
   // svelte-ignore state_referenced_locally
   let inputs = $state.raw<ReminderInput[]>(
@@ -153,6 +164,8 @@
           freq: repeatFreq,
           interval: clampInterval(repeatInterval ?? 1),
           until: repeatUntil,
+          days: repeatDays,
+          count: repeatCount === null ? null : clampCount(repeatCount),
         })
       : null,
   );
@@ -372,9 +385,42 @@
               bind:value={repeatInterval}
             />
           </label>
+          {#if repeatFreq === "WEEKLY"}
+            <div class="days" role="group" aria-label={t.recurrence.daysLabel}>
+              {#each DAY_CODES as code (code)}
+                <button
+                  type="button"
+                  class="day"
+                  aria-pressed={repeatDays.includes(code)}
+                  aria-label={t.recurrence.dayNames[code]}
+                  title={t.recurrence.dayNames[code]}
+                  onclick={() => toggleDay(code)}
+                >
+                  {t.recurrence.dayInitials[code]}
+                </button>
+              {/each}
+            </div>
+          {/if}
           <label class="block">
             <span class="label">{t.recurrence.untilLabel}</span>
-            <input class="text" type="date" bind:value={repeatUntil} />
+            <input
+              class="text"
+              type="date"
+              bind:value={repeatUntil}
+              oninput={() => (repeatCount = null)}
+            />
+          </label>
+          <label class="block">
+            <span class="label">{t.recurrence.countLabel}</span>
+            <input
+              class="text"
+              type="number"
+              min="1"
+              max="999"
+              step="1"
+              bind:value={repeatCount}
+              oninput={() => (repeatUntil = "")}
+            />
           </label>
         {/if}
       </div>
@@ -492,6 +538,33 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-3);
+  }
+
+  .days {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .day {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .day:hover {
+    background: var(--bg-hover);
+  }
+
+  .day[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent, #fff);
   }
 
   .durations {

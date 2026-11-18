@@ -337,7 +337,7 @@ fn spawn_next_occurrence(
             due_time: before.due_time.clone(),
             duration_minutes: before.duration_minutes,
             source_note_id: before.source_note_id.clone(),
-            rrule: Some(text.clone()),
+            rrule: Some(rule.successor().format()),
             tag_ids: before.tag_ids.clone(),
             now: now.to_string(),
         },
@@ -1403,6 +1403,25 @@ mod tests {
         assert_eq!(next.tag_ids, [tag.id]);
         assert_eq!(next.rrule.as_deref(), first.rrule.as_deref());
         assert_ne!(next.id, first.id);
+    }
+
+    #[test]
+    fn a_counted_weekday_series_stops_after_its_last_occurrence() {
+        let (state, _) = test_state();
+        // 2026-03-09 is a Monday.
+        let first = repeating(&state, "2026-03-09", "FREQ=WEEKLY;BYDAY=MO,WE;COUNT=3");
+        complete(&state, &first.id, true, Some("2026-03-09")).expect("first");
+        let second = open_tasks(&state).remove(0);
+        assert_eq!(second.due_date.as_deref(), Some("2026-03-11"));
+        assert_eq!(
+            second.rrule.as_deref(),
+            Some("FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE;COUNT=2")
+        );
+        complete(&state, &second.id, true, Some("2026-03-11")).expect("second");
+        let third = open_tasks(&state).remove(0);
+        assert_eq!(third.due_date.as_deref(), Some("2026-03-16"));
+        complete(&state, &third.id, true, Some("2026-03-16")).expect("third");
+        assert!(open_tasks(&state).is_empty(), "the series is over");
     }
 
     #[test]

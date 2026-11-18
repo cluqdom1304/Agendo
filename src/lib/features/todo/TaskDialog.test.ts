@@ -260,6 +260,25 @@ describe("TaskDialog editing a task", () => {
     expect(store.tasks[0]?.rrule).toBe("FREQ=WEEKLY;INTERVAL=2;UNTIL=20261231");
   });
 
+  it("creates a weekly task on chosen weekdays that ends after N times (F17-01)", async () => {
+    const { store, onClose } = await mount("2026-03-09");
+    await fireEvent.input(title(), { target: { value: "Gimnasio" } });
+    await fireEvent.change(screen.getByLabelText("Repetir la tarea"), {
+      target: { value: "WEEKLY" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "viernes" }));
+    await fireEvent.click(screen.getByRole("button", { name: "lunes" }));
+    await fireEvent.input(screen.getByLabelText("Número de veces (opcional)"), {
+      target: { value: "8" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Crear tarea" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(store.tasks[0]?.rrule).toBe(
+      "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,FR;COUNT=8",
+    );
+  });
+
   it("does not offer to repeat a task without a date and refuses an end before the task", async () => {
     await mount();
     expect(

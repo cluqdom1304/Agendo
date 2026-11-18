@@ -359,7 +359,8 @@ Fase 16 — rendimiento (F16-09)
 - [x] Ejecutar `npm run e2e` con `tauri-driver` (F6-06 y F15-03, nunca ejecutados) y anotar el resultado.
 
 Fase 17 — mejoras de lo existente (F17-10)
-- [ ] _Se detallan al implementar cada tarea de F17-01 a F17-09._
+- [ ] F17-01: crear una tarea semanal con fecha un lunes, marcar lunes y miércoles y «Número de veces» = 3; completarla tres veces y comprobar que aparecen miércoles y lunes y que a la tercera no nace otra. Revisar el aspecto de los botones de día en claro y oscuro.
+- [ ] _El resto se detalla al implementar F17-02 a F17-09._
 
 Fase 18 — resumen semanal (F18-04)
 - [ ] _Se detallan al implementar F18-01 a F18-03._

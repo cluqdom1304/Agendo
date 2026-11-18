@@ -492,3 +492,12 @@ Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`
 
 - **Acción "Marcar como hecha" en la notificación** para v1 o posterior.
 - **Formato de exportación** además de `.sqlite` (p. ej. JSON).
+
+## D-57 — Recurrencia ampliada de tareas: días de la semana y «N veces» (F17-01)
+- **Estado:** ACCEPTED (dentro del plan de la 2.1.0 aprobado; revisable) · **Fecha:** 2026-11-18 · **Validación:** `[A]` con tests de dominio, de comando y de interfaz; `[H]` uso en Windows 11 (F17-10)
+- **Contexto:** F13-05 ya admite `FREQ`, `INTERVAL` y `UNTIL` en `tasks.rrule` (el «cada N» y el «hasta fecha» existían). Faltaban elegir días de la semana y terminar tras N repeticiones. D-32 descartó RRULE completa y esa decisión se mantiene.
+- **Decisión:** dos partes más del mismo subconjunto de RFC 5545, sin migración (la columna es texto):
+  - `BYDAY=MO,TU,…` solo con `FREQ=WEEKLY`. Las semanas empiezan en lunes y `INTERVAL` cuenta semanas desde la de la tarea actual, de modo que completar tarde no descuadra el ciclo. Sin `BYDAY` se conserva el comportamiento anterior.
+  - `COUNT=n` (1–999) son las ocurrencias que quedan **contando la tarea que lleva la regla**; al completarla, la siguiente nace con `n-1` y con `COUNT=1` la serie termina. Completar tarde no consume repeticiones. `UNTIL` y `COUNT` son excluyentes (como en el RFC).
+- **Consecuencias:** sin dependencias ni cambios de esquema ni de contrato IPC (`rrule` sigue siendo `string`). Las reglas guardadas antes se leen igual. La interfaz ofrece siete botones de día y un campo «Número de veces», que se vacían entre sí con «Hasta».
+- **Alternativas descartadas:** RRULE completa (`BYSETPOS`, `BYMONTH` libre, `EXDATE`…); guardar la fecha de fin calculada en lugar de un contador (cambiaría al mover la tarea).

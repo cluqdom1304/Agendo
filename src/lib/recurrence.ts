@@ -1,5 +1,6 @@
-// Repeat rules of tasks (F13-05): the form edits a frequency, an interval and an end date; the
-// backend stores them as a small subset of RFC 5545 (`FREQ=WEEKLY;INTERVAL=2;UNTIL=20261231`).
+// Repeat rules of tasks (F13-05, F17-01): the form edits a frequency, an interval, weekdays (weekly)
+// and an end (a date or a number of times); the backend stores them as a small subset of RFC 5545
+// (`FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;UNTIL=20261231`).
 // The backend adds the anchors (BYMONTHDAY, BYMONTH) itself, so they are ignored here.
 
 import { t } from "./i18n";
@@ -9,12 +10,21 @@ export type Freq = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 export const FREQS: readonly Freq[] = ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"];
 
 export const MAX_INTERVAL = 365;
+export const MAX_COUNT = 999;
+
+/** Weekday codes in the order the week starts (Monday). */
+export const DAY_CODES = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
+export type DayCode = (typeof DAY_CODES)[number];
 
 export interface RepeatForm {
   freq: Freq;
   interval: number;
   /** `YYYY-MM-DD`, or empty for no end. */
   until: string;
+  /** Weekly only; empty means the task's own weekday. */
+  days: DayCode[];
+  /** Times the series runs including the first; `null` for no limit. */
+  count: number | null;
 }
 
 /** Reads a stored rule; `null` when it is not one this app writes. */
@@ -23,6 +33,8 @@ export function parseRule(text: string | null | undefined): RepeatForm | null {
   let freq: Freq | null = null;
   let interval = 1;
   let until = "";
+  let days: DayCode[] = [];
+  let count: number | null = null;
   for (const part of text.split(";")) {
     const [key, value = ""] = part.split("=");
     if (key === "FREQ" && (FREQS as readonly string[]).includes(value)) {
@@ -31,10 +43,15 @@ export function parseRule(text: string | null | undefined): RepeatForm | null {
       interval = Number(value);
     } else if (key === "UNTIL" && /^\d{8}$/.test(value)) {
       until = `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
+    } else if (key === "COUNT" && /^\d+$/.test(value)) {
+      count = Number(value);
+    } else if (key === "BYDAY") {
+      const wanted = value.split(",");
+      days = DAY_CODES.filter((code) => wanted.includes(code));
     }
   }
   if (!freq || !Number.isInteger(interval) || interval < 1) return null;
-  return { freq, interval, until };
+  return { freq, interval, until, days, count };
 }
 
 /** The interval as the field holds it, kept inside what the backend accepts. */
@@ -43,12 +60,23 @@ export function clampInterval(value: number): number {
   return Math.min(MAX_INTERVAL, Math.max(1, Math.trunc(value)));
 }
 
+/** The count as the field holds it, kept inside what the backend accepts. */
+export function clampCount(value: number): number {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(MAX_COUNT, Math.max(1, Math.trunc(value)));
+}
+
 export function buildRule(form: RepeatForm): string {
   const parts = [
     `FREQ=${form.freq}`,
     `INTERVAL=${clampInterval(form.interval)}`,
   ];
-  if (form.until) parts.push(`UNTIL=${form.until.replaceAll("-", "")}`);
+  if (form.freq === "WEEKLY" && form.days.length > 0) {
+    const chosen = DAY_CODES.filter((code) => form.days.includes(code));
+    parts.push(`BYDAY=${chosen.join(",")}`);
+  }
+  if (form.count !== null) parts.push(`COUNT=${clampCount(form.count)}`);
+  else if (form.until) parts.push(`UNTIL=${form.until.replaceAll("-", "")}`);
   return parts.join(";");
 }
 
@@ -63,7 +91,9 @@ export function sameRule(
   return (
     left.freq === right.freq &&
     left.interval === right.interval &&
-    left.until === right.until
+    left.until === right.until &&
+    left.count === right.count &&
+    left.days.join() === right.days.join()
   );
 }
 
@@ -76,7 +106,14 @@ export function describeRule(text: string | null | undefined): string {
     form.interval === 1
       ? unit.one
       : t.recurrence.every(form.interval, unit.many);
-  if (!form.until) return base;
+  const withDays =
+    form.freq === "WEEKLY" && form.days.length > 0
+      ? `${base} ${t.recurrence.on(form.days.map((code) => t.recurrence.dayNames[code]).join(", "))}`
+      : base;
+  if (form.count !== null) {
+    return `${withDays}, ${t.recurrence.times(form.count)}`;
+  }
+  if (!form.until) return withDays;
   const [year, month, day] = form.until.split("-");
-  return `${base} ${t.recurrence.until(`${day}/${month}/${year}`)}`;
+  return `${withDays} ${t.recurrence.until(`${day}/${month}/${year}`)}`;
 }

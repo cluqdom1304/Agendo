@@ -1,8 +1,8 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 16 de la 2.1.0 (cerrada: F16-01 a F16-09); la 2.0.3 está publicada
-**Estado:** READY   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F17-01 cuando el usuario dé la orden de empezar la Fase 17. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
+**Fase activa:** Fase 17 de la 2.1.0 (en curso: F17-01 hecha); la 2.0.3 está publicada
+**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F17-02. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-16 (V2.0.0 cerrada y publicada)
 **Última actualización:** 2026-11-18 (Fase 16: tareas `[A]` completas)
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -451,7 +451,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F16-09 `[H]` Medir N-01/N-02 y la fluidez con datos reales en Windows 11; ejecutar por fin `npm run e2e` (F6-06 y F15-03).
 
 ## Fase 17 — Mejorar lo que ya existe
-- [ ] F17-01 `[A]` Recurrencia ampliada (ADR propio: D-32 descartó RRULE completo): días de la semana, «cada N», «hasta fecha» y «N veces»; sin RRULE completo.
+- [x] F17-01 `[A]` Recurrencia ampliada (ADR propio: D-32 descartó RRULE completo): días de la semana, «cada N», «hasta fecha» y «N veces»; sin RRULE completo.
 - [ ] F17-02 `[A]` Notificación con «Posponer» (10 min / 1 h / mañana) junto a «Marcar como hecha»; reutiliza `reminders`, sin tabla nueva si es posible.
 - [ ] F17-03 `[A]` Selección múltiple en la lista (Mayús/Ctrl + clic): completar, etiquetar, mover de día y borrar en lote, con un único deshacer.
 - [ ] F17-04 `[A]` Editor: marcas de tachado y subrayado; el import/export de Markdown y ENEX deja de perderlas (cierra una limitación de D-54).
@@ -461,6 +461,9 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [ ] F17-08 `[A]` Búsqueda: vistas guardadas (p. ej. `is:pending tag:SMA`) y filtro por rango de fechas.
 - [ ] F17-09 `[A]` Copia de seguridad automática programada con rotación de las últimas N copias (Ajustes), reutilizando `.agendo` (D-47).
 - [ ] F17-10 `[H]` Validación visual y de uso de F17-02 a F17-09 en Windows 11.
+
+**Verificaciones [A] de la Fase 17:**
+- F17-01 (D-57): `domain/recurrence.rs` gana `BYDAY` (solo semanal) y `COUNT` (1–999, excluyente con `UNTIL`) y `Rule::successor`; `spawn_next_occurrence` guarda la regla con una repetición menos. «Cada N» y «hasta fecha» ya existían desde F13-05. Interfaz: siete botones de día y «Número de veces» en `TaskDialog`; `describeRule` los explica. Tests nuevos: 3 de dominio, 1 de comando (serie con `COUNT=3` y `BYDAY`), 2 de `recurrence.test.ts` y 1 de `TaskDialog.test.ts`. Sin migración.
 
 ## Fase 18 — Resumen semanal (única función nueva elegida por el usuario)
 - [ ] F18-01 `[A]` Consulta y dominio del resumen: tareas completadas, pendientes y vencidas de una semana, agrupadas por etiqueta; inicio de semana configurable (lunes por defecto) vía `domain/dates.rs` y `Clock`.

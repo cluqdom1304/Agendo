@@ -1,5 +1,6 @@
 //! Repeating tasks (F13-05, B-05). The rule lives in `tasks.rrule` as a small subset of RFC 5545:
-//! `FREQ=DAILY|WEEKLY|MONTHLY|YEARLY`, `INTERVAL=n`, `UNTIL=YYYYMMDD`, plus `BYMONTHDAY` and
+//! `FREQ=DAILY|WEEKLY|MONTHLY|YEARLY`, `INTERVAL=n`, `UNTIL=YYYYMMDD`, `COUNT=n` (occurrences
+//! left, counting the task that carries the rule), `BYDAY` (weekly only) plus `BYMONTHDAY` and
 //! `BYMONTH`, which the app fills in from the task's date so that «every month on the 31st»
 //! lands on the last day of short months without drifting to the 28th afterwards.
 //!
@@ -10,6 +11,8 @@ use chrono::{Datelike, Duration, NaiveDate};
 use super::validation::ValidationError;
 
 pub const MAX_INTERVAL: u32 = 365;
+pub const MAX_COUNT: u32 = 999;
+const DAY_CODES: [&str; 7] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 /// Steps tried before giving up when a task is completed long after its date.
 const MAX_STEPS: u32 = 20_000;
 
@@ -51,6 +54,10 @@ pub struct Rule {
     pub month_day: Option<u32>,
     /// Month the series sticks to (yearly).
     pub month: Option<u32>,
+    /// Weekly only: weekdays as a bit mask, bit 0 = Monday. Zero means «the task's own weekday».
+    pub by_day: u8,
+    /// Occurrences left including the current task; `None` for no limit.
+    pub count: Option<u32>,
 }
 
 fn invalid(detail: &str) -> ValidationError {
@@ -64,6 +71,8 @@ impl Rule {
         let mut until = None;
         let mut month_day = None;
         let mut month = None;
+        let mut by_day = 0u8;
+        let mut count = None;
         for part in text.split(';') {
             let (key, value) = part
                 .split_once('=')
@@ -104,26 +113,64 @@ impl Rule {
                             .ok_or_else(|| invalid("BYMONTH va de 1 a 12"))?,
                     );
                 }
+                "COUNT" => {
+                    count = Some(
+                        value
+                            .parse::<u32>()
+                            .ok()
+                            .filter(|n| (1..=MAX_COUNT).contains(n))
+                            .ok_or_else(|| invalid("COUNT va de 1 a 999"))?,
+                    );
+                }
+                "BYDAY" => {
+                    for code in value.split(',') {
+                        let index = DAY_CODES
+                            .iter()
+                            .position(|known| *known == code)
+                            .ok_or_else(|| invalid("día de la semana desconocido"))?;
+                        by_day |= 1 << index;
+                    }
+                }
                 _ => return Err(invalid("parte no admitida")),
             }
         }
         let freq = freq.ok_or_else(|| invalid("falta FREQ"))?;
+        if by_day != 0 && freq != Freq::Weekly {
+            return Err(invalid("BYDAY solo se admite con FREQ=WEEKLY"));
+        }
+        if until.is_some() && count.is_some() {
+            return Err(invalid("UNTIL y COUNT no pueden ir juntos"));
+        }
         Ok(Self {
             freq,
             interval,
             until,
             month_day,
             month,
+            by_day,
+            count,
         })
     }
 
     pub fn format(&self) -> String {
         let mut text = format!("FREQ={};INTERVAL={}", self.freq.as_str(), self.interval);
+        if self.by_day != 0 {
+            let codes: Vec<&str> = DAY_CODES
+                .iter()
+                .enumerate()
+                .filter(|(index, _)| self.by_day & (1 << index) != 0)
+                .map(|(_, code)| *code)
+                .collect();
+            text.push_str(&format!(";BYDAY={}", codes.join(",")));
+        }
         if let Some(day) = self.month_day {
             text.push_str(&format!(";BYMONTHDAY={day}"));
         }
         if let Some(month) = self.month {
             text.push_str(&format!(";BYMONTH={month}"));
+        }
+        if let Some(count) = self.count {
+            text.push_str(&format!(";COUNT={count}"));
         }
         if let Some(until) = self.until {
             text.push_str(&format!(";UNTIL={}", until.format("%Y%m%d")));
@@ -145,6 +192,12 @@ impl Rule {
     /// actually completed, so a task finished late does not come back already overdue), or
     /// `None` when the series has ended.
     pub fn next_after(&self, current: NaiveDate, floor: NaiveDate) -> Option<NaiveDate> {
+        if self.count.is_some_and(|left| left <= 1) {
+            return None;
+        }
+        if self.freq == Freq::Weekly && self.by_day != 0 {
+            return self.next_weekday(current, floor);
+        }
         let mut date = current;
         for _ in 0..MAX_STEPS {
             date = self.step(date)?;
@@ -153,6 +206,32 @@ impl Rule {
             }
             if self.until.is_some_and(|until| date > until) {
                 return None;
+            }
+        }
+        None
+    }
+
+    /// The rule for the task that follows this one: one occurrence fewer to go.
+    pub fn successor(&self) -> Self {
+        Self {
+            count: self.count.map(|left| left.saturating_sub(1)),
+            ..self.clone()
+        }
+    }
+
+    /// Next selected weekday, in a week that is a whole number of intervals after the current one
+    /// (weeks start on Monday), so a late completion stays on the cycle.
+    fn next_weekday(&self, current: NaiveDate, floor: NaiveDate) -> Option<NaiveDate> {
+        let base_week = week_index(current);
+        let mut date = current.max(floor);
+        for _ in 0..MAX_STEPS {
+            date = date.checked_add_signed(Duration::days(1))?;
+            if self.until.is_some_and(|until| date > until) {
+                return None;
+            }
+            let selected = self.by_day & (1 << date.weekday().num_days_from_monday()) != 0;
+            if selected && (week_index(date) - base_week) % i64::from(self.interval) == 0 {
+                return Some(date);
             }
         }
         None
@@ -188,6 +267,13 @@ impl Rule {
     }
 }
 
+/// Whole weeks since a fixed Monday, so that two dates in the same Monday-to-Sunday week match.
+fn week_index(date: NaiveDate) -> i64 {
+    let monday = date - Duration::days(i64::from(date.weekday().num_days_from_monday()));
+    let epoch = NaiveDate::from_ymd_opt(1970, 1, 5).unwrap_or(NaiveDate::MIN);
+    monday.signed_duration_since(epoch).num_days().div_euclid(7)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -221,9 +307,12 @@ mod tests {
             "INTERVAL=2",
             "FREQ=DAILY;INTERVAL=0",
             "FREQ=DAILY;INTERVAL=366",
-            "FREQ=DAILY;COUNT=3",
+            "FREQ=DAILY;COUNT=0",
+            "FREQ=DAILY;COUNT=1000",
+            "FREQ=DAILY;COUNT=3;UNTIL=20261231",
+            "FREQ=MONTHLY;BYDAY=MO",
+            "FREQ=WEEKLY;BYDAY=XX",
             "FREQ=DAILY;UNTIL=2026-12-31",
-            "FREQ=DAILY;BYDAY=MO",
             "nada",
         ] {
             assert!(Rule::parse(bad).is_err(), "{bad}");
@@ -308,5 +397,72 @@ mod tests {
             rule("FREQ=MONTHLY", "2026-03-10").next_after(max, max),
             None
         );
+    }
+
+    #[test]
+    fn weekly_by_day_visits_the_chosen_weekdays_every_n_weeks() {
+        // 2026-03-09 is a Monday.
+        let weekly = rule("FREQ=WEEKLY;BYDAY=MO,WE,FR", "2026-03-09");
+        assert_eq!(weekly.format(), "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR");
+        let wed = weekly
+            .next_after(d("2026-03-09"), d("2026-03-09"))
+            .expect("wed");
+        assert_eq!(wed, d("2026-03-11"));
+        let fri = weekly.next_after(wed, wed).expect("fri");
+        assert_eq!(fri, d("2026-03-13"));
+        assert_eq!(weekly.next_after(fri, fri), Some(d("2026-03-16")));
+        // Completed on the Saturday: the next one is the following Monday, not a past day.
+        assert_eq!(
+            weekly.next_after(d("2026-03-09"), d("2026-03-14")),
+            Some(d("2026-03-16"))
+        );
+        let biweekly = rule("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TU", "2026-03-09");
+        assert_eq!(
+            biweekly.next_after(d("2026-03-09"), d("2026-03-09")),
+            Some(d("2026-03-10"))
+        );
+        assert_eq!(
+            biweekly.next_after(d("2026-03-10"), d("2026-03-10")),
+            Some(d("2026-03-23"))
+        );
+        assert_eq!(
+            biweekly.next_after(d("2026-03-10"), d("2026-03-30")),
+            Some(d("2026-04-06")),
+            "late completion stays on the two-week cycle"
+        );
+        // Sunday belongs to the week that started on the previous Monday.
+        let sunday = rule("FREQ=WEEKLY;INTERVAL=2;BYDAY=SU,MO", "2026-03-15");
+        assert_eq!(
+            sunday.next_after(d("2026-03-15"), d("2026-03-15")),
+            Some(d("2026-03-23"))
+        );
+    }
+
+    #[test]
+    fn count_runs_out_and_successor_counts_down() {
+        let counted = rule("FREQ=DAILY;COUNT=3", "2026-03-10");
+        assert_eq!(counted.count, Some(3));
+        let second = counted
+            .next_after(d("2026-03-10"), d("2026-03-10"))
+            .expect("second");
+        let rest = counted.successor();
+        assert_eq!(rest.count, Some(2));
+        let third = rest.next_after(second, second).expect("third");
+        assert_eq!(third, d("2026-03-12"));
+        let last = rest.successor();
+        assert_eq!(last.count, Some(1));
+        assert_eq!(last.next_after(third, third), None);
+        assert_eq!(last.format(), "FREQ=DAILY;INTERVAL=1;COUNT=1");
+        assert_eq!(rule("FREQ=DAILY", "2026-03-10").successor().count, None);
+    }
+
+    #[test]
+    fn by_day_respects_until() {
+        let limited = rule("FREQ=WEEKLY;BYDAY=MO;UNTIL=20260316", "2026-03-09");
+        assert_eq!(
+            limited.next_after(d("2026-03-09"), d("2026-03-09")),
+            Some(d("2026-03-16"))
+        );
+        assert_eq!(limited.next_after(d("2026-03-16"), d("2026-03-16")), None);
     }
 }
