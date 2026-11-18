@@ -84,6 +84,11 @@
     settling={store.settling.has(task.id)}
     onToggle={() => store.setCompleted(task.id, !task.isCompleted)}
     onSelect={() => (store.selectedId = task.id)}
+    picked={store.batch.isSelected(task.id)}
+    onPick={(mode) =>
+      mode === "range"
+        ? store.batch.extendTo(task.id)
+        : store.batch.toggle(task.id)}
     onCommit={(text, trigger) => {
       void store.rename(task.id, text);
       if (trigger === "enter") store.startDraft(target);

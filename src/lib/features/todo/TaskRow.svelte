@@ -40,6 +40,10 @@
     draft?: boolean;
     onToggle?: () => void;
     onSelect?: () => void;
+    /** Part of the multiple selection (F17-03). */
+    picked?: boolean;
+    /** Ctrl/Cmd+click toggles, Shift+click extends the selection. */
+    onPick?: (mode: "toggle" | "range") => void;
     onCommit: (text: string, trigger: "enter" | "blur") => void;
     onCancel?: () => void;
   }
@@ -68,11 +72,22 @@
     draft = false,
     onToggle,
     onSelect,
+    picked = false,
+    onPick,
     onCommit,
     onCancel,
   }: Props = $props();
 
   let tagMenuOpen = $state(false);
+
+  // A click with a modifier selects the row instead of reaching what is under the pointer.
+  function onClickCapture(event: MouseEvent) {
+    if (draft || !onPick) return;
+    if (!event.ctrlKey && !event.metaKey && !event.shiftKey) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onPick(event.shiftKey ? "range" : "toggle");
+  }
 
   // While settling, the checkbox already shows the state the task is moving to.
   const checked = $derived(settling ? !isCompleted : isCompleted);
@@ -85,11 +100,14 @@
   class="row"
   class:done={checked}
   class:settling
+  class:picked
   role="row"
+  aria-selected={picked}
   tabindex="0"
   data-task-row
   data-task-id={draft ? undefined : id}
   onfocus={onSelect}
+  onclickcapture={onClickCapture}
 >
   {#if !draft}
     <span
@@ -302,6 +320,14 @@
 
   .row:focus-visible {
     box-shadow: inset 0 0 0 1.5px var(--accent);
+  }
+
+  .row.picked,
+  .row.picked:hover {
+    background: var(
+      --accent-soft,
+      color-mix(in srgb, var(--accent) 16%, transparent)
+    );
   }
 
   .row.settling {

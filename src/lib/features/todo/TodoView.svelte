@@ -9,6 +9,7 @@
   import type { TasksStore } from "../../stores/tasks.svelte";
   import DayGroup from "./DayGroup.svelte";
   import SectionHeader from "./SectionHeader.svelte";
+  import SelectionBar from "./SelectionBar.svelte";
 
   interface Props {
     store: TasksStore;
@@ -43,6 +44,15 @@
   }
 
   function onKeydown(event: KeyboardEvent) {
+    if (
+      event.key === "Escape" &&
+      store.batch.count > 0 &&
+      focusContextOf(event.target) !== "title"
+    ) {
+      store.batch.clear();
+      event.preventDefault();
+      return;
+    }
     const shortcut = findShortcut(event, focusContextOf(event.target));
     if (!shortcut) return;
     const row = rowOf(event.target);
@@ -68,8 +78,9 @@
         break;
       }
       case "undo":
-        if (!lastDeletion) return;
-        void store.undoDelete();
+        if (store.batch.entry) void store.batch.undo();
+        else if (lastDeletion) void store.undoDelete();
+        else return;
         break;
       case "selectPrevious":
         move(row, -1);
@@ -118,7 +129,18 @@
   {/if}
 </div>
 
-{#if lastDeletion}
+<SelectionBar {store} />
+
+{#if store.batch.entry}
+  {@const entry = store.batch.entry}
+  <Toast
+    message={entry.message}
+    actionLabel={t.tasks.undo}
+    closeLabel={t.tasks.dismiss}
+    onAction={() => void store.batch.undo()}
+    onClose={() => store.batch.dismiss()}
+  />
+{:else if lastDeletion}
   <Toast
     message={t.tasks.deleted}
     actionLabel={t.tasks.undo}

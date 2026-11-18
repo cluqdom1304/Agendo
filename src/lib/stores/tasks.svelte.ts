@@ -4,6 +4,7 @@ import * as backend from "../api";
 import { toInstant, toLocalIsoDate } from "../dates";
 import { t } from "../i18n";
 import { sameRule } from "../recurrence";
+import { TaskBatch } from "./taskBatch.svelte";
 import { hasNotes } from "../features/notes/content";
 import { groupByDay, sortTodo, splitCompleted } from "../ordering";
 import type {
@@ -194,6 +195,16 @@ export class TasksStore {
     return blocks;
   });
 
+  /** Ids in the order the list draws them (POR HACER first, then each day). */
+  visibleOrder = $derived.by<string[]>(() =>
+    [this.todoBlock, ...this.agendaBlocks].flatMap((block) =>
+      [...block.open, ...block.completed].map((task) => task.id),
+    ),
+  );
+
+  /** Multiple selection and batch actions (F17-03). */
+  readonly batch: TaskBatch;
+
   isEmpty = $derived(this.tasks.length === 0);
   todoPendingCount = $derived(this.todoBlock.open.length);
 
@@ -220,6 +231,16 @@ export class TasksStore {
       (() => (prefersReducedMotion() ? 0 : COMPLETE_ANIMATION_MS));
     this.#undoMs = options.undoMs ?? 5000;
     this.#noticeMs = options.noticeMs ?? 6000;
+    this.batch = new TaskBatch({
+      api: this.#api,
+      tasks: () => this.tasks,
+      order: () => this.visibleOrder,
+      today: () => toLocalIsoDate(this.#now()),
+      refresh: () => this.refresh(),
+      report: (error) => this.#report(error),
+      inform: (message) => this.#inform(message),
+      undoMs: this.#undoMs,
+    });
   }
 
   async load(): Promise<void> {
@@ -727,6 +748,7 @@ export class TasksStore {
   dispose(): void {
     for (const timer of this.#undoTimers.values()) clearTimeout(timer);
     this.#undoTimers.clear();
+    this.batch.dispose();
     this.#clearNotice();
   }
 

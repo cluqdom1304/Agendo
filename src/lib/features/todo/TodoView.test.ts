@@ -420,3 +420,37 @@ describe("long lists", () => {
     expect(screen.getAllByRole("row")).toHaveLength(200);
   });
 });
+
+describe("multiple selection (F17-03)", () => {
+  it("selects with Ctrl and Shift+click, shows the bar and completes the batch", async () => {
+    const { store } = await mount([
+      makeTask({ id: "a", title: "Uno", dueDate: "2026-03-10", position: 1 }),
+      makeTask({ id: "b", title: "Dos", dueDate: "2026-03-10", position: 2 }),
+      makeTask({ id: "c", title: "Tres", dueDate: "2026-03-10", position: 3 }),
+    ]);
+    expect(screen.queryByRole("toolbar")).toBeNull();
+    await fireEvent.click(rowFor("Uno"), { ctrlKey: true });
+    await fireEvent.click(rowFor("Tres"), { shiftKey: true });
+    expect(screen.getByText("3 seleccionadas")).toBeTruthy();
+    expect(rowFor("Dos").getAttribute("aria-selected")).toBe("true");
+
+    await fireEvent.click(rowFor("Dos"), { ctrlKey: true });
+    expect(screen.getByText("2 seleccionadas")).toBeTruthy();
+
+    await fireEvent.click(screen.getByRole("button", { name: "Completar" }));
+    await waitFor(() => expect(store.find("a")?.isCompleted).toBe(true));
+    expect(store.find("b")?.isCompleted).toBe(false);
+    expect(screen.getByText("2 tareas completadas")).toBeTruthy();
+
+    key({ key: "z", ctrlKey: true }, rowFor("Dos"));
+    await waitFor(() => expect(store.find("a")?.isCompleted).toBe(false));
+  });
+
+  it("Escape clears the selection", async () => {
+    await mount([makeTask({ id: "a", title: "Uno", dueDate: "2026-03-10" })]);
+    await fireEvent.click(rowFor("Uno"), { ctrlKey: true });
+    expect(screen.getByRole("toolbar")).toBeTruthy();
+    key({ key: "Escape" }, rowFor("Uno"));
+    await waitFor(() => expect(screen.queryByRole("toolbar")).toBeNull());
+  });
+});

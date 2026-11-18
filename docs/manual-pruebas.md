@@ -361,6 +361,7 @@ Fase 16 — rendimiento (F16-09)
 Fase 17 — mejoras de lo existente (F17-10)
 - [ ] F17-01: crear una tarea semanal con fecha un lunes, marcar lunes y miércoles y «Número de veces» = 3; completarla tres veces y comprobar que aparecen miércoles y lunes y que a la tercera no nace otra. Revisar el aspecto de los botones de día en claro y oscuro.
 - [ ] F17-02: con un recordatorio de una tarea, comprobar que la notificación muestra «Marcar como hecha» y los tres «Posponer»; pulsar «Posponer 10 min» y verificar que vuelve a sonar a los 10 minutos y que la tarea sigue abierta. Si Windows recorta los botones, anotar cuáles.
+- [ ] F17-03: Ctrl+clic en tres tareas y Mayús+clic para un rango; comprobar el tinte de selección, la barra inferior (no tapa el aviso de deshacer) y que Completar, Etiquetar, Mover al día y Eliminar actúan sobre todas; un solo «Deshacer» (botón y Ctrl+Z) lo revierte; Esc quita la selección.
 - [ ] _El resto se detalla al implementar F17-02 a F17-09._
 
 Fase 18 — resumen semanal (F18-04)

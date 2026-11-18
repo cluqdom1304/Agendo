@@ -446,6 +446,30 @@ export const t = {
     week: "Semana",
     month: "Mes",
   },
+  batch: {
+    selected: (count: number) =>
+      count === 1 ? "1 seleccionada" : `${count} seleccionadas`,
+    barLabel: "Acciones sobre la selección",
+    complete: "Completar",
+    reopen: "Reabrir",
+    tag: "Etiquetar…",
+    tagChoose: "Añadir etiqueta",
+    move: "Mover a…",
+    moveLabel: "Mover al día",
+    delete: "Eliminar",
+    clear: "Quitar selección",
+    completed: (count: number) =>
+      count === 1 ? "1 tarea completada" : `${count} tareas completadas`,
+    reopened: (count: number) =>
+      count === 1 ? "1 tarea reabierta" : `${count} tareas reabiertas`,
+    tagged: (count: number) =>
+      count === 1 ? "1 tarea etiquetada" : `${count} tareas etiquetadas`,
+    moved: (count: number) =>
+      count === 1 ? "1 tarea movida" : `${count} tareas movidas`,
+    deleted: (count: number) =>
+      count === 1 ? "1 tarea eliminada" : `${count} tareas eliminadas`,
+    partial: (count: number) => `No se pudo cambiar ${count} tareas.`,
+  },
   recurrence: {
     label: "Repetir",
     taskLabel: "Repetir la tarea",
