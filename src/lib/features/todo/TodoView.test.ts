@@ -375,3 +375,48 @@ describe("row actions", () => {
     expect(await screen.findByDisplayValue("Uno")).toBeTruthy();
   });
 });
+
+describe("long lists", () => {
+  class SilentObserver {
+    observe() {}
+    disconnect() {}
+    unobserve() {}
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  const manyTasks = (count: number) =>
+    Array.from({ length: count }, (_, index) =>
+      makeTask({
+        id: `t${index}`,
+        title: `Tarea ${index}`,
+        position: index,
+      }),
+    );
+
+  it("mounts only the first chunks of 10 000 tasks", async () => {
+    vi.stubGlobal("IntersectionObserver", SilentObserver);
+    const started = performance.now();
+    await mount(manyTasks(10_000));
+    const elapsed = performance.now() - started;
+    // Three eager chunks of 50 rows; the rest wait for the viewport.
+    expect(screen.getAllByRole("row")).toHaveLength(150);
+    expect(elapsed).toBeLessThan(5_000);
+  });
+
+  it("keeps the selected row mounted wherever it is in the list", async () => {
+    vi.stubGlobal("IntersectionObserver", SilentObserver);
+    const { store } = await mount(manyTasks(1_000));
+    expect(screen.queryByDisplayValue("Tarea 900")).toBeNull();
+    store.reveal("t900");
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Tarea 900")).toBeTruthy(),
+    );
+  });
+
+  it("renders short lists whole", async () => {
+    vi.stubGlobal("IntersectionObserver", SilentObserver);
+    await mount(manyTasks(200));
+    expect(screen.getAllByRole("row")).toHaveLength(200);
+  });
+});

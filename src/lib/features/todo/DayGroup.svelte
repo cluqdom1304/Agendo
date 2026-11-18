@@ -11,7 +11,14 @@
   import ReminderPopover from "./ReminderPopover.svelte";
   import { tagDrag } from "../../stores/tagDrag.svelte";
   import { NO_TAG, tagsStore } from "../../stores/tags.svelte";
+  import {
+    chunkRows,
+    EAGER_CHUNKS,
+    ESTIMATED_ROW_HEIGHT,
+    WINDOW_THRESHOLD,
+  } from "./chunks";
   import TaskRow from "./TaskRow.svelte";
+  import WindowedChunk from "./WindowedChunk.svelte";
 
   // One block of tasks: a day of AGENDA, or POR HACER when `block.date` is null.
   interface Props {
@@ -32,6 +39,15 @@
     const title = notesStore.titleOf(task.sourceNoteId);
     return title === undefined ? null : { id: task.sourceNoteId, title };
   }
+
+  const openChunks = $derived(
+    block.open.length > WINDOW_THRESHOLD ? chunkRows(block.open) : null,
+  );
+  const completedChunks = $derived(
+    block.completed.length > WINDOW_THRESHOLD
+      ? chunkRows(block.completed)
+      : null,
+  );
 
   const draft = $derived(store.isDraftFor(target) ? store.draft : null);
   const heading = $derived(
@@ -100,15 +116,33 @@
   {/if}
 {/snippet}
 
+{#snippet rowList(tasks: TaskBlock["open"], chunks: TaskBlock["open"][] | null)}
+  {#if chunks}
+    {#each chunks as rows, index (index)}
+      <WindowedChunk
+        eager={index < EAGER_CHUNKS}
+        forced={rows.some((task) => task.id === store.selectedId)}
+        estimate={rows.length * ESTIMATED_ROW_HEIGHT}
+      >
+        {#each rows as task (task.id)}
+          {@render taskRow(task)}
+        {/each}
+      </WindowedChunk>
+    {/each}
+  {:else}
+    {#each tasks as task (task.id)}
+      {@render taskRow(task)}
+    {/each}
+  {/if}
+{/snippet}
+
 <section class="block" aria-label={heading}>
   {#if block.date !== null}
     <h3 class="day">{heading}</h3>
   {/if}
 
   <div class="open">
-    {#each block.open as task (task.id)}
-      {@render taskRow(task)}
-    {/each}
+    {@render rowList(block.open, openChunks)}
   </div>
 
   <!-- Keyed by draft: each draft gets a fresh input, and the handlers keep the key of the
@@ -132,9 +166,7 @@
         {t.tasks.completed}
         <span class="completed-count">{block.completed.length}</span>
       </h4>
-      {#each block.completed as task (task.id)}
-        {@render taskRow(task)}
-      {/each}
+      {@render rowList(block.completed, completedChunks)}
     </div>
   {/if}
 </section>

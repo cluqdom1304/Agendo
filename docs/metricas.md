@@ -76,3 +76,7 @@ menú contextual, paleta y diálogos de tarea/ajustes. El JS total sube a 263,4 
 **F16-03 (2026-11-18):** perfil release `opt-level = "s"` + `lto = "fat"` (antes `3` + `thin`):
 `agendo.exe` 15 419 392 B → **10 516 992 B** (−4,9 MB). `panic = "abort"` descartado: `state.rs` depende de que el
 pánico desenrolle y revierta la transacción abierta (D-24 y su test). El efecto en velocidad se mide en F16-05.
+
+**F16-04 (2026-11-18):** la agenda no estaba virtualizada. Las listas de más de 200 filas se montan por trozos de 50
+(`WindowedChunk`, `IntersectionObserver` con margen de 1500 px; altura medida al salir de pantalla, fila seleccionada siempre montada).
+Prueba con 10 000 tareas: 150 filas en el DOM. La fluidez real al desplazar es `[H]` (F16-09).
