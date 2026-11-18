@@ -111,6 +111,44 @@ describe("SettingsStore", () => {
     expect(reloaded.store.notifyTime).toBe("18:30");
   });
 
+  it("reads and saves the automatic backup schedule (F17-09)", async () => {
+    const { store, api, stored } = setup();
+    await store.load();
+    expect(store.autoBackup).toBe("off");
+    expect(store.autoBackupKeep).toBe(7);
+    expect(store.autoBackupLast).toBeNull();
+
+    expect(await store.setAutoBackup("weekly")).toBe(true);
+    expect(await store.setAutoBackupKeep(14)).toBe(true);
+    expect(stored.get("auto_backup")).toBe("weekly");
+    expect(stored.get("auto_backup_keep")).toBe("14");
+
+    // A refused value puts the previous one back.
+    api.settingsSet.mockRejectedValueOnce("VALIDATION: no");
+    expect(await store.setAutoBackup("daily")).toBe(false);
+    expect(store.autoBackup).toBe("weekly");
+
+    const reloaded = setup({
+      auto_backup: "daily",
+      auto_backup_keep: "5",
+      auto_backup_last: "2026-03-10T10:00:00Z",
+    });
+    await reloaded.store.load();
+    expect(reloaded.store.autoBackup).toBe("daily");
+    expect(reloaded.store.autoBackupKeep).toBe(5);
+    expect(reloaded.store.autoBackupLast).toBe("2026-03-10T10:00:00Z");
+
+    // Unknown stored values fall back to the defaults.
+    const odd = setup({ auto_backup: "hourly", auto_backup_keep: "99" });
+    await odd.store.load();
+    expect(odd.store.autoBackup).toBe("off");
+    expect(odd.store.autoBackupKeep).toBe(7);
+
+    reloaded.stored.set("auto_backup_last", "2026-03-11T10:00:00Z");
+    await reloaded.store.refreshAutoBackupLast();
+    expect(reloaded.store.autoBackupLast).toBe("2026-03-11T10:00:00Z");
+  });
+
   it("applies a theme change at once and saves it", async () => {
     const { store, applied, stored } = setup();
     await store.setTheme("light");

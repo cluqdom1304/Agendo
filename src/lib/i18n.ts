@@ -705,6 +705,17 @@ export const t = {
     backups: "Copias de seguridad",
     backupHint:
       "Guarda tus tareas, notas e imágenes en un archivo .agendo o recupéralos desde uno (también acepta las copias .sqlite de versiones anteriores).",
+    autoBackup: "Copia automática",
+    autoBackupHint:
+      "Agendo guarda una copia por su cuenta mientras está abierto, en la carpeta «backups» dentro de la carpeta de datos, y conserva solo las últimas.",
+    autoBackupModes: {
+      off: "Desactivada",
+      daily: "Cada día",
+      weekly: "Cada semana",
+    },
+    autoBackupKeep: "Copias que se conservan",
+    autoBackupLast: (when: string) => `Última copia automática: ${when}`,
+    autoBackupNever: "Todavía no se ha hecho ninguna copia automática.",
     backupCreate: "Crear copia…",
     backupRestore: "Restaurar copia…",
     backupFileName: (date: string) => `Agendo-${date}.agendo`,

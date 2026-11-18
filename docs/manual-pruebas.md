@@ -366,7 +366,8 @@ Fase 17 — mejoras de lo existente (F17-10)
 - [ ] F17-06: importar dos veces la misma carpeta de Markdown y un `.enex` real; la segunda vez el aviso debe decir que las notas ya estaban importadas y no deben aparecer copias. Editar un archivo y reimportar: entra como nota nueva.
 - [ ] F17-07: crear una etiqueta «SMA» con dos subetiquetas; comprobar que desmarcar «SMA» oculta las tareas de las hijas, que «Solo» en «SMA» muestra las de sus hijas y que el contador del padre suma las de las hijas.
 - [ ] F17-08: en Ctrl+K escribir `is:pendiente tag:SMA` y «Guardar esta búsqueda»; reabrir la paleta con la caja vacía, comprobar que aparece en «Búsquedas guardadas», que al elegirla busca y que la ✕ la quita. Probar `informe desde:2026-03-01 hasta:2026-03-31` y comprobar que respeta el rango.
-- [ ] _El resto se detalla al implementar F17-02 a F17-09._
+- [ ] F17-09: en Ajustes elegir «Cada día» y conservar 3; dejar la aplicación abierta (la primera copia llega a los ~45 s), comprobar que aparece `agendo-auto-….agendo` en la carpeta `backups` junto a la base de datos y el texto «Última copia automática». Restaurar esa copia desde Ajustes. Con el reloj del sistema adelantado varios días, comprobar que solo quedan 3.
+- [ ] _Sin más ítems: F17-02 a F17-09 están detallados arriba._
 
 Fase 18 — resumen semanal (F18-04)
 - [ ] _Se detallan al implementar F18-01 a F18-03._

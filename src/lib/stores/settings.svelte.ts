@@ -38,6 +38,16 @@ export interface EffectRequester {
 
 export const DEFAULT_NOTIFY_TIME = "09:00";
 
+/** How often the app makes a copy by itself (F17-09). */
+export type AutoBackupMode = "off" | "daily" | "weekly";
+export const AUTO_BACKUP_MODES: readonly AutoBackupMode[] = [
+  "off",
+  "daily",
+  "weekly",
+];
+export const AUTO_BACKUP_KEEP_CHOICES = [3, 5, 7, 10, 14, 30] as const;
+export const DEFAULT_AUTO_BACKUP_KEEP = 7;
+
 const EFFECTS: readonly EffectMode[] = ["mica", "acrylic", "none"];
 
 function parseEffect(value: string | null): EffectMode {
@@ -80,6 +90,11 @@ export class SettingsStore {
   autostart = $state(false);
   /** `HH:MM` at which reminders of tasks without a time sound (D-35). */
   notifyTime = $state(DEFAULT_NOTIFY_TIME);
+  autoBackup = $state<AutoBackupMode>("off");
+  /** How many automatic copies are kept. */
+  autoBackupKeep = $state(DEFAULT_AUTO_BACKUP_KEEP);
+  /** UTC instant of the last automatic copy, or `null` if none was made yet. */
+  autoBackupLast = $state<string | null>(null);
   busy = $state(false);
   notice = $state<SettingsNotice | null>(null);
 
@@ -123,11 +138,21 @@ export class SettingsStore {
 
   /** Reads the saved theme and window effect and applies both. Runs at startup. */
   async load(): Promise<void> {
-    const [theme, effect, notifyTime] = await Promise.all([
+    const [theme, effect, notifyTime, mode, keep, last] = await Promise.all([
       this.#api.settingsGet("theme").catch(() => null),
       this.#api.settingsGet("window_effect").catch(() => null),
       this.#api.settingsGet("default_notify_time").catch(() => null),
+      this.#api.settingsGet("auto_backup").catch(() => null),
+      this.#api.settingsGet("auto_backup_keep").catch(() => null),
+      this.#api.settingsGet("auto_backup_last").catch(() => null),
     ]);
+    this.autoBackup =
+      AUTO_BACKUP_MODES.find((known) => known === mode) ?? "off";
+    const kept = Number(keep);
+    this.autoBackupKeep = AUTO_BACKUP_KEEP_CHOICES.some((c) => c === kept)
+      ? kept
+      : DEFAULT_AUTO_BACKUP_KEEP;
+    this.autoBackupLast = last || null;
     this.theme = parseTheme(theme);
     this.notifyTime =
       notifyTime && /^\d{2}:\d{2}$/.test(notifyTime)
@@ -172,6 +197,44 @@ export class SettingsStore {
       this.notifyTime = previous;
       this.#fail(error);
       return false;
+    }
+  }
+
+  async setAutoBackup(mode: AutoBackupMode): Promise<boolean> {
+    const previous = this.autoBackup;
+    this.autoBackup = mode;
+    try {
+      await this.#api.settingsSet("auto_backup", mode);
+      this.notice = null;
+      return true;
+    } catch (error) {
+      this.autoBackup = previous;
+      this.#fail(error);
+      return false;
+    }
+  }
+
+  async setAutoBackupKeep(count: number): Promise<boolean> {
+    const previous = this.autoBackupKeep;
+    this.autoBackupKeep = count;
+    try {
+      await this.#api.settingsSet("auto_backup_keep", String(count));
+      this.notice = null;
+      return true;
+    } catch (error) {
+      this.autoBackupKeep = previous;
+      this.#fail(error);
+      return false;
+    }
+  }
+
+  /** The schedule runs in the backend: this reads when it last made a copy. */
+  async refreshAutoBackupLast(): Promise<void> {
+    try {
+      this.autoBackupLast =
+        (await this.#api.settingsGet("auto_backup_last")) || null;
+    } catch {
+      this.autoBackupLast = null;
     }
   }
 

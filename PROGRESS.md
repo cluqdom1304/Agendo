@@ -1,10 +1,10 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 17 de la 2.1.0 (en curso: F17-01 a F17-08 hechas); la 2.0.3 está publicada
-**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F17-09. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
+**Fase activa:** Fase 17 de la 2.1.0 (tareas `[A]` F17-01 a F17-09 hechas; falta la validación humana F17-10); la 2.0.3 está publicada
+**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** validación humana F17-10 (ítems de F17 en `docs/manual-pruebas.md`); no se inicia la Fase 18 sin confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-16 (V2.0.0 cerrada y publicada)
-**Última actualización:** 2026-11-18 (Fase 16: tareas `[A]` completas)
+**Última actualización:** 2026-11-18 (Fase 17: tareas `[A]` completas)
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
 ---
@@ -459,7 +459,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F17-06 `[A]` Importación sin duplicados: reconocer notas ya importadas (origen + hash) y omitirlas; migración 011 si hace falta una columna de origen.
 - [x] F17-07 `[A]` Etiquetas: interfaz para la jerarquía de un nivel (`parentId` ya existe, D-06); filtrar por la etiqueta padre incluye las hijas.
 - [x] F17-08 `[A]` Búsqueda: vistas guardadas (p. ej. `is:pending tag:SMA`) y filtro por rango de fechas.
-- [ ] F17-09 `[A]` Copia de seguridad automática programada con rotación de las últimas N copias (Ajustes), reutilizando `.agendo` (D-47).
+- [x] F17-09 `[A]` Copia de seguridad automática programada con rotación de las últimas N copias (Ajustes), reutilizando `.agendo` (D-47).
 - [ ] F17-10 `[H]` Validación visual y de uso de F17-02 a F17-09 en Windows 11.
 
 **Verificaciones [A] de la Fase 17:**
@@ -471,6 +471,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - F17-06 (D-59): migración 011 (`notes.import_origin`, `import_hash`, aditiva); las importaciones de Markdown/texto y ENEX omiten las notas vivas con el mismo origen y la misma huella y las cuentan en `ImportReport.duplicates` (aviso de Ajustes). 3 tests nuevos de importación repetida (carpeta, cambio de archivo, nota borrada, misma nota en dos rutas, ENEX) y 1 de Ajustes; los tests de versión pasan a 11.
 - F17-07: la interfaz de la jerarquía de un nivel ya existía (selector de padre en `TagEditor`, subetiquetas con sangría en `TagSidebar`, D-06). Lo que faltaba: marcar o desmarcar una etiqueta padre hace lo mismo con sus hijas, «Solo» una etiqueta padre muestra también sus hijas (`TagsStore.childrenOf/withChildren`), y el contador pendiente del padre incluye las tareas de sus hijas sin contarlas dos veces. Una subetiqueta sola no toca a su padre. 2 tests nuevos (store y barra lateral).
 - F17-08 (D-60): filtros `desde:` / `hasta:` en la búsqueda unificada (`repo/find.rs`, parámetros enlazados, sin SQL con datos del usuario) y alias `is:pending`/`is:done`; vistas guardadas en la paleta (ajuste `saved_searches`, lista JSON validada de ≤ 20 textos de ≤ 200 caracteres; `stores/savedSearches.svelte.ts`). Tests: 1 de búsqueda con rangos, 1 de ajustes, 3 de store y 1 de paleta.
+- F17-09 (D-61): `autobackup.rs` (bucle de fondo, `run_if_due`, rotación) y ajustes `auto_backup` / `auto_backup_keep` / `auto_backup_last`; sección «Copia automática» en Ajustes. 5 tests de Rust (apagada, diaria con rotación y reloj manual, semanal con margen, no toca archivos ajenos, valores por defecto), 1 de validación de ajustes, 1 de store y 1 de diálogo.
 
 ## Fase 18 — Resumen semanal (única función nueva elegida por el usuario)
 - [ ] F18-01 `[A]` Consulta y dominio del resumen: tareas completadas, pendientes y vencidas de una semana, agrupadas por etiqueta; inicio de semana configurable (lunes por defecto) vía `domain/dates.rs` y `Clock`.

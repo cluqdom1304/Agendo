@@ -305,7 +305,10 @@ export type SettingKey =
   | "notes_scope"
   | "notes_open"
   | "notes_recent"
-  | "saved_searches";
+  | "saved_searches"
+  | "auto_backup"
+  | "auto_backup_keep"
+  | "auto_backup_last";
 
 /** Colour theme: follow the system or force one (F6-05). */
 export type ThemeMode = "system" | "light" | "dark";

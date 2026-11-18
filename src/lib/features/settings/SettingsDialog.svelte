@@ -7,7 +7,12 @@
   import { t } from "../../i18n";
   import Modal from "../../shell/Modal.svelte";
   import SegmentedControl from "../../shell/SegmentedControl.svelte";
-  import type { SettingsStore } from "../../stores/settings.svelte";
+  import {
+    AUTO_BACKUP_KEEP_CHOICES,
+    AUTO_BACKUP_MODES,
+    type AutoBackupMode,
+    type SettingsStore,
+  } from "../../stores/settings.svelte";
   import type {
     AppInfo,
     EffectMode,
@@ -95,8 +100,20 @@
 
   onMount(() => {
     void store.loadAutostart();
+    void store.refreshAutoBackupLast();
     store.notice = null;
   });
+
+  const autoBackupText = $derived(
+    store.autoBackupLast
+      ? t.settings.autoBackupLast(
+          new Date(store.autoBackupLast).toLocaleString("es-ES", {
+            dateStyle: "short",
+            timeStyle: "short",
+          }),
+        )
+      : t.settings.autoBackupNever,
+  );
 
   async function createBackup() {
     const path = await pickSavePath(
@@ -251,6 +268,39 @@
   <section aria-labelledby="settings-backups">
     <h3 id="settings-backups">{t.settings.backups}</h3>
     <p class="hint">{t.settings.backupHint}</p>
+
+    <label class="row">
+      <span>
+        {t.settings.autoBackup}
+        <small class="hint">{t.settings.autoBackupHint}</small>
+      </span>
+      <select
+        value={store.autoBackup}
+        onchange={(event) =>
+          void store.setAutoBackup(event.currentTarget.value as AutoBackupMode)}
+      >
+        {#each AUTO_BACKUP_MODES as mode (mode)}
+          <option value={mode}>{t.settings.autoBackupModes[mode]}</option>
+        {/each}
+      </select>
+    </label>
+    {#if store.autoBackup !== "off"}
+      <label class="row">
+        <span>{t.settings.autoBackupKeep}</span>
+        <select
+          value={String(store.autoBackupKeep)}
+          onchange={(event) =>
+            void store.setAutoBackupKeep(Number(event.currentTarget.value))}
+        >
+          {#each AUTO_BACKUP_KEEP_CHOICES as count (count)}
+            <option value={String(count)}>{count}</option>
+          {/each}
+        </select>
+      </label>
+      <p class="hint" role="status">
+        {autoBackupText}
+      </p>
+    {/if}
 
     <div class="buttons">
       <button

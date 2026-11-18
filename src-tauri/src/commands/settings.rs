@@ -6,6 +6,7 @@ use chrono::Local;
 use tauri::State;
 
 use crate::{
+    autobackup,
     domain::dates,
     error::{AppError, AppResult},
     repo::{reminders, settings},
@@ -45,15 +46,21 @@ pub const WINDOW_EFFECT: &str = "window_effect";
 pub const DEFAULT_NOTIFY_TIME: &str = settings::NOTIFY_TIME_KEY;
 
 /// Whitelist: every setting with the values it accepts.
-const ALLOWED: [(&str, &[&str]); 4] = [
+const ALLOWED: [(&str, &[&str]); 5] = [
     (APP_SECTION, &["agenda", "notes", "today"]),
     (VIEW_MODE, &["list", "day", "week", "month"]),
     (THEME, &["system", "light", "dark"]),
     (WINDOW_EFFECT, &["mica", "acrylic", "none"]),
+    (autobackup::MODE_KEY, &autobackup::MODES),
 ];
 
 fn allowed_values(key: &str) -> AppResult<&'static [&'static str]> {
-    if key == DEFAULT_NOTIFY_TIME || key == SAVED_SEARCHES || is_free_form(key) {
+    if key == DEFAULT_NOTIFY_TIME
+        || key == SAVED_SEARCHES
+        || key == autobackup::KEEP_KEY
+        || key == autobackup::LAST_KEY
+        || is_free_form(key)
+    {
         return Ok(&[]);
     }
     ALLOWED
@@ -89,6 +96,12 @@ fn validate(key: &str, value: &str) -> AppResult<()> {
             MAX_FREE_VALUE
         };
         value.chars().count() <= longest && !value.chars().any(char::is_control)
+    } else if key == autobackup::KEEP_KEY {
+        value
+            .parse::<usize>()
+            .is_ok_and(|count| (1..=autobackup::MAX_KEEP).contains(&count))
+    } else if key == autobackup::LAST_KEY {
+        dates::parse_instant(value).is_ok()
     } else if key == DEFAULT_NOTIFY_TIME {
         dates::parse_time(value).is_ok()
     } else {
@@ -178,6 +191,33 @@ mod tests {
                 "{bad}"
             );
         }
+    }
+
+    #[test]
+    fn the_automatic_backup_settings_are_validated() {
+        let (state, _) = test_state();
+        set(&state, autobackup::MODE_KEY, "weekly").expect("mode");
+        set(&state, autobackup::KEEP_KEY, "30").expect("keep");
+        set(&state, autobackup::LAST_KEY, "2026-03-10T10:00:00Z").expect("last");
+        assert_eq!(
+            code(set(&state, autobackup::MODE_KEY, "hourly")),
+            "VALIDATION"
+        );
+        for bad in ["0", "31", "-1", "varias", ""] {
+            assert_eq!(
+                code(set(&state, autobackup::KEEP_KEY, bad)),
+                "VALIDATION",
+                "{bad}"
+            );
+        }
+        assert_eq!(
+            code(set(&state, autobackup::LAST_KEY, "ayer")),
+            "VALIDATION"
+        );
+        assert_eq!(
+            get(&state, autobackup::KEEP_KEY).expect("get").as_deref(),
+            Some("30")
+        );
     }
 
     #[test]

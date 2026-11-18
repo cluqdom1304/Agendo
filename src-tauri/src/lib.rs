@@ -1,5 +1,6 @@
 pub mod archive;
 pub mod attachments;
+pub mod autobackup;
 mod commands;
 #[cfg(test)]
 mod contract_tests;
@@ -90,6 +91,7 @@ pub fn run() {
                 let _ = attachments::collect_orphans(&state, &dir);
             }
             app.manage(Arc::clone(&state));
+            tauri::async_runtime::spawn(autobackup::run(Arc::clone(&state), data_dir(app)?));
             let handle = app.handle().clone();
             notify::install_actions(&handle, Arc::clone(&state));
             tauri::async_runtime::spawn(scheduler::run(

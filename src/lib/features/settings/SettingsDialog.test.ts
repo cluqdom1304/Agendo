@@ -145,6 +145,30 @@ describe("SettingsDialog", () => {
     await waitFor(() => expect(api.autostartSet).toHaveBeenCalledWith(true));
   });
 
+  it("schedules automatic copies and shows when the last one was made (F17-09)", async () => {
+    const { api } = mount();
+    const mode = screen.getByRole("combobox", { name: /Copia automática/ });
+    expect((mode as HTMLSelectElement).value).toBe("off");
+    expect(screen.queryByText(/Copias que se conservan/)).toBeNull();
+
+    await fireEvent.change(mode, { target: { value: "daily" } });
+    await waitFor(() =>
+      expect(api.settingsSet).toHaveBeenCalledWith("auto_backup", "daily"),
+    );
+    expect(screen.getByText(/Copias que se conservan/)).toBeTruthy();
+    expect(
+      screen.getByText("Todavía no se ha hecho ninguna copia automática."),
+    ).toBeTruthy();
+
+    await fireEvent.change(
+      screen.getByRole("combobox", { name: /Copias que se conservan/ }),
+      { target: { value: "14" } },
+    );
+    await waitFor(() =>
+      expect(api.settingsSet).toHaveBeenCalledWith("auto_backup_keep", "14"),
+    );
+  });
+
   it("does nothing when the save dialog is cancelled", async () => {
     const { api, pickSavePath } = mount({ save: null });
     await fireEvent.click(screen.getByRole("button", { name: "Crear copia…" }));
