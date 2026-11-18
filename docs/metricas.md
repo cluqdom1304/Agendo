@@ -6,8 +6,8 @@ mida: el agente no las rellena (CLAUDE.md §5).
 
 | ID | Requisito | Objetivo | Resultado | Estado | Cómo se midió |
 |----|-----------|----------|-----------|--------|---------------|
-| N-01 | Arranque (proceso → primera pantalla) | < 200 ms | _pendiente de medición_ | `[H]` | Marcas `startup_mark` en el log de depuración (`first_paint`), ver `docs/manual-pruebas.md` |
-| N-02 | Memoria en reposo | < 40 MB (proceso principal) | _pendiente de medición_ | `[H]` | Administrador de tareas, proceso principal y suma con WebView2 |
+| N-01 | Arranque (proceso → primera pantalla) | < 200 ms | **103 ms** | cumple `[H]` (2026-11-18, medido por el usuario) | Release, `npm run measure` (ventana visible); ver `docs/manual-pruebas.md` |
+| N-02 | Memoria en reposo | < 40 MB (proceso principal) | **32,9 MB** (total con WebView2 369,1 MB, informativo) | cumple `[H]` (2026-11-18, medido por el usuario) | Administrador de tareas, proceso principal y suma con WebView2 |
 | N-03 | Tamaño del ejecutable (release, sin instalador) | < 15 MB | **12 641 792 B (12,06 MiB)** | cumple `[A]` | `npm run tauri -- build`, `src-tauri/target/release/miagendaapp.exe` |
 | N-04 | JS de la aplicación (gzip) | < 250 KB | **173,1 KB** (CSS 8,5 KB) | cumple `[A]` | `npm run build && npm run size` |
 | N-05 | Consulta de agenda de un mes | < 30 ms con 10 000 tareas | **2,98 ms** (434 filas, mejor de 5, build de depuración) | cumple `[A]` | `cargo test month_query_with_ten_thousand -- --nocapture` (el test falla por encima de 30 ms) |

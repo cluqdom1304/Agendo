@@ -1,8 +1,8 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 16 de la 2.1.0 (todas las tareas `[A]` hechas; falta F16-09 `[H]`); la 2.0.3 está publicada
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F16-09 `[H]` (medir con `npm run measure` y ejecutar `npm run e2e`); después, Fase 17 solo con confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
+**Fase activa:** Fase 16 de la 2.1.0 (cerrada: F16-01 a F16-09); la 2.0.3 está publicada
+**Estado:** READY   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F17-01 cuando el usuario dé la orden de empezar la Fase 17. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-16 (V2.0.0 cerrada y publicada)
 **Última actualización:** 2026-11-18 (Fase 16: tareas `[A]` completas)
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -448,7 +448,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F16-06 `[A]` Script de medida de N-01 (arranque hasta primer pintado) y N-02 (RAM en reposo); la ejecución real es `[H]`.
 - [x] F16-07 `[A]` Estabilizar el test intermitente de `NoteEditor` («loads TipTap lazily») sin saltarlo ni subir su tiempo límite a ciegas.
 - [x] F16-08 `[A]` Aplicar D-56 (aceptado): actualizar el script de presupuesto (`npm run size`) y la tabla de Métricas (no se edita `docs/SPEC.md`).
-- [ ] F16-09 `[H]` Medir N-01/N-02 y la fluidez con datos reales en Windows 11; ejecutar por fin `npm run e2e` (F6-06 y F15-03).
+- [x] F16-09 `[H]` Medir N-01/N-02 y la fluidez con datos reales en Windows 11; ejecutar por fin `npm run e2e` (F6-06 y F15-03).
 
 ## Fase 17 — Mejorar lo que ya existe
 - [ ] F17-01 `[A]` Recurrencia ampliada (ADR propio: D-32 descartó RRULE completo): días de la semana, «cada N», «hasta fecha» y «N veces»; sin RRULE completo.

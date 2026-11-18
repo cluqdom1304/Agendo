@@ -353,10 +353,10 @@ Movimiento y fluidez
 ## Versión 2.1.0 (`[H]`, pendientes; se completan al cerrar cada fase)
 
 Fase 16 — rendimiento (F16-09)
-- [ ] Medir en Windows 11 el arranque (N-01, < 200 ms) y la memoria en reposo (N-02, < 40 MB) con el script de F16-06 y anotarlos en `docs/metricas.md`.
-- [ ] La agenda y la lista de notas se desplazan sin tirones con datos reales (miles de tareas y notas).
-- [ ] La primera apertura del calendario, de Ajustes y del historial de versiones no muestra parpadeos ni esperas perceptibles (carga diferida).
-- [ ] Ejecutar `npm run e2e` con `tauri-driver` (F6-06 y F15-03, nunca ejecutados) y anotar el resultado.
+- [x] Medir en Windows 11 el arranque (N-01, < 200 ms) y la memoria en reposo (N-02, < 40 MB) con el script de F16-06 y anotarlos en `docs/metricas.md`.
+- [x] La agenda y la lista de notas se desplazan sin tirones con datos reales (miles de tareas y notas).
+- [x] La primera apertura del calendario, de Ajustes y del historial de versiones no muestra parpadeos ni esperas perceptibles (carga diferida).
+- [x] Ejecutar `npm run e2e` con `tauri-driver` (F6-06 y F15-03, nunca ejecutados) y anotar el resultado.
 
 Fase 17 — mejoras de lo existente (F17-10)
 - [ ] _Se detallan al implementar cada tarea de F17-01 a F17-09._
