@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 
-const DEFAULT_BUDGET_KB = 250;
+const DEFAULT_BUDGET_KB = 300;
 const BUILD_DIR = resolve("build");
 
 function parseBudgetKb(args) {

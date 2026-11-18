@@ -2,23 +2,15 @@
   import { onMount, tick } from "svelte";
 
   import { onReminderFired, onReminderOpen, onTasksChanged } from "$lib/api";
-  import ContextMenu from "$lib/features/context/ContextMenu.svelte";
-  import FolderSidebar from "$lib/features/notes/FolderSidebar.svelte";
   import {
     convertTaskToNote,
     createNoteForTask,
     showDailyNote,
     showNote,
   } from "$lib/features/notes/navigation";
-  import NotesView from "$lib/features/notes/NotesView.svelte";
-  import TodayView from "$lib/features/today/TodayView.svelte";
-  import PaletteHost from "$lib/features/palette/PaletteHost.svelte";
   import type { PaletteMode } from "$lib/features/palette/palette";
   import TagDragGhost from "$lib/features/tags/TagDragGhost.svelte";
   import TagSidebar from "$lib/features/tags/TagSidebar.svelte";
-  import TaskDialog from "$lib/features/todo/TaskDialog.svelte";
-  import SettingsDialog from "$lib/features/settings/SettingsDialog.svelte";
-  import TaskDetailDialog from "$lib/features/todo/TaskDetailDialog.svelte";
   import TodoView from "$lib/features/todo/TodoView.svelte";
   import { t } from "$lib/i18n";
   import { findShortcut, focusContextOf, ROW_ATTRIBUTE } from "$lib/keymap";
@@ -90,6 +82,18 @@
   // it does not weigh on startup (N-01).
   const loadCalendar = () =>
     import("$lib/features/calendar/CalendarView.svelte");
+
+  // Dialogs and the palette are only needed once opened, so they stay out of the first load.
+  const loadFolders = () => import("$lib/features/notes/FolderSidebar.svelte");
+  const loadNotes = () => import("$lib/features/notes/NotesView.svelte");
+  const loadToday = () => import("$lib/features/today/TodayView.svelte");
+  const loadMenu = () => import("$lib/features/context/ContextMenu.svelte");
+  const loadPalette = () => import("$lib/features/palette/PaletteHost.svelte");
+  const loadTaskDialog = () => import("$lib/features/todo/TaskDialog.svelte");
+  const loadTaskDetail = () =>
+    import("$lib/features/todo/TaskDetailDialog.svelte");
+  const loadSettings = () =>
+    import("$lib/features/settings/SettingsDialog.svelte");
 
   // Tasks made from a note name it (F10-05): look the titles up as tasks come and go.
   $effect(() => {
@@ -211,15 +215,17 @@
 
 <div class="shell">
   {#if viewStore.section === "notes"}
-    <FolderSidebar
-      notes={notesStore}
-      tags={tagsStore}
-      pendingOf={(id) =>
-        tasksStore.tasks.filter(
-          (task) => !task.isCompleted && task.tagIds.includes(id),
-        ).length}
-      open={sidebarOpen}
-    />
+    {#await loadFolders() then { default: FolderSidebar }}
+      <FolderSidebar
+        notes={notesStore}
+        tags={tagsStore}
+        pendingOf={(id) =>
+          tasksStore.tasks.filter(
+            (task) => !task.isCompleted && task.tagIds.includes(id),
+          ).length}
+        open={sidebarOpen}
+      />
+    {/await}
   {:else}
     <TagSidebar tags={tagsStore} tasks={tasksStore} open={sidebarOpen} />
   {/if}
@@ -312,27 +318,31 @@
     {#if viewStore.ready}
       {#if viewStore.section === "notes"}
         <div class="content" data-menu-area="notes">
-          <NotesView
-            notes={notesStore}
-            tags={tagsStore}
-            tasks={tasksStore}
-            onPreviewTask={(taskId) => (detailId = taskId)}
-            onOpenTask={(task) => {
-              viewStore.setSection("agenda");
-              void openInList(task);
-            }}
-          />
+          {#await loadNotes() then { default: NotesView }}
+            <NotesView
+              notes={notesStore}
+              tags={tagsStore}
+              tasks={tasksStore}
+              onPreviewTask={(taskId) => (detailId = taskId)}
+              onOpenTask={(task) => {
+                viewStore.setSection("agenda");
+                void openInList(task);
+              }}
+            />
+          {/await}
         </div>
       {:else if viewStore.section === "today"}
         <div class="content scrolls" data-menu-area="agenda">
-          <TodayView
-            store={tasksStore}
-            notes={notesStore}
-            view={viewStore}
-            onOpenTask={(taskId) => (detailId = taskId)}
-            onOpenNote={(noteId) => void showNote(noteId)}
-            onOpenDaily={(date) => void showDailyNote(date)}
-          />
+          {#await loadToday() then { default: TodayView }}
+            <TodayView
+              store={tasksStore}
+              notes={notesStore}
+              view={viewStore}
+              onOpenTask={(taskId) => (detailId = taskId)}
+              onOpenNote={(noteId) => void showNote(noteId)}
+              onOpenDaily={(date) => void showDailyNote(date)}
+            />
+          {/await}
         </div>
       {:else if viewStore.mode === "list"}
         <div class="content scrolls" data-menu-area="agenda">
@@ -358,28 +368,32 @@
 </div>
 
 {#if palette}
-  <PaletteHost
-    mode={palette}
-    onTask={(taskId) => void showTask(taskId)}
-    onNewTask={() => openNewTask()}
-    onClose={() => (palette = null)}
-  />
+  {#await loadPalette() then { default: PaletteHost }}
+    <PaletteHost
+      mode={palette}
+      onTask={(taskId) => void showTask(taskId)}
+      onNewTask={() => openNewTask()}
+      onClose={() => (palette = null)}
+    />
+  {/await}
 {/if}
 
-<ContextMenu
-  deps={{
-    view: viewStore,
-    tasks: tasksStore,
-    tags: tagsStore,
-    notes: notesStore,
-    newTask: openNewTask,
-    editTask: (task) => (editing = task),
-    openTask: (taskId) => (detailId = taskId),
-    showNote,
-    noteForTask: createNoteForTask,
-    taskToNote: convertTaskToNote,
-  }}
-/>
+{#await loadMenu() then { default: ContextMenu }}
+  <ContextMenu
+    deps={{
+      view: viewStore,
+      tasks: tasksStore,
+      tags: tagsStore,
+      notes: notesStore,
+      newTask: openNewTask,
+      editTask: (task) => (editing = task),
+      openTask: (taskId) => (detailId = taskId),
+      showNote,
+      noteForTask: createNoteForTask,
+      taskToNote: convertTaskToNote,
+    }}
+  />
+{/await}
 
 {#if viewStore.section === "agenda"}
   <button
@@ -406,30 +420,36 @@
 <TagDragGhost drag={folderDrag} hint={t.notesApp.dragHint} />
 
 {#if newTaskOpen}
-  <TaskDialog
-    store={tasksStore}
-    defaultDate={newTaskDate ??
-      (viewStore.mode === "list" ? null : viewStore.anchor)}
-    onClose={() => (newTaskOpen = false)}
-  />
+  {#await loadTaskDialog() then { default: TaskDialog }}
+    <TaskDialog
+      store={tasksStore}
+      defaultDate={newTaskDate ??
+        (viewStore.mode === "list" ? null : viewStore.anchor)}
+      onClose={() => (newTaskOpen = false)}
+    />
+  {/await}
 {/if}
 
 {#if detailId && !editing}
-  <TaskDetailDialog
-    store={tasksStore}
-    taskId={detailId}
-    onEdit={(task) => (editing = task)}
-    onShowInList={(task) => void openInList(task)}
-    onClose={() => (detailId = null)}
-  />
+  {#await loadTaskDetail() then { default: TaskDetailDialog }}
+    <TaskDetailDialog
+      store={tasksStore}
+      taskId={detailId}
+      onEdit={(task) => (editing = task)}
+      onShowInList={(task) => void openInList(task)}
+      onClose={() => (detailId = null)}
+    />
+  {/await}
 {/if}
 
 {#if editing}
-  <TaskDialog
-    store={tasksStore}
-    task={editing}
-    onClose={() => (editing = null)}
-  />
+  {#await loadTaskDialog() then { default: TaskDialog }}
+    <TaskDialog
+      store={tasksStore}
+      task={editing}
+      onClose={() => (editing = null)}
+    />
+  {/await}
 {/if}
 
 {#if viewStore.section === "agenda" && viewStore.mode !== "list"}
@@ -452,15 +472,17 @@
 {/if}
 
 {#if settingsOpen}
-  <SettingsDialog
-    store={settingsStore}
-    onClose={() => {
-      settingsOpen = false;
-      // The default notification time moves saved reminders, which tasks hold a copy of.
-      void tasksStore.load();
-    }}
-    {onRestored}
-  />
+  {#await loadSettings() then { default: SettingsDialog }}
+    <SettingsDialog
+      store={settingsStore}
+      onClose={() => {
+        settingsOpen = false;
+        // The default notification time moves saved reminders, which tasks hold a copy of.
+        void tasksStore.load();
+      }}
+      {onRestored}
+    />
+  {/await}
 {/if}
 
 <style>

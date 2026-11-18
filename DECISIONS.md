@@ -417,7 +417,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 
 ## D-49 — Presupuesto del bundle en V2
 - **Estado:** ACCEPTED (aprobado por el usuario) · **Fecha:** 2026-11-12
-- **Decisión:** se mantiene N-04 (250 KB gzip de JS). Notas y editor en carga diferida (D-10); si se supera, ADR nuevo antes de subir el límite.
+- **Decisión:** se mantiene N-04 (250 KB gzip de JS). Notas y editor en carga diferida (D-10); si se supera, ADR nuevo antes de subir el límite. **Límite ampliado por D-56 (300 KB) para la 2.1.0.**
 
 ## D-50 — Menús contextuales propios y botón flotante de nueva tarea
 - **Estado:** ACCEPTED (el usuario pidió continuar con la Fase 11B; «archivar» queda fuera) · **Fecha:** 2026-11-12
@@ -471,6 +471,18 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
   - **General:** selección de texto en el tinte de acento; cierre del aviso (`Toast`) dibujado en vez del carácter «×».
 - **Consecuencias:** CSS 18,6 KB gzip; JS 246,4 KB de 250 (**quedan 3,6 KB para la Fase 15**). La apariencia real es `[H]` (manual-pruebas § «Repaso de diseño previo a la 2.0»).
 - **Alternativas descartadas:** animaciones de salida y `backdrop-filter` (siguen descartadas por D-39 y D-01); rehacer los componentes de notas ya repasados (lista, panel y barra lateral ya seguían D-39).
+
+## D-56 — Presupuestos de la 2.1.0 y descarte de la sincronización con Google
+- **Estado:** ACCEPTED (aprobado por el usuario) · **Fecha:** 2026-11-18
+- **Contexto:** el JS gzip pasó de 173,1 KB (1.0.0) a 246,4 KB (2.0.0) y el ejecutable de 12,06 MiB a 14,65 MiB (≈ 15,36 MB decimales, ya por encima de los 15 MB si se cuenta en MB). D-49 exige un ADR antes de subir N-04. El usuario pidió ampliar los límites a algo razonable sin perder la filosofía de aplicación ligera, rápida y eficiente.
+- **Decisión (no se edita `docs/SPEC.md`; este ADR prevalece sobre los valores de N-03 y N-04 de SPEC §2, CLAUDE.md §1):**
+  - **N-04 (JS gzip):** 250 → **300 KB**. Objetivo de cierre de la 2.1.0: **≤ 285 KB** tras la carga diferida de la Fase 16; el margen restante se reserva para la 2.2.
+  - **N-03 (ejecutable release):** 15 → **18 MB** (medido en MB decimales, igual que el resto). Antes de gastarlo, F16-03 intenta recuperar tamaño con el perfil de compilación.
+  - **N-01 (arranque < 200 ms) y N-02 (RAM < 40 MB):** **sin cambios**. Nunca se han medido; se miden en F16-06/F16-09 y, si el valor real lo exige, un ADR posterior los ajusta con datos.
+  - **Regla:** ninguna función nueva entra en la carga inicial si puede cargarse al usarse (D-10); cada fase anota en la tabla de Métricas lo que consume.
+  - **Aplicación:** el script `npm run size` y los valores de la tabla de Métricas se actualizan en F16-08 (código; no se toca antes de empezar la 2.1.0). Mientras tanto la batería sigue usando el límite actual.
+- **Sincronización con Google (Calendar y Tasks): descartada por el usuario** (2026-11-18); no se planifica en ninguna versión. Motivos recogidos en la conversación: contradice «sin cuentas y sin red en tiempo de ejecución», exigiría una entidad de *evento* distinta de la tarea, un cliente HTTP/TLS (peso), OAuth de escritorio con un proyecto propio en Google Cloud y guardar tokens. Solo se reconsidera si el usuario lo pide expresamente, con un ADR nuevo.
+- **Alternativas descartadas:** subir N-04 a 350 KB o más (quita la presión que mantiene la app ligera); mantener 250/15 sin cambios (obligaría a retirar funciones o a recortar la 2.1.0).
 
 ---
 

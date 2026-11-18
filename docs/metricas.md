@@ -53,3 +53,22 @@ el total del crate, 92,7 %. Objetivo del DoD de Fase 6: ≥ 90 % en dominio.
 
 Las mediciones de arranque y memoria (N-01, N-02) siguen siendo `[H]`. El rendimiento medido es el
 de la capa de datos con una base **sintética**; el de la interfaz con 10 000 notas reales es `[H]`.
+
+## Versión 2.1.0 — límites vigentes y seguimiento (D-56)
+
+Los límites de N-03 y N-04 cambian por D-56 (`ACCEPTED`, 2026-11-18); `docs/SPEC.md` §2 conserva los
+valores originales. Las filas de resultado se rellenan al cerrar cada fase; `npm run size` comprueba ya
+300 KB (F16-08).
+
+**F16-01/02 (2026-11-18):** `npm run audit` (`scripts/bundle-audit.mjs`) separa carga inicial y chunks
+diferidos. Carga inicial gzip: 106,8 KB → **83,2 KB** (−23,6 KB) al cargar bajo demanda notas, carpetas, «Hoy»,
+menú contextual, paleta y diálogos de tarea/ajustes. El JS total sube a 263,4 KB por la división en chunks
+(el editor, 136 KB, ya era diferido).
+
+| ID | Requisito | Límite SPEC | Límite vigente (D-56) | Base 2.0.0 | Objetivo de cierre 2.1.0 | Resultado 2.1.0 |
+|----|-----------|-------------|-----------------------|------------|--------------------------|-----------------|
+| N-01 | Arranque (proceso → primera pantalla) | < 200 ms | < 200 ms | sin medir `[H]` | medido y dentro del límite | _pendiente_ |
+| N-02 | Memoria en reposo | < 40 MB | < 40 MB | sin medir `[H]` | medido y dentro del límite | _pendiente_ |
+| N-03 | Ejecutable release | < 15 MB | **< 18 MB** | 15 363 072 B (≈ 15,36 MB) | ≤ 15,4 MB (no crecer; F16-03 busca bajar) | _pendiente_ |
+| N-04 | JS gzip | < 250 KB | **< 300 KB** | 246,4 KB | **≤ 285 KB** | _pendiente_ |
+| — | 10 000 notas y 10 000 tareas en build **release** | — | lista < 250 ms, búsqueda < 50 ms, mes < 30 ms | solo build de depuración | medido en release (F16-05) | _pendiente_ |

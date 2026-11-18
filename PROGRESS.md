@@ -1,13 +1,26 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 15 de la V2.0.0 (cierre) — versión 2.0.0
-**Estado:** DONE   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** ninguna en curso. La 2.0.0 está lista y publicada. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 en `docs/manual-pruebas.md` y la primera ejecución de `npm run e2e`.
+**Fase activa:** Fase 16 de la 2.1.0 en curso (F16-01, F16-02 y F16-08 hechas); la 2.0.3 está publicada
+**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F16-03. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-16 (V2.0.0 cerrada y publicada)
-
+**Última actualización:** 2026-11-18 (plan de la 2.1.0 aprobado y documentación preparada; código sin tocar)
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
 ---
+
+
+## Índice de versiones
+| Versión | Estado | Fases | Contenido |
+|---------|--------|-------|-----------|
+| 1.0.x | publicada (1.0.0 a 1.0.7) | 0–6 | Agenda con recordatorios, calendario, etiquetas, copia de seguridad |
+| 2.0.x | publicada (2.0.0 a 2.0.3) | 7–15 (+11B) | Notas con carpetas, editor, adjuntos, historial, enlaces, recurrencia, interoperabilidad; 2.0.1–2.0.3 corrigen menús cortados |
+| 2.1.0 | **planificada** | 16–18 (+ cierre) | Rendimiento y presupuestos, mejoras de funciones existentes, resumen semanal |
+| Anexos | — | — | Métricas, discrepancias, cierre de 1.0.0 y registro cronológico de sesión |
+
+---
+
+# Versión 1.0.0 — Agenda (publicada; 1.0.1 a 1.0.7 son mejoras posteriores)
 
 ## Fase 0 — Esqueleto y medición base
 - [x] F0-01 Crear proyecto con `npm create tauri-app@latest` (Svelte + TypeScript); registrar versiones en DECISIONS.md
@@ -184,9 +197,21 @@
 - UX: el diálogo enfoca el título, Intro envía, Ctrl+Intro envía desde cualquier campo, la hora se desactiva sin fecha, el calendario propone el día que se está viendo, avisos pasados se detectan antes de guardar y los botones llevan ayuda con el atajo.
 - Verificación [A]: `cargo test` 256+4+1+4, `npm run test` 284, lint/check/build/size en verde (JS 177,1 KB gzip). [H] nuevos en `docs/manual-pruebas.md` § Mejoras posteriores.
 
+## Cierre de la Versión 1.0.0
+- **Fecha:** 2026-11-09 · **Etiqueta:** `v1.0.0` · **Instaladores:** `MiAgendaApp_1.0.0_x64-setup.exe` (NSIS, recomendado) y `MiAgendaApp_1.0.0_x64_es-ES.msi`.
+- **Fases 0 a 6:** todas las tareas `[A]` están hechas y verificadas con la batería de CLAUDE.md §4. Mejoras posteriores a F6, ya incluidas: recordatorios periódicos (D-32), duración y detalle de tarea (D-33), etiquetas con filtro y arrastre (D-34) e icono propio.
+- **Cierre por decisión del usuario:** la V1 se da por finalizada sin que se hayan validado los ítems `[H]` ni ejecutado F6-06. Siguen sin marcar a propósito, porque ningún humano los ha comprobado en Windows 11 (CLAUDE.md §7).
+- **Pendientes conocidos (no bloquean el uso):**
+  - Ítems `[H]` sin validar en `docs/manual-pruebas.md`, en especial los de apariencia, arrastre y etiquetas.
+  - F6-06: los E2E están escritos pero no se han ejecutado (`npm run e2e`).
+  - Firma de los instaladores (avisará SmartScreen al instalar).
+  - Etiquetas anidadas (`parentId`) sin interfaz; el filtro de etiquetas no se guarda entre sesiones (D-34).
+- **Actualizar a una versión posterior:** subir la versión, `npx tauri build` y abrir el `.exe` nuevo sobre el instalado; los datos se conservan.
+
+
 ---
 
-# Versión 2.0.0 — Notas + agenda unificadas (PLANIFICADA)
+# Versión 2.0.0 — Notas + agenda unificadas (publicada; 2.0.1 a 2.0.3 son correcciones)
 
 > **Estado:** EN CURSO. El usuario aprobó el 2026-11-12 todo el plan: D-43 a D-49 `ACCEPTED`, una sola carpeta por nota, varias etiquetas por tarea (D-44), recurrencia, acción de notificación e importación ENEX dentro de 2.0.0. Orden de recorte si hace falta: F14-04, F13-04/05/06, F12-03 (F7–F11 son el mínimo).
 > **Principio:** una sola tabla `tags` para tareas y notas; una tarea vive solo en `tasks` y las notas la referencian; una sola búsqueda, papelera y copia de seguridad.
@@ -307,6 +332,13 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F11-04 Paleta de comandos `Ctrl+K` — sustituye al buscador de la agenda y funciona en ambas secciones: busca en todo, `>` para solo comandos (nueva tarea/nota, cambiar de sección o vista, carpetas inteligentes de notas, mostrar todas las etiquetas)
 - [x] F11-05 Notas recientes e «Ir a…» (`Ctrl+P`) — las 8 últimas notas abiertas se guardan en el ajuste `notes_recent` (límite de 480 caracteres, el resto de ajustes libres sigue en 64)
 
+
+### Resultado de la Fase 11
+- **Decisiones de interpretación (sin ADR, no tocan la especificación):** en `in:` se eligió la carpeta (lo habitual en un cuaderno de notas) y no una zona de la nota; `is:` completa el filtrado por tipo y estado. El buscador solo de tareas (`search`) se mantiene en el backend, pero la interfaz usa ya `search_all`.
+- **Sustitución:** `Spotlight.svelte` y sus tests se retiran; su lógica (respuestas fuera de orden, teclado, foco) pasa a `features/palette/Palette.svelte` con tests equivalentes. Los dos tests de `TodoView` que abrían el buscador se sustituyen por los de la paleta.
+- **Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (335 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (468 en 40 archivos), `npm run build` y `npm run size` (211,7 KB gzip de 250) en verde. Sin dependencias nuevas.
+- **Pendiente de la V2:** F8-08 (`notes:changed`) sigue sin hacerse (innecesaria con una sola ventana); propuesta de retirarla.
+
 ## Fase 11B — Menús contextuales y botón flotante de nueva tarea (añadida a petición del usuario, D-50)
 - [x] F11B-01 Componente único de menú contextual (clic derecho y tecla Menú / Mayús+F10): posición sin salirse de la ventana, flechas, Esc, submenús (etiquetas, mover a, fecha), reutilizando `shell/Menu.svelte`; el menú del navegador queda desactivado salvo en campos de texto
 - [x] F11B-02 Tareas (lista, calendario, detalle): hecha/reabrir, editar, fecha de hoy/mañana/elegir, aviso, etiquetas (marcar varias), duplicar, crear nota para la tarea, convertir en nota, borrar con Deshacer
@@ -392,7 +424,61 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 **Riesgos:** la copia deja de ser un solo `.sqlite` (F12-05 antes de ofrecer adjuntos); presupuesto N-04 de 250 KB (editor y notas en carga diferida); referencias `taskRef` rotas (F10-06 con test de integridad); rendimiento con miles de notas (lista virtualizada y FTS desde F7/F8).
 **Ideas para 2.x:** cifrado de notas, grafo de enlaces, Kanban por etiqueta, captura rápida con atajo global, OCR de imágenes, subpáginas.
 
+
+## Mantenimiento 2.0.1 a 2.0.3 (publicadas)
+- **2.0.1:** el menú contextual ya no se corta contra el borde de la ventana (`placement.ts`, D-50).
+- **2.0.2:** Ctrl+N abre el diálogo de tarea, sin subrayado ortográfico tras perder el foco, submenús sin cortes, «Información de la aplicación» y guardado al cerrar.
+- **2.0.3:** el menú de etiquetas de la fila de una tarea se coloca respecto a la ventana y se monta bajo `body`; publicada con instaladores NSIS y MSI sin firma. Detalle en «Notas de sesión».
+
 ---
+
+# Versión 2.1.0 — Ligera, rápida y con más utilidad (APROBADA, código sin empezar)
+
+> **Estado:** `READY`. Plan aprobado por el usuario el 2026-11-18 y documentación preparada (`DECISIONS.md` D-56 `ACCEPTED`, `docs/metricas.md`, `docs/manual-pruebas.md`). **El código no se toca hasta que el usuario lo ordene.**
+> **Por qué 2.1.0 y no 3.0.0:** todo es aditivo (migraciones nuevas, sin cambiar el formato de datos existente). La 3.0.0 se reserva para lo que cambie el almacenamiento (cifrado de notas).
+> **Principio:** aplicación ligera, rápida y eficiente. Cada función nueva se paga con presupuesto medido; la Fase 16 va primero para recuperar margen antes de añadir nada.
+> **Presupuestos aprobados (D-56):** JS gzip 250 → **300 KB** (objetivo de cierre ≤ 285 KB tras diferir código, para no consumir todo el margen); ejecutable 15 → **18 MB** (hoy 14,65 MiB ≈ 15,36 MB decimales, ya roza el límite); N-01 (arranque < 200 ms) y N-02 (RAM < 40 MB) **se mantienen** y se miden por primera vez en la 16.
+
+## Fase 16 — Rendimiento y base
+- [x] F16-01 `[A]` Auditoría del bundle (análisis de tamaños de `vite build`): módulos por peso y qué entra en la carga inicial.
+- [x] F16-02 `[A]` Carga diferida (`import()`) de lo que no se usa al arrancar: calendario, ajustes, historial de versiones, plantillas, paleta y diálogos; meta: ≥ 20 KB menos en la carga inicial.
+- [ ] F16-03 `[A]` Ejecutable: revisar `opt-level` (`s`/`z` frente a `3`), `codegen-units = 1`, `lto = "fat"`, `panic = "abort"` solo si no rompe D-24 y features de dependencias; registrar tamaño antes y después.
+- [ ] F16-04 `[A]` Comprobar si la agenda está virtualizada (SPEC §4.2: > 200 bloques) y, si no, virtualizarla por ventana; test con 10 000 tareas.
+- [ ] F16-05 `[A]` Pruebas de escala en build **release** (hoy solo en depuración): 10 000 notas y 10 000 tareas; registrar en `docs/metricas.md`.
+- [ ] F16-06 `[A]` Script de medida de N-01 (arranque hasta primer pintado) y N-02 (RAM en reposo); la ejecución real es `[H]`.
+- [ ] F16-07 `[A]` Estabilizar el test intermitente de `NoteEditor` («loads TipTap lazily») sin saltarlo ni subir su tiempo límite a ciegas.
+- [x] F16-08 `[A]` Aplicar D-56 (aceptado): actualizar el script de presupuesto (`npm run size`) y la tabla de Métricas (no se edita `docs/SPEC.md`).
+- [ ] F16-09 `[H]` Medir N-01/N-02 y la fluidez con datos reales en Windows 11; ejecutar por fin `npm run e2e` (F6-06 y F15-03).
+
+## Fase 17 — Mejorar lo que ya existe
+- [ ] F17-01 `[A]` Recurrencia ampliada (ADR propio: D-32 descartó RRULE completo): días de la semana, «cada N», «hasta fecha» y «N veces»; sin RRULE completo.
+- [ ] F17-02 `[A]` Notificación con «Posponer» (10 min / 1 h / mañana) junto a «Marcar como hecha»; reutiliza `reminders`, sin tabla nueva si es posible.
+- [ ] F17-03 `[A]` Selección múltiple en la lista (Mayús/Ctrl + clic): completar, etiquetar, mover de día y borrar en lote, con un único deshacer.
+- [ ] F17-04 `[A]` Editor: marcas de tachado y subrayado; el import/export de Markdown y ENEX deja de perderlas (cierra una limitación de D-54).
+- [ ] F17-05 `[A]` Buscar dentro de la nota (Ctrl+F) con resaltado, reutilizando los tokens `--highlight` (D-55).
+- [ ] F17-06 `[A]` Importación sin duplicados: reconocer notas ya importadas (origen + hash) y omitirlas; migración 011 si hace falta una columna de origen.
+- [ ] F17-07 `[A]` Etiquetas: interfaz para la jerarquía de un nivel (`parentId` ya existe, D-06); filtrar por la etiqueta padre incluye las hijas.
+- [ ] F17-08 `[A]` Búsqueda: vistas guardadas (p. ej. `is:pending tag:SMA`) y filtro por rango de fechas.
+- [ ] F17-09 `[A]` Copia de seguridad automática programada con rotación de las últimas N copias (Ajustes), reutilizando `.agendo` (D-47).
+- [ ] F17-10 `[H]` Validación visual y de uso de F17-02 a F17-09 en Windows 11.
+
+## Fase 18 — Resumen semanal (única función nueva elegida por el usuario)
+- [ ] F18-01 `[A]` Consulta y dominio del resumen: tareas completadas, pendientes y vencidas de una semana, agrupadas por etiqueta; inicio de semana configurable (lunes por defecto) vía `domain/dates.rs` y `Clock`.
+- [ ] F18-02 `[A]` Vista «Resumen» (en la agenda y en la paleta Ctrl+K): navegación entre semanas, recuentos y lista por etiqueta; cálculo en `$derived`, sin lógica en la plantilla.
+- [ ] F18-03 `[A]` Exportar el resumen a Markdown (reutiliza `exchange.rs`, sin dependencias nuevas).
+- [ ] F18-04 `[H]` Revisión visual y de textos en Windows 11.
+
+## Cierre de 2.1.0
+- [ ] F19-01 `[A]` Versión `2.1.0` en los 5 sitios (CLAUDE.md §10), entrada en este archivo, `docs/manual-pruebas.md` § «Versión 2.1.0» y `docs/metricas.md` actualizadas.
+- [ ] F19-02 `[A]` Batería completa de CLAUDE.md §4 en verde; al terminar, `Estado: AWAITING_HUMAN` con los `[H]` de F16 a F18. Etiqueta, push e instaladores **solo** si el usuario dice «subir a GitHub» / «sacar la nueva versión».
+
+**Riesgos:** F17-01 y F17-06 tocan el esquema (migraciones aditivas, nunca destructivas, CLAUDE.md §7); F16-03 puede cambiar el comportamiento ante pánicos (`panic = "abort"`), por eso va con medida; subir el límite de JS no es excusa: el objetivo de cierre es ≤ 285 KB.
+**Aplazado a 2.2 / 3.0 (no incluido):** captura rápida con atajo global, Kanban por etiqueta, grafo de enlaces, importar/exportar ICS, OCR, subpáginas, cifrado de notas.
+**Descartado por el usuario (2026-11-18):** sincronización con Google Calendar y Tasks; no se planifica en ninguna versión (D-56).
+
+---
+
+# Anexos transversales
 
 ## Métricas
 
@@ -408,18 +494,9 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 
 ## Discrepancias detectadas
 - D-01 pide `set_effects` de Tauri, pero este no informa de errores y no permite el fallback real; se usa `window-vibrancy` directo. Registrado como D-16 (`PROPOSED`, pendiente de confirmación humana).
+- D-56 (`ACCEPTED`) eleva N-03 a 18 MB y N-04 a 300 KB gzip para la 2.1.0; `docs/SPEC.md` §2 conserva los valores originales (no se edita sin ADR) y el script `npm run size` se actualiza en F16-08.
 - (resuelta en F0-09) El perfil `release` de la plantilla difería de SPEC §10.1; ahora usa `lto = "thin"`, `strip = "symbols"`, `panic = "unwind"`.
 
-## Cierre de la Versión 1.0.0
-- **Fecha:** 2026-11-09 · **Etiqueta:** `v1.0.0` · **Instaladores:** `MiAgendaApp_1.0.0_x64-setup.exe` (NSIS, recomendado) y `MiAgendaApp_1.0.0_x64_es-ES.msi`.
-- **Fases 0 a 6:** todas las tareas `[A]` están hechas y verificadas con la batería de CLAUDE.md §4. Mejoras posteriores a F6, ya incluidas: recordatorios periódicos (D-32), duración y detalle de tarea (D-33), etiquetas con filtro y arrastre (D-34) e icono propio.
-- **Cierre por decisión del usuario:** la V1 se da por finalizada sin que se hayan validado los ítems `[H]` ni ejecutado F6-06. Siguen sin marcar a propósito, porque ningún humano los ha comprobado en Windows 11 (CLAUDE.md §7).
-- **Pendientes conocidos (no bloquean el uso):**
-  - Ítems `[H]` sin validar en `docs/manual-pruebas.md`, en especial los de apariencia, arrastre y etiquetas.
-  - F6-06: los E2E están escritos pero no se han ejecutado (`npm run e2e`).
-  - Firma de los instaladores (avisará SmartScreen al instalar).
-  - Etiquetas anidadas (`parentId`) sin interfaz; el filtro de etiquetas no se guarda entre sesiones (D-34).
-- **Actualizar a una versión posterior:** subir la versión, `npx tauri build` y abrir el `.exe` nuevo sobre el instalado; los datos se conservan.
 
 ## Notas de sesión
 - 2026-11-18: **2.0.3 (sigue sin publicar), segunda corrección del menú de etiquetas**: la captura `menu-tags-cortado.png` mostró que `fixed` no bastaba, porque la barra lateral aún recortaba su borde izquierdo (los ancestros con scroll/animación de la lista lo atrapan). `TagMenu` ahora se mueve a `document.body` al montarse (`place`) y se elimina al destruirse. Lint, check y Vitest en verde; `[H]` repetir el ítem de § «Versión 2.0.3». Sin commit de versión nuevo, etiqueta, push ni instalador.
@@ -452,8 +529,3 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - 2026-11-09: **Versión 1.0.2 lanzada** (D-37): casillas (subtareas) en las notas de las tareas, marcables con un clic sin editar el texto. Batería `[A]` en verde (`cargo fmt/clippy/test` 264 de lib; `npm lint/check/test` 342/build/size 187,3 KB). Pendiente `[H]`: manual-pruebas § «Versión 1.0.2». Versión fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y lockfiles; instaladores con `npx tauri build`.
 - 2026-11-09: **Versión 1.0.3 lanzada.** Corrección: al teclear la fecha, el navegador notifica años parciales (`0002`, `0020`, `0202`) y la app los confirmaba, dejando la tarea en el año 2 y rompiendo la escritura. `isSettledDate` (`dates.ts`) ignora esos valores en el diálogo de tarea y en la fila. Batería `[A]` en verde (Vitest 346, build, size, Rust 264). Nota: `NoteEditor.test.ts` «loads TipTap lazily» falló una vez por tiempo de carga con la máquina ocupada y pasó en las dos ejecuciones siguientes. Pendiente `[H]`: manual-pruebas § «Versión 1.0.3».
 
-### Resultado de la Fase 11
-- **Decisiones de interpretación (sin ADR, no tocan la especificación):** en `in:` se eligió la carpeta (lo habitual en un cuaderno de notas) y no una zona de la nota; `is:` completa el filtrado por tipo y estado. El buscador solo de tareas (`search`) se mantiene en el backend, pero la interfaz usa ya `search_all`.
-- **Sustitución:** `Spotlight.svelte` y sus tests se retiran; su lógica (respuestas fuera de orden, teclado, foco) pasa a `features/palette/Palette.svelte` con tests equivalentes. Los dos tests de `TodoView` que abrían el buscador se sustituyen por los de la paleta.
-- **Verificaciones [A]:** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` (335 de lib + 4 + 1 + 4), `npm run lint`, `npm run check` (0/0), `npm run test` (468 en 40 archivos), `npm run build` y `npm run size` (211,7 KB gzip de 250) en verde. Sin dependencias nuevas.
-- **Pendiente de la V2:** F8-08 (`notes:changed`) sigue sin hacerse (innecesaria con una sola ventana); propuesta de retirarla.

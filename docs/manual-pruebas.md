@@ -349,3 +349,18 @@ Movimiento y fluidez
 
 ## Versión 2.0.3 (`[H]`)
 - [ ] En la lista, pulsar el icono de etiqueta de una tarea (con la barra lateral abierta y también con la ventana al tamaño mínimo): el menú se ve entero, sin cortarse con la barra izquierda ni con el borde derecho; en una tarea del final de la lista se abre hacia arriba. Marcar varias etiquetas seguidas lo mantiene abierto; desplazar la lista o cambiar el tamaño de la ventana lo cierra. Lo mismo en el editor de notas.
+
+## Versión 2.1.0 (`[H]`, pendientes; se completan al cerrar cada fase)
+
+Fase 16 — rendimiento (F16-09)
+- [ ] Medir en Windows 11 el arranque (N-01, < 200 ms) y la memoria en reposo (N-02, < 40 MB) con el script de F16-06 y anotarlos en `docs/metricas.md`.
+- [ ] La agenda y la lista de notas se desplazan sin tirones con datos reales (miles de tareas y notas).
+- [ ] La primera apertura del calendario, de Ajustes y del historial de versiones no muestra parpadeos ni esperas perceptibles (carga diferida).
+- [ ] Ejecutar `npm run e2e` con `tauri-driver` (F6-06 y F15-03, nunca ejecutados) y anotar el resultado.
+
+Fase 17 — mejoras de lo existente (F17-10)
+- [ ] _Se detallan al implementar cada tarea de F17-01 a F17-09._
+
+Fase 18 — resumen semanal (F18-04)
+- [ ] _Se detallan al implementar F18-01 a F18-03._
+
