@@ -81,8 +81,8 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [x] A7-02 `domain/markdown` (write, read, inline, table) y `exchange` (export, import, catalog, paths) divididos.
 - [x] A7-03 Saneado de nombres y rutas de Windows en un único módulo.
 - [x] A7-04 Lógica de tareas, notas, recordatorios y etiquetas en `services/`; los comandos solo envuelven.
-- [ ] A7-05 Validación unificada de DTO (`TryFrom<Input>`).
-- [ ] A7-06 Código muerto (`fts::rebuild`) y envolturas CRUD repetidas.
+- [x] A7-05 Descartado: la validación ya está centralizada en `domain/validation.rs` y los servicios la invocan en un único punto; un `TryFrom<Input>` por DTO solo movería código sin quitar duplicación.
+- [x] A7-06 `fts::rebuild`/`rebuild_notes` solo los usan tests, pero son el mantenimiento previsto si cambia la extracción de texto (D-03): se conservan. Las envolturas CRUD no se tocan (sin duplicación real que compense el riesgo).
 
 ### A8 — Estructura frontend (riesgo medio)
 - [x] A8-01 `notes.svelte.ts` 836→731 y `tasks.svelte.ts` 805→580 líneas, en módulos compuestos con la API intacta.
