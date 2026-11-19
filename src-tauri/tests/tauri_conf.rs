@@ -25,6 +25,19 @@ mod tauri_conf {
     }
 
     #[test]
+    fn csp_is_restrictive() {
+        let conf = load_conf();
+        let csp = conf["app"]["security"]["csp"]
+            .as_str()
+            .expect("a production CSP must be set");
+        assert!(csp.contains("default-src 'self'"));
+        assert!(csp.contains("object-src 'none'"));
+        assert!(!csp.contains("unsafe-eval"));
+        assert!(!csp.contains("script-src 'self' 'unsafe-inline'"));
+        assert!(!csp.contains("http://*") && !csp.contains("https://*"));
+    }
+
+    #[test]
     fn main_window_has_spec_sizes() {
         let window = main_window(&load_conf());
         assert_eq!(window["width"], 1100);

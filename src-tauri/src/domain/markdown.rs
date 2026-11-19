@@ -1490,6 +1490,12 @@ mod tests {
         assert_eq!(parsed["type"], "doc");
         let lists = format!("{}x", "- ".repeat(5000));
         assert_eq!(read(&lists)["type"], "doc");
+        for unit in ["**", "*", "~~", "[", "![", "`"] {
+            let inline = format!("{}x", unit.repeat(5000));
+            assert_eq!(read(&inline)["type"], "doc", "inline unit {unit}");
+        }
+        let links = format!("{}x{}", "[".repeat(3000), "](u)".repeat(3000));
+        assert_eq!(read(&links)["type"], "doc");
     }
 
     #[test]

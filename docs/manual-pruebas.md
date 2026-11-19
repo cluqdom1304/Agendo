@@ -372,3 +372,6 @@ Fase 17 — mejoras de lo existente (F17-10)
 Fase 18 — resumen semanal (F18-04)
 - [ ] _Se detallan al implementar F18-01 a F18-03._
 
+
+Auditoría A1 — seguridad
+- [ ] A1-01: con la versión release (`npm run tauri -- build`), abrir Agendo y comprobar que arranca, que se ven y editan notas con imágenes pegadas, que los diálogos, la paleta, el calendario y los ajustes se muestran con su estilo, y que abrir un enlace `https` de una nota funciona. Si algo falla por la CSP, la consola de WebView2 (F12 con una build de depuración) muestra «Refused to …»: anotar la directiva y avisar.

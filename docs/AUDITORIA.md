@@ -1,6 +1,6 @@
 # AUDITORIA.md — Plan de auditoría de Agendo
 
-**Estado:** EN CURSO — A0 hecha; A1 en marcha.
+**Estado:** AWAITING_HUMAN — A0 y A1 hechas `[A]`; falta validar A1-01 en Windows. No se inicia A2 sin confirmación.
 **Objetivo:** aplicación ligera, bien estructurada, escalable, fácil de depurar y optimizar, y pulida para el usuario final.
 **Reglas:** cada tarea sigue el ciclo de CLAUDE.md §2 (plan corto, cambio coherente, batería §4, commit convencional). Lo que dependa de Windows es `[H]` y nunca se marca como verificado. Cada dependencia o cambio de esquema lleva ADR en `DECISIONS.md`; las migraciones son siempre aditivas.
 
@@ -29,10 +29,10 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [x] A0-02 Ya existen `scale_tests` a 10 000 filas; el salto a 50 000 pasa a A2-05.
 
 ### A1 — Seguridad (riesgo bajo)
-- [ ] A1-01 CSP real en `tauri.conf.json` (`default-src 'self'`, `img-src 'self' data: blob:`, `connect-src ipc: http://ipc.localhost`). `[H]` en Windows.
-- [ ] A1-02 Capabilities mínimas: confirmar qué permisos de `opener` y `core:window` se usan desde JS y quitar el resto.
-- [ ] A1-03 Aplicar la protección de rutas de `export_json` a `export_notes` y `backup_create`.
-- [ ] A1-04 Límites de profundidad en el parseo de Markdown anidado y de nodos/adjuntos por `.enex`, con test de entrada hostil.
+- [x] A1-01 (`[H]` pendiente, ver manual-pruebas) CSP real en `tauri.conf.json` (`default-src 'self'`, `img-src 'self' data: blob:`, `connect-src ipc: http://ipc.localhost`). `[H]` en Windows.
+- [x] A1-02 Capabilities revisadas: todo se usa desde JS salvo `allow-set-effects`, que D-02/SPEC §8.1 mantienen a propósito; se deja como está (quitarlo exigiría un ADR).
+- [x] A1-03 Sin cambios: `backup_create` ya recibe `protected_files` y `export_notes` solo escribe archivos `.md`/`.html` dentro de una carpeta (hallazgo inicial descartado).
+- [x] A1-04 Los límites ya existían (`MAX_DEPTH`, `MAX_INLINE_DEPTH`, `MAX_XML_DEPTH`, `MAX_BLOCK_DEPTH`); añadido test hostil de anidamiento inline (énfasis, tachado, enlaces, imágenes, código). Sin límite de nodos por `.enex`: el tamaño total ya está acotado (MAX_ENEX_BYTES), se revisa en A4-02.
 
 ### A2 — Esquema, índices y FTS (riesgo medio, mayor impacto)
 - [ ] A2-01 Migración nueva: FTS sin escaneo O(N) al sincronizar (external-content o mapeo id→rowid) con reindexado. ADR.
@@ -98,7 +98,7 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 
 ### A11 — Tests (riesgo bajo)
 - [ ] A11-01 Fixtures compartidos y deduplicación de tests solapados.
-- [ ] A11-02 `vi.useFakeTimers` en tests TS largos; detectar tests Rust lentos.
+- [ ] A11-02 Test Rust `search_is_fast_with_ten_thousand_tasks` falló una vez bajo carga (compilación en paralelo) y pasa aislado: hacerlo robusto. `vi.useFakeTimers` en tests TS largos; detectar tests Rust lentos.
 - [ ] A11-03 Ampliar e2e: calendario, recordatorios, paleta, etiquetas, copias e importación.
 
 ### A12 — Pulido final
