@@ -542,3 +542,4 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 
 ## Auditoría de calidad (docs/AUDITORIA.md)
 - 2026-11-19 · A0 (línea base en `docs/metricas.md`) y A1 `[A]` hechas. CSP real y `devCsp` nulo en `tauri.conf.json` (test `csp_is_restrictive`), test hostil de anidamiento inline en `markdown.rs`. Descartados: quitar `allow-set-effects` (D-02/SPEC §8.1) y proteger `export_notes` (ya seguro). Batería completa en verde (Rust 457+9, TS 604, JS 268,3 KB gzip). Pendiente `[H]`: A1-01. Estado: AWAITING_HUMAN antes de A2.
+- 2026-11-19 · Carril frontend integrado (merge 4f4d275): A6-02/03/05, A10-03/04, A12-01..04. Descartados por falsos positivos: A6-04 y gran parte de A6-03. Bug real corregido: `TodoView` ocultaba el error de carga. D-70 `PROPOSED` (Tailwind). `CalendarChip` e `InlineEdit` aplazados (presupuesto JS 248,4/250 KB en la base antigua; sin Windows no se verifica el aspecto).

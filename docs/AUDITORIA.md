@@ -1,6 +1,6 @@
 # AUDITORIA.md — Plan de auditoría de Agendo
 
-**Estado:** AWAITING_HUMAN — A0 y A1 hechas `[A]`; falta validar A1-01 en Windows. No se inicia A2 sin confirmación.
+**Estado:** IN_PROGRESS — A0, A1 y el carril frontend (A6, A10, A12) hechos `[A]`. Carril de datos (A2–A4) en curso en su rama. Pendientes `[H]`: A1-01, A12-03/04, A6-06.
 **Objetivo:** aplicación ligera, bien estructurada, escalable, fácil de depurar y optimizar, y pulida para el usuario final.
 **Reglas:** cada tarea sigue el ciclo de CLAUDE.md §2 (plan corto, cambio coherente, batería §4, commit convencional). Lo que dependa de Windows es `[H]` y nunca se marca como verificado. Cada dependencia o cambio de esquema lleva ADR en `DECISIONS.md`; las migraciones son siempre aditivas.
 
@@ -62,18 +62,18 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [ ] A4-07 Política de poda de `note_versions`.
 
 ### A6 — Frontend: rendimiento (riesgo bajo)
-- [ ] A6-01 `refresh` de tareas con fusión por id (conserva identidad) y debounce; una sola llamada IPC.
-- [ ] A6-02 Títulos de origen como `$derived` de ids únicos, carga en lote.
-- [ ] A6-03 Calendario: índice de tareas por día, `Map` de etiquetas en el store, reloj sin reasignar si no cambia el minuto, `slice` como `$derived`.
-- [ ] A6-04 Guardia global de `prefers-reduced-motion` en `base.css`.
-- [ ] A6-05 Listeners de `onMount` sin carrera ni duplicados.
+- [ ] A6-01 (espera a A3-05) `refresh` de tareas con fusión por id (conserva identidad) y debounce; una sola llamada IPC.
+- [x] A6-02 Ids únicos como `$derived` (hecho). Carga en lote pendiente de A3-05 (`note_titles`).
+- [x] A6-03 Solo era real el reloj del calendario (hecho); el resto ya existía (índice por día, `Map` de etiquetas, `slice` derivado).
+- [x] A6-04 Descartado: `base.css:272` ya tiene la guardia global.
+- [x] A6-05 `.catch` en los listeners; no había carrera.
 - [ ] A6-06 Perfil del editor con notas grandes `[H]`.
 
 ### A10 — Dependencias y build (riesgo bajo)
 - [ ] A10-01 `cargo tree -d` y revisión de features (tokio, etc.).
 - [ ] A10-02 Medir `opt-level` "s" frente a 3 (tamaño y arranque); decidir con datos.
-- [ ] A10-03 Medir el coste real de Tailwind; decidir mantener o quitar. ADR.
-- [ ] A10-04 Script de tokens CSS definidos y no usados.
+- [x] A10-03 Medido: Tailwind cuesta 2,56 KB gzip, el preflight es necesario. D-70 `PROPOSED` recomienda mantenerlo; pendiente de tu decisión.
+- [x] A10-04 `npm run tokens` (9 de 67 sin uso; no se ha quitado nada).
 - [ ] A10-05 `[profile.dev.package."*"]` para acelerar tests.
 
 ### A7 — Estructura Rust (riesgo medio-alto)
@@ -102,8 +102,8 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [ ] A11-03 Ampliar e2e: calendario, recordatorios, paleta, etiquetas, copias e importación.
 
 ### A12 — Pulido final
-- [ ] A12-01 Estados vacío/carga/error coherentes en todas las vistas.
-- [ ] A12-02 Teclado y foco: revisar filas clicables y los `svelte-ignore` / `tabindex=-1`.
+- [x] A12-01 `EmptyState` con variantes carga/error; corregido bug real: `TodoView` mostraba «Sin tareas» si la carga fallaba.
+- [x] A12-02 Revisado, sin cambios; teclado `[H]`.
 - [ ] A12-03 Instalador: cierre del proceso al actualizar y diff documentado contra la plantilla de Tauri `[H]`.
 - [ ] A12-04 Lista `[H]` final para Windows 11 en `docs/manual-pruebas.md`.
 
