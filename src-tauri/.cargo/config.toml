@@ -1,0 +1,3 @@
+[env]
+# Timing tests (scale_tests, search) become unreliable and the suite slower when every logical core runs a test at once (measured on 16 threads: 8 threads = 4.8 s and green, 16 = 11 s and red).
+RUST_TEST_THREADS = "8"

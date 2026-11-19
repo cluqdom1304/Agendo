@@ -16,7 +16,7 @@ use crate::{
 };
 
 fn note_not_found(id: &str) -> AppError {
-    AppError::NotFound(format!("nota {id} no encontrada"))
+    AppError::not_found("nota", id)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]

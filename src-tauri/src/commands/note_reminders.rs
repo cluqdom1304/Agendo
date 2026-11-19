@@ -34,7 +34,7 @@ pub fn set(
     let id = state.ids.new_id();
     let reminder = state.db.write(|tx| {
         if notes::get(tx, note_id)?.is_none() {
-            return Err(AppError::NotFound(format!("nota {note_id} no encontrada")));
+            return Err(AppError::not_found("nota", note_id));
         }
         match instant {
             Some(at) => {

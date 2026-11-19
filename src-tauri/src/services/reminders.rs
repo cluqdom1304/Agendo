@@ -46,8 +46,7 @@ pub fn set<Tz: TimeZone>(
     let now_text = dates::format_instant(now);
 
     let task = state.db.write(|tx| {
-        let task = tasks::get(tx, task_id)?
-            .ok_or_else(|| AppError::NotFound(format!("tarea {task_id} no encontrada")))?;
+        let task = tasks::get(tx, task_id)?.ok_or_else(|| AppError::not_found("tarea", task_id))?;
         if task.is_completed && !inputs.is_empty() {
             return Err(AppError::Validation(
                 "una tarea hecha no avisa: reábrela para añadir recordatorios".into(),
@@ -114,8 +113,7 @@ pub fn set<Tz: TimeZone>(
         }
 
         reminders::replace_unsent(tx, task_id, &rows, &now_text)?;
-        tasks::get(tx, task_id)?
-            .ok_or_else(|| AppError::NotFound(format!("tarea {task_id} no encontrada")))
+        tasks::get(tx, task_id)?.ok_or_else(|| AppError::not_found("tarea", task_id))
     })?;
     state.wake.notify_one();
     Ok(task)

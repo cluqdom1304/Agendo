@@ -9,6 +9,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    setupFiles: ["src/test-setup.ts"],
     // The token review test reads tokens.css as text (`?raw`); Vitest empties CSS by default.
     css: { include: [/tokens.css/] },
   },

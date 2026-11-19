@@ -13,7 +13,7 @@ use crate::{
 };
 
 fn not_found(id: &str) -> AppError {
-    AppError::NotFound(format!("plantilla {id} no encontrada"))
+    AppError::not_found("plantilla", id)
 }
 
 fn name_taken(error: rusqlite::Error) -> AppError {

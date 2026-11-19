@@ -26,6 +26,11 @@ pub enum AppError {
 pub type AppResult<T> = Result<T, AppError>;
 
 impl AppError {
+    /// `NOT_FOUND` for a feminine noun: "tarea abc no encontrada".
+    pub fn not_found(noun: &str, id: &str) -> Self {
+        Self::NotFound(format!("{noun} {id} no encontrada"))
+    }
+
     /// Stable code used as the prefix of the IPC string.
     pub fn code(&self) -> &'static str {
         match self {

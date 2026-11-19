@@ -21,7 +21,7 @@ use crate::{
 };
 
 fn task_not_found(id: &str) -> AppError {
-    AppError::NotFound(format!("tarea {id} no encontrada"))
+    AppError::not_found("tarea", id)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]

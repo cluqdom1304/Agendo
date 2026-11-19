@@ -49,8 +49,8 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [x] A3-05 `tasks_list_all(tag_id?)` y `note_titles(ids)` (máx. 1000), con contrato. Falta el wrapper en `api.ts` (A6-01).
 
 ### A5 — Observabilidad (riesgo bajo)
-- [ ] A5-01 Log a fichero con rotación en la carpeta de datos (ADR por dependencia); sustituir los `eprintln!`.
-- [ ] A5-02 Trazas de consultas lentas (umbral) y duración de migraciones en `startup.rs`.
+- [x] A5-01 Registrador propio con `std` (sin dependencias): `agendo.log` con rotación en la carpeta de datos; sustituye los `eprintln!` (D-90).
+- [x] A5-02 Trazas de consultas lentas y duración de migraciones en `startup.rs`.
 
 ### A4 — Concurrencia y memoria (riesgo medio)
 - [x] A4-01 Pool de 3 lectores; copias sobre conexión propia (D-65).
@@ -62,7 +62,7 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [x] A4-07 Tope de 16 MiB por nota en versiones (ya había 30 versiones por nota).
 
 ### A6 — Frontend: rendimiento (riesgo bajo)
-- [ ] A6-01 (espera a A3-05) `refresh` de tareas con fusión por id (conserva identidad) y debounce; una sola llamada IPC.
+- [x] A6-01 `tasksListAll`: 1 IPC por refresco (antes 2), fusión por id con identidad estable y refrescos coalescidos; `noteTitles` en lote.
 - [x] A6-02 Ids únicos como `$derived` (hecho). Carga en lote pendiente de A3-05 (`note_titles`).
 - [x] A6-03 Solo era real el reloj del calendario (hecho); el resto ya existía (índice por día, `Map` de etiquetas, `slice` derivado).
 - [x] A6-04 Descartado: `base.css:272` ya tiene la guardia global.
@@ -77,19 +77,19 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [x] A10-05 `[profile.dev.package."*"] opt-level = 2`: tests lib 10,5 s → 8,0 s (−24 %).
 
 ### A7 — Estructura Rust (riesgo medio-alto)
-- [ ] A7-01 Mover tests grandes a archivos propios (`commands/tasks`, `notify`, `scheduler`).
-- [ ] A7-02 Dividir `domain/markdown.rs` (read, write, inline, table) y `exchange.rs` (export, import, catalog, paths).
-- [ ] A7-03 Un único módulo de saneado de rutas y nombres de Windows.
-- [ ] A7-04 Extraer lógica de negocio de `commands/tasks`, `notes`, `reminders` y `tags` a servicios; los comandos solo deserializan y llaman a `run_blocking`.
+- [x] A7-01 Tests de `commands/tasks`, `notify` y `scheduler` en archivos propios.
+- [x] A7-02 `domain/markdown` (write, read, inline, table) y `exchange` (export, import, catalog, paths) divididos.
+- [x] A7-03 Saneado de nombres y rutas de Windows en un único módulo.
+- [x] A7-04 Lógica de tareas, notas, recordatorios y etiquetas en `services/`; los comandos solo envuelven.
 - [ ] A7-05 Validación unificada de DTO (`TryFrom<Input>`).
 - [ ] A7-06 Código muerto (`fts::rebuild`) y envolturas CRUD repetidas.
 
 ### A8 — Estructura frontend (riesgo medio)
-- [~] A8-01 `notes.svelte.ts` 836→731 líneas (enlaces, plantillas, versiones, recordatorios en módulos). `tasks.svelte.ts` pendiente: se divide junto a A6-01.
+- [x] A8-01 `notes.svelte.ts` 836→731 y `tasks.svelte.ts` 805→580 líneas, en módulos compuestos con la API intacta.
 - [x] A8-02 `+page.svelte` 596→461 (`shortcuts.ts`, `backendEvents.ts`, `dialogs.svelte.ts`, `DialogHost.svelte`).
 - [x] A8-03 `editor.ts` 728→~520, `entries.ts` 574→60 (5 módulos), sugerencias de `NoteEditor` a `noteSuggestions.svelte.ts`.
 - [ ] A8-04 (aplazado: sin Windows no se verifica el aspecto) `InlineEdit`, `EmptyState` y `CalendarChip` compartidos.
-- [~] A8-05 Hecho `SettingsAbout`. Descartado `FolderSidebar` (CSS acoplado) y carga por pestaña (no hay pestañas). Pendiente `CalendarWeek` y `TaskDialog`.
+- [x] A8-05 Hecho `SettingsAbout` y `CalendarWeek` (602→479, `weekCompose`). Descartados `FolderSidebar`, `TaskDialog` (≈15 estados con `bind:` y CSS acoplado) y la carga por pestaña (no hay pestañas).
 - [x] A8-06 Descartado: los dominios diferidos suman ~2,5 KB gzip (3 % del inicial) y exigiría reescribir `t.*` en ~60 archivos.
 
 ### A9 — Paridad front/back (riesgo bajo)
@@ -97,9 +97,9 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [x] A9-02 D-80 `ACCEPTED`: el backend es la fuente de verdad de recurrencia y orden.
 
 ### A11 — Tests (riesgo bajo)
-- [ ] A11-01 Fixtures compartidos y deduplicación de tests solapados.
-- [ ] A11-02 Test Rust `search_is_fast_with_ten_thousand_tasks` falló una vez bajo carga (compilación en paralelo) y pasa aislado: hacerlo robusto. `vi.useFakeTimers` en tests TS largos; detectar tests Rust lentos.
-- [ ] A11-03 Ampliar e2e: calendario, recordatorios, paleta, etiquetas, copias e importación.
+- [x] A11-01 `makeNote`/`makeNoteHit`/`makeTaskHit`/`makeTagHit` compartidos; 2 tests duplicados eliminados; esperas fijas por `vi.waitFor`.
+- [x] A11-02 Causa real: sobresuscripción (≥12 tests en paralelo en 16 hilos lógicos hacían la suite más lenta y los tests de tiempos fallaban). `src-tauri/.cargo/config.toml` fija `RUST_TEST_THREADS = 8`: 10,5 s → 4,7 s y 4/4 ejecuciones en verde. En TS, `asyncUtilTimeout` de 5 s para los `findBy*` del editor cargado con `import()`.
+- [~] A11-03 e2e escritos (calendario, recordatorios, etiquetas, copias) pero no ejecutados: primera ejecución `[H]`. Paleta e importación siguen sin e2e.
 
 ### A12 — Pulido final
 - [x] A12-01 `EmptyState` con variantes carga/error; corregido bug real: `TodoView` mostraba «Sin tareas» si la carga fallaba.

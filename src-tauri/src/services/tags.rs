@@ -20,7 +20,7 @@ pub struct TagUpsertInput {
 }
 
 fn tag_not_found(id: &str) -> AppError {
-    AppError::NotFound(format!("etiqueta {id} no encontrada"))
+    AppError::not_found("etiqueta", id)
 }
 
 pub fn list(state: &AppState) -> AppResult<Vec<TagWithCount>> {
@@ -103,7 +103,7 @@ pub fn merge(state: &AppState, source: &str, target: &str) -> AppResult<()> {
 pub fn set_task_tags(state: &AppState, task_id: &str, tag_ids: &[String]) -> AppResult<Task> {
     let now = state.clock.now_string();
     state.db.write(|tx| {
-        let task_missing = || AppError::NotFound(format!("tarea {task_id} no encontrada"));
+        let task_missing = || AppError::not_found("tarea", task_id);
         if !tags::set_task_tags(tx, task_id, tag_ids, &now)? {
             return Err(task_missing());
         }

@@ -26,13 +26,13 @@ pub(super) fn snapshot(state: &AppState, selection: &Selection) -> AppResult<Sna
             Selection::All => everything.iter().map(|note| note.id.clone()).collect(),
             Selection::Note(id) => {
                 if !everything.iter().any(|note| &note.id == id) {
-                    return Err(AppError::NotFound(format!("nota {id} no encontrada")));
+                    return Err(AppError::not_found("nota", id));
                 }
                 vec![id.clone()]
             }
             Selection::Folder(id) => {
                 if !folders.iter().any(|folder| &folder.id == id) {
-                    return Err(AppError::NotFound(format!("carpeta {id} no encontrada")));
+                    return Err(AppError::not_found("carpeta", id));
                 }
                 notes::list(conn, Scope::Folder(id), None, Sort::Title)?
                     .into_iter()

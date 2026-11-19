@@ -20,10 +20,9 @@ pub fn list(state: &AppState, note_id: &str) -> AppResult<Vec<NoteVersionSummary
 }
 
 pub fn get(state: &AppState, id: &str) -> AppResult<NoteVersion> {
-    state.db.read(|conn| {
-        versions::get(conn, id)?
-            .ok_or_else(|| AppError::NotFound(format!("versión {id} no encontrada")))
-    })
+    state
+        .db
+        .read(|conn| versions::get(conn, id)?.ok_or_else(|| AppError::not_found("versión", id)))
 }
 
 /// Puts the document and title of a version back in its note. The document being replaced is

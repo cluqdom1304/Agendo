@@ -25,7 +25,7 @@ pub struct FolderUpsertInput {
 }
 
 fn folder_not_found(id: &str) -> AppError {
-    AppError::NotFound(format!("carpeta {id} no encontrada"))
+    AppError::not_found("carpeta", id)
 }
 
 pub fn list(state: &AppState) -> AppResult<Vec<FolderWithCount>> {
