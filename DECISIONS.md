@@ -472,6 +472,25 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Consecuencias:** CSS 18,6 KB gzip; JS 246,4 KB de 250 (**quedan 3,6 KB para la Fase 15**). La apariencia real es `[H]` (manual-pruebas § «Repaso de diseño previo a la 2.0»).
 - **Alternativas descartadas:** animaciones de salida y `backdrop-filter` (siguen descartadas por D-39 y D-01); rehacer los componentes de notas ya repasados (lista, panel y barra lateral ya seguían D-39).
 
+## D-70 — Tailwind: mantener solo el preflight y las utilidades, o prescindir de él (A10-03)
+
+- **Estado:** `PROPOSED`
+- **Contexto:** `src/app.css` hace `@import "tailwindcss"` (D-14), pero la interfaz usa CSS propio con ámbito de componente y tokens. Medición en un `vite build` con las cuatro variantes de `app.css` (todo el CSS de `build/`, gzip nivel 9):
+
+  | Variante | CSS bruto | CSS gzip |
+  |----------|----------:|---------:|
+  | Sin Tailwind | 95 940 B | 14 939 B |
+  | Solo `preflight.css` | 99 999 B | 16 032 B |
+  | `preflight` + `utilities` (sin `theme`) | 106 568 B | 17 258 B |
+  | Actual (`tailwindcss` completo) | 108 190 B | 17 496 B |
+
+  Tailwind cuesta **2,56 KB gzip** (12,2 KB brutos); el preflight, 1,1 KB, y el resto son utilidades y variables `--tw-*`.
+- **Hallazgos:**
+  - Las utilidades generadas son accidentales: Tailwind escanea el código y convierte en regla cualquier palabra que coincida (`.block`, `.grid`, `.inline`, `.italic`, `.hidden`, `.border`, `.rounded`, `.container`, `.table`, `.shadow`, `.ring`, `.collapse`, `.visible`…). Las clases `block`, `grid`, `inline` e `italic` de la aplicación son nombres propios que hoy reciben además la regla global de Tailwind; no se vio ninguna utilidad escrita a propósito, salvo quizá `h-full`, `grid` y `items-stretch`.
+  - La aplicación **sí depende del preflight**: no hay `box-sizing` ni reinicio de márgenes global en `base.css`, y 26 archivos heredan fuente en botones y campos con `font: inherit` sobre el reinicio del preflight.
+- **Opciones:** (A) mantener como está; (B) importar solo `preflight.css` y `utilities.css` por capas (ahorra 0,24 KB; no merece el riesgo); (C) quitar Tailwind y sustituir el preflight por un reinicio propio de unas 20 líneas en `base.css` (ahorra hasta ~2,4 KB gzip de CSS y dos devDependencies; hay que fijar a mano `box-sizing`, `margin: 0` de encabezados, `button/input/select/textarea { font: inherit }`, `img { display: block }` y revisar visualmente todas las vistas `[H]`).
+- **Recomendación:** C, pero solo con revisión visual en Windows; el CSS no cuenta en el presupuesto de 250 KB de JS y el beneficio principal es eliminar las reglas accidentales y dos dependencias. Mientras no se confirme, A. No se ha tocado nada.
+
 ---
 
 ## Decisiones pendientes de producto
