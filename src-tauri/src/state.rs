@@ -9,7 +9,7 @@ use std::{
 };
 
 use rusqlite::{Connection, Transaction};
-use tokio::sync::Notify;
+use tokio::sync::{Notify, watch};
 
 use crate::{
     db::{self, DbError, MIGRATIONS, Migration},
@@ -138,6 +138,11 @@ pub struct AppState {
     pub ids: Arc<dyn IdGenerator>,
     /// Wakes the reminder scheduler after anything that can change what fires next (SPEC §6.1).
     pub wake: Arc<Notify>,
+    /// Set once when the app is closing; the background loops stop starting new passes.
+    shutdown: watch::Sender<bool>,
+    /// Held by a background pass that writes files (the automatic backup) while it runs, so
+    /// closing the app can wait for it instead of cutting it off half way.
+    pub background_work: Mutex<()>,
 }
 
 impl AppState {
@@ -147,6 +152,42 @@ impl AppState {
             clock,
             ids,
             wake: Arc::new(Notify::new()),
+            shutdown: watch::channel(false).0,
+            background_work: Mutex::new(()),
+        }
+    }
+
+    /// Tells the background loops that the app is closing.
+    pub fn begin_shutdown(&self) {
+        self.shutdown.send_replace(true);
+    }
+
+    /// Resolves when [`begin_shutdown`](Self::begin_shutdown) has been called (at once if it
+    /// already was).
+    pub async fn shut_down(&self) {
+        let mut receiver = self.shutdown.subscribe();
+        // The sender lives in `self`, so the channel cannot close while this future exists.
+        let _ = receiver.wait_for(|closing| *closing).await;
+    }
+
+    pub fn is_shutting_down(&self) -> bool {
+        *self.shutdown.borrow()
+    }
+
+    /// Waits up to `limit` for the running background pass (if any) to finish, then returns.
+    /// Used on exit: a backup in progress is allowed to end instead of leaving a partial file.
+    pub fn wait_for_background_work(&self, limit: std::time::Duration) {
+        let deadline = std::time::Instant::now() + limit;
+        loop {
+            match self.background_work.try_lock() {
+                Ok(_) | Err(TryLockError::Poisoned(_)) => return,
+                Err(TryLockError::WouldBlock) => {
+                    if std::time::Instant::now() >= deadline {
+                        return;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+            }
         }
     }
 

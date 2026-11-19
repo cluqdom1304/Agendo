@@ -1,6 +1,7 @@
 pub mod archive;
 pub mod attachments;
 pub mod autobackup;
+pub mod backoff;
 mod commands;
 #[cfg(test)]
 mod contract_tests;
@@ -169,10 +170,15 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|handle, event| {
-            // Lets SQLite refresh its planner statistics once, on the way out (A2-02).
-            if matches!(event, tauri::RunEvent::Exit)
-                && let Some(state) = handle.try_state::<Arc<AppState>>()
-            {
+            let Some(state) = handle.try_state::<Arc<AppState>>() else {
+                return;
+            };
+            // Only on the real exit (not on a request that could still be cancelled): the
+            // background loops stop, a copy in progress is allowed to end (at most 5 s) and
+            // SQLite refreshes its planner statistics once on the way out (A2-02).
+            if matches!(event, tauri::RunEvent::Exit) {
+                state.begin_shutdown();
+                state.wait_for_background_work(std::time::Duration::from_secs(5));
                 state.db.optimize();
             }
         });

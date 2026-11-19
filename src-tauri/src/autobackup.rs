@@ -6,14 +6,14 @@
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, PoisonError},
     time::Duration as StdDuration,
 };
 
 use chrono::Duration;
 
 use crate::{
-    DATABASE_FILE, archive, attachments,
+    DATABASE_FILE, archive, attachments, backoff,
     domain::dates,
     error::{AppError, AppResult},
     repo::settings,
@@ -39,6 +39,8 @@ const TOLERANCE_MINUTES: i64 = 60;
 /// How long the app waits after starting before it looks, and between looks.
 const FIRST_LOOK: StdDuration = StdDuration::from_secs(45);
 const LOOK_EVERY: StdDuration = StdDuration::from_secs(3600);
+/// First wait after a failed copy; it doubles with each further failure up to `LOOK_EVERY`.
+const RETRY_FIRST: StdDuration = StdDuration::from_secs(300);
 
 fn interval(mode: &str) -> Option<Duration> {
     match mode {
@@ -135,20 +137,53 @@ fn rotate(dir: &Path, keep: usize) -> AppResult<()> {
 /// Background loop: looks shortly after start-up and then every hour. A failed copy is logged and
 /// tried again at the next look; it never stops the app.
 pub async fn run(state: Arc<AppState>, data_dir: PathBuf) {
-    tokio::time::sleep(FIRST_LOOK).await;
+    if sleep_unless_closing(&state, FIRST_LOOK).await {
+        return;
+    }
+    let mut failures = 0_u32;
     loop {
         let pass = {
             let state = Arc::clone(&state);
             let database = data_dir.join(DATABASE_FILE);
             let dir = data_dir.join(DIR_NAME);
-            tokio::task::spawn_blocking(move || run_if_due(&state, &database, &dir)).await
+            tokio::task::spawn_blocking(move || {
+                // Closing the app waits for this guard, so a copy is not cut off half way.
+                let _busy = state
+                    .background_work
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner);
+                run_if_due(&state, &database, &dir)
+            })
+            .await
         };
         match pass {
-            Ok(Ok(_)) => {}
-            Ok(Err(error)) => eprintln!("[autobackup] no se pudo hacer la copia: {error}"),
-            Err(error) => eprintln!("[autobackup] la tarea se interrumpió: {error}"),
+            Ok(Ok(_)) => failures = 0,
+            Ok(Err(error)) => {
+                failures += 1;
+                eprintln!("[autobackup] no se pudo hacer la copia: {error}");
+            }
+            Err(error) => {
+                failures += 1;
+                eprintln!("[autobackup] la tarea se interrumpió: {error}");
+            }
         }
-        tokio::time::sleep(LOOK_EVERY).await;
+        // After a failure look again sooner (5 min, 10, 20, ...) but never less often than usual.
+        let wait = if failures == 0 {
+            LOOK_EVERY
+        } else {
+            backoff::delay(failures, RETRY_FIRST, LOOK_EVERY)
+        };
+        if sleep_unless_closing(&state, wait).await {
+            return;
+        }
+    }
+}
+
+/// Sleeps `wait`; returns `true` if the app began closing first (or already had).
+async fn sleep_unless_closing(state: &AppState, wait: StdDuration) -> bool {
+    tokio::select! {
+        () = tokio::time::sleep(wait) => state.is_shutting_down(),
+        () = state.shut_down() => true,
     }
 }
 
@@ -175,6 +210,34 @@ mod tests {
         let database = temp.database();
         let dir = database.with_file_name(DIR_NAME);
         (temp, database, dir)
+    }
+
+    #[tokio::test]
+    async fn the_loop_ends_when_the_app_begins_to_close_and_waits_for_a_copy_in_progress() {
+        let (state, _) = test_state();
+        let state = Arc::new(state);
+        let (_temp, _database, _dir) = paths();
+        let handle = tokio::spawn(run(
+            Arc::clone(&state),
+            _database.parent().expect("dir").into(),
+        ));
+        tokio::time::sleep(StdDuration::from_millis(50)).await;
+        assert!(!handle.is_finished(), "it is waiting for its first look");
+
+        state.begin_shutdown();
+        let ended = tokio::time::timeout(StdDuration::from_secs(5), handle).await;
+        assert!(ended.is_ok(), "the loop did not stop");
+
+        // A pass that holds the guard makes `wait_for_background_work` wait, and it gives up
+        // at the limit instead of hanging.
+        let guard = state.background_work.lock().expect("lock");
+        let started = std::time::Instant::now();
+        state.wait_for_background_work(StdDuration::from_millis(120));
+        assert!(started.elapsed() >= StdDuration::from_millis(100));
+        drop(guard);
+        let started = std::time::Instant::now();
+        state.wait_for_background_work(StdDuration::from_secs(5));
+        assert!(started.elapsed() < StdDuration::from_secs(1));
     }
 
     #[test]

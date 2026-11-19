@@ -375,3 +375,13 @@ Fase 18 — resumen semanal (F18-04)
 
 Auditoría A1 — seguridad
 - [ ] A1-01: con la versión release (`npm run tauri -- build`), abrir Agendo y comprobar que arranca, que se ven y editan notas con imágenes pegadas, que los diálogos, la paleta, el calendario y los ajustes se muestran con su estilo, y que abrir un enlace `https` de una nota funciona. Si algo falla por la CSP, la consola de WebView2 (F12 con una build de depuración) muestra «Refused to …»: anotar la directiva y avisar.
+
+## Auditoría A2–A4 (`[H]`, pendientes de validar en Windows 11)
+- [ ] Abrir una base de datos creada con la 2.0.x: arranca sin error, Ajustes › «Acerca de» muestra esquema (14) y la búsqueda de tareas y de notas encuentra lo mismo que antes (la migración 012 reindexa el buscador).
+- [ ] Editar el texto de una nota o tarea y buscar una palabra nueva y una antigua: la nueva aparece, la antigua ya no (índice por rowid, D-62).
+- [ ] Con muchas notas (1 000 o más, p. ej. importadas), la lista de notas y la agenda con recordatorios abren sin pausa notable (D-63, D-64).
+- [ ] Hacer una copia `.agendo` de una base grande mientras se escribe en una nota: el guardado no se queda esperando a que acabe la copia (D-65).
+- [ ] Importar un `.enex` grande (cientos de MB): la memoria de la aplicación no crece con el tamaño del archivo y las notas entran todas (D-65).
+- [ ] Restaurar una copia `.agendo` con adjuntos: las imágenes vuelven y las notas las muestran.
+- [ ] Cerrar la aplicación desde la bandeja con una copia automática en marcha: no queda ningún `.tmp` en `backups` y la siguiente copia se hace con normalidad (D-66).
+- [ ] Exportar a Markdown varias notas que comparten una imagen: la carpeta `adjuntos` tiene una sola copia y todas las notas la enlazan.

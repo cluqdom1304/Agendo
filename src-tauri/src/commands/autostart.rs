@@ -13,12 +13,12 @@ fn failure(error: impl std::fmt::Display) -> String {
     .to_string()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn autostart_get(app: AppHandle) -> Result<bool, String> {
     app.autolaunch().is_enabled().map_err(failure)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn autostart_set(app: AppHandle, enabled: bool) -> Result<(), String> {
     let launcher = app.autolaunch();
     if enabled {
