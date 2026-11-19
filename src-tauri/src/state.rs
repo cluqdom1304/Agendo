@@ -63,6 +63,18 @@ impl Db {
         operation(&mut connection)
     }
 
+    /// Refreshes the planner statistics (`PRAGMA optimize`); called when the app exits.
+    pub fn optimize(&self) {
+        let connection = lock(&self.writer);
+        let _ = db::pragmas::optimize(&connection);
+    }
+
+    /// Recomputes the planner statistics after a bulk change such as an import. Best effort.
+    pub fn analyze(&self) {
+        let connection = lock(&self.writer);
+        let _ = db::pragmas::analyze(&connection);
+    }
+
     /// One logical write: a single transaction, committed on `Ok` and rolled back on `Err`.
     pub fn write<T>(
         &self,

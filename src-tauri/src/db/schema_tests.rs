@@ -44,8 +44,8 @@ fn count(conn: &Connection, sql: &str) -> i64 {
 #[test]
 fn migrating_an_empty_database_reaches_the_latest_version() {
     let conn = database();
-    assert_eq!(migrate::current_version(&conn).expect("version"), 12);
-    assert_eq!(migrate::latest_version(&MIGRATIONS), 12);
+    assert_eq!(migrate::current_version(&conn).expect("version"), 13);
+    assert_eq!(migrate::latest_version(&MIGRATIONS), 13);
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn creates_every_table_and_index_of_the_spec() {
     for index in [
         "ix_reminders_pending",
         "ix_task_tags_tag",
-        "ix_tasks_deleted",
+        "ix_tasks_trashed",
         "ix_tasks_due",
         "ix_tasks_todo",
         "ux_tags_name",

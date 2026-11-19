@@ -164,8 +164,16 @@ pub fn run() {
             commands::autostart::autostart_set,
             commands::info::app_info
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|handle, event| {
+            // Lets SQLite refresh its planner statistics once, on the way out (A2-02).
+            if matches!(event, tauri::RunEvent::Exit)
+                && let Some(state) = handle.try_state::<Arc<AppState>>()
+            {
+                state.db.optimize();
+            }
+        });
 }
 
 #[cfg(test)]

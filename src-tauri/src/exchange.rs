@@ -813,6 +813,9 @@ pub fn import_text_files(
     }
     report.folders = catalog.new_folders;
     report.tags = catalog.new_tags;
+    if report.notes > 0 {
+        state.db.analyze();
+    }
     Ok(report)
 }
 
@@ -909,6 +912,9 @@ pub fn import_enex_files(
     }
     report.folders = catalog.new_folders;
     report.tags = catalog.new_tags;
+    if report.notes > 0 {
+        state.db.analyze();
+    }
     Ok(report)
 }
 

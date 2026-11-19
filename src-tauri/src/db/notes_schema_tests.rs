@@ -311,7 +311,7 @@ fn upgrading_a_v1_database_keeps_every_row() {
     conn.execute("INSERT INTO settings VALUES ('theme', 'dark')", [])
         .expect("setting");
 
-    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v12"), 12);
+    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v13"), 13);
 
     assert_eq!(count(&conn, "SELECT COUNT(*) FROM tasks"), 3);
     assert_eq!(

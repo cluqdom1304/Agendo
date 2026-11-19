@@ -4,6 +4,8 @@ pub mod backup;
 pub mod migrate;
 #[cfg(test)]
 mod notes_schema_tests;
+#[cfg(test)]
+mod plan_tests;
 pub mod pragmas;
 #[cfg(test)]
 mod schema_tests;
@@ -100,6 +102,8 @@ pub fn open_in_memory(migrations: &[Migration]) -> Result<Connection, DbError> {
 fn prepare(mut conn: Connection, migrations: &[Migration]) -> Result<Connection, DbError> {
     pragmas::apply(&conn)?;
     migrate::migrate(&mut conn, migrations)?;
+    // Best effort: stale statistics only make the planner a little less sharp.
+    let _ = pragmas::optimize_on_open(&conn);
     Ok(conn)
 }
 
@@ -141,6 +145,20 @@ mod tests {
         assert_eq!(pragma(&conn, "synchronous"), 1, "NORMAL");
         assert_eq!(pragma(&conn, "busy_timeout"), 5000);
         assert_eq!(pragma(&conn, "temp_store"), 2, "MEMORY");
+        assert_eq!(pragma(&conn, "cache_size"), -16_384);
+        assert_eq!(pragma(&conn, "mmap_size"), 67_108_864);
+        assert_eq!(pragma(&conn, "journal_size_limit"), 67_108_864);
+        assert_eq!(pragma(&conn, "wal_autocheckpoint"), 1000);
+    }
+
+    #[test]
+    fn optimize_and_analyze_run_on_a_file_database() {
+        let dir = TempDir::new();
+        let conn = open(&dir.database(), &SCHEMA).expect("open");
+        pragmas::optimize(&conn).expect("optimize");
+        pragmas::analyze(&conn).expect("analyze");
+        let reader = open_read_only(&dir.database()).expect("reader");
+        assert_eq!(pragma(&reader, "cache_size"), -16_384);
     }
 
     #[test]

@@ -369,17 +369,30 @@ fn tag_clauses(link_table: &str, key: &str, owner: &str, groups: usize, first: u
         .collect()
 }
 
-/// ` AND (...)` for `desde:`/`hasta:` over `column`, with two placeholders starting at `first`.
-fn range_clause(column: &str, first: usize) -> String {
-    format!(
-        " AND (?{first} IS NULL OR {column} >= ?{first}) AND (?{second} IS NULL OR {column} <= ?{second})",
-        second = first + 1
-    )
-}
-
-fn range_values(range: (&Option<String>, &Option<String>)) -> [Value; 2] {
-    let value = |end: &Option<String>| end.clone().map_or(Value::Null, Value::Text);
-    [value(range.0), value(range.1)]
+/// ` AND column >= ?N AND column <= ?M` for `desde:`/`hasta:`, written only for the ends that
+/// were given (a `?N IS NULL OR ...` guard would keep SQLite from using the column's index),
+/// with their values. Placeholders start at `first`.
+///
+/// `upper_suffix` is appended to the upper bound: notes compare their UTC timestamp
+/// (`2026-03-31T23:00:00Z`) with a day, and `2026-03-31Z` sorts after every instant of that day
+/// and before the next, so the filter stays a plain range over the indexed column.
+fn range_clause(
+    column: &str,
+    first: usize,
+    range: (&Option<String>, &Option<String>),
+    upper_suffix: &str,
+) -> (String, Vec<Value>) {
+    let mut sql = String::new();
+    let mut values = Vec::new();
+    if let Some(from) = range.0 {
+        sql.push_str(&format!(" AND {column} >= ?{}", first + values.len()));
+        values.push(Value::Text(from.clone()));
+    }
+    if let Some(to) = range.1 {
+        sql.push_str(&format!(" AND {column} <= ?{}", first + values.len()));
+        values.push(Value::Text(format!("{to}{upper_suffix}")));
+    }
+    (sql, values)
 }
 
 fn tasks(
@@ -397,7 +410,8 @@ fn tasks(
         values.push(Value::Integer(i64::from(limit)));
         values.push(completed.map_or(Value::Null, |done| Value::Integer(i64::from(done))));
         values.extend(groups.iter().cloned().map(Value::Text));
-        values.extend(range_values(range));
+        let (range_sql, range_params) = range_clause("t.due_date", 4 + groups.len(), range, "");
+        values.extend(range_params);
         format!(
             "SELECT t.id, t.title, snippet(tasks_fts, 2, '', '', '…', 12), t.due_date, t.is_completed
              FROM tasks_fts JOIN tasks t ON t.id = tasks_fts.task_id
@@ -406,13 +420,14 @@ fn tasks(
              ORDER BY bm25(tasks_fts, 0.0, 4.0, 1.0), t.is_completed, t.id
              LIMIT ?2",
             tag_clauses("task_tags", "task_id", "t.id", groups.len(), 4),
-            range_clause("t.due_date", 4 + groups.len())
+            range_sql
         )
     } else {
         values.push(Value::Integer(i64::from(limit)));
         values.push(completed.map_or(Value::Null, |done| Value::Integer(i64::from(done))));
         values.extend(groups.iter().cloned().map(Value::Text));
-        values.extend(range_values(range));
+        let (range_sql, range_params) = range_clause("t.due_date", 3 + groups.len(), range, "");
+        values.extend(range_params);
         format!(
             "SELECT t.id, t.title, '', t.due_date, t.is_completed
              FROM tasks t
@@ -420,7 +435,7 @@ fn tasks(
              ORDER BY t.is_completed, t.updated_at DESC, t.id
              LIMIT ?1",
             tag_clauses("task_tags", "task_id", "t.id", groups.len(), 3),
-            range_clause("t.due_date", 3 + groups.len())
+            range_sql
         )
     };
     let mut statement = conn.prepare(&sql)?;
@@ -463,7 +478,8 @@ fn notes(
         values.push(Value::Integer(i64::from(pinned)));
         values.push(folder);
         values.extend(groups.iter().cloned().map(Value::Text));
-        values.extend(range_values(range));
+        let (range_sql, range_params) = range_clause("n.updated_at", 5 + groups.len(), range, "Z");
+        values.extend(range_params);
         format!(
             "SELECT n.id, n.title, snippet(notes_fts, 2, '', '', '…', 12), n.folder_id, n.is_pinned
              FROM notes_fts JOIN notes n ON n.id = notes_fts.note_id
@@ -472,7 +488,7 @@ fn notes(
              ORDER BY bm25(notes_fts, 0.0, 4.0, 1.0), n.is_pinned DESC, n.id
              LIMIT ?2",
             tag_clauses("note_tags", "note_id", "n.id", groups.len(), 5),
-            range_clause("substr(n.updated_at, 1, 10)", 5 + groups.len())
+            range_sql
         )
     } else {
         // Without text there is no index to ask: the first words of the note stand in.
@@ -481,7 +497,8 @@ fn notes(
         values.push(Value::Integer(i64::from(pinned)));
         values.push(folder);
         values.extend(groups.iter().cloned().map(Value::Text));
-        values.extend(range_values(range));
+        let (range_sql, range_params) = range_clause("n.updated_at", 5 + groups.len(), range, "Z");
+        values.extend(range_params);
         format!(
             "SELECT n.id, n.title, replace(substr(n.content_text, 1, 120), char(10), ' '),
                     n.folder_id, n.is_pinned
@@ -491,7 +508,7 @@ fn notes(
              ORDER BY n.is_pinned DESC, n.updated_at DESC, n.id
              LIMIT ?2",
             tag_clauses("note_tags", "note_id", "n.id", groups.len(), 5),
-            range_clause("substr(n.updated_at, 1, 10)", 5 + groups.len())
+            range_sql
         )
     };
     let mut statement = conn.prepare(&sql)?;
