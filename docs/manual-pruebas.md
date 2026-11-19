@@ -404,3 +404,12 @@ Refactor de estructura sin cambios de comportamiento; ninguno está verificado e
 - [ ] Restaurar una copia `.agendo` con adjuntos: las imágenes vuelven y las notas las muestran.
 - [ ] Cerrar la aplicación desde la bandeja con una copia automática en marcha: no queda ningún `.tmp` en `backups` y la siguiente copia se hace con normalidad (D-66).
 - [ ] Exportar a Markdown varias notas que comparten una imagen: la carpeta `adjuntos` tiene una sola copia y todas las notas la enlazan.
+
+## Auditoría A6-A11 (frontend)
+
+Ninguno está verificado; requieren Windows 11 real.
+
+- [ ] A11-03: primera ejecución de e2e (`npm run e2e`) con las nuevas especificaciones `calendar`, `reminders`, `tags` y `backups` de `e2e/specs/`: se escribieron sin poder ejecutarlas, así que pueden necesitar ajustes de selectores (vista Calendario como `radio`, columna `[role="gridcell"][data-date]`, campo `input[data-autofocus]` del editor de etiquetas).
+- [ ] A6-01: abrir la lista con muchas tareas y provocar cambios externos seguidos (recordatorio disparado, completar una tarea repetida, importar una copia): la lista se actualiza sin parpadeos ni perder la selección ni la fila en edición.
+- [ ] A8-05: Calendario > Semana y Día: arrastrar un tramo, escribir el título y Enter; Enter sobre una columna enfocada; Esc cancela. Igual que antes de dividir `CalendarWeek`.
+- [ ] A6-02: abrir una tarea creada desde una nota (muestra el título de la nota de origen) y una nota con enlaces a otras notas, borradas y vivas: los enlaces borrados siguen mostrándose como eliminados.

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { FoundItem } from "../../types";
+import { makeNoteHit, makeTagHit, makeTaskHit } from "../../testing";
 import {
   buildGroups,
   matchCommands,
@@ -21,30 +21,10 @@ const commands = [
   command("d", "Agenda: vista de mes"),
 ];
 
-const note = (noteId: string, title: string): FoundItem => ({
-  kind: "note",
-  noteId,
-  title,
-  snippet: "",
-  folderId: null,
-  isPinned: false,
-});
-const task = (taskId: string, title: string): FoundItem => ({
-  kind: "task",
-  taskId,
-  title,
-  snippet: "",
-  dueDate: null,
-  isCompleted: false,
-});
-const tag = (tagId: string, name: string): FoundItem => ({
-  kind: "tag",
-  tagId,
-  name,
-  colorHex: "#4C8DFF",
-  noteCount: 1,
-  pendingCount: 2,
-});
+const note = (noteId: string, title: string) => makeNoteHit(noteId, title);
+const task = (taskId: string, title: string) => makeTaskHit(taskId, title);
+const tag = (tagId: string, name: string) =>
+  makeTagHit(tagId, name, { noteCount: 1, pendingCount: 2 });
 
 const ids = (groups: ReturnType<typeof buildGroups>) =>
   groups.map((group) => [

@@ -10,10 +10,8 @@ import type {
   NoteTemplate,
   NoteVersion,
 } from "../../types";
+import { makeNote } from "../../testing";
 import type { NotesApi } from "../../stores/notes.svelte";
-
-const NOW = "2026-03-10T10:00:00Z";
-const DOC = '{"type":"doc","content":[]}';
 
 export function folder(
   id: string,
@@ -23,19 +21,7 @@ export function folder(
   return { id, name: id, parentId, position: 0, noteCount };
 }
 
-export function note(id: string, overrides: Partial<Note> = {}): Note {
-  return {
-    id,
-    folderId: null,
-    title: id,
-    contentJson: DOC,
-    isPinned: false,
-    tagIds: [],
-    createdAt: NOW,
-    updatedAt: NOW,
-    ...overrides,
-  };
-}
+export const note = makeNote;
 
 export function summary(value: Note): NoteSummary {
   return {
@@ -96,6 +82,13 @@ export class FakeNotesApi implements NotesApi {
     const found = this.notes.find((n) => n.id === id);
     if (!found) throw "NOT_FOUND: no existe";
     return found;
+  }
+  titleLookups: string[][] = [];
+  async noteTitles(ids: readonly string[]) {
+    this.titleLookups.push([...ids]);
+    return this.notes
+      .filter((n) => ids.includes(n.id))
+      .map((n) => ({ id: n.id, title: n.title }));
   }
   async noteCreate(input: NoteCreateInput = {}) {
     this.#guard();

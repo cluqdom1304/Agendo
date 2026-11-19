@@ -2,6 +2,8 @@
 import { groupByDay, sortTodo } from "./ordering";
 import type { TasksApi } from "./stores/tasks.svelte";
 import type {
+  FoundItem,
+  Note,
   ReminderInput,
   SearchHit,
   Task,
@@ -25,6 +27,73 @@ export function makeTask(overrides: Partial<Task> & { id: string }): Task {
     reminders: [],
     createdAt: "2026-03-01T08:00:00Z",
     updatedAt: "2026-03-01T08:00:00Z",
+    ...overrides,
+  };
+}
+
+const STAMP = "2026-03-10T10:00:00Z";
+
+export function makeNote(id: string, overrides: Partial<Note> = {}): Note {
+  return {
+    id,
+    folderId: null,
+    title: id,
+    contentJson: '{"type":"doc","content":[]}',
+    isPinned: false,
+    tagIds: [],
+    createdAt: STAMP,
+    updatedAt: STAMP,
+    ...overrides,
+  };
+}
+
+type Hit<K extends FoundItem["kind"]> = Extract<FoundItem, { kind: K }>;
+
+/** A search result for a note, task or tag; the rest of its fields take neutral values. */
+export function makeNoteHit(
+  noteId: string,
+  title: string,
+  overrides: Partial<Hit<"note">> = {},
+): FoundItem {
+  return {
+    kind: "note",
+    noteId,
+    title,
+    snippet: "",
+    folderId: null,
+    isPinned: false,
+    ...overrides,
+  };
+}
+
+export function makeTaskHit(
+  taskId: string,
+  title: string,
+  overrides: Partial<Hit<"task">> = {},
+): FoundItem {
+  return {
+    kind: "task",
+    taskId,
+    title,
+    snippet: "",
+    dueDate: null,
+    isCompleted: false,
+    ...overrides,
+  };
+}
+
+export function makeTagHit(
+  tagId: string,
+  name: string,
+  overrides: Partial<Hit<"tag">> = {},
+): FoundItem {
+  return {
+    kind: "tag",
+    tagId,
+    name,
+    colorHex: "#4C8DFF",
+    noteCount: 1,
+    pendingCount: 1,
     ...overrides,
   };
 }
@@ -63,15 +132,13 @@ export class FakeApi implements TasksApi {
     return task;
   }
 
-  async tasksList(query: { view: "todo" | "agenda" }): Promise<TasksSections> {
-    await this.#enter("tasksList", query.view);
+  async tasksListAll(): Promise<TasksSections> {
+    await this.#enter("tasksListAll");
     const live = this.tasks.filter((task) => !this.#deleted.has(task.id));
-    return query.view === "todo"
-      ? {
-          todo: sortTodo(live.filter((task) => task.dueDate === null)),
-          agenda: [],
-        }
-      : { todo: [], agenda: groupByDay(live) };
+    return {
+      todo: sortTodo(live.filter((task) => task.dueDate === null)),
+      agenda: groupByDay(live),
+    };
   }
 
   async taskCreate(input: {

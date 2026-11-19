@@ -440,7 +440,7 @@ describe("multiple selection (F17-03)", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Completar" }));
     await waitFor(() => expect(store.find("a")?.isCompleted).toBe(true));
     expect(store.find("b")?.isCompleted).toBe(false);
-    expect(screen.getByText("2 tareas completadas")).toBeTruthy();
+    expect(await screen.findByText("2 tareas completadas")).toBeTruthy();
 
     key({ key: "z", ctrlKey: true }, rowFor("Dos"));
     await waitFor(() => expect(store.find("a")?.isCompleted).toBe(false));
@@ -458,7 +458,7 @@ describe("multiple selection (F17-03)", () => {
 describe("load states", () => {
   it("announces a failed load with a retry instead of an empty list", async () => {
     const api = new FakeApi([makeTask({ id: "a", title: "Una" })]);
-    api.failing.add("tasksList");
+    api.failing.add("tasksListAll");
     const store = new TasksStore({ api, settleMs: () => 0 });
     await store.load();
     render(TodoView, { store });

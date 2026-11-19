@@ -75,21 +75,24 @@ export class NoteLinks {
     return this.#host.api.notesOrphans();
   }
 
-  /** Looks up the titles of notes not known yet; unknown or removed notes stay unknown. */
+  /** Looks up, in one batch, the titles of notes not known yet; unknown or removed notes stay unknown. */
   async ensureTitles(ids: readonly string[]): Promise<void> {
     const unknown = ids.filter(
       (id, at) => ids.indexOf(id) === at && !this.titles.has(id),
     );
-    await Promise.all(
-      unknown.map(async (id) => {
-        try {
-          this.titles.set(id, (await this.#host.api.noteGet(id)).title);
-          this.missing.delete(id);
-        } catch {
-          // A trashed or purged note has no title to show: its links read as removed.
-          this.missing.add(id);
-        }
-      }),
-    );
+    if (unknown.length === 0) return;
+    try {
+      const found = await this.#host.api.noteTitles(unknown);
+      const live = new SvelteSet<string>();
+      for (const { id, title } of found) {
+        this.titles.set(id, title);
+        this.missing.delete(id);
+        live.add(id);
+      }
+      // A trashed or purged note has no title to show: its links read as removed.
+      for (const id of unknown) if (!live.has(id)) this.missing.add(id);
+    } catch {
+      // Without an answer nothing is known about them; they are asked for again next time.
+    }
   }
 }

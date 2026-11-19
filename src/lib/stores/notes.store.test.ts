@@ -306,24 +306,17 @@ describe("NotesStore", () => {
   });
 
   it("looks up the titles of the notes tasks come from, once each", async () => {
-    const { api, store } = await loaded((fake) => {
-      fake.notes = [
-        note("n1", { title: "Reunión" }),
-        note("n2", { title: "Plan" }),
-      ];
-    });
-    let lookups = 0;
-    const original = api.noteGet.bind(api);
-    api.noteGet = async (id) => {
-      lookups += 1;
-      return original(id);
-    };
+    const { api, store } = await loaded();
+    api.notes = [
+      note("n1", { title: "Reunión" }),
+      note("n2", { title: "Plan" }),
+    ];
     await store.ensureTitles(["n1", "n2", "n1", "gone"]);
+    expect(api.titleLookups).toEqual([["n1", "n2", "gone"]]);
     expect(store.titleOf("n1")).toBe("Reunión");
     expect(store.titleOf("gone")).toBeUndefined();
-    const first = lookups;
     await store.ensureTitles(["n1", "n2"]);
-    expect(lookups).toBe(first);
+    expect(api.titleLookups).toHaveLength(1);
   });
 
   it("creates a note with given contents and opens it", async () => {
