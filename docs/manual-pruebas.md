@@ -386,3 +386,11 @@ Todo lo de esta sección requiere Windows 11 real; ninguno está verificado.
 - [ ] A12-03: instalar encima de una versión anterior con la aplicación abierta: el instalador cierra o avisa del proceso `agendo.exe` y no deja archivos bloqueados. Comparar `src-tauri/tauri.conf.json` (`bundle.windows.nsis`) con la plantilla NSIS de Tauri v2 y anotar el diff.
 - [ ] A12-04: pasada final en Windows 11 de todas las secciones anteriores de este manual (instalación limpia y actualización, Mica y tema claro/oscuro/sistema, recordatorios con la aplicación cerrada, copia de seguridad y restauración, importación y exportación, adjuntos, atajos) con la versión que se vaya a publicar; marcar aquí solo lo que una persona haya comprobado.
 - [ ] D-70 (si se acepta la opción C): revisión visual de todas las vistas tras retirar Tailwind (márgenes de encabezados, botones y campos, imágenes).
+
+## Auditoría A8 (`[H]`)
+
+Refactor de estructura sin cambios de comportamiento; ninguno está verificado en Windows 11.
+
+- [ ] A8-02: atajos Ctrl+K, Ctrl+P, Ctrl+N (con y sin un diálogo abierto), Ctrl+1..3 de sección y cambio de vista de agenda; recordatorio de tarea y de nota (aviso y clic en la notificación abren su destino); paleta, menú contextual, diálogo de tarea, vista de tarea y ajustes se abren por encima del botón «+» y del aviso de deshacer.
+- [ ] A8-03: en una nota, escribir `#` (lista de etiquetas con flechas, Enter, Tab y Esc) y `[[` (lista de notas, opción «crear», Esc); el menú contextual del editor, de tareas, notas, carpetas y etiquetas ofrece las mismas entradas que antes.
+- [ ] A8-05: Ajustes > Acerca de: el botón carga y muestra la información con el mismo aspecto (rejilla, textos secundarios) que antes.

@@ -1,10 +1,15 @@
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
+import { SvelteSet } from "svelte/reactivity";
 
 import * as backend from "../api";
 import { parseError } from "../api";
 import { formatDisplayDate } from "../dates";
 import { t } from "../i18n";
-import { plainQuery } from "../features/notes/linkQuery";
+import { walkFolders, type FolderRow } from "./notesFolders";
+import type { NotesHost } from "./notesHost";
+import { NoteLinks } from "./notesLinks.svelte";
+import { NoteReminders } from "./notesReminders.svelte";
+import { NoteTemplates } from "./notesTemplates.svelte";
+import { NoteVersions } from "./notesVersions.svelte";
 import type {
   FolderUpsertInput,
   FolderWithCount,
@@ -75,12 +80,7 @@ export type ScopeKey =
 export type NotesSortKey = "updated" | "created" | "title";
 
 /** One visible row of the folder tree. */
-export interface FolderRow {
-  folder: FolderWithCount;
-  depth: number;
-  hasChildren: boolean;
-  expanded: boolean;
-}
+export type { FolderRow };
 
 export interface Notice {
   kind: "info" | "error";
@@ -122,9 +122,6 @@ export class NotesStore {
   openInTrash = $state(false);
   status = $state<"idle" | "ready" | "error">("idle");
   notice = $state.raw<Notice | null>(null);
-  /** Templates for new notes (F13-02), loaded when the dialog opens. */
-  templates = $state.raw<NoteTemplate[]>([]);
-  templatesOpen = $state(false);
   /** Grows when the open note is replaced from outside the editor (a restored version). */
   revision = $state(0);
   /** Notes sent to the trash in this session, newest last, to bring them back. */
@@ -132,16 +129,19 @@ export class NotesStore {
   /** Folders whose children are shown. */
   readonly expanded = new SvelteSet<string>();
 
-  /** Titles of notes tasks come from, so a task can name its note without opening it. */
-  readonly titles = new SvelteMap<string, string>();
-
-  /** Notes known to be in the trash or gone: links to them show as removed. */
-  readonly missing = new SvelteSet<string>();
-
   /** Ids of the notes opened last, most recent first (F11-05). */
   recent = $state.raw<string[]>([]);
 
+  /** Titles of notes tasks come from, so a task can name its note without opening it. */
+  readonly titles: NoteLinks["titles"];
+  /** Notes known to be in the trash or gone: links to them show as removed. */
+  readonly missing: NoteLinks["missing"];
+
   readonly #api: NotesApi;
+  readonly #links: NoteLinks;
+  readonly #templates: NoteTemplates;
+  readonly #versions: NoteVersions;
+  readonly #reminders: NoteReminders;
   #listToken = 0;
   #loading: Promise<void> | null = null;
 
@@ -180,27 +180,45 @@ export class NotesStore {
 
   constructor(api: NotesApi = backend) {
     this.#api = api;
+    const host: NotesHost = {
+      api,
+      fail: (message) => this.#fail(message),
+      inform: (message) => {
+        this.notice = { kind: "info", message };
+      },
+      refreshAll: () => this.#refreshAll(),
+      refreshList: () => this.#refreshList(),
+      show: (note) => this.#show(note),
+      adopt: (note) => this.#adopt(note),
+      bumpRevision: () => {
+        this.revision += 1;
+      },
+      openNote: () => this.open,
+      createNoteWith: (input) => this.createNoteWith(input),
+    };
+    this.#links = new NoteLinks(host);
+    this.#templates = new NoteTemplates(host);
+    this.#versions = new NoteVersions(host, this.#links);
+    this.#reminders = new NoteReminders(host, this.#links);
+    this.titles = this.#links.titles;
+    this.missing = this.#links.missing;
+  }
+
+  /** Templates for new notes (F13-02), loaded when the dialog opens. */
+  get templates(): NoteTemplate[] {
+    return this.#templates.items;
+  }
+
+  get templatesOpen(): boolean {
+    return this.#templates.isOpen;
+  }
+
+  set templatesOpen(value: boolean) {
+    this.#templates.isOpen = value;
   }
 
   #walk(all: boolean): FolderRow[] {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const children = new Map<string | null, FolderWithCount[]>();
-    for (const folder of this.folders) {
-      const list = children.get(folder.parentId) ?? [];
-      list.push(folder);
-      children.set(folder.parentId, list);
-    }
-    const result: FolderRow[] = [];
-    const walk = (parent: string | null, depth: number) => {
-      for (const folder of children.get(parent) ?? []) {
-        const hasChildren = children.has(folder.id);
-        const expanded = hasChildren && this.expanded.has(folder.id);
-        result.push({ folder, depth, hasChildren, expanded });
-        if (all || expanded) walk(folder.id, depth + 1);
-      }
-    };
-    walk(null, 0);
-    return result;
+    return walkFolders(this.folders, (id) => this.expanded.has(id), all);
   }
 
   /** Loads once at a time: callers that arrive while it runs share the same work. */
@@ -218,75 +236,38 @@ export class NotesStore {
 
   /** The title of a note known by id, if it has been looked up. */
   titleOf(id: string): string | undefined {
-    return this.titles.get(id);
+    return this.#links.titleOf(id);
   }
 
   /** The title a link shows: `null` for a removed note, `undefined` while it is unknown. */
   linkTitle(id: string): string | null | undefined {
-    if (this.missing.has(id)) return null;
-    return this.titles.get(id);
+    return this.#links.linkTitle(id);
   }
 
-  /** Notes to offer when a link is being typed: the title (or, with no text, the recent ones). */
-  async suggest(
+  suggest(
     text: string,
-    limit = 6,
+    limit?: number,
   ): Promise<{ id: string; title: string }[]> {
-    const found = await this.#api.searchAll(
-      `is:nota ${plainQuery(text)}`,
-      limit,
-    );
-    return found.flatMap((item) =>
-      item.kind === "note" ? [{ id: item.noteId, title: item.title }] : [],
-    );
+    return this.#links.suggest(text, limit);
   }
 
-  /** A note made while linking to it: it is shown in the list but the open note stays open. */
-  async createLinkedNote(
+  createLinkedNote(
     title: string,
     folderId: string | null,
   ): Promise<Note | null> {
-    try {
-      const note = await this.#api.noteCreate({
-        title,
-        ...(folderId ? { folderId } : {}),
-      });
-      this.titles.set(note.id, note.title);
-      this.missing.delete(note.id);
-      await this.#refreshAll();
-      return note;
-    } catch {
-      this.#fail(t.notesApp.linkCreateFailed);
-      return null;
-    }
+    return this.#links.createLinkedNote(title, folderId);
   }
 
-  /** Notes that link to this one. */
   backlinks(id: string): Promise<NoteSummary[]> {
-    return this.#api.noteBacklinks(id);
+    return this.#links.backlinks(id);
   }
 
-  /** Notes without links to or from any other. */
   orphans(): Promise<NoteSummary[]> {
-    return this.#api.notesOrphans();
+    return this.#links.orphans();
   }
 
-  /** Looks up the titles of notes not known yet; unknown or removed notes stay unknown. */
-  async ensureTitles(ids: readonly string[]): Promise<void> {
-    const missing = ids.filter(
-      (id, at) => ids.indexOf(id) === at && !this.titles.has(id),
-    );
-    await Promise.all(
-      missing.map(async (id) => {
-        try {
-          this.titles.set(id, (await this.#api.noteGet(id)).title);
-          this.missing.delete(id);
-        } catch {
-          // A trashed or purged note has no title to show: its links read as removed.
-          this.missing.add(id);
-        }
-      }),
-    );
+  ensureTitles(ids: readonly string[]): Promise<void> {
+    return this.#links.ensureTitles(ids);
   }
 
   /** Creates a note with these contents, shows it and opens it. */
@@ -312,141 +293,55 @@ export class NotesStore {
     }
   }
 
-  async reminderGet(noteId: string): Promise<NoteReminder | null> {
-    try {
-      return await this.#api.noteReminderGet(noteId);
-    } catch {
-      this.#fail(t.notesApp.reminder.failed);
-      return null;
-    }
+  reminderGet(noteId: string): Promise<NoteReminder | null> {
+    return this.#reminders.get(noteId);
   }
 
-  /** Sets (`notifyAt` as a UTC instant) or clears (`null`) the reminder; returns what is set. */
-  async reminderSet(
+  reminderSet(
     noteId: string,
     notifyAt: string | null,
   ): Promise<{ ok: boolean; reminder: NoteReminder | null }> {
-    try {
-      return {
-        ok: true,
-        reminder: await this.#api.noteReminderSet(noteId, notifyAt),
-      };
-    } catch (error) {
-      this.#fail(parseError(error).message || t.notesApp.reminder.failed);
-      return { ok: false, reminder: null };
-    }
+    return this.#reminders.set(noteId, notifyAt);
   }
 
-  /** The scheduler delivered the reminder of a note: say so in the notes section. */
-  async onReminderFired(noteId: string): Promise<void> {
-    let title = this.titles.get(noteId);
-    if (title === undefined) {
-      try {
-        title = (await this.#api.noteGet(noteId)).title;
-      } catch {
-        return;
-      }
-    }
-    this.notice = {
-      kind: "info",
-      message: t.notesApp.reminder.fired(title.trim() || t.notesApp.untitled),
-    };
+  onReminderFired(noteId: string): Promise<void> {
+    return this.#reminders.onFired(noteId);
   }
 
-  async versionList(noteId: string): Promise<NoteVersionSummary[]> {
-    try {
-      return await this.#api.noteVersionsList(noteId);
-    } catch {
-      this.#fail(t.notesApp.history.failed);
-      return [];
-    }
+  versionList(noteId: string): Promise<NoteVersionSummary[]> {
+    return this.#versions.list(noteId);
   }
 
-  async versionGet(id: string): Promise<NoteVersion | null> {
-    try {
-      return await this.#api.noteVersionGet(id);
-    } catch {
-      this.#fail(t.notesApp.history.failed);
-      return null;
-    }
+  versionGet(id: string): Promise<NoteVersion | null> {
+    return this.#versions.get(id);
   }
 
-  /** Puts a version back in its note; the editor is rebuilt with the restored text. */
-  async restoreVersion(id: string): Promise<boolean> {
-    try {
-      const restored = await this.#api.noteVersionRestore(id);
-      this.titles.set(restored.id, restored.title);
-      this.#adopt(restored);
-      this.revision += 1;
-      await this.#refreshList().catch(() => undefined);
-      this.notice = { kind: "info", message: t.notesApp.history.restored };
-      return true;
-    } catch {
-      this.#fail(t.notesApp.history.failed);
-      return false;
-    }
+  restoreVersion(id: string): Promise<boolean> {
+    return this.#versions.restore(id);
   }
 
-  async openTemplates(): Promise<void> {
-    this.templatesOpen = true;
-    await this.loadTemplates();
+  openTemplates(): Promise<void> {
+    return this.#templates.openDialog();
   }
 
-  async loadTemplates(): Promise<void> {
-    try {
-      this.templates = await this.#api.templateList();
-    } catch {
-      this.#fail(t.notesApp.templatesFailed);
-    }
+  loadTemplates(): Promise<void> {
+    return this.#templates.load();
   }
 
-  /** Saves the open note as a template, or rewrites `id` with it. */
-  async saveOpenAsTemplate(name: string, id?: string): Promise<boolean> {
-    return this.#saveTemplate({
-      name,
-      ...(id ? { id } : {}),
-      ...(this.open ? { contentJson: this.open.contentJson } : {}),
-    });
+  saveOpenAsTemplate(name: string, id?: string): Promise<boolean> {
+    return this.#templates.saveOpen(name, id);
   }
 
-  async renameTemplate(id: string, name: string): Promise<boolean> {
-    return this.#saveTemplate({ id, name });
+  renameTemplate(id: string, name: string): Promise<boolean> {
+    return this.#templates.rename(id, name);
   }
 
-  async #saveTemplate(input: {
-    id?: string;
-    name: string;
-    contentJson?: string;
-  }): Promise<boolean> {
-    try {
-      await this.#api.templateSave(input);
-      await this.loadTemplates();
-      return true;
-    } catch (error) {
-      const message = parseError(error).message;
-      this.#fail(message || t.notesApp.templatesFailed);
-      return false;
-    }
+  deleteTemplate(id: string): Promise<void> {
+    return this.#templates.remove(id);
   }
 
-  async deleteTemplate(id: string): Promise<void> {
-    try {
-      await this.#api.templateDelete(id);
-      await this.loadTemplates();
-    } catch {
-      this.#fail(t.notesApp.templatesFailed);
-    }
-  }
-
-  /** A new note that starts as the template, shown and opened. */
-  async createFromTemplate(id: string): Promise<Note | null> {
-    const template = this.templates.find((item) => item.id === id);
-    if (!template) return null;
-    this.templatesOpen = false;
-    return this.createNoteWith({
-      title: template.name,
-      contentJson: template.contentJson,
-    });
+  createFromTemplate(id: string): Promise<Note | null> {
+    return this.#templates.createNote(id);
   }
 
   /** Opens the note of a day (`YYYY-MM-DD`), creating it the first time (F13-01). */

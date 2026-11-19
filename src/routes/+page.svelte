@@ -1,51 +1,34 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
 
-  import { onReminderFired, onReminderOpen, onTasksChanged } from "$lib/api";
-  import {
-    convertTaskToNote,
-    createNoteForTask,
-    showDailyNote,
-    showNote,
-  } from "$lib/features/notes/navigation";
-  import type { PaletteMode } from "$lib/features/palette/palette";
+  import { showDailyNote, showNote } from "$lib/features/notes/navigation";
   import TagDragGhost from "$lib/features/tags/TagDragGhost.svelte";
   import TagSidebar from "$lib/features/tags/TagSidebar.svelte";
   import TodoView from "$lib/features/todo/TodoView.svelte";
   import { t } from "$lib/i18n";
-  import { findShortcut, focusContextOf, ROW_ATTRIBUTE } from "$lib/keymap";
+  import { ROW_ATTRIBUTE } from "$lib/keymap";
+  import { listenBackendEvents } from "$lib/shell/backendEvents";
+  import DialogHost from "$lib/shell/DialogHost.svelte";
+  import { DialogState } from "$lib/shell/dialogs.svelte";
   import EmptyState from "$lib/shell/EmptyState.svelte";
   import SegmentedControl from "$lib/shell/SegmentedControl.svelte";
+  import { dispatchShortcut } from "$lib/shell/shortcuts";
   import Toast from "$lib/shell/Toast.svelte";
-  import { settingsStore } from "$lib/stores/settings.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
   import { folderDrag, tagDrag } from "$lib/stores/tagDrag.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
   import { tasksStore } from "$lib/stores/tasks.svelte";
   import { viewStore, type Section } from "$lib/stores/view.svelte";
-  import type { Task, ViewMode } from "$lib/types";
+  import type { Task } from "$lib/types";
 
   type ViewSection = "list" | "calendar";
 
-  let settingsOpen = $state(false);
-  let newTaskOpen = $state(false);
-  /** The day the creation dialog starts on, when it was opened from a day of the calendar. */
-  let newTaskDate = $state<string | null>(null);
-  function openNewTask(date: string | null = null) {
-    newTaskDate = date;
-    newTaskOpen = true;
-  }
+  const dialogs = new DialogState();
 
   // Narrow windows start with the sidebar folded so the content keeps its room.
   let sidebarOpen = $state(
     typeof window === "undefined" || window.innerWidth >= 900,
   );
-  /** The task whose view is open (opened from the calendar). */
-  let detailId = $state<string | null>(null);
-  /** The command palette (Ctrl+K) or "Ir a…" (Ctrl+P) while it is open. */
-  let palette = $state<PaletteMode | null>(null);
-  /** The task being edited in the creation dialog; the view comes back when it closes. */
-  let editing = $state.raw<Task | null>(null);
 
   // The tag filter only hides tasks: in the notes there is nothing to warn about.
   const filterShown = $derived(
@@ -72,29 +55,15 @@
     { value: "today", label: t.notesApp.today },
   ];
 
-  const SHORTCUT_VIEWS: Record<string, ViewMode> = {
-    viewList: "list",
-    viewDay: "day",
-    viewWeek: "week",
-    viewMonth: "month",
-  };
-
   // The calendar is a separate chunk: it is only requested when a calendar view is shown, so
   // it does not weigh on startup (N-01).
   const loadCalendar = () =>
     import("$lib/features/calendar/CalendarView.svelte");
 
-  // Dialogs and the palette are only needed once opened, so they stay out of the first load.
+  // Dialogs and the palette load from `DialogHost`; views are only requested once shown.
   const loadFolders = () => import("$lib/features/notes/FolderSidebar.svelte");
   const loadNotes = () => import("$lib/features/notes/NotesView.svelte");
   const loadToday = () => import("$lib/features/today/TodayView.svelte");
-  const loadMenu = () => import("$lib/features/context/ContextMenu.svelte");
-  const loadPalette = () => import("$lib/features/palette/PaletteHost.svelte");
-  const loadTaskDialog = () => import("$lib/features/todo/TaskDialog.svelte");
-  const loadTaskDetail = () =>
-    import("$lib/features/todo/TaskDetailDialog.svelte");
-  const loadSettings = () =>
-    import("$lib/features/settings/SettingsDialog.svelte");
 
   // Tasks made from a note name it (F10-05): look the titles up as tasks come and go.
   // The key is a string so the effect only reruns when the set of origin notes changes, not on
@@ -129,36 +98,21 @@
     void tagsStore.load();
     void tasksStore.load();
     void viewStore.load();
-    // A listener that cannot be registered (no backend) must not surface as an unhandled
-    // rejection; one registered after the page left is still released by the cleanup below.
-    const stops = [
-      onReminderFired((fired) => {
-        if (fired.taskId) return tasksStore.onReminderFired(fired.taskId);
-        if (fired.noteId) return notesStore.onReminderFired(fired.noteId);
-      }),
-      onTasksChanged(() => void tasksStore.refresh()),
-      onReminderOpen((target) => {
-        if (target.taskId) void showTask(target.taskId);
-        else if (target.noteId) void showNote(target.noteId);
-      }),
-    ].map((listener) => listener.catch(() => undefined));
+    const stop = listenBackendEvents({
+      taskReminderFired: (taskId) => tasksStore.onReminderFired(taskId),
+      noteReminderFired: (noteId) => notesStore.onReminderFired(noteId),
+      tasksChanged: () => void tasksStore.refresh(),
+      openTask: (taskId) => void showTask(taskId),
+      openNote: (noteId) => void showNote(noteId),
+    });
     return () => {
-      for (const stop of stops) void stop.then((release) => release?.());
+      stop();
       tasksStore.dispose();
     };
   });
 
-  function onRestored() {
-    tagsStore.showAll();
-    void tagsStore.load();
-    void tasksStore.load();
-    void viewStore.load();
-    // Folders, notes and tags changed too; the notes view reads them again if it was loaded.
-    if (notesStore.status !== "idle") void notesStore.load();
-  }
-
   async function openInList(task: Task) {
-    detailId = null;
+    dialogs.detailId = null;
     if (!tagsStore.isVisible(task)) tagsStore.showAll();
     viewStore.setMode("list");
     if (!tasksStore.reveal(task.id)) return;
@@ -176,49 +130,23 @@
     await tick();
     const task = tasksStore.find(taskId);
     if (task) await openInList(task);
-    else detailId = taskId;
+    else dialogs.detailId = taskId;
   }
 
   function onKeydown(event: KeyboardEvent) {
-    const shortcut = findShortcut(event, focusContextOf(event.target));
-    if (shortcut === "openSearch" || shortcut === "quickOpen") {
-      event.preventDefault();
-      palette = shortcut === "openSearch" ? "all" : "notes";
-      return;
-    }
-    if (
-      shortcut === "goAgenda" ||
-      shortcut === "goNotes" ||
-      shortcut === "goToday"
-    ) {
-      event.preventDefault();
-      viewStore.setSection(
-        shortcut === "goAgenda"
-          ? "agenda"
-          : shortcut === "goNotes"
-            ? "notes"
-            : "today",
-      );
-      return;
-    }
-    if (shortcut === "newTask" && viewStore.section === "agenda") {
-      // A dialog already on top (settings, a task) owns the keyboard.
-      if (document.querySelector('[aria-modal="true"]')) return;
-      event.preventDefault();
-      const target = tasksStore.defaultTarget();
-      openNewTask(
-        viewStore.mode !== "list"
-          ? null
-          : target.section === "agenda"
-            ? target.date
-            : null,
-      );
-      return;
-    }
-    const mode = shortcut ? SHORTCUT_VIEWS[shortcut] : undefined;
-    if (!mode || viewStore.section !== "agenda") return;
-    event.preventDefault();
-    viewStore.setMode(mode);
+    dispatchShortcut(event, {
+      section: () => viewStore.section,
+      mode: () => viewStore.mode,
+      setSection: (section) => viewStore.setSection(section),
+      setMode: (mode) => viewStore.setMode(mode),
+      openPalette: (mode) => (dialogs.palette = mode),
+      newTaskDate: () => {
+        const target = tasksStore.defaultTarget();
+        return target.section === "agenda" ? target.date : null;
+      },
+      openNewTask: (date) => dialogs.openNewTask(date),
+      modalOpen: () => document.querySelector('[aria-modal="true"]') !== null,
+    });
   }
 </script>
 
@@ -295,7 +223,7 @@
           aria-label={t.settings.open}
           title={t.settings.open}
           aria-haspopup="dialog"
-          onclick={() => (settingsOpen = true)}
+          onclick={() => (dialogs.settingsOpen = true)}
         >
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
             <path
@@ -334,7 +262,7 @@
               notes={notesStore}
               tags={tagsStore}
               tasks={tasksStore}
-              onPreviewTask={(taskId) => (detailId = taskId)}
+              onPreviewTask={(taskId) => (dialogs.detailId = taskId)}
               onOpenTask={(task) => {
                 viewStore.setSection("agenda");
                 void openInList(task);
@@ -349,7 +277,7 @@
               store={tasksStore}
               notes={notesStore}
               view={viewStore}
-              onOpenTask={(taskId) => (detailId = taskId)}
+              onOpenTask={(taskId) => (dialogs.detailId = taskId)}
               onOpenNote={(noteId) => void showNote(noteId)}
               onOpenDaily={(date) => void showDailyNote(date)}
             />
@@ -367,7 +295,7 @@
             <module.default
               store={tasksStore}
               view={viewStore}
-              onOpenTask={(task: Task) => (detailId = task.id)}
+              onOpenTask={(task: Task) => (dialogs.detailId = task.id)}
             />
           {:catch}
             <EmptyState variant="error" title={t.calendar.loadFailed} />
@@ -378,34 +306,6 @@
   </div>
 </div>
 
-{#if palette}
-  {#await loadPalette() then { default: PaletteHost }}
-    <PaletteHost
-      mode={palette}
-      onTask={(taskId) => void showTask(taskId)}
-      onNewTask={() => openNewTask()}
-      onClose={() => (palette = null)}
-    />
-  {/await}
-{/if}
-
-{#await loadMenu() then { default: ContextMenu }}
-  <ContextMenu
-    deps={{
-      view: viewStore,
-      tasks: tasksStore,
-      tags: tagsStore,
-      notes: notesStore,
-      newTask: openNewTask,
-      editTask: (task) => (editing = task),
-      openTask: (taskId) => (detailId = taskId),
-      showNote,
-      noteForTask: createNoteForTask,
-      taskToNote: convertTaskToNote,
-    }}
-  />
-{/await}
-
 {#if viewStore.section === "agenda"}
   <button
     type="button"
@@ -413,7 +313,7 @@
     title={t.newTask.buttonHint}
     aria-label={t.newTask.button}
     aria-haspopup="dialog"
-    onclick={() => openNewTask()}
+    onclick={() => dialogs.openNewTask()}
   >
     <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
       <path
@@ -429,39 +329,6 @@
 
 <TagDragGhost drag={tagDrag} />
 <TagDragGhost drag={folderDrag} hint={t.notesApp.dragHint} />
-
-{#if newTaskOpen}
-  {#await loadTaskDialog() then { default: TaskDialog }}
-    <TaskDialog
-      store={tasksStore}
-      defaultDate={newTaskDate ??
-        (viewStore.mode === "list" ? null : viewStore.anchor)}
-      onClose={() => (newTaskOpen = false)}
-    />
-  {/await}
-{/if}
-
-{#if detailId && !editing}
-  {#await loadTaskDetail() then { default: TaskDetailDialog }}
-    <TaskDetailDialog
-      store={tasksStore}
-      taskId={detailId}
-      onEdit={(task) => (editing = task)}
-      onShowInList={(task) => void openInList(task)}
-      onClose={() => (detailId = null)}
-    />
-  {/await}
-{/if}
-
-{#if editing}
-  {#await loadTaskDialog() then { default: TaskDialog }}
-    <TaskDialog
-      store={tasksStore}
-      task={editing}
-      onClose={() => (editing = null)}
-    />
-  {/await}
-{/if}
 
 {#if viewStore.section === "agenda" && viewStore.mode !== "list"}
   {#if lastDeletion}
@@ -482,19 +349,11 @@
   {/if}
 {/if}
 
-{#if settingsOpen}
-  {#await loadSettings() then { default: SettingsDialog }}
-    <SettingsDialog
-      store={settingsStore}
-      onClose={() => {
-        settingsOpen = false;
-        // The default notification time moves saved reminders, which tasks hold a copy of.
-        void tasksStore.load();
-      }}
-      {onRestored}
-    />
-  {/await}
-{/if}
+<DialogHost
+  {dialogs}
+  onShowTask={(taskId) => void showTask(taskId)}
+  onShowInList={(task) => void openInList(task)}
+/>
 
 <style>
   .shell {
