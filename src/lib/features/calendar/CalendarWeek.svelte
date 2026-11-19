@@ -4,20 +4,13 @@
   import { t } from "../../i18n";
   import { timeRange } from "../../schedule";
   import type { Tag, Task } from "../../types";
-  import {
-    BLOCK_MINUTES,
-    SNAP_MINUTES,
-    layoutDay,
-    minutesToTime,
-    snapSpan,
-  } from "./grid";
+  import { layoutDay, minutesToTime } from "./grid";
   import { dayNumber, weekdayName } from "./labels";
+  import { WeekCompose } from "./weekCompose.svelte";
 
   /** Pixels per hour. The whole day is 24 of them; the grid scrolls. */
   const HOUR_PX = 48;
   const FIRST_VISIBLE_HOUR = 7;
-  /** Where a task made from the keyboard on a day other than today starts. */
-  const DEFAULT_START_MINUTES = 9 * 60;
 
   interface Props {
     /** The columns: seven dates for a week, one for a day. */
@@ -56,19 +49,6 @@
     onOpenTask,
   }: Props = $props();
 
-  interface Drag {
-    date: string;
-    anchor: number;
-    current: number;
-  }
-  interface Compose {
-    date: string;
-    start: number;
-    end: number;
-    /** Dragged over more than one step: the length is the task's duration. */
-    sized: boolean;
-  }
-
   let scroller: HTMLElement | undefined = $state();
   // The body scrolls and its scrollbar narrows the columns; the fixed rows above get the same
   // width taken away so every column line stays on the same x.
@@ -79,18 +59,14 @@
       scrollbarWidth = Math.max(0, scroller.offsetWidth - scroller.clientWidth);
     }
   }
-  let drag = $state.raw<Drag | null>(null);
-  let compose = $state.raw<Compose | null>(null);
-  let title = $state("");
-  let dragColumn: HTMLElement | null = null;
-  let committing = false;
+  const week = new WeekCompose({
+    hourPx: HOUR_PX,
+    today: () => today,
+    nowMinutes: () => nowMinutes,
+    onCreate: (...args) => onCreate(...args),
+  });
 
   const showNow = $derived(dates.includes(today));
-  const dragSpan = $derived(
-    drag ? { date: drag.date, ...snapSpan(drag.anchor, drag.current) } : null,
-  );
-  const selection = $derived(dragSpan ?? compose);
-
   const columns = $derived(
     dates.map((date) => {
       const tasks = tasksByDate.get(date) ?? [];
@@ -111,106 +87,7 @@
     measureScrollbar();
   });
 
-  const minutesAt = (event: MouseEvent, element: HTMLElement) =>
-    ((event.clientY - element.getBoundingClientRect().top) / HOUR_PX) * 60;
-
   const top = (minutes: number) => (minutes / 60) * HOUR_PX;
-
-  function onPointerDown(event: PointerEvent, date: string) {
-    if (event.button !== 0) return;
-    const target = event.target;
-    if (
-      target instanceof Element &&
-      target.closest("[data-block], [data-quick-create]")
-    ) {
-      return;
-    }
-    const element = event.currentTarget;
-    if (!(element instanceof HTMLElement)) return;
-    dragColumn = element;
-    const minutes = minutesAt(event, element);
-    compose = null;
-    drag = { date, anchor: minutes, current: minutes };
-    event.preventDefault();
-  }
-
-  function onPointerMove(event: PointerEvent) {
-    if (!drag || !dragColumn) return;
-    drag = { ...drag, current: minutesAt(event, dragColumn) };
-  }
-
-  function onPointerUp(event: PointerEvent) {
-    if (!drag || !dragColumn) return;
-    const finished = { ...drag, current: minutesAt(event, dragColumn) };
-    drag = null;
-    dragColumn = null;
-    const span = snapSpan(finished.anchor, finished.current);
-    compose = {
-      date: finished.date,
-      ...span,
-      sized: span.end - span.start > SNAP_MINUTES,
-    };
-    title = "";
-  }
-
-  /** Keyboard route to what a drag does: Enter on a day column opens the quick title. */
-  function onColumnKeydown(event: KeyboardEvent, date: string) {
-    if (event.target !== event.currentTarget) return;
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    const start =
-      date === today
-        ? Math.min(
-            Math.ceil(nowMinutes / BLOCK_MINUTES) * BLOCK_MINUTES,
-            24 * 60 - BLOCK_MINUTES,
-          )
-        : DEFAULT_START_MINUTES;
-    drag = null;
-    compose = { date, start, end: start + BLOCK_MINUTES, sized: false };
-    title = "";
-  }
-
-  function cancelCompose() {
-    compose = null;
-    title = "";
-  }
-
-  async function commit() {
-    const pending = compose;
-    const text = title.trim();
-    if (!pending || committing) return;
-    if (!text) {
-      cancelCompose();
-      return;
-    }
-    committing = true;
-    try {
-      // A dragged span becomes the duration; a plain click only picks the start (B-04, D-33).
-      if (
-        await onCreate(
-          text,
-          pending.date,
-          minutesToTime(pending.start),
-          pending.sized ? pending.end - pending.start : undefined,
-        )
-      ) {
-        cancelCompose();
-      }
-    } finally {
-      committing = false;
-    }
-  }
-
-  function onQuickKeydown(event: KeyboardEvent) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      void commit();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      cancelCompose();
-    }
-  }
 
   function focusOnMount(node: HTMLElement) {
     node.focus();
@@ -220,8 +97,8 @@
 </script>
 
 <svelte:window
-  onpointermove={onPointerMove}
-  onpointerup={onPointerUp}
+  onpointermove={(event) => week.pointerMove(event)}
+  onpointerup={(event) => week.pointerUp(event)}
   onresize={measureScrollbar}
 />
 
@@ -285,8 +162,8 @@
           aria-label={t.calendar.createAt(column.date)}
           data-date={column.date}
           style:--hour-px="{HOUR_PX}px"
-          onpointerdown={(event) => onPointerDown(event, column.date)}
-          onkeydown={(event) => onColumnKeydown(event, column.date)}
+          onpointerdown={(event) => week.pointerDown(event, column.date)}
+          onkeydown={(event) => week.columnKeydown(event, column.date)}
         >
           {#each column.placed as item (item.task.id)}
             {@const tag = tagOf?.(item.task)}
@@ -326,20 +203,20 @@
             ></div>
           {/if}
 
-          {#if selection && selection.date === column.date}
+          {#if week.selection && week.selection.date === column.date}
             <div
               class="selection"
               data-selection
-              style:top="{top(selection.start)}px"
-              style:height="{top(selection.end - selection.start)}px"
+              style:top="{top(week.selection.start)}px"
+              style:height="{top(week.selection.end - week.selection.start)}px"
             >
               <span class="span-label">
                 {t.calendar.span(
-                  minutesToTime(selection.start),
-                  minutesToTime(selection.end),
+                  minutesToTime(week.selection.start),
+                  minutesToTime(week.selection.end),
                 )}
               </span>
-              {#if compose && !drag}
+              {#if week.compose && !week.drag}
                 <input
                   class="quick"
                   data-quick-create
@@ -347,10 +224,10 @@
                   autocomplete="off"
                   aria-label={t.calendar.quickTitleLabel}
                   placeholder={t.calendar.quickTitlePlaceholder}
-                  bind:value={title}
+                  bind:value={week.title}
                   use:focusOnMount
-                  onkeydown={onQuickKeydown}
-                  onblur={() => void commit()}
+                  onkeydown={(event) => week.quickKeydown(event)}
+                  onblur={() => void week.commit()}
                 />
               {/if}
             </div>
