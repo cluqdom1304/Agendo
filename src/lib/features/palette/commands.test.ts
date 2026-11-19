@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { NotesStore } from "../../stores/notes.svelte";
 import { TagsStore } from "../../stores/tags.svelte";
@@ -72,14 +72,12 @@ describe("palette commands", () => {
   it("creates a note and opens the smart folders in the notes", async () => {
     const { view, notes, run, notesApi } = setup();
     run("new-note");
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await vi.waitFor(() => expect(notes.open).not.toBeNull());
     expect(view.section).toBe("notes");
-    expect(notes.open).not.toBeNull();
     expect(notesApi.notes).toHaveLength(2);
 
     run("notes-orphans");
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(notes.scope).toBe("orphans");
+    await vi.waitFor(() => expect(notes.scope).toBe("orphans"));
   });
 
   it("shows every tag again", () => {

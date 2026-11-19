@@ -2,34 +2,17 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
 
+import { makeNoteHit, makeTagHit, makeTaskHit } from "../../testing";
 import type { FoundItem } from "../../types";
 import Palette from "./Palette.svelte";
 import type { PaletteMode } from "./palette";
 
-const note = (noteId: string, title: string, snippet = ""): FoundItem => ({
-  kind: "note",
-  noteId,
-  title,
-  snippet,
-  folderId: null,
-  isPinned: false,
-});
-const task = (taskId: string, title: string): FoundItem => ({
-  kind: "task",
-  taskId,
-  title,
-  snippet: "",
-  dueDate: "2026-03-12",
-  isCompleted: false,
-});
-const tag = (tagId: string, name: string): FoundItem => ({
-  kind: "tag",
-  tagId,
-  name,
-  colorHex: "#4C8DFF",
-  noteCount: 2,
-  pendingCount: 1,
-});
+const note = (noteId: string, title: string, snippet = "") =>
+  makeNoteHit(noteId, title, { snippet });
+const task = (taskId: string, title: string) =>
+  makeTaskHit(taskId, title, { dueDate: "2026-03-12" });
+const tag = (tagId: string, name: string) =>
+  makeTagHit(tagId, name, { noteCount: 2, pendingCount: 1 });
 
 function mount(
   search: (query: string) => Promise<FoundItem[]>,
