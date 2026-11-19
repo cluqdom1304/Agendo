@@ -80,7 +80,12 @@
 
 <div class="notes">
   {#if notes.status === "error"}
-    <p class="status" role="alert">{t.notesApp.loadFailed}</p>
+    <EmptyState
+      variant="error"
+      title={t.notesApp.loadFailed}
+      actionLabel={t.tasks.retry}
+      onAction={() => void notes.load()}
+    />
   {:else}
     <div class="column">
       <NoteList
@@ -175,11 +180,5 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-  }
-
-  .status {
-    margin: 0;
-    padding: var(--space-6);
-    color: var(--text-secondary);
   }
 </style>

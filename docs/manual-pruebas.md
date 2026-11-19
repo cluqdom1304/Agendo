@@ -375,3 +375,14 @@ Fase 18 — resumen semanal (F18-04)
 
 Auditoría A1 — seguridad
 - [ ] A1-01: con la versión release (`npm run tauri -- build`), abrir Agendo y comprobar que arranca, que se ven y editan notas con imágenes pegadas, que los diálogos, la paleta, el calendario y los ajustes se muestran con su estilo, y que abrir un enlace `https` de una nota funciona. Si algo falla por la CSP, la consola de WebView2 (F12 con una build de depuración) muestra «Refused to …»: anotar la directiva y avisar.
+## Auditoría A6–A12 (`[H]`)
+
+Todo lo de esta sección requiere Windows 11 real; ninguno está verificado.
+
+- [ ] A6-03: en la vista Día o Semana con la hora actual visible, la línea de «ahora» avanza sola cada minuto y, pasada la medianoche, «Hoy» cambia de día sin reabrir.
+- [ ] A12-01: con la base de datos inaccesible o dañada (renombrar la carpeta de datos con la aplicación cerrada), la lista de tareas muestra «No se pudieron cargar las tareas» con «Reintentar» (no «Sin tareas»), y Notas muestra «No se pudieron cargar las notas» con «Reintentar». Al restaurar la carpeta, «Reintentar» recupera los datos.
+- [ ] A12-01: el estado de carga («Cargando tareas…», «Cargando calendario…») no parpadea de forma molesta al abrir; el Narrador lo anuncia una vez y el error se anuncia como alerta.
+- [ ] A12-02: solo con teclado, recorrer la lista con las flechas, completar con Espacio, borrar con Supr y abrir las acciones de una fila (recordatorios, etiquetas, nota de origen) con la tecla Menú o Mayús+F10; Esc cierra la paleta, la vista previa de imagen y los diálogos, y el foco vuelve al elemento que los abrió.
+- [ ] A12-03: instalar encima de una versión anterior con la aplicación abierta: el instalador cierra o avisa del proceso `agendo.exe` y no deja archivos bloqueados. Comparar `src-tauri/tauri.conf.json` (`bundle.windows.nsis`) con la plantilla NSIS de Tauri v2 y anotar el diff.
+- [ ] A12-04: pasada final en Windows 11 de todas las secciones anteriores de este manual (instalación limpia y actualización, Mica y tema claro/oscuro/sistema, recordatorios con la aplicación cerrada, copia de seguridad y restauración, importación y exportación, adjuntos, atajos) con la versión que se vaya a publicar; marcar aquí solo lo que una persona haya comprobado.
+- [ ] D-70 (si se acepta la opción C): revisión visual de todas las vistas tras retirar Tailwind (márgenes de encabezados, botones y campos, imágenes).

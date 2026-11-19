@@ -483,6 +483,24 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
   - **Aplicación:** el script `npm run size` y los valores de la tabla de Métricas se actualizan en F16-08 (código; no se toca antes de empezar la 2.1.0). Mientras tanto la batería sigue usando el límite actual.
 - **Sincronización con Google (Calendar y Tasks): descartada por el usuario** (2026-11-18); no se planifica en ninguna versión. Motivos recogidos en la conversación: contradice «sin cuentas y sin red en tiempo de ejecución», exigiría una entidad de *evento* distinta de la tarea, un cliente HTTP/TLS (peso), OAuth de escritorio con un proyecto propio en Google Cloud y guardar tokens. Solo se reconsidera si el usuario lo pide expresamente, con un ADR nuevo.
 - **Alternativas descartadas:** subir N-04 a 350 KB o más (quita la presión que mantiene la app ligera); mantener 250/15 sin cambios (obligaría a retirar funciones o a recortar la 2.1.0).
+## D-70 — Tailwind: mantener solo el preflight y las utilidades, o prescindir de él (A10-03)
+
+- **Estado:** `PROPOSED`
+- **Contexto:** `src/app.css` hace `@import "tailwindcss"` (D-14), pero la interfaz usa CSS propio con ámbito de componente y tokens. Medición en un `vite build` con las cuatro variantes de `app.css` (todo el CSS de `build/`, gzip nivel 9):
+
+  | Variante | CSS bruto | CSS gzip |
+  |----------|----------:|---------:|
+  | Sin Tailwind | 95 940 B | 14 939 B |
+  | Solo `preflight.css` | 99 999 B | 16 032 B |
+  | `preflight` + `utilities` (sin `theme`) | 106 568 B | 17 258 B |
+  | Actual (`tailwindcss` completo) | 108 190 B | 17 496 B |
+
+  Tailwind cuesta **2,56 KB gzip** (12,2 KB brutos); el preflight, 1,1 KB, y el resto son utilidades y variables `--tw-*`.
+- **Hallazgos:**
+  - Las utilidades generadas son accidentales: Tailwind escanea el código y convierte en regla cualquier palabra que coincida (`.block`, `.grid`, `.inline`, `.italic`, `.hidden`, `.border`, `.rounded`, `.container`, `.table`, `.shadow`, `.ring`, `.collapse`, `.visible`…). Las clases `block`, `grid`, `inline` e `italic` de la aplicación son nombres propios que hoy reciben además la regla global de Tailwind; no se vio ninguna utilidad escrita a propósito, salvo quizá `h-full`, `grid` y `items-stretch`.
+  - La aplicación **sí depende del preflight**: no hay `box-sizing` ni reinicio de márgenes global en `base.css`, y 26 archivos heredan fuente en botones y campos con `font: inherit` sobre el reinicio del preflight.
+- **Opciones:** (A) mantener como está; (B) importar solo `preflight.css` y `utilities.css` por capas (ahorra 0,24 KB; no merece el riesgo); (C) quitar Tailwind y sustituir el preflight por un reinicio propio de unas 20 líneas en `base.css` (ahorra hasta ~2,4 KB gzip de CSS y dos devDependencies; hay que fijar a mano `box-sizing`, `margin: 0` de encabezados, `button/input/select/textarea { font: inherit }`, `img { display: block }` y revisar visualmente todas las vistas `[H]`).
+- **Recomendación:** C, pero solo con revisión visual en Windows; el CSS no cuenta en el presupuesto de 250 KB de JS y el beneficio principal es eliminar las reglas accidentales y dos dependencias. Mientras no se confirme, A. No se ha tocado nada.
 
 ---
 

@@ -14,6 +14,7 @@
   import TodoView from "$lib/features/todo/TodoView.svelte";
   import { t } from "$lib/i18n";
   import { findShortcut, focusContextOf, ROW_ATTRIBUTE } from "$lib/keymap";
+  import EmptyState from "$lib/shell/EmptyState.svelte";
   import SegmentedControl from "$lib/shell/SegmentedControl.svelte";
   import Toast from "$lib/shell/Toast.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
@@ -96,11 +97,19 @@
     import("$lib/features/settings/SettingsDialog.svelte");
 
   // Tasks made from a note name it (F10-05): look the titles up as tasks come and go.
+  // The key is a string so the effect only reruns when the set of origin notes changes, not on
+  // every task edit.
+  const sourceNoteKey = $derived(
+    [
+      ...new Set(
+        tasksStore.tasks.flatMap((task) =>
+          task.sourceNoteId ? [task.sourceNoteId] : [],
+        ),
+      ),
+    ].join(","),
+  );
   $effect(() => {
-    const ids = tasksStore.tasks.flatMap((task) =>
-      task.sourceNoteId ? [task.sourceNoteId] : [],
-    );
-    if (ids.length > 0) void notesStore.ensureTitles(ids);
+    if (sourceNoteKey) void notesStore.ensureTitles(sourceNoteKey.split(","));
   });
 
   // The notes load the first time their section is shown, not at startup (N-01).
@@ -120,19 +129,21 @@
     void tagsStore.load();
     void tasksStore.load();
     void viewStore.load();
-    const unlisten = onReminderFired((fired) => {
-      if (fired.taskId) return tasksStore.onReminderFired(fired.taskId);
-      if (fired.noteId) return notesStore.onReminderFired(fired.noteId);
-    });
-    const unlistenChanged = onTasksChanged(() => void tasksStore.refresh());
-    const unlistenOpen = onReminderOpen((target) => {
-      if (target.taskId) void showTask(target.taskId);
-      else if (target.noteId) void showNote(target.noteId);
-    });
+    // A listener that cannot be registered (no backend) must not surface as an unhandled
+    // rejection; one registered after the page left is still released by the cleanup below.
+    const stops = [
+      onReminderFired((fired) => {
+        if (fired.taskId) return tasksStore.onReminderFired(fired.taskId);
+        if (fired.noteId) return notesStore.onReminderFired(fired.noteId);
+      }),
+      onTasksChanged(() => void tasksStore.refresh()),
+      onReminderOpen((target) => {
+        if (target.taskId) void showTask(target.taskId);
+        else if (target.noteId) void showNote(target.noteId);
+      }),
+    ].map((listener) => listener.catch(() => undefined));
     return () => {
-      void unlisten.then((stop) => stop());
-      void unlistenChanged.then((stop) => stop());
-      void unlistenOpen.then((stop) => stop());
+      for (const stop of stops) void stop.then((release) => release?.());
       tasksStore.dispose();
     };
   });
@@ -351,7 +362,7 @@
       {:else}
         <div class="content" data-menu-area="agenda">
           {#await loadCalendar()}
-            <p class="status">{t.calendar.loading}</p>
+            <EmptyState variant="loading" title={t.calendar.loading} />
           {:then module}
             <module.default
               store={tasksStore}
@@ -359,7 +370,7 @@
               onOpenTask={(task: Task) => (detailId = task.id)}
             />
           {:catch}
-            <p class="status">{t.calendar.loadFailed}</p>
+            <EmptyState variant="error" title={t.calendar.loadFailed} />
           {/await}
         </div>
       {/if}
@@ -587,10 +598,5 @@
 
   .scrolls {
     overflow: auto;
-  }
-
-  .status {
-    padding: var(--space-6);
-    color: var(--text-secondary);
   }
 </style>

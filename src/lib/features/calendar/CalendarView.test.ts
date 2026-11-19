@@ -429,4 +429,34 @@ describe("keyboard creation (N-08)", () => {
       1,
     );
   });
+
+  it("moves the now line when the minute changes and reads the clock every tick", async () => {
+    vi.useFakeTimers();
+    try {
+      let clock = new Date("2026-03-10T10:00:10");
+      const store = new TasksStore({
+        api: new FakeApi([]),
+        now: () => clock,
+      });
+      await store.load();
+      const view = new ViewStore({
+        api: new FakeViewApi(),
+        now: () => clock,
+        firstDay: () => 1,
+      });
+      view.mode = "day";
+      render(CalendarView, { store, view, onOpenTask: vi.fn() });
+      const line = () =>
+        document.querySelector<HTMLElement>("[data-now-line]")?.style.top;
+      const before = line();
+      clock = new Date("2026-03-10T10:00:40");
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(line()).toBe(before);
+      clock = new Date("2026-03-10T11:30:40");
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(line()).not.toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
