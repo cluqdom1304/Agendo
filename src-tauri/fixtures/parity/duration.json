@@ -1,0 +1,16 @@
+{
+  "cases": [
+    { "start": "09:00", "duration": 60, "valid": true },
+    { "start": "00:00", "duration": 1440, "valid": true },
+    { "start": "00:00", "duration": 1441, "valid": false },
+    { "start": "23:30", "duration": 30, "valid": true },
+    { "start": "23:30", "duration": 31, "valid": false },
+    { "start": "23:59", "duration": 1, "valid": true },
+    { "start": "23:59", "duration": 2, "valid": false },
+    { "start": "09:00", "duration": 1, "valid": true },
+    { "start": "09:00", "duration": 0, "valid": false },
+    { "start": "09:00", "duration": -5, "valid": false },
+    { "start": "12:00", "duration": 720, "valid": true },
+    { "start": "12:00", "duration": 721, "valid": false }
+  ]
+}

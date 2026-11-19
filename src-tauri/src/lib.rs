@@ -10,6 +10,8 @@ pub mod error;
 pub mod exchange;
 pub mod ids;
 pub mod notify;
+#[cfg(test)]
+mod parity_tests;
 pub mod repo;
 pub mod scheduler;
 mod startup;
