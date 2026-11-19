@@ -1,12 +1,24 @@
-import { SvelteSet } from "svelte/reactivity";
-
 import * as backend from "../api";
-import { toInstant, toLocalIsoDate } from "../dates";
+import { toLocalIsoDate } from "../dates";
 import { t } from "../i18n";
 import { sameRule } from "../recurrence";
 import { TaskBatch } from "./taskBatch.svelte";
+import { TaskCompletion } from "./taskCompletion.svelte";
+import { TaskCreator } from "./taskCreator.svelte";
 import { flattenSections, mergeTasks } from "./taskMerge";
-import { hasNotes } from "../features/notes/content";
+import { TaskNotes } from "./taskNotes.svelte";
+import { TaskNotices } from "./taskNotices.svelte";
+import { TaskReminders } from "./taskReminders.svelte";
+import { TaskUndo } from "./taskUndo.svelte";
+import type { TasksHost } from "./tasksHost";
+import type {
+  Draft,
+  DraftTarget,
+  NewTaskDetails,
+  Notice,
+  TaskBlock,
+  UndoEntry,
+} from "./tasksTypes";
 import { groupByDay, sortTodo, splitCompleted } from "../ordering";
 import type {
   ReminderInput,
@@ -15,6 +27,15 @@ import type {
   TaskPatch,
   TasksSections,
 } from "../types";
+
+export type {
+  Draft,
+  DraftTarget,
+  NewTaskDetails,
+  Notice,
+  TaskBlock,
+  UndoEntry,
+} from "./tasksTypes";
 
 /** The slice of `api.ts` the store uses; tests pass a fake. */
 export interface TasksApi {
@@ -55,35 +76,6 @@ const realApi: TasksApi = {
   remindersSet: (taskId, reminders) => backend.remindersSet(taskId, reminders),
 };
 
-/** Where a new task goes: the "por hacer" list or one day of the agenda. */
-export type DraftTarget =
-  { section: "todo" } | { section: "agenda"; date: string };
-
-/** An unsaved row at the end of a block, waiting for its title. */
-export interface Draft {
-  target: DraftTarget;
-  /** Changes with every new draft so the input is rebuilt empty. */
-  key: number;
-}
-
-export interface UndoEntry {
-  key: number;
-  task: Task;
-}
-
-export interface Notice {
-  key: number;
-  message: string;
-  kind: "info" | "error";
-}
-
-export interface TaskBlock {
-  /** `YYYY-MM-DD`, or `null` for POR HACER. */
-  date: string | null;
-  open: Task[];
-  completed: Task[];
-}
-
 export interface TasksStoreOptions {
   api?: TasksApi;
   now?: () => Date;
@@ -102,44 +94,6 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-function describeError(raw: unknown): string {
-  const { code, message } = backend.parseError(raw);
-  const base = t.errors[code];
-  return code === "VALIDATION" && message ? `${base}: ${message}` : base;
-}
-
-function isSameTarget(a: DraftTarget, b: DraftTarget): boolean {
-  return a.section === "todo"
-    ? b.section === "todo"
-    : b.section === "agenda" && b.date === a.date;
-}
-
-/** Where earlier versions remembered hidden notes; cleared so they cannot stay hidden. */
-const LEGACY_COLLAPSED_KEY = "agenda.notesCollapsed";
-
-function forgetStoredCollapse(): void {
-  try {
-    localStorage.removeItem(LEGACY_COLLAPSED_KEY);
-  } catch {
-    // Storage may be unavailable; there is nothing to forget then.
-  }
-}
-
-/** What `create` takes: the details of a new task. */
-export interface NewTaskDetails {
-  title: string;
-  dueDate?: string;
-  dueTime?: string;
-  durationMinutes?: number;
-  tagIds?: string[];
-  contentJson?: string;
-  reminders?: ReminderInput[];
-  /** The note the task is created from (D-45). */
-  sourceNoteId?: string;
-  /** Repeat rule (F13-05); needs a date. */
-  rrule?: string;
-}
-
 function sameSet(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((id) => b.includes(id));
 }
@@ -149,22 +103,6 @@ export class TasksStore {
   tasks = $state.raw<Task[]>([]);
   status = $state<"idle" | "loading" | "ready" | "error">("idle");
   selectedId = $state<string | null>(null);
-  draft = $state.raw<Draft | null>(null);
-  undoStack = $state.raw<UndoEntry[]>([]);
-  notice = $state.raw<Notice | null>(null);
-  /** Tasks whose empty notes the user opened to write; tasks with text are open unless collapsed. */
-  readonly #notesOpened = new SvelteSet<string>();
-  /** The task whose notes the user has just opened: its editor takes the focus once. */
-  notesFocusId = $state<string | null>(null);
-  /** Tasks with text whose notes the user hid; every session starts with all of them shown. */
-  readonly #notesCollapsed = new SvelteSet<string>();
-  /** Notes hidden for an instant so the editor flushes before its row remounts. */
-  readonly #notesSuspended = new SvelteSet<string>();
-  #notesSaving = 0;
-  /** The task whose reminder panel is open under its row. */
-  remindersOpenId = $state<string | null>(null);
-  /** Rows playing their exit animation; per-key reactivity re-renders only the row concerned. */
-  readonly settling = new SvelteSet<string>();
 
   /** Which tasks the views show (the tag filter); everything until the page sets it. */
   filter = $state.raw<(task: Task) => boolean>(() => true);
@@ -209,31 +147,37 @@ export class TasksStore {
   isEmpty = $derived(this.tasks.length === 0);
   todoPendingCount = $derived(this.todoBlock.open.length);
 
+  /** Rows playing their exit animation; per-key reactivity re-renders only the row concerned. */
+  readonly settling: TaskCompletion["settling"];
+
   readonly #api: TasksApi;
   readonly #now: () => Date;
-  readonly #settleMs: () => number;
-  readonly #undoMs: number;
-  readonly #noticeMs: number;
-  #keys = 0;
-  #creating = false;
+  readonly #notices: TaskNotices;
+  readonly #notes: TaskNotes;
+  readonly #undo: TaskUndo;
+  readonly #reminders: TaskReminders;
+  readonly #completion: TaskCompletion;
+  readonly #creator: TaskCreator;
   #refreshing: Promise<boolean> | null = null;
   #refreshAgain = false;
-  // Timer handles are bookkeeping, not UI state.
-  // eslint-disable-next-line svelte/prefer-svelte-reactivity
-  #undoTimers = new Map<number, ReturnType<typeof setTimeout>>();
-  #noticeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: TasksStoreOptions = {}) {
     this.#api = options.api ?? realApi;
-    forgetStoredCollapse();
     // A clock reading, not reactive state.
     // eslint-disable-next-line svelte/prefer-svelte-reactivity
     this.#now = options.now ?? (() => new Date());
-    this.#settleMs =
+    const settleMs =
       options.settleMs ??
       (() => (prefersReducedMotion() ? 0 : COMPLETE_ANIMATION_MS));
-    this.#undoMs = options.undoMs ?? 5000;
-    this.#noticeMs = options.noticeMs ?? 6000;
+    const undoMs = options.undoMs ?? 5000;
+    this.#notices = new TaskNotices(options.noticeMs ?? 6000);
+    const host = this.#makeHost();
+    this.#notes = new TaskNotes(host);
+    this.#undo = new TaskUndo(host, undoMs);
+    this.#reminders = new TaskReminders(host);
+    this.#completion = new TaskCompletion(host, settleMs);
+    this.#creator = new TaskCreator(host);
+    this.settling = this.#completion.settling;
     this.batch = new TaskBatch({
       api: this.#api,
       tasks: () => this.tasks,
@@ -242,11 +186,75 @@ export class TasksStore {
       refresh: async () => {
         await this.refresh();
       },
-      report: (error) => this.#report(error),
-      inform: (message) => this.#inform(message),
-      undoMs: this.#undoMs,
+      report: (error) => this.#notices.report(error),
+      inform: (message) => this.#notices.inform(message),
+      undoMs,
     });
   }
+
+  #makeHost(): TasksHost {
+    return {
+      api: this.#api,
+      tasks: () => this.tasks,
+      setTasks: (tasks) => {
+        this.tasks = tasks;
+      },
+      find: (id) => this.find(id),
+      replace: (task) => this.#replace(task),
+      restoreLocally: (task) => this.#restoreLocally(task),
+      deselect: (id) => {
+        if (this.selectedId === id) this.selectedId = null;
+      },
+      report: (error) => this.#notices.report(error),
+      inform: (message) => this.#notices.inform(message),
+      warnIfHidden: (task) => this.#warnIfHidden(task),
+      now: () => this.#now(),
+      refresh: () => this.refresh(),
+      suspendNotes: (id) => this.#notes.suspend(id),
+    };
+  }
+
+  // ---- state owned by the composed pieces ---------------------------------------------
+
+  get draft(): Draft | null {
+    return this.#creator.draft;
+  }
+
+  get undoStack(): UndoEntry[] {
+    return this.#undo.stack;
+  }
+
+  set undoStack(stack: UndoEntry[]) {
+    this.#undo.stack = stack;
+  }
+
+  get notice(): Notice | null {
+    return this.#notices.notice;
+  }
+
+  set notice(notice: Notice | null) {
+    if (notice === null) this.#notices.dismiss();
+  }
+
+  /** The task whose notes the user has just opened: its editor takes the focus once. */
+  get notesFocusId(): string | null {
+    return this.#notes.focusId;
+  }
+
+  set notesFocusId(id: string | null) {
+    this.#notes.focusId = id;
+  }
+
+  /** The task whose reminder panel is open under its row. */
+  get remindersOpenId(): string | null {
+    return this.#reminders.openId;
+  }
+
+  set remindersOpenId(id: string | null) {
+    this.#reminders.openId = id;
+  }
+
+  // ---- loading --------------------------------------------------------------------------
 
   async load(): Promise<void> {
     this.status = "loading";
@@ -255,7 +263,7 @@ export class TasksStore {
       this.status = "ready";
     } catch (error) {
       this.status = "error";
-      this.#report(error);
+      this.#notices.report(error);
     }
   }
 
@@ -278,7 +286,7 @@ export class TasksStore {
           this.tasks = mergeTasks(this.tasks, fresh);
         } while (this.#refreshAgain);
       } catch (error) {
-        this.#report(error);
+        this.#notices.report(error);
         ok = false;
       } finally {
         this.#refreshing = null;
@@ -308,77 +316,33 @@ export class TasksStore {
   }
 
   startDraft(target: DraftTarget): void {
-    this.draft = { target, key: ++this.#keys };
+    this.#creator.startDraft(target);
   }
 
   cancelDraft(key: number): void {
-    if (this.draft?.key === key) this.draft = null;
+    this.#creator.cancelDraft(key);
   }
 
   isDraftFor(target: DraftTarget): boolean {
-    return this.draft !== null && isSameTarget(this.draft.target, target);
+    return this.#creator.isDraftFor(target);
   }
 
-  /**
-   * Saves the draft `key`. With `advance` (Enter) a fresh draft opens in the same block so
-   * several tasks can be typed in a row. An empty title just closes the draft. If saving
-   * fails the draft stays open with its text.
-   */
-  async commitDraft(
-    key: number,
-    rawTitle: string,
-    advance: boolean,
-  ): Promise<void> {
-    const draft = this.draft;
-    if (!draft || draft.key !== key || this.#creating) return;
-    const title = rawTitle.trim();
-    if (!title) {
-      this.draft = null;
-      return;
-    }
-    this.#creating = true;
-    try {
-      const created = await this.#api.taskCreate({
-        title,
-        ...(draft.target.section === "agenda"
-          ? { dueDate: draft.target.date }
-          : {}),
-      });
-      this.tasks = [...this.tasks, created];
-      this.draft = advance ? { target: draft.target, key: ++this.#keys } : null;
-    } catch (error) {
-      this.#report(error);
-    } finally {
-      this.#creating = false;
-    }
+  commitDraft(key: number, rawTitle: string, advance: boolean): Promise<void> {
+    return this.#creator.commitDraft(key, rawTitle, advance);
   }
 
-  /** Creates a task already placed on a day and, optionally, a time (calendar quick creation). */
-  async createScheduled(
+  createScheduled(
     rawTitle: string,
     dueDate: string,
     dueTime?: string,
     durationMinutes?: number,
   ): Promise<boolean> {
-    const title = rawTitle.trim();
-    if (!title || this.#creating) return false;
-    this.#creating = true;
-    try {
-      const created = await this.#api.taskCreate({
-        title,
-        dueDate,
-        ...(dueTime ? { dueTime } : {}),
-        ...(dueTime && durationMinutes ? { durationMinutes } : {}),
-      });
-      this.tasks = [...this.tasks, created];
-      this.#warnIfHidden(created);
-      return true;
-    } catch (error) {
-      this.#report(error);
-      return false;
-    } finally {
-      this.#creating = false;
-    }
+    return this.#creator.createScheduled(
+      rawTitle,
+      dueDate,
+      dueTime,
+      durationMinutes,
+    );
   }
 
   /**
@@ -391,42 +355,8 @@ export class TasksStore {
   }
 
   /** Like `createDetailed`, but hands back the task (a note needs its id to point at it). */
-  async create(input: NewTaskDetails): Promise<Task | null> {
-    const title = input.title.trim();
-    if (!title || this.#creating) return null;
-    this.#creating = true;
-    try {
-      let created = await this.#api.taskCreate({
-        title,
-        ...(input.dueDate ? { dueDate: input.dueDate } : {}),
-        ...(input.dueDate && input.dueTime ? { dueTime: input.dueTime } : {}),
-        ...(input.dueDate && input.dueTime && input.durationMinutes
-          ? { durationMinutes: input.durationMinutes }
-          : {}),
-        ...(input.tagIds && input.tagIds.length > 0
-          ? { tagIds: input.tagIds }
-          : {}),
-        ...(input.contentJson ? { contentJson: input.contentJson } : {}),
-        ...(input.sourceNoteId ? { sourceNoteId: input.sourceNoteId } : {}),
-        ...(input.dueDate && input.rrule ? { rrule: input.rrule } : {}),
-      });
-      this.tasks = [...this.tasks, created];
-      this.#warnIfHidden(created);
-      if (input.reminders && input.reminders.length > 0) {
-        try {
-          created = await this.#api.remindersSet(created.id, input.reminders);
-          this.#replace(created);
-        } catch (error) {
-          this.#report(error);
-        }
-      }
-      return created;
-    } catch (error) {
-      this.#report(error);
-      return null;
-    } finally {
-      this.#creating = false;
-    }
+  create(input: NewTaskDetails): Promise<Task | null> {
+    return this.#creator.create(input);
   }
 
   // ---- editing --------------------------------------------------------------------------
@@ -464,7 +394,7 @@ export class TasksStore {
       const rule = input.dueDate ? input.rrule : null;
       if (!sameRule(rule, before.rrule)) patch.rrule = rule;
     }
-    this.#suspendNotes(id);
+    this.#notes.suspend(id);
     try {
       if (Object.keys(patch).length > 0) {
         this.#replace(await this.#api.taskUpdate(id, patch));
@@ -479,7 +409,7 @@ export class TasksStore {
       if (saved) this.#warnIfHidden(saved);
       return true;
     } catch (error) {
-      this.#report(error);
+      this.#notices.report(error);
       return false;
     }
   }
@@ -494,7 +424,7 @@ export class TasksStore {
       this.#replace(await this.#api.taskUpdate(id, { title }));
     } catch (error) {
       this.#replace(before);
-      this.#report(error);
+      this.#notices.report(error);
     }
   }
 
@@ -502,7 +432,7 @@ export class TasksStore {
   async setDueDate(id: string, date: string | null): Promise<void> {
     const before = this.find(id);
     if (!before || before.dueDate === date) return;
-    this.#suspendNotes(id);
+    this.#notes.suspend(id);
     this.#replace({
       ...before,
       dueDate: date,
@@ -517,7 +447,7 @@ export class TasksStore {
       );
     } catch (error) {
       this.#replace(before);
-      this.#report(error);
+      this.#notices.report(error);
     }
   }
 
@@ -530,7 +460,7 @@ export class TasksStore {
       this.#replace(await this.#api.taskUpdate(id, { dueTime: time }));
     } catch (error) {
       this.#replace(before);
-      this.#report(error);
+      this.#notices.report(error);
     }
   }
 
@@ -543,7 +473,7 @@ export class TasksStore {
       this.#replace(await this.#api.taskTagsSet(id, tagIds));
     } catch (error) {
       this.#replace(before);
-      this.#report(error);
+      this.#notices.report(error);
     }
   }
 
@@ -554,138 +484,40 @@ export class TasksStore {
     await this.setTags(id, [...before.tagIds, tagId]);
   }
 
+  setCompleted(id: string, completed: boolean): Promise<void> {
+    return this.#completion.set(id, completed);
+  }
+
   // ---- reminders ------------------------------------------------------------------------
 
   toggleReminders(id: string): void {
-    this.remindersOpenId = this.remindersOpenId === id ? null : id;
+    this.#reminders.toggle(id);
   }
 
-  /** Replaces the task's unsent reminders; the panel shows what the backend stored. */
-  async setReminders(id: string, reminders: ReminderInput[]): Promise<void> {
-    try {
-      this.#replace(await this.#api.remindersSet(id, reminders));
-    } catch (error) {
-      this.#report(error);
-    }
+  setReminders(id: string, reminders: ReminderInput[]): Promise<void> {
+    return this.#reminders.set(id, reminders);
   }
 
-  /** The scheduler delivered a reminder: refresh the task (it is now sent) and tell the user. */
-  async onReminderFired(taskId: string): Promise<void> {
-    if (!(await this.refresh())) return;
-    const title = this.find(taskId)?.title.trim();
-    this.#inform(t.reminders.fired(title || t.reminders.untitled));
+  onReminderFired(taskId: string): Promise<void> {
+    return this.#reminders.onFired(taskId);
   }
 
-  /**
-   * Completing plays the exit animation first, then the row moves to "Completadas" without
-   * waiting for the backend; the backend's answer replaces the local guess, and a refusal
-   * puts the task back as it was.
-   */
-  async setCompleted(id: string, completed: boolean): Promise<void> {
-    const before = this.find(id);
-    if (!before || before.isCompleted === completed || this.settling.has(id)) {
-      return;
-    }
-    // The row changes place; closing the notes first lets the editor save before it remounts.
-    this.#suspendNotes(id);
-    // D-23: a completed task always sits in the "Completadas" of the day it was completed.
-    const completedDate = completed ? toLocalIsoDate(this.#now()) : undefined;
-    const guess: Task = {
-      ...before,
-      dueDate: completedDate ?? before.dueDate,
-      isCompleted: completed,
-      completedAt: completed ? toInstant(this.#now()) : null,
-    };
-    const answer: { task?: Task; failure?: { error: unknown } } = {};
-    // Read through a function: the answer is filled in by callbacks TypeScript cannot see.
-    const answered = () => answer;
-    this.settling.add(id);
-    const request = this.#api
-      .taskSetCompleted(id, completed, completedDate)
-      .then(
-        (task) => {
-          answer.task = task;
-        },
-        (error: unknown) => {
-          answer.failure = { error };
-        },
-      );
-    await new Promise((resolve) => setTimeout(resolve, this.#settleMs()));
-    this.settling.delete(id);
-    const early = answered().failure;
-    if (early) {
-      this.#report(early.error);
-      return;
-    }
-    this.#replace(guess);
-    await request;
-    const { task, failure } = answered();
-    if (task) {
-      this.#replace(task);
-      // Completing a repeating task created the next one behind the interface's back.
-      if (completed && before.rrule) await this.refresh();
-    } else if (failure) {
-      this.#replace(before);
-      this.#report(failure.error);
-    }
-  }
+  // ---- notes and search -----------------------------------------------------------------
 
-  // ---- notes and search --------------------------------------------------------------
-
-  /** Notes with text show by default (also after a restart); the user can collapse them. */
   isNotesOpen(id: string): boolean {
-    if (this.#notesSuspended.has(id)) return false;
-    const task = this.find(id);
-    if (!task) return false;
-    return (
-      this.#notesOpened.has(id) ||
-      (hasNotes(task.contentJson) && !this.#notesCollapsed.has(id))
-    );
+    return this.#notes.isOpen(id);
   }
 
   toggleNotes(id: string): void {
-    if (this.isNotesOpen(id)) {
-      this.#notesOpened.delete(id);
-      this.#notesCollapsed.add(id);
-      this.notesFocusId = null;
-    } else {
-      this.#notesOpened.add(id);
-      this.#notesCollapsed.delete(id);
-      // Only a note the user has just opened takes the cursor; the ones shown at startup
-      // must not.
-      this.notesFocusId = id;
-    }
+    this.#notes.toggle(id);
   }
 
-  /** Puts away notes that were opened to write and left empty. */
   closeEmptyNotes(id: string): void {
-    const task = this.find(id);
-    if (task && hasNotes(task.contentJson)) return;
-    this.#notesOpened.delete(id);
+    this.#notes.closeEmpty(id);
   }
 
-  #suspendNotes(id: string): void {
-    if (!this.isNotesOpen(id)) return;
-    this.#notesSuspended.add(id);
-    setTimeout(() => this.#resumeNotes(), 0);
-  }
-
-  #resumeNotes(): void {
-    if (this.#notesSaving === 0) this.#notesSuspended.clear();
-  }
-
-  /** Saves the notes document; throws after reporting, so the editor keeps its pending text. */
-  async saveNotes(id: string, contentJson: string): Promise<void> {
-    this.#notesSaving++;
-    try {
-      this.#replace(await this.#api.taskUpdate(id, { contentJson }));
-    } catch (error) {
-      this.#report(error);
-      throw error;
-    } finally {
-      this.#notesSaving--;
-      this.#resumeNotes();
-    }
+  saveNotes(id: string, contentJson: string): Promise<void> {
+    return this.#notes.save(id, contentJson);
   }
 
   search(query: string): Promise<SearchHit[]> {
@@ -694,74 +526,35 @@ export class TasksStore {
 
   /** Selects a search result and opens its notes when it has any. */
   reveal(id: string): boolean {
-    const task = this.find(id);
-    if (!task) return false;
+    if (!this.find(id)) return false;
     this.selectedId = id;
-    if (hasNotes(task.contentJson)) this.#notesCollapsed.delete(id);
+    this.#notes.expand(id);
     return true;
   }
 
   // ---- deletion -------------------------------------------------------------------------
 
-  /** The task leaves the list at once; for `undoMs` it can be brought back (F-02). */
-  async remove(id: string): Promise<void> {
-    const task = this.find(id);
-    if (!task) return;
-    this.tasks = this.tasks.filter((candidate) => candidate.id !== id);
-    if (this.selectedId === id) this.selectedId = null;
-    try {
-      await this.#api.taskDelete(id);
-    } catch (error) {
-      this.#restoreLocally(task);
-      this.#report(error);
-      return;
-    }
-    const entry: UndoEntry = { key: ++this.#keys, task };
-    this.undoStack = [...this.undoStack, entry];
-    this.#undoTimers.set(
-      entry.key,
-      setTimeout(() => this.#expire(entry.key), this.#undoMs),
-    );
+  remove(id: string): Promise<void> {
+    return this.#undo.remove(id);
   }
 
-  /**
-   * Brings back a task that is in the trash, for a note that still points at it. Resolves
-   * `false` when it is gone for good (purged after 30 days).
-   */
-  async restoreById(id: string): Promise<boolean> {
-    if (this.find(id)) return true;
-    try {
-      this.#restoreLocally(await this.#api.taskRestore(id));
-      return true;
-    } catch {
-      return false;
-    }
+  restoreById(id: string): Promise<boolean> {
+    return this.#undo.restoreById(id);
   }
 
-  /** Brings back the most recently deleted task. */
-  async undoDelete(): Promise<void> {
-    const entry = this.undoStack.at(-1);
-    if (!entry) return;
-    this.#expire(entry.key);
-    this.#restoreLocally(entry.task);
-    try {
-      this.#replace(await this.#api.taskRestore(entry.task.id));
-    } catch (error) {
-      this.tasks = this.tasks.filter((task) => task.id !== entry.task.id);
-      this.#report(error);
-    }
+  undoDelete(): Promise<void> {
+    return this.#undo.undo();
   }
 
   dismissNotice(): void {
-    this.#clearNotice();
+    this.#notices.dismiss();
   }
 
   /** Cancels timers; call when the store is discarded. */
   dispose(): void {
-    for (const timer of this.#undoTimers.values()) clearTimeout(timer);
-    this.#undoTimers.clear();
+    this.#undo.dispose();
     this.batch.dispose();
-    this.#clearNotice();
+    this.#notices.dismiss();
   }
 
   // ---- internals ------------------------------------------------------------------------
@@ -778,39 +571,9 @@ export class TasksStore {
     this.tasks = [...this.tasks, task];
   }
 
-  #expire(key: number): void {
-    const timer = this.#undoTimers.get(key);
-    if (timer !== undefined) clearTimeout(timer);
-    this.#undoTimers.delete(key);
-    this.undoStack = this.undoStack.filter((entry) => entry.key !== key);
-  }
-
-  #report(error: unknown): void {
-    this.#show("error", describeError(error));
-  }
-
   /** A task the filter hides would seem lost right after saving it. */
   #warnIfHidden(task: Task): void {
-    if (!this.filter(task)) this.#inform(t.tags.hiddenByFilter);
-  }
-
-  #inform(message: string): void {
-    this.#show("info", message);
-  }
-
-  #show(kind: Notice["kind"], message: string): void {
-    this.#clearNotice();
-    const key = ++this.#keys;
-    this.notice = { key, message, kind };
-    this.#noticeTimer = setTimeout(() => {
-      if (this.notice?.key === key) this.notice = null;
-    }, this.#noticeMs);
-  }
-
-  #clearNotice(): void {
-    if (this.#noticeTimer !== null) clearTimeout(this.#noticeTimer);
-    this.#noticeTimer = null;
-    this.notice = null;
+    if (!this.filter(task)) this.#notices.inform(t.tags.hiddenByFilter);
   }
 }
 
