@@ -9,6 +9,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use tauri::State;
 
 use crate::{
+    commands::page_of,
     domain::{
         content, dates,
         ordering::{self, DayGroup},
@@ -17,7 +18,7 @@ use crate::{
     },
     error::{AppError, AppResult},
     repo::{
-        model::{NewTask, Task, TaskPatch},
+        model::{NewTask, Page, Task, TaskPatch},
         reminders::{self, NewReminder},
         tasks::{self, Query},
     },
@@ -158,6 +159,16 @@ pub fn list(state: &AppState, input: TasksListInput) -> AppResult<TasksListOutpu
                 days.into_iter().rev().flat_map(|day| day.tasks).collect(),
             ))
         }
+    })
+}
+
+/// Both sections (undated tasks and the agenda) from one snapshot, for a single refresh.
+pub fn list_all(state: &AppState, tag_id: Option<&str>) -> AppResult<Sections> {
+    state.db.read(|conn| {
+        let mut todo = tasks::list(conn, Query::Todo, tag_id)?;
+        ordering::sort_todo(&mut todo);
+        let agenda = ordering::group_by_day(tasks::list(conn, Query::Agenda, tag_id)?);
+        Ok(Sections { todo, agenda })
     })
 }
 
@@ -436,8 +447,15 @@ pub fn restore(state: &AppState, id: &str) -> AppResult<Task> {
     Ok(task)
 }
 
+#[cfg(test)]
 pub fn trash(state: &AppState) -> AppResult<Vec<Task>> {
-    state.db.read(|conn| Ok(tasks::list_trash(conn)?))
+    trash_page(state, Page::ALL)
+}
+
+pub fn trash_page(state: &AppState, page: Page) -> AppResult<Vec<Task>> {
+    state
+        .db
+        .read(|conn| Ok(tasks::list_trash_page(conn, page)?))
 }
 
 #[tauri::command]
@@ -455,6 +473,17 @@ pub async fn tasks_list(
         tag_id,
     };
     run_blocking(state.inner().clone(), move |state| list(state, input)).await
+}
+
+#[tauri::command]
+pub async fn tasks_list_all(
+    state: State<'_, Arc<AppState>>,
+    tag_id: Option<String>,
+) -> Result<Sections, String> {
+    run_blocking(state.inner().clone(), move |state| {
+        list_all(state, tag_id.as_deref())
+    })
+    .await
 }
 
 // The IPC contract passes each field as its own argument (SPEC §7.3).
@@ -534,8 +563,15 @@ pub async fn task_restore(state: State<'_, Arc<AppState>>, id: String) -> Result
 }
 
 #[tauri::command]
-pub async fn trash_list(state: State<'_, Arc<AppState>>) -> Result<Vec<Task>, String> {
-    run_blocking(state.inner().clone(), trash).await
+pub async fn trash_list(
+    state: State<'_, Arc<AppState>>,
+    limit: Option<u32>,
+    offset: Option<u32>,
+) -> Result<Vec<Task>, String> {
+    run_blocking(state.inner().clone(), move |state| {
+        trash_page(state, page_of(limit, offset)?)
+    })
+    .await
 }
 
 #[cfg(test)]
@@ -583,6 +619,32 @@ mod tests {
 
     fn titles(tasks: &[Task]) -> Vec<&str> {
         tasks.iter().map(|task| task.title.as_str()).collect()
+    }
+
+    #[test]
+    fn list_all_returns_both_sections_like_the_two_separate_views() {
+        let state = state();
+        create_titled(&state, "Sin fecha", None);
+        create_titled(&state, "Mañana", Some("2026-03-12"));
+        create_titled(&state, "Antes", Some("2026-03-10"));
+        let trashed = create_titled(&state, "Borrada", None);
+        delete(&state, &trashed.id).expect("trash");
+
+        let all = list_all(&state, None).expect("list all");
+        let todo_view = sections(view(&state, ListView::Todo));
+        let agenda_view = sections(view(&state, ListView::Agenda));
+        assert_eq!(all.todo, todo_view.todo);
+        assert_eq!(all.agenda, agenda_view.agenda);
+        assert_eq!(titles(&all.todo), ["Sin fecha"]);
+        assert_eq!(all.agenda.len(), 2);
+    }
+
+    #[test]
+    fn list_all_filters_by_tag() {
+        let state = state();
+        create_titled(&state, "Una", None);
+        let none = list_all(&state, Some("no-such-tag")).expect("list all");
+        assert!(none.todo.is_empty() && none.agenda.is_empty());
     }
 
     fn patch(json: &str) -> TaskPatchInput {

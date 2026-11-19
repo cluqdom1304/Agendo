@@ -25,6 +25,11 @@ const MANIFEST_ENTRY: &str = "manifest.json";
 const MANIFEST: &str = "{\"format\":\"agendo\",\"version\":1}";
 /// Largest database accepted from an archive.
 const MAX_DATABASE_BYTES: u64 = 1024 * 1024 * 1024;
+/// Most entries an archive may hold (the manifest, the database and the files of the notes).
+const MAX_ENTRIES: usize = 200_000;
+/// Most bytes an archive may hold once unpacked, counted from what it declares and, while
+/// restoring, from what is actually written.
+const MAX_TOTAL_BYTES: u64 = 16 * 1024 * 1024 * 1024;
 
 /// Whether the file at `path` is a zip (it starts with `PK`), as opposed to a SQLite copy.
 pub fn is_archive(path: &Path) -> bool {
@@ -72,9 +77,7 @@ fn write_archive(
     snapshot: &Path,
     target: &Path,
 ) -> AppResult<()> {
-    state
-        .db
-        .with_writer(|conn| db::backup::create(conn, snapshot, &[]))?;
+    state.db.snapshot(snapshot, &[])?;
     let files = state.db.read(|conn| Ok(attachment_repo::all(conn)?))?;
 
     let partial = sibling(target, ".agendo.tmp");
@@ -123,6 +126,17 @@ fn write_archive(
     })
 }
 
+/// Copies `reader` into `writer`, at most `limit` bytes. `Ok(None)` if there is more; otherwise
+/// the number of bytes copied. Nothing is held in memory but the copy buffer.
+fn copy_capped(
+    reader: &mut impl Read,
+    writer: &mut impl Write,
+    limit: u64,
+) -> io::Result<Option<u64>> {
+    let copied = io::copy(&mut reader.take(limit + 1), writer)?;
+    Ok((copied <= limit).then_some(copied))
+}
+
 /// Copies at most `limit` bytes of `reader`; `None` if there is more.
 fn read_capped(reader: &mut impl Read, limit: u64) -> io::Result<Option<Vec<u8>>> {
     let mut bytes = Vec::new();
@@ -131,20 +145,39 @@ fn read_capped(reader: &mut impl Read, limit: u64) -> io::Result<Option<Vec<u8>>
 }
 
 /// What an archive holds, after checking the names of its entries.
+#[derive(Debug)]
 struct Contents {
     has_database: bool,
     attachment_ids: Vec<String>,
 }
 
 fn inspect(zip: &mut ZipArchive<File>) -> AppResult<Contents> {
+    inspect_within(zip, MAX_ENTRIES, MAX_TOTAL_BYTES)
+}
+
+fn inspect_within(
+    zip: &mut ZipArchive<File>,
+    max_entries: usize,
+    max_total: u64,
+) -> AppResult<Contents> {
     let mut contents = Contents {
         has_database: false,
         attachment_ids: Vec::new(),
     };
+    if zip.len() > max_entries {
+        return Err(invalid("contiene demasiadas entradas"));
+    }
+    let mut declared: u64 = 0;
     for index in 0..zip.len() {
         let entry = zip
             .by_index_raw(index)
             .map_err(|_| invalid("está dañado"))?;
+        // Sizes the archive claims for itself are not trusted when copying (each copy is
+        // capped), but an archive that already announces more than the limit is refused early.
+        declared = declared.saturating_add(entry.size());
+        if declared > max_total {
+            return Err(invalid("es demasiado grande"));
+        }
         let name = entry
             .name()
             .map_err(|_| invalid("contiene un nombre no válido"))?
@@ -195,12 +228,16 @@ pub fn restore(
         let mut entry = zip
             .by_name(DATABASE_ENTRY)
             .map_err(|_| invalid("no contiene la base de datos"))?;
-        let bytes = read_capped(&mut entry, MAX_DATABASE_BYTES)
+        // Straight to the staging file: a database of up to 1 GiB never sits in memory.
+        let mut output = File::create(&staged)
+            .map_err(|e| io_error("no se pudo preparar la restauración", e))?;
+        copy_capped(&mut entry, &mut output, MAX_DATABASE_BYTES)
             .map_err(|_| invalid("está dañado"))?
             .ok_or_else(|| invalid("la base de datos es demasiado grande"))?;
-        drop(entry);
-        fs::write(&staged, bytes)
+        output
+            .flush()
             .map_err(|e| io_error("no se pudo preparar la restauración", e))?;
+        drop(entry);
         state.db.with_writer(|conn| {
             db::backup::restore(
                 conn,
@@ -216,6 +253,7 @@ pub fn restore(
 
     fs::create_dir_all(attachments_dir)
         .map_err(|e| io_error("no se pudo crear la carpeta de adjuntos", e))?;
+    let mut written: u64 = 0;
     for id in contents.attachment_ids {
         let target = path_of(attachments_dir, &id);
         if target.exists() {
@@ -227,6 +265,11 @@ pub fn restore(
         let Ok(Some(bytes)) = read_capped(&mut entry, MAX_BYTES as u64) else {
             continue;
         };
+        // What is really written, not what the archive declared, is what counts.
+        written = written.saturating_add(bytes.len() as u64);
+        if written > MAX_TOTAL_BYTES {
+            break;
+        }
         if hash_of(&bytes) != id || sniff_image(&bytes).is_none() {
             continue;
         }
@@ -337,6 +380,46 @@ mod tests {
             zip.write_all(bytes).expect("write");
         }
         zip.finish().expect("finish");
+    }
+
+    #[test]
+    fn copies_are_capped_without_holding_the_data_in_memory() {
+        let mut sink = Vec::new();
+        assert_eq!(
+            copy_capped(&mut &[7_u8; 10][..], &mut sink, 10).expect("copy"),
+            Some(10)
+        );
+        assert_eq!(sink.len(), 10);
+        let mut sink = Vec::new();
+        assert_eq!(
+            copy_capped(&mut &[7_u8; 11][..], &mut sink, 10).expect("copy"),
+            None
+        );
+        assert_eq!(
+            sink.len(),
+            11,
+            "stops one byte past the limit, not at the end"
+        );
+    }
+
+    #[test]
+    fn archives_with_too_many_entries_or_too_much_declared_data_are_refused() {
+        let at = paths();
+        let path = sibling(&at.database, "many.agendo");
+        let id = hash_of(PNG);
+        zip_with(
+            &path,
+            &[
+                ("agenda.sqlite", b"0123456789"),
+                (&format!("attachments/{id}"), PNG),
+            ],
+        );
+        let open = || ZipArchive::new(File::open(&path).expect("open")).expect("zip");
+        assert!(inspect_within(&mut open(), 10, 1 << 20).is_ok());
+        let too_many = inspect_within(&mut open(), 1, 1 << 20).expect_err("entries");
+        assert!(too_many.to_string().contains("demasiadas entradas"));
+        let too_big = inspect_within(&mut open(), 10, 12).expect_err("size");
+        assert!(too_big.to_string().contains("demasiado grande"));
     }
 
     #[test]

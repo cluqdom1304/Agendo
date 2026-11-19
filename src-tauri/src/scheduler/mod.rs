@@ -12,6 +12,7 @@ use chrono::{DateTime, Duration, Local, Utc};
 use rusqlite::Transaction;
 
 use crate::{
+    backoff,
     domain::{dates, reminders as rules},
     error::AppResult,
     notify::{Fired, FiredSink, Notification, Notifier},
@@ -193,31 +194,46 @@ impl Engine {
 /// wake-up from `state.wake`, whichever comes first.
 pub async fn run(state: Arc<AppState>, notifier: Arc<dyn Notifier>, sink: Arc<dyn FiredSink>) {
     let mut engine = Engine::default();
-    loop {
+    let mut failures = 0_u32;
+    while !state.is_shutting_down() {
         let pass = {
             let state = Arc::clone(&state);
             let notifier = Arc::clone(&notifier);
             let sink = Arc::clone(&sink);
             tokio::task::spawn_blocking(move || {
-                if let Err(error) = engine.tick(&state, notifier.as_ref(), sink.as_ref()) {
-                    log(&format!("error en la vuelta: {error}"));
-                }
+                let failed = match engine.tick(&state, notifier.as_ref(), sink.as_ref()) {
+                    Ok(_) => false,
+                    Err(error) => {
+                        log(&format!("error en la vuelta: {error}"));
+                        true
+                    }
+                };
                 let wait = engine.wait(&state).unwrap_or_else(|error| {
                     log(&format!("no se pudo calcular la espera: {error}"));
                     StdDuration::from_secs(60)
                 });
-                (engine, wait)
+                (engine, wait, failed)
             })
             .await
         };
-        let Ok((returned, wait)) = pass else {
+        let Ok((returned, wait, failed)) = pass else {
             log("la vuelta se interrumpió; el scheduler se detiene");
             return;
         };
         engine = returned;
+        // Consecutive failing rounds wait longer (5 s, 10 s, ... up to a minute), and a wake-up
+        // does not cut that wait short: a broken database is not retried on every change.
+        failures = if failed { failures + 1 } else { 0 };
+        let backoff_wait = backoff::delay(
+            failures,
+            StdDuration::from_secs(5),
+            StdDuration::from_secs(60),
+        );
+        let wait = wait.max(backoff_wait);
         tokio::select! {
             () = tokio::time::sleep(wait) => {}
-            () = state.wake.notified() => {}
+            () = state.wake.notified(), if failures == 0 => {}
+            () = state.shut_down() => return,
         }
     }
 }
@@ -639,6 +655,24 @@ mod tests {
         handle.abort();
 
         assert_eq!(notifier.titles(), ["Aviso"]);
+    }
+
+    /// A4-05: closing the app ends the loop on its own instead of waiting out its sleep.
+    #[tokio::test]
+    async fn the_loop_ends_when_the_app_begins_to_close() {
+        let (state, _) = test_state();
+        let state = Arc::new(state);
+        let handle = tokio::spawn(run(
+            Arc::clone(&state),
+            Arc::new(FakeNotifier::default()) as Arc<dyn Notifier>,
+            Arc::new(FakeSink::default()) as Arc<dyn FiredSink>,
+        ));
+        tokio::time::sleep(StdDuration::from_millis(100)).await;
+        assert!(!handle.is_finished());
+
+        state.begin_shutdown();
+        let ended = tokio::time::timeout(StdDuration::from_secs(5), handle).await;
+        assert!(ended.is_ok(), "the loop did not stop");
     }
 
     use crate::domain::reminders::{Repeat, RepeatUnit};

@@ -8,11 +8,12 @@ use serde::Deserialize;
 use tauri::State;
 
 use crate::{
+    commands::page_of,
     domain::{content, dates, validation},
     error::{AppError, AppResult},
     repo::{
         attachments,
-        model::{NewNote, Note, NoteContent, NotePatch, NoteSummary},
+        model::{NewNote, Note, NoteContent, NotePatch, NoteSummary, NoteTitle, Page},
         note_tags,
         notes::{self, Scope, Sort},
         versions,
@@ -83,7 +84,17 @@ pub(crate) fn derive(content_json: String) -> AppResult<(NoteContent, Vec<String
     ))
 }
 
+#[cfg(test)]
 pub fn list(state: &AppState, input: NotesListInput) -> AppResult<Vec<NoteSummary>> {
+    list_page(state, input, Page::ALL)
+}
+
+/// One window of [`list`] (`limit` / `offset` of the command; the order is stable).
+pub fn list_page(
+    state: &AppState,
+    input: NotesListInput,
+    page: Page,
+) -> AppResult<Vec<NoteSummary>> {
     let scope = match (input.scope, input.folder_id.as_deref()) {
         (NotesScope::All, _) => Scope::All,
         (NotesScope::Inbox, _) => Scope::Inbox,
@@ -100,9 +111,28 @@ pub fn list(state: &AppState, input: NotesListInput) -> AppResult<Vec<NoteSummar
         NotesSort::Created => Sort::Created,
         NotesSort::Title => Sort::Title,
     };
-    state
-        .db
-        .read(|conn| Ok(notes::list(conn, scope, input.tag_id.as_deref(), sort)?))
+    state.db.read(|conn| {
+        Ok(notes::list_page(
+            conn,
+            scope,
+            input.tag_id.as_deref(),
+            sort,
+            page,
+        )?)
+    })
+}
+
+/// Most ids `note_titles` accepts in one call.
+pub const MAX_TITLE_IDS: usize = 1000;
+
+/// Titles of the live notes among `ids` (unknown and trashed ones are left out), in one query.
+pub fn titles(state: &AppState, ids: &[String]) -> AppResult<Vec<NoteTitle>> {
+    if ids.len() > MAX_TITLE_IDS {
+        return Err(AppError::Validation(format!(
+            "se piden demasiados títulos de nota a la vez (máximo {MAX_TITLE_IDS})"
+        )));
+    }
+    state.db.read(|conn| Ok(notes::titles(conn, ids)?))
 }
 
 pub fn get(state: &AppState, id: &str) -> AppResult<Note> {
@@ -266,8 +296,15 @@ pub fn restore(state: &AppState, id: &str) -> AppResult<Note> {
         .write(|tx| notes::restore(tx, id, &now)?.ok_or_else(|| note_not_found(id)))
 }
 
+#[cfg(test)]
 pub fn trash(state: &AppState) -> AppResult<Vec<NoteSummary>> {
-    state.db.read(|conn| Ok(notes::list_trash(conn)?))
+    trash_page(state, Page::ALL)
+}
+
+pub fn trash_page(state: &AppState, page: Page) -> AppResult<Vec<NoteSummary>> {
+    state
+        .db
+        .read(|conn| Ok(notes::list_trash_page(conn, page)?))
 }
 
 /// A note of the trash with its document, to read it before restoring it.
@@ -310,6 +347,8 @@ pub async fn notes_list(
     folder_id: Option<String>,
     tag_id: Option<String>,
     sort: Option<NotesSort>,
+    limit: Option<u32>,
+    offset: Option<u32>,
 ) -> Result<Vec<NoteSummary>, String> {
     let input = NotesListInput {
         scope,
@@ -317,7 +356,18 @@ pub async fn notes_list(
         tag_id,
         sort: sort.unwrap_or_default(),
     };
-    run_blocking(state.inner().clone(), move |state| list(state, input)).await
+    run_blocking(state.inner().clone(), move |state| {
+        list_page(state, input, page_of(limit, offset)?)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn note_titles(
+    state: State<'_, Arc<AppState>>,
+    ids: Vec<String>,
+) -> Result<Vec<NoteTitle>, String> {
+    run_blocking(state.inner().clone(), move |state| titles(state, &ids)).await
 }
 
 #[tauri::command]
@@ -418,8 +468,15 @@ pub async fn note_trash_get(state: State<'_, Arc<AppState>>, id: String) -> Resu
 }
 
 #[tauri::command]
-pub async fn notes_trash_list(state: State<'_, Arc<AppState>>) -> Result<Vec<NoteSummary>, String> {
-    run_blocking(state.inner().clone(), trash).await
+pub async fn notes_trash_list(
+    state: State<'_, Arc<AppState>>,
+    limit: Option<u32>,
+    offset: Option<u32>,
+) -> Result<Vec<NoteSummary>, String> {
+    run_blocking(state.inner().clone(), move |state| {
+        trash_page(state, page_of(limit, offset)?)
+    })
+    .await
 }
 
 #[cfg(test)]
@@ -454,6 +511,43 @@ mod tests {
 
     fn doc(body: &str) -> String {
         format!(r#"{{"type":"doc","content":[{body}]}}"#)
+    }
+
+    #[test]
+    fn titles_returns_live_notes_only_in_one_call() {
+        let state = test_state().0;
+        let a = make(&state, "Álgebra");
+        let b = make(&state, "Cálculo");
+        let gone = make(&state, "Borrada");
+        delete(&state, &gone.id).expect("trash");
+
+        let ids = vec![
+            b.id.clone(),
+            a.id.clone(),
+            gone.id.clone(),
+            "unknown".into(),
+        ];
+        let found = titles(&state, &ids).expect("titles");
+        let mut expected = vec![
+            NoteTitle {
+                id: a.id.clone(),
+                title: "Álgebra".into(),
+            },
+            NoteTitle {
+                id: b.id.clone(),
+                title: "Cálculo".into(),
+            },
+        ];
+        expected.sort_by(|x, y| x.id.cmp(&y.id));
+        assert_eq!(found, expected);
+        assert!(titles(&state, &[]).expect("empty").is_empty());
+    }
+
+    #[test]
+    fn titles_rejects_more_ids_than_the_limit() {
+        let state = test_state().0;
+        let ids: Vec<String> = (0..=MAX_TITLE_IDS).map(|i| format!("n{i}")).collect();
+        assert!(code_of(titles(&state, &ids)).starts_with("VALIDATION:"));
     }
 
     fn all(state: &AppState) -> Vec<NoteSummary> {

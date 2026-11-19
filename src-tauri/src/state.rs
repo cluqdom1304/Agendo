@@ -1,12 +1,15 @@
 //! Shared application state: the database handle, the clock and the id generator.
 
 use std::{
-    path::Path,
-    sync::{Arc, Mutex, MutexGuard, PoisonError},
+    path::{Path, PathBuf},
+    sync::{
+        Arc, Mutex, MutexGuard, PoisonError, TryLockError,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
 
 use rusqlite::{Connection, Transaction};
-use tokio::sync::Notify;
+use tokio::sync::{Notify, watch};
 
 use crate::{
     db::{self, DbError, MIGRATIONS, Migration},
@@ -24,33 +27,77 @@ use crate::{
 /// rolled back when the panic unwinds, so the connection is still consistent.
 pub struct Db {
     writer: Mutex<Connection>,
-    reader: Option<Mutex<Connection>>,
+    /// Read-only connections of a file database (WAL lets them read while the writer works).
+    /// Empty for an in-memory database.
+    readers: Vec<Mutex<Connection>>,
+    next_reader: AtomicUsize,
+    /// Where the database file is; `None` for an in-memory database.
+    path: Option<PathBuf>,
 }
+
+/// How many read-only connections a file database opens (A4-01): a long read (a backup
+/// snapshot, a big search) leaves the others free.
+const READERS: usize = 3;
 
 fn lock(connection: &Mutex<Connection>) -> MutexGuard<'_, Connection> {
     connection.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
+fn try_lock(connection: &Mutex<Connection>) -> Option<MutexGuard<'_, Connection>> {
+    match connection.try_lock() {
+        Ok(guard) => Some(guard),
+        Err(TryLockError::Poisoned(poisoned)) => Some(poisoned.into_inner()),
+        Err(TryLockError::WouldBlock) => None,
+    }
+}
+
 impl Db {
     pub fn open(path: &Path, migrations: &[Migration]) -> Result<Self, DbError> {
         let writer = db::open(path, migrations)?;
-        let reader = db::open_read_only(path)?;
+        let readers = (0..READERS)
+            .map(|_| db::open_read_only(path).map(Mutex::new))
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(Self {
             writer: Mutex::new(writer),
-            reader: Some(Mutex::new(reader)),
+            readers,
+            next_reader: AtomicUsize::new(0),
+            path: Some(path.to_path_buf()),
         })
     }
 
     pub fn open_in_memory(migrations: &[Migration]) -> Result<Self, DbError> {
         Ok(Self {
             writer: Mutex::new(db::open_in_memory(migrations)?),
-            reader: None,
+            readers: Vec::new(),
+            next_reader: AtomicUsize::new(0),
+            path: None,
         })
     }
 
+    /// Runs a read on the first free reader (starting from a rotating one); if all are busy it
+    /// waits for the one whose turn it is. In-memory databases read through the writer.
     pub fn read<T>(&self, operation: impl FnOnce(&Connection) -> AppResult<T>) -> AppResult<T> {
-        let connection = lock(self.reader.as_ref().unwrap_or(&self.writer));
+        if self.readers.is_empty() {
+            return operation(&lock(&self.writer));
+        }
+        let count = self.readers.len();
+        let start = self.next_reader.fetch_add(1, Ordering::Relaxed) % count;
+        let free = (0..count).find_map(|offset| try_lock(&self.readers[(start + offset) % count]));
+        let connection = free.unwrap_or_else(|| lock(&self.readers[start]));
         operation(&connection)
+    }
+
+    /// Writes a consistent copy of the database to `target` (see `db::backup::create`) on a
+    /// connection of its own, so the copy does not hold the writer or any reader while it runs.
+    /// An in-memory database is copied through the writer.
+    pub fn snapshot(&self, target: &Path, protected: &[PathBuf]) -> AppResult<()> {
+        match &self.path {
+            Some(path) => {
+                let source = db::open_snapshot_source(path)?;
+                db::backup::create(&source, target, protected)
+            }
+            None => self.with_writer(|conn| db::backup::create(conn, target, protected)),
+        }
     }
 
     /// Exclusive access to the writer connection for operations that are not one transaction,
@@ -61,6 +108,18 @@ impl Db {
     ) -> AppResult<T> {
         let mut connection = lock(&self.writer);
         operation(&mut connection)
+    }
+
+    /// Refreshes the planner statistics (`PRAGMA optimize`); called when the app exits.
+    pub fn optimize(&self) {
+        let connection = lock(&self.writer);
+        let _ = db::pragmas::optimize(&connection);
+    }
+
+    /// Recomputes the planner statistics after a bulk change such as an import. Best effort.
+    pub fn analyze(&self) {
+        let connection = lock(&self.writer);
+        let _ = db::pragmas::analyze(&connection);
     }
 
     /// One logical write: a single transaction, committed on `Ok` and rolled back on `Err`.
@@ -79,6 +138,11 @@ pub struct AppState {
     pub ids: Arc<dyn IdGenerator>,
     /// Wakes the reminder scheduler after anything that can change what fires next (SPEC §6.1).
     pub wake: Arc<Notify>,
+    /// Set once when the app is closing; the background loops stop starting new passes.
+    shutdown: watch::Sender<bool>,
+    /// Held by a background pass that writes files (the automatic backup) while it runs, so
+    /// closing the app can wait for it instead of cutting it off half way.
+    pub background_work: Mutex<()>,
 }
 
 impl AppState {
@@ -88,6 +152,42 @@ impl AppState {
             clock,
             ids,
             wake: Arc::new(Notify::new()),
+            shutdown: watch::channel(false).0,
+            background_work: Mutex::new(()),
+        }
+    }
+
+    /// Tells the background loops that the app is closing.
+    pub fn begin_shutdown(&self) {
+        self.shutdown.send_replace(true);
+    }
+
+    /// Resolves when [`begin_shutdown`](Self::begin_shutdown) has been called (at once if it
+    /// already was).
+    pub async fn shut_down(&self) {
+        let mut receiver = self.shutdown.subscribe();
+        // The sender lives in `self`, so the channel cannot close while this future exists.
+        let _ = receiver.wait_for(|closing| *closing).await;
+    }
+
+    pub fn is_shutting_down(&self) -> bool {
+        *self.shutdown.borrow()
+    }
+
+    /// Waits up to `limit` for the running background pass (if any) to finish, then returns.
+    /// Used on exit: a backup in progress is allowed to end instead of leaving a partial file.
+    pub fn wait_for_background_work(&self, limit: std::time::Duration) {
+        let deadline = std::time::Instant::now() + limit;
+        loop {
+            match self.background_work.try_lock() {
+                Ok(_) | Err(TryLockError::Poisoned(_)) => return,
+                Err(TryLockError::WouldBlock) => {
+                    if std::time::Instant::now() >= deadline {
+                        return;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+            }
         }
     }
 
@@ -204,7 +304,7 @@ mod tests {
         let (clock, _) = manual_clock();
         let state = AppState::open(&dir.database(), clock).expect("open");
         let now = state.clock.now_string();
-        assert!(state.db.reader.is_some());
+        assert_eq!(state.db.readers.len(), READERS);
 
         state
             .db
@@ -221,6 +321,60 @@ mod tests {
             Ok(())
         });
         assert!(refused.is_err(), "the reader must not accept writes");
+    }
+
+    /// A4-01: a read that takes a long time (a backup snapshot, a big search) does not stop the
+    /// other reads, and a snapshot can be taken on a reader while the writer keeps working.
+    #[test]
+    fn a_long_read_leaves_the_other_readers_and_the_writer_free() {
+        let dir = TempDir::new();
+        let (clock, _) = manual_clock();
+        let state = Arc::new(AppState::open(&dir.database(), clock).expect("open"));
+        let now = state.clock.now_string();
+        state
+            .db
+            .write(|tx| Ok(tasks::create(tx, &new_task("t1", &now))?))
+            .expect("write");
+
+        let (started, wait_started) = std::sync::mpsc::channel();
+        let (release, wait_release) = std::sync::mpsc::channel::<()>();
+        let slow = {
+            let state = Arc::clone(&state);
+            std::thread::spawn(move || {
+                state
+                    .db
+                    .read(|_| {
+                        started.send(()).expect("signal");
+                        let _ = wait_release.recv();
+                        Ok(())
+                    })
+                    .expect("slow read");
+            })
+        };
+        wait_started.recv().expect("slow read started");
+
+        // Two more reads and a write go through while the first reader is held.
+        for _ in 0..2 {
+            let seen = state
+                .db
+                .read(|conn| Ok(tasks::list(conn, Query::Todo, None)?.len()))
+                .expect("read");
+            assert_eq!(seen, 1);
+        }
+        state
+            .db
+            .write(|tx| Ok(tasks::create(tx, &new_task("t2", &now))?))
+            .expect("write while a reader is busy");
+
+        let copy = dir.database().with_file_name("copy.sqlite");
+        state
+            .db
+            .snapshot(&copy, &[])
+            .expect("snapshot taken on a reader");
+        assert!(copy.exists());
+
+        release.send(()).expect("release");
+        slow.join().expect("slow thread");
     }
 
     #[test]

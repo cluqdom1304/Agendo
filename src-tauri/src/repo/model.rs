@@ -221,6 +221,33 @@ pub struct NoteSummary {
     pub updated_at: String,
 }
 
+/// A window over an ordered list: `limit` rows after skipping `offset`. [`Page::ALL`] is the
+/// whole list, which is what a caller that does not paginate gets.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Page {
+    pub limit: Option<u32>,
+    pub offset: u32,
+}
+
+impl Page {
+    pub const ALL: Page = Page {
+        limit: None,
+        offset: 0,
+    };
+
+    /// SQLite's `LIMIT -1` means no limit.
+    pub fn sql_limit(self) -> i64 {
+        self.limit.map_or(-1, i64::from)
+    }
+}
+
+/// Just the title of a live note, for labels such as the origin of a task (`note_titles`).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct NoteTitle {
+    pub id: String,
+    pub title: String,
+}
+
 /// Data to create a note; like [`NewTask`], the caller supplies the id and `now`.
 #[derive(Debug, Clone, Default)]
 pub struct NewNote {

@@ -7,6 +7,7 @@ use std::{
     cell::RefCell,
     collections::{HashMap, HashSet},
     fs,
+    io::Read,
     path::{Path, PathBuf},
 };
 
@@ -40,8 +41,9 @@ use crate::{
 pub const ASSETS_DIR: &str = "adjuntos";
 /// Largest text file read when importing a folder.
 const MAX_TEXT_BYTES: u64 = 10 * 1024 * 1024;
-/// Largest Evernote export read; the file is read whole.
-const MAX_ENEX_BYTES: u64 = 800 * 1024 * 1024;
+/// Largest Evernote export read. It is read in a stream, one note at a time, so memory depends
+/// on the largest note (`enex::MAX_NOTE_BYTES`) and not on this limit, which only bounds time.
+const MAX_ENEX_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 /// Most files taken from one folder.
 const MAX_IMPORT_FILES: usize = 50_000;
 /// Colours given to the tags an import creates, in turn.
@@ -297,7 +299,7 @@ pub fn export_notes(
         _ => None,
     };
     let dirs = folder_dirs(&data.folders, root_folder, &mut namer);
-    let copied: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
+    let images: RefCell<HashMap<String, Option<String>>> = RefCell::new(HashMap::new());
     let failure: RefCell<Option<AppError>> = RefCell::new(None);
     let mut report = ExportReport::default();
 
@@ -326,18 +328,19 @@ pub fn export_notes(
             let mime = attachments::sniff_image(&bytes)?;
             Some((bytes, mime))
         };
+        // An image used by several notes is read and copied once: later uses find its file name
+        // in `images` (`None` records an image that is missing or not usable).
         let image_path = |id: &str| -> Option<String> {
-            let (bytes, mime) = read_image(id)?;
-            let file = format!("{id}.{}", extension_of(mime));
-            if copied.borrow_mut().insert(id.to_string()) {
-                let folder = target.join(ASSETS_DIR);
-                let written = fs::create_dir_all(&folder)
-                    .and_then(|()| fs::write(folder.join(&file), &bytes));
-                if let Err(error) = written {
-                    *failure.borrow_mut() = Some(io("no se pudo guardar una imagen", error));
-                    return None;
-                }
+            if !images.borrow().contains_key(id) {
+                match copy_image(attachments_dir, target, id) {
+                    Ok(file) => images.borrow_mut().insert(id.to_string(), file),
+                    Err(error) => {
+                        *failure.borrow_mut() = Some(error);
+                        return None;
+                    }
+                };
             }
+            let file = images.borrow().get(id)?.clone()?;
             Some(format!("{}{ASSETS_DIR}/{file}", "../".repeat(depth)))
         };
         let image_src = |id: &str| -> Option<String> {
@@ -388,8 +391,41 @@ pub fn export_notes(
         fs::write(directory.join(name), text).map_err(|e| io("no se pudo guardar la nota", e))?;
         report.notes += 1;
     }
-    report.files = copied.borrow().len();
+    report.files = images.borrow().values().flatten().count();
     Ok(report)
+}
+
+/// Copies the stored image `id` into the export's images folder and returns the name it has
+/// there, or `None` if the file is missing or is not an image. Only the first bytes are read to
+/// recognise the type; the file itself is copied by the system without passing through memory.
+fn copy_image(attachments_dir: &Path, target: &Path, id: &str) -> AppResult<Option<String>> {
+    if !attachments::is_valid_id(id) {
+        return Ok(None);
+    }
+    let source = attachments::path_of(attachments_dir, id);
+    let mut head = [0_u8; 16];
+    let read = fs::File::open(&source).and_then(|mut file| {
+        let mut filled = 0;
+        while filled < head.len() {
+            match file.read(&mut head[filled..])? {
+                0 => break,
+                count => filled += count,
+            }
+        }
+        Ok(filled)
+    });
+    let Some(mime) = read
+        .ok()
+        .and_then(|filled| attachments::sniff_image(&head[..filled]))
+    else {
+        return Ok(None);
+    };
+    let file = format!("{id}.{}", extension_of(mime));
+    let folder = target.join(ASSETS_DIR);
+    fs::create_dir_all(&folder)
+        .and_then(|()| fs::copy(&source, folder.join(&file)))
+        .map_err(|error| io("no se pudo guardar una imagen", error))?;
+    Ok(Some(file))
 }
 
 /// Writes everything the application holds as one JSON file. The target is written beside
@@ -813,6 +849,9 @@ pub fn import_text_files(
     }
     report.folders = catalog.new_folders;
     report.tags = catalog.new_tags;
+    if report.notes > 0 {
+        state.db.analyze();
+    }
     Ok(report)
 }
 
@@ -866,11 +905,10 @@ pub fn import_enex_files(
             .len();
         if size > MAX_ENEX_BYTES {
             return Err(AppError::Validation(
-                "el archivo .enex es demasiado grande (máximo 800 MB)".into(),
+                "el archivo .enex es demasiado grande (máximo 4 GB)".into(),
             ));
         }
-        let bytes = fs::read(file).map_err(|e| io("no se pudo leer el archivo", e))?;
-        let text = String::from_utf8_lossy(&bytes);
+        let input = fs::File::open(file).map_err(|e| io("no se pudo leer el archivo", e))?;
         let notebook = file
             .file_stem()
             .map(|stem| stem.to_string_lossy().into_owned())
@@ -879,7 +917,7 @@ pub fn import_enex_files(
         let mut failed = 0usize;
         let mut dropped = 0usize;
         let mut stored = 0usize;
-        read_notes(&text, state, attachments_dir, &mut |note| {
+        read_notes(input, state, attachments_dir, &mut |note| {
             dropped += note.dropped_files;
             let origin = format!(
                 "enex:{notebook}:{}:{}",
@@ -909,17 +947,20 @@ pub fn import_enex_files(
     }
     report.folders = catalog.new_folders;
     report.tags = catalog.new_tags;
+    if report.notes > 0 {
+        state.db.analyze();
+    }
     Ok(report)
 }
 
 fn read_notes(
-    text: &str,
+    input: impl std::io::Read,
     state: &AppState,
     attachments_dir: &Path,
     on_note: &mut dyn FnMut(enex::EnexNote),
 ) -> AppResult<usize> {
-    enex::read_enex(
-        text,
+    enex::read_enex_stream(
+        input,
         &mut |bytes| stored_image(state, attachments_dir, bytes),
         on_note,
     )

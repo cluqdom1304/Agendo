@@ -1,6 +1,6 @@
 # AUDITORIA.md — Plan de auditoría de Agendo
 
-**Estado:** IN_PROGRESS — A0, A1 y el carril frontend (A6, A10, A12) hechos `[A]`. Carril de datos (A2–A4) en curso en su rama. Pendientes `[H]`: A1-01, A12-03/04, A6-06.
+**Estado:** IN_PROGRESS — A0, A1 y el carril frontend (A6, A10, A12), A8 parcial, A9 y A2–A4 hechos `[A]`. Carril de datos (A2–A4) integrado. Pendientes `[H]`: A1-01, A12-03/04, A6-06.
 **Objetivo:** aplicación ligera, bien estructurada, escalable, fácil de depurar y optimizar, y pulida para el usuario final.
 **Reglas:** cada tarea sigue el ciclo de CLAUDE.md §2 (plan corto, cambio coherente, batería §4, commit convencional). Lo que dependa de Windows es `[H]` y nunca se marca como verificado. Cada dependencia o cambio de esquema lleva ADR en `DECISIONS.md`; las migraciones son siempre aditivas.
 
@@ -35,31 +35,31 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [x] A1-04 Los límites ya existían (`MAX_DEPTH`, `MAX_INLINE_DEPTH`, `MAX_XML_DEPTH`, `MAX_BLOCK_DEPTH`); añadido test hostil de anidamiento inline (énfasis, tachado, enlaces, imágenes, código). Sin límite de nodos por `.enex`: el tamaño total ya está acotado (MAX_ENEX_BYTES), se revisa en A4-02.
 
 ### A2 — Esquema, índices y FTS (riesgo medio, mayor impacto)
-- [ ] A2-01 Migración nueva: FTS sin escaneo O(N) al sincronizar (external-content o mapeo id→rowid) con reindexado. ADR.
-- [ ] A2-02 Pragmas: `cache_size`, `mmap_size`, `journal_size_limit`, `wal_autocheckpoint`, `PRAGMA optimize` tras migrar y al cerrar, `ANALYZE` tras importaciones grandes.
-- [ ] A2-03 Filtro de fechas por rango sobre la columna (sin `substr`) para usar `ix_notes_updated`.
-- [ ] A2-04 Revisar índices (`reminders.task_id`, `tasks.is_completed`, `notes.pinned`, `folders.position`, `attachments.created_at`) con `EXPLAIN QUERY PLAN` y tests de plan.
-- [ ] A2-05 `scale_tests` a 50k filas con presupuestos de tiempo.
+- [x] A2-01 FTS por rowid con mapa id→rowid (migración 012, D-62): `fts::sync` a 50 000 filas 21,9 ms → 44 µs.
+- [x] A2-02 Pragmas de caché/mmap y `PRAGMA optimize` (D-63).
+- [x] A2-03 Filtro de fechas por rango: 21 ms → 0,08 ms.
+- [x] A2-04 Índices (migración 013): `reminders.task_id` 13,4 s → 0,1 s en agenda de 50 000 tareas; índices de papelera parciales. Descartados `is_completed`, `folders.position`, `attachments.created_at`. La 013 hace `DROP INDEX` de dos índices y los recrea parciales (no toca datos).
+- [x] A2-05 `scale_tests` a 50 000 filas sin regresión a 10 000.
 
 ### A3 — Consultas y paginación (riesgo medio)
-- [ ] A3-01 Ventana o paginación en `list` de tareas, notas y papelera.
-- [ ] A3-02 Contadores de etiquetas con una sola agregación (sin COUNT correlacionados).
-- [ ] A3-03 `find.rs`: constructor SQL común para tareas y notas, `prepare_cached`, sin duplicación FTS/no-FTS.
-- [ ] A3-04 `reminders::expire_before` con `UPDATE ... RETURNING`; eliminar `format!` de nombres de tabla.
-- [ ] A3-05 Comandos IPC `tasks_list_all` y `note_titles(ids)`.
+- [x] A3-01 Ventanas `limit`/`offset` en notas y papeleras e `ix_notes_order` (migración 014, D-64): ventana de 200 sobre 50 000 notas 75 ms → 0,3 ms. Tareas: sin ventana, se sirve entera por `tasks_list_all`.
+- [x] A3-02 Contadores de etiquetas agregados: mejora pequeña (189 → 154 ms con 100 000 enlaces); un contador cacheado queda como deuda.
+- [x] A3-03 Solo `prepare_cached` en `find.rs`; el constructor SQL común no se unificó (sin mejora medida, deuda de mantenimiento).
+- [x] A3-04 `UPDATE … RETURNING` en `expire_before`.
+- [x] A3-05 `tasks_list_all(tag_id?)` y `note_titles(ids)` (máx. 1000), con contrato. Falta el wrapper en `api.ts` (A6-01).
 
 ### A5 — Observabilidad (riesgo bajo)
 - [ ] A5-01 Log a fichero con rotación en la carpeta de datos (ADR por dependencia); sustituir los `eprintln!`.
 - [ ] A5-02 Trazas de consultas lentas (umbral) y duración de migraciones en `startup.rs`.
 
 ### A4 — Concurrencia y memoria (riesgo medio)
-- [ ] A4-01 Pool de 2–3 lectores en WAL, o conexión propia para copias, para que una copia o búsqueda larga no bloquee el resto.
-- [ ] A4-02 Importación ENEX en streaming y límite de tamaño revisado.
-- [ ] A4-03 Restauración de copias: escritura a fichero temporal, límite de entradas y de tamaño total acumulado.
-- [ ] A4-04 Adjuntos: evitar copias dobles y lecturas/hashes repetidos en exportación; `collect_orphans` por lotes.
-- [ ] A4-05 Apagado ordenado y backoff en `autobackup` y en el tick del scheduler.
-- [ ] A4-06 Verificar uno a uno los comandos `async` sin `run_blocking`.
-- [ ] A4-07 Política de poda de `note_versions`.
+- [x] A4-01 Pool de 3 lectores; copias sobre conexión propia (D-65).
+- [x] A4-02 ENEX en streaming (límite 256 MiB por nota).
+- [x] A4-03 `.agendo` en flujo a fichero temporal, máx. 200 000 entradas y 16 GiB.
+- [x] A4-04 Una sola copia por imagen al exportar; `collect_orphans` en una transacción.
+- [x] A4-05 Señal de cierre, backoff creciente y espera de hasta 5 s a una copia en curso (D-66).
+- [x] A4-06 Descartado: los 54 comandos `async` ya usan `run_blocking`.
+- [x] A4-07 Tope de 16 MiB por nota en versiones (ya había 30 versiones por nota).
 
 ### A6 — Frontend: rendimiento (riesgo bajo)
 - [ ] A6-01 (espera a A3-05) `refresh` de tareas con fusión por id (conserva identidad) y debounce; una sola llamada IPC.

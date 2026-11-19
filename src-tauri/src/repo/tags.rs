@@ -28,13 +28,16 @@ pub fn has_children(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
 pub fn list(conn: &Connection) -> rusqlite::Result<Vec<TagWithCount>> {
     let mut statement = conn.prepare_cached(
         "SELECT g.id, g.name, g.color_hex, g.parent_id, g.position,
-                (SELECT COUNT(*)
-                   FROM task_tags tt JOIN tasks t ON t.id = tt.task_id
-                  WHERE tt.tag_id = g.id AND t.deleted_at IS NULL AND t.is_completed = 0),
-                (SELECT COUNT(*)
-                   FROM note_tags nt JOIN notes n ON n.id = nt.note_id
-                  WHERE nt.tag_id = g.id AND n.deleted_at IS NULL)
+                COALESCE(p.total, 0), COALESCE(m.total, 0)
          FROM tags g
+         LEFT JOIN (SELECT tt.tag_id, COUNT(*) AS total
+                      FROM task_tags tt JOIN tasks t ON t.id = tt.task_id
+                     WHERE t.deleted_at IS NULL AND t.is_completed = 0
+                     GROUP BY tt.tag_id) p ON p.tag_id = g.id
+         LEFT JOIN (SELECT nt.tag_id, COUNT(*) AS total
+                      FROM note_tags nt JOIN notes n ON n.id = nt.note_id
+                     WHERE n.deleted_at IS NULL
+                     GROUP BY nt.tag_id) m ON m.tag_id = g.id
          ORDER BY g.position, g.id",
     )?;
     statement

@@ -7,7 +7,7 @@ use serde::de::DeserializeOwned;
 
 use super::{
     fts,
-    model::{EMPTY_DOC, NewNote, Note, NotePatch, NoteSummary},
+    model::{EMPTY_DOC, NewNote, Note, NotePatch, NoteSummary, NoteTitle, Page},
     note_tags,
 };
 
@@ -119,6 +119,17 @@ pub fn list(
     tag_id: Option<&str>,
     sort: Sort,
 ) -> rusqlite::Result<Vec<NoteSummary>> {
+    list_page(conn, scope, tag_id, sort, Page::ALL)
+}
+
+/// One window of [`list`]; the order is total (ties break on `id`), so pages never overlap.
+pub fn list_page(
+    conn: &Connection,
+    scope: Scope<'_>,
+    tag_id: Option<&str>,
+    sort: Sort,
+    page: Page,
+) -> rusqlite::Result<Vec<NoteSummary>> {
     // Only fixed fragments are concatenated; every value is a bound parameter (?1 folder, ?2 tag).
     let (prefix, filter, folder) = match scope {
         Scope::All => ("", "AND ?1 IS NULL", None),
@@ -147,11 +158,34 @@ pub fn list(
                                       WHERE f.note_id = n.id AND f.tag_id = ?2))
           ORDER BY ",
         order,
+        " LIMIT ?3 OFFSET ?4",
     ]
     .concat();
     conn.prepare_cached(&sql)?
-        .query_map(params![folder, tag_id], map_summary)?
+        .query_map(
+            params![folder, tag_id, page.sql_limit(), page.offset],
+            map_summary,
+        )?
         .collect()
+}
+
+/// Titles of the live notes among `ids`, in one query. Unknown and trashed ids are left out.
+/// The ids travel as one bound JSON array, however many there are.
+pub fn titles(conn: &Connection, ids: &[String]) -> rusqlite::Result<Vec<NoteTitle>> {
+    let ids = serde_json::to_string(ids)
+        .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))?;
+    conn.prepare_cached(
+        "SELECT id, title FROM notes
+         WHERE deleted_at IS NULL AND id IN (SELECT value FROM json_each(?1))
+         ORDER BY id",
+    )?
+    .query_map([ids], |row| {
+        Ok(NoteTitle {
+            id: row.get(0)?,
+            title: row.get(1)?,
+        })
+    })?
+    .collect()
 }
 
 /// Live notes that link to the note, most recently edited first (D-46 backlinks).
@@ -371,11 +405,16 @@ pub fn restore(tx: &Transaction<'_>, id: &str, now: &str) -> rusqlite::Result<Op
 
 /// Trashed notes, most recently deleted first.
 pub fn list_trash(conn: &Connection) -> rusqlite::Result<Vec<NoteSummary>> {
+    list_trash_page(conn, Page::ALL)
+}
+
+/// One window of [`list_trash`].
+pub fn list_trash_page(conn: &Connection, page: Page) -> rusqlite::Result<Vec<NoteSummary>> {
     conn.prepare_cached(concat!(
         summary_columns!(),
-        "WHERE n.deleted_at IS NOT NULL ORDER BY n.deleted_at DESC, n.id"
+        "WHERE n.deleted_at IS NOT NULL ORDER BY n.deleted_at DESC, n.id LIMIT ?1 OFFSET ?2"
     ))?
-    .query_map([], map_summary)?
+    .query_map(params![page.sql_limit(), page.offset], map_summary)?
     .collect()
 }
 
@@ -422,6 +461,62 @@ mod tests {
 
     fn add(conn: &mut Connection, note: &NewNote) -> Note {
         with_tx(conn, |tx| create(tx, note)).expect("create")
+    }
+
+    #[test]
+    fn pages_of_a_list_are_consecutive_and_never_overlap() {
+        let mut conn = database();
+        for index in 0..7 {
+            add(&mut conn, &new_note(&format!("n{index}"), "Misma fecha"));
+        }
+        let ids = |page: Page| -> Vec<String> {
+            list_page(&conn, Scope::All, None, Sort::Updated, page)
+                .expect("page")
+                .into_iter()
+                .map(|note| note.id)
+                .collect()
+        };
+        let whole = ids(Page::ALL);
+        assert_eq!(whole.len(), 7);
+        let mut stitched = Vec::new();
+        for offset in [0, 3, 6, 9] {
+            stitched.extend(ids(Page {
+                limit: Some(3),
+                offset,
+            }));
+        }
+        assert_eq!(stitched, whole);
+        assert_eq!(
+            list(&conn, Scope::All, None, Sort::Updated)
+                .expect("list")
+                .len(),
+            7
+        );
+    }
+
+    #[test]
+    fn trash_pages_follow_the_whole_trash_order() {
+        let mut conn = database();
+        for (index, at) in [T0, T1, T2].into_iter().enumerate() {
+            add(&mut conn, &new_note(&format!("n{index}"), "Nota"));
+            with_tx(&mut conn, |tx| soft_delete(tx, &format!("n{index}"), at)).expect("trash");
+        }
+        let titles = |page: Page| -> Vec<String> {
+            list_trash_page(&conn, page)
+                .expect("page")
+                .into_iter()
+                .map(|note| note.id)
+                .collect()
+        };
+        let whole = titles(Page::ALL);
+        assert_eq!(whole, ["n2", "n1", "n0"]);
+        assert_eq!(
+            titles(Page {
+                limit: Some(2),
+                offset: 1
+            }),
+            ["n1", "n0"]
+        );
     }
 
     fn add_in(conn: &mut Connection, id: &str, title: &str, folder: Option<&str>) -> Note {

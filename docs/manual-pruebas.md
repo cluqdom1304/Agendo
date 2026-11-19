@@ -344,7 +344,7 @@ Movimiento y fluidez
 - [ ] Ctrl+N en la agenda (lista, día, semana y mes) abre el diálogo «Nueva tarea» con el título enfocado; con un diálogo ya abierto no abre otro; Ctrl+Mayús+N sigue creando un borrador en línea de hoy. En «Notas» Ctrl+N sigue creando una nota.
 - [ ] Escribir una palabra mal en la descripción de una tarea y en el editor de una nota: el subrayado rojo aparece al escribir y desaparece al quitar el foco; vuelve al recuperarlo.
 - [ ] Clic derecho en una tarea pegada a la barra lateral › «Etiquetas»: el submenú se ve entero, sin cortarse con la barra izquierda ni con el borde derecho.
-- [ ] Ajustes › «Acerca de» › «Información de la aplicación»: muestra versión 2.0.2, sistema, WebView2, Tauri, SQLite, esquema (10), carpeta de datos (la `.dev` con `tauri dev`), tamaño y recuentos coherentes con lo que hay.
+- [ ] Ajustes › «Acerca de» › «Información de la aplicación»: muestra versión 2.0.2, sistema, WebView2, Tauri, SQLite, esquema (14), carpeta de datos (la `.dev` con `tauri dev`), tamaño y recuentos coherentes con lo que hay.
 - [ ] Escribir en una nota y pulsar enseguida el botón de cerrar de la ventana: al reabrir, el último texto está.
 
 ## Versión 2.0.3 (`[H]`)
@@ -394,3 +394,13 @@ Refactor de estructura sin cambios de comportamiento; ninguno está verificado e
 - [ ] A8-02: atajos Ctrl+K, Ctrl+P, Ctrl+N (con y sin un diálogo abierto), Ctrl+1..3 de sección y cambio de vista de agenda; recordatorio de tarea y de nota (aviso y clic en la notificación abren su destino); paleta, menú contextual, diálogo de tarea, vista de tarea y ajustes se abren por encima del botón «+» y del aviso de deshacer.
 - [ ] A8-03: en una nota, escribir `#` (lista de etiquetas con flechas, Enter, Tab y Esc) y `[[` (lista de notas, opción «crear», Esc); el menú contextual del editor, de tareas, notas, carpetas y etiquetas ofrece las mismas entradas que antes.
 - [ ] A8-05: Ajustes > Acerca de: el botón carga y muestra la información con el mismo aspecto (rejilla, textos secundarios) que antes.
+
+## Auditoría A2–A4 (`[H]`, pendientes de validar en Windows 11)
+- [ ] Abrir una base de datos creada con la 2.0.x: arranca sin error, Ajustes › «Acerca de» muestra esquema (14) y la búsqueda de tareas y de notas encuentra lo mismo que antes (la migración 012 reindexa el buscador).
+- [ ] Editar el texto de una nota o tarea y buscar una palabra nueva y una antigua: la nueva aparece, la antigua ya no (índice por rowid, D-62).
+- [ ] Con muchas notas (1 000 o más, p. ej. importadas), la lista de notas y la agenda con recordatorios abren sin pausa notable (D-63, D-64).
+- [ ] Hacer una copia `.agendo` de una base grande mientras se escribe en una nota: el guardado no se queda esperando a que acabe la copia (D-65).
+- [ ] Importar un `.enex` grande (cientos de MB): la memoria de la aplicación no crece con el tamaño del archivo y las notas entran todas (D-65).
+- [ ] Restaurar una copia `.agendo` con adjuntos: las imágenes vuelven y las notas las muestran.
+- [ ] Cerrar la aplicación desde la bandeja con una copia automática en marcha: no queda ningún `.tmp` en `backups` y la siguiente copia se hace con normalidad (D-66).
+- [ ] Exportar a Markdown varias notas que comparten una imagen: la carpeta `adjuntos` tiene una sola copia y todas las notas la enlazan.

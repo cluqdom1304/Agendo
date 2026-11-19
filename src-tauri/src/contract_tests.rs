@@ -19,8 +19,8 @@ use crate::{
     repo::{
         find::FoundItem,
         model::{
-            Folder, FolderWithCount, Note, NoteReminder, NoteSummary, NoteTemplate, NoteVersion,
-            NoteVersionSummary, Reminder, Tag, TagWithCount, Task,
+            Folder, FolderWithCount, Note, NoteReminder, NoteSummary, NoteTemplate, NoteTitle,
+            NoteVersion, NoteVersionSummary, Reminder, Tag, TagWithCount, Task,
         },
         search::SearchHit,
     },
@@ -186,6 +186,10 @@ fn current() -> Value {
             tag_ids: vec!["tag-1".into()],
             created_at: "2026-03-10T10:00:00Z".into(),
             updated_at: "2026-03-10T11:00:00Z".into(),
+        },
+        "noteTitle": NoteTitle {
+            id: "note-1".into(),
+            title: "Apuntes de clase".into(),
         },
         "effectApplied": EffectApplied {
             requested: EffectMode::Mica,

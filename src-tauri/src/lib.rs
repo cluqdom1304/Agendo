@@ -1,6 +1,7 @@
 pub mod archive;
 pub mod attachments;
 pub mod autobackup;
+pub mod backoff;
 mod commands;
 #[cfg(test)]
 mod contract_tests;
@@ -112,6 +113,7 @@ pub fn run() {
             commands::startup::startup_mark,
             commands::window::window_set_effect,
             commands::tasks::tasks_list,
+            commands::tasks::tasks_list_all,
             commands::tasks::task_create,
             commands::tasks::task_update,
             commands::tasks::task_set_completed,
@@ -131,6 +133,7 @@ pub fn run() {
             commands::folders::folder_delete,
             commands::notes::notes_list,
             commands::notes::note_get,
+            commands::notes::note_titles,
             commands::notes::note_backlinks,
             commands::notes::notes_orphans,
             commands::notes::note_create,
@@ -166,8 +169,21 @@ pub fn run() {
             commands::autostart::autostart_set,
             commands::info::app_info
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|handle, event| {
+            let Some(state) = handle.try_state::<Arc<AppState>>() else {
+                return;
+            };
+            // Only on the real exit (not on a request that could still be cancelled): the
+            // background loops stop, a copy in progress is allowed to end (at most 5 s) and
+            // SQLite refreshes its planner statistics once on the way out (A2-02).
+            if matches!(event, tauri::RunEvent::Exit) {
+                state.begin_shutdown();
+                state.wait_for_background_work(std::time::Duration::from_secs(5));
+                state.db.optimize();
+            }
+        });
 }
 
 #[cfg(test)]
