@@ -5,6 +5,7 @@ import { toInstant, toLocalIsoDate } from "../dates";
 import { t } from "../i18n";
 import { sameRule } from "../recurrence";
 import { TaskBatch } from "./taskBatch.svelte";
+import { flattenSections, mergeTasks } from "./taskMerge";
 import { hasNotes } from "../features/notes/content";
 import { groupByDay, sortTodo, splitCompleted } from "../ordering";
 import type {
@@ -17,7 +18,7 @@ import type {
 
 /** The slice of `api.ts` the store uses; tests pass a fake. */
 export interface TasksApi {
-  tasksList(query: { view: "todo" | "agenda" }): Promise<TasksSections>;
+  tasksListAll(tagId?: string): Promise<TasksSections>;
   taskCreate(input: {
     title?: string;
     dueDate?: string;
@@ -42,7 +43,7 @@ export interface TasksApi {
 }
 
 const realApi: TasksApi = {
-  tasksList: (query) => backend.tasksList(query),
+  tasksListAll: (tagId) => backend.tasksListAll(tagId),
   taskCreate: (input) => backend.taskCreate(input),
   taskUpdate: (id, patch) => backend.taskUpdate(id, patch),
   taskTagsSet: (taskId, tagIds) => backend.taskTagsSet(taskId, tagIds),
@@ -215,6 +216,8 @@ export class TasksStore {
   readonly #noticeMs: number;
   #keys = 0;
   #creating = false;
+  #refreshing: Promise<boolean> | null = null;
+  #refreshAgain = false;
   // Timer handles are bookkeeping, not UI state.
   // eslint-disable-next-line svelte/prefer-svelte-reactivity
   #undoTimers = new Map<number, ReturnType<typeof setTimeout>>();
@@ -236,7 +239,9 @@ export class TasksStore {
       tasks: () => this.tasks,
       order: () => this.visibleOrder,
       today: () => toLocalIsoDate(this.#now()),
-      refresh: () => this.refresh(),
+      refresh: async () => {
+        await this.refresh();
+      },
       report: (error) => this.#report(error),
       inform: (message) => this.#inform(message),
       undoMs: this.#undoMs,
@@ -246,7 +251,7 @@ export class TasksStore {
   async load(): Promise<void> {
     this.status = "loading";
     try {
-      this.tasks = await this.#fetchAll();
+      this.tasks = flattenSections(await this.#api.tasksListAll());
       this.status = "ready";
     } catch (error) {
       this.status = "error";
@@ -254,21 +259,34 @@ export class TasksStore {
     }
   }
 
-  /** Reads everything again, after a change made behind the interface's back. */
-  async refresh(): Promise<void> {
-    try {
-      this.tasks = await this.#fetchAll();
-    } catch (error) {
-      this.#report(error);
+  /**
+   * Reads everything again, after a change made behind the interface's back. Calls that arrive
+   * while a read is in flight share one follow-up read, so a burst costs two reads at most and
+   * the last change is never missed. Resolves `false` when the read failed (already reported).
+   */
+  refresh(): Promise<boolean> {
+    if (this.#refreshing) {
+      this.#refreshAgain = true;
+      return this.#refreshing;
     }
-  }
-
-  async #fetchAll(): Promise<Task[]> {
-    const [todo, agenda] = await Promise.all([
-      this.#api.tasksList({ view: "todo" }),
-      this.#api.tasksList({ view: "agenda" }),
-    ]);
-    return [...todo.todo, ...agenda.agenda.flatMap((day) => day.tasks)];
+    const run = (async () => {
+      let ok = true;
+      try {
+        do {
+          this.#refreshAgain = false;
+          const fresh = flattenSections(await this.#api.tasksListAll());
+          this.tasks = mergeTasks(this.tasks, fresh);
+        } while (this.#refreshAgain);
+      } catch (error) {
+        this.#report(error);
+        ok = false;
+      } finally {
+        this.#refreshing = null;
+      }
+      return ok;
+    })();
+    this.#refreshing = run;
+    return run;
   }
 
   find(id: string): Task | undefined {
@@ -553,13 +571,7 @@ export class TasksStore {
 
   /** The scheduler delivered a reminder: refresh the task (it is now sent) and tell the user. */
   async onReminderFired(taskId: string): Promise<void> {
-    try {
-      const fresh = await this.#fetchAll();
-      this.tasks = fresh;
-    } catch (error) {
-      this.#report(error);
-      return;
-    }
+    if (!(await this.refresh())) return;
     const title = this.find(taskId)?.title.trim();
     this.#inform(t.reminders.fired(title || t.reminders.untitled));
   }

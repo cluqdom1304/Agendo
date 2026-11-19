@@ -21,6 +21,46 @@ const titles = (list: { title: string }[]) => list.map((task) => task.title);
 
 afterEach(() => vi.useRealTimers());
 
+describe("refresh", () => {
+  it("reads once, keeps the identity of unchanged tasks and swaps the changed one", async () => {
+    const { api, store } = setup([
+      makeTask({ id: "a", position: 1 }),
+      makeTask({ id: "b", position: 2 }),
+    ]);
+    await store.load();
+    const [a, b] = store.tasks;
+    api.tasks = api.tasks.map((task) =>
+      task.id === "b" ? { ...task, title: "nuevo" } : { ...task },
+    );
+    api.calls.length = 0;
+    await store.refresh();
+    expect(api.calls).toEqual(["tasksListAll"]);
+    expect(store.find("a")).toBe(a);
+    expect(store.find("b")).not.toBe(b);
+    expect(store.find("b")?.title).toBe("nuevo");
+  });
+
+  it("keeps the same list when nothing changed", async () => {
+    const { api, store } = setup();
+    await store.load();
+    const before = store.tasks;
+    api.tasks = api.tasks.map((task) => ({ ...task }));
+    await store.refresh();
+    expect(store.tasks).toBe(before);
+  });
+
+  it("folds a burst into one read in flight plus one follow-up, without losing the last change", async () => {
+    const { api, store } = setup();
+    await store.load();
+    api.calls.length = 0;
+    const burst = [store.refresh(), store.refresh(), store.refresh()];
+    api.tasks = [...api.tasks, makeTask({ id: "late", position: 9 })];
+    await Promise.all(burst);
+    expect(api.calls).toEqual(["tasksListAll", "tasksListAll"]);
+    expect(store.find("late")).toBeDefined();
+  });
+});
+
 describe("load", () => {
   it("merges both sections and exposes the blocks in display order", async () => {
     const { store } = setup([
@@ -40,7 +80,7 @@ describe("load", () => {
 
   it("reports a failed load without crashing", async () => {
     const { api, store } = setup();
-    api.failing.add("tasksList");
+    api.failing.add("tasksListAll");
     await store.load();
     expect(store.status).toBe("error");
     expect(store.notice?.message).toContain("base de datos");
@@ -531,11 +571,11 @@ describe("repeating tasks (F13-05)", () => {
     const { api, store } = setup();
     await store.load();
     const before = api.calls.filter((call) =>
-      call.startsWith("tasksList"),
+      call.startsWith("tasksListAll"),
     ).length;
     await store.setCompleted("a", true);
     const after = api.calls.filter((call) =>
-      call.startsWith("tasksList"),
+      call.startsWith("tasksListAll"),
     ).length;
     expect(after).toBe(before);
   });

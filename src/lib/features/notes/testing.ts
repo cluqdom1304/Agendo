@@ -97,6 +97,13 @@ export class FakeNotesApi implements NotesApi {
     if (!found) throw "NOT_FOUND: no existe";
     return found;
   }
+  titleLookups: string[][] = [];
+  async noteTitles(ids: readonly string[]) {
+    this.titleLookups.push([...ids]);
+    return this.notes
+      .filter((n) => ids.includes(n.id))
+      .map((n) => ({ id: n.id, title: n.title }));
+  }
   async noteCreate(input: NoteCreateInput = {}) {
     this.#guard();
     const created = note(`n${++this.#next}`, {

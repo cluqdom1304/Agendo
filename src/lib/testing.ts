@@ -63,15 +63,13 @@ export class FakeApi implements TasksApi {
     return task;
   }
 
-  async tasksList(query: { view: "todo" | "agenda" }): Promise<TasksSections> {
-    await this.#enter("tasksList", query.view);
+  async tasksListAll(): Promise<TasksSections> {
+    await this.#enter("tasksListAll");
     const live = this.tasks.filter((task) => !this.#deleted.has(task.id));
-    return query.view === "todo"
-      ? {
-          todo: sortTodo(live.filter((task) => task.dueDate === null)),
-          agenda: [],
-        }
-      : { todo: [], agenda: groupByDay(live) };
+    return {
+      todo: sortTodo(live.filter((task) => task.dueDate === null)),
+      agenda: groupByDay(live),
+    };
   }
 
   async taskCreate(input: {

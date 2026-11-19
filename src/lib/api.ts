@@ -18,6 +18,7 @@ import type {
   NoteCreateInput,
   NotePatch,
   NoteSummary,
+  NoteTitle,
   NoteReminder,
   NoteTemplate,
   NoteVersion,
@@ -89,6 +90,11 @@ export function tasksList(
   query: TasksListQuery,
 ): Promise<TasksSections | Task[]> {
   return invoke("tasks_list", { ...query });
+}
+
+/** Everything in one call: the undated tasks and every day of the agenda (optionally one tag). */
+export function tasksListAll(tagId?: string): Promise<TasksSections> {
+  return invoke<TasksSections>("tasks_list_all", { tagId });
 }
 
 export function taskCreate(input: TaskCreateInput = {}): Promise<Task> {
@@ -230,6 +236,21 @@ export function folderDelete(id: string): Promise<number> {
 
 export function notesList(query: NotesListQuery): Promise<NoteSummary[]> {
   return invoke<NoteSummary[]>("notes_list", { ...query });
+}
+
+const MAX_TITLE_IDS = 1000;
+
+/** Titles of the live notes among `ids`, in as few calls as the backend limit allows. */
+export async function noteTitles(ids: readonly string[]): Promise<NoteTitle[]> {
+  const found: NoteTitle[] = [];
+  for (let from = 0; from < ids.length; from += MAX_TITLE_IDS) {
+    found.push(
+      ...(await invoke<NoteTitle[]>("note_titles", {
+        ids: ids.slice(from, from + MAX_TITLE_IDS),
+      })),
+    );
+  }
+  return found;
 }
 
 export function noteGet(id: string): Promise<Note> {

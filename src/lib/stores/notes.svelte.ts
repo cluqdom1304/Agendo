@@ -18,6 +18,7 @@ import type {
   NotePatch,
   NotesListQuery,
   NoteSummary,
+  NoteTitle,
   NoteReminder,
   NoteTemplate,
   NoteVersion,
@@ -35,6 +36,7 @@ export interface NotesApi {
   folderDelete(id: string): Promise<number>;
   notesList(query: NotesListQuery): Promise<NoteSummary[]>;
   noteGet(id: string): Promise<Note>;
+  noteTitles(ids: readonly string[]): Promise<NoteTitle[]>;
   noteCreate(input?: NoteCreateInput): Promise<Note>;
   noteDailyOpen(date: string, title: string): Promise<Note>;
   noteVersionsList(noteId: string): Promise<NoteVersionSummary[]>;
