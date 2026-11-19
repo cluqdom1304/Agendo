@@ -109,3 +109,6 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 
 ## Criterio de cierre de cada fase
 Batería de CLAUDE.md §4 en verde, métricas antes/después en `docs/metricas.md`, ADR donde corresponda, `Estado: AWAITING_HUMAN` y parada hasta confirmación.
+
+## Incidencias anotadas por el usuario (pendientes de análisis)
+- [ ] U-01 Al pasar de Agenda a Notas, el indicador de la barra de selección Agenda/Notas/Hoy parpadea un instante en la esquina de la ventana y el cambio no se siente fluido. Observado en Windows 11; sin causa investigada aún (sospecha: el indicador se mide/posiciona antes de que la vista diferida cargue, así que parte de 0,0). `[H]` para confirmar el arreglo.
