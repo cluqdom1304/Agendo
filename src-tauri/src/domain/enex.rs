@@ -763,24 +763,114 @@ pub fn read_enex(
     image: &mut dyn FnMut(&[u8]) -> Option<ImageFile>,
     on_note: &mut dyn FnMut(EnexNote),
 ) -> Result<usize, String> {
-    if !text.contains("<en-export") {
-        return Err("el archivo no es una exportación de Evernote (.enex)".into());
-    }
+    read_enex_stream(text.as_bytes(), image, on_note)
+}
+
+/// Largest single `<note>` element read from a stream. Only one note is held in memory at a
+/// time, so this (and not the size of the file) bounds the memory of an import.
+pub const MAX_NOTE_BYTES: usize = 256 * 1024 * 1024;
+
+const NOTE_OPEN: &[u8] = b"<note>";
+const NOTE_CLOSE: &[u8] = b"</note>";
+const EXPORT_OPEN: &[u8] = b"<en-export";
+const CHUNK_BYTES: usize = 256 * 1024;
+
+fn find(haystack: &[u8], needle: &[u8], from: usize) -> Option<usize> {
+    haystack
+        .get(from..)?
+        .windows(needle.len())
+        .position(|window| window == needle)
+        .map(|position| position + from)
+}
+
+/// Same as [`read_enex`] over a stream: the export is read in pieces and each `<note>` is
+/// converted and passed on before the next one is read, so a file of several gigabytes needs
+/// memory for its largest note only. The `<en-export` header must come before the first note.
+pub fn read_enex_stream(
+    reader: impl std::io::Read,
+    image: &mut dyn FnMut(&[u8]) -> Option<ImageFile>,
+    on_note: &mut dyn FnMut(EnexNote),
+) -> Result<usize, String> {
+    read_enex_limited(reader, MAX_NOTE_BYTES, image, on_note)
+}
+
+fn read_enex_limited(
+    mut reader: impl std::io::Read,
+    max_note: usize,
+    image: &mut dyn FnMut(&[u8]) -> Option<ImageFile>,
+    on_note: &mut dyn FnMut(EnexNote),
+) -> Result<usize, String> {
+    let mut buffer: Vec<u8> = Vec::new();
+    let mut scanned = 0;
+    let mut saw_header = false;
+    let mut ended = false;
     let mut count = 0;
-    let mut rest = text;
-    while let Some(start) = rest.find("<note>") {
-        let after = &rest[start..];
-        let Some(end) = after.find("</note>") else {
-            break;
+    let mut piece = vec![0_u8; CHUNK_BYTES];
+    let mut fill = |buffer: &mut Vec<u8>, ended: &mut bool| -> Result<(), String> {
+        let read = reader
+            .read(&mut piece)
+            .map_err(|error| format!("no se pudo leer el archivo: {error}"))?;
+        if read == 0 {
+            *ended = true;
+        }
+        buffer.extend_from_slice(&piece[..read]);
+        Ok(())
+    };
+    loop {
+        // Look for the start of the next note; what comes before it is dropped (the header is
+        // checked on the way).
+        let start = loop {
+            if let Some(start) = find(&buffer, NOTE_OPEN, scanned) {
+                break Some(start);
+            }
+            if !saw_header && find(&buffer, EXPORT_OPEN, 0).is_some() {
+                saw_header = true;
+            }
+            if ended {
+                break None;
+            }
+            // Keep the tail that could be the beginning of a tag cut by the piece boundary.
+            let keep = buffer.len().min(EXPORT_OPEN.len());
+            buffer.drain(..buffer.len() - keep);
+            scanned = 0;
+            fill(&mut buffer, &mut ended)?;
         };
-        let chunk = &after[..end + "</note>".len()];
-        rest = &after[end + "</note>".len()..];
-        let root = parse_xml(chunk);
-        let Some(note) = root.child("note") else {
-            continue;
+        let Some(start) = start else { break };
+        if !saw_header && find(&buffer[..start], EXPORT_OPEN, 0).is_some() {
+            saw_header = true;
+        }
+        if !saw_header {
+            return Err("el archivo no es una exportación de Evernote (.enex)".into());
+        }
+        buffer.drain(..start);
+        scanned = NOTE_OPEN.len();
+        // Read until the note closes. `scanned` keeps the search from starting over each piece.
+        let end = loop {
+            if let Some(end) = find(&buffer, NOTE_CLOSE, scanned) {
+                break Some(end);
+            }
+            if ended {
+                break None;
+            }
+            if buffer.len() > max_note {
+                return Err("una nota del archivo .enex es demasiado grande".into());
+            }
+            scanned = buffer.len().saturating_sub(NOTE_CLOSE.len());
+            fill(&mut buffer, &mut ended)?;
         };
-        on_note(convert_note(note, image));
-        count += 1;
+        let Some(end) = end else { break };
+        let chunk_end = end + NOTE_CLOSE.len();
+        let chunk = String::from_utf8_lossy(&buffer[..chunk_end]).into_owned();
+        buffer.drain(..chunk_end);
+        scanned = 0;
+        let root = parse_xml(&chunk);
+        if let Some(note) = root.child("note") {
+            on_note(convert_note(note, image));
+            count += 1;
+        }
+    }
+    if !saw_header {
+        return Err("el archivo no es una exportación de Evernote (.enex)".into());
     }
     Ok(count)
 }
@@ -970,6 +1060,88 @@ mod tests {
         );
         assert_eq!(parse_enex_date("20201331T235959Z"), None);
         assert_eq!(parse_enex_date("2020-01-31"), None);
+    }
+
+    /// Hands out one byte per `read`, so every tag of the export is cut at some piece boundary.
+    struct OneByte<'a>(&'a [u8]);
+
+    impl std::io::Read for OneByte<'_> {
+        fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize> {
+            match (self.0.split_first(), out.first_mut()) {
+                (Some((byte, rest)), Some(slot)) => {
+                    *slot = *byte;
+                    self.0 = rest;
+                    Ok(1)
+                }
+                _ => Ok(0),
+            }
+        }
+    }
+
+    fn titles_of(reader: impl std::io::Read) -> Result<Vec<String>, String> {
+        let mut titles = Vec::new();
+        read_enex_stream(reader, &mut |_| None, &mut |note| titles.push(note.title))?;
+        Ok(titles)
+    }
+
+    #[test]
+    fn a_stream_cut_at_every_byte_reads_the_same_notes() {
+        let export = "<?xml version=\"1.0\"?><en-export export-date=\"x\">\
+            <note><title>Uno</title><content><![CDATA[<en-note>a</en-note>]]></content></note>\
+            <note><title>Dos</title><content><![CDATA[<en-note>b</en-note>]]></content></note>\
+            </en-export>";
+        assert_eq!(
+            titles_of(OneByte(export.as_bytes())),
+            Ok(vec!["Uno".into(), "Dos".into()])
+        );
+        assert_eq!(
+            titles_of(export.as_bytes()),
+            Ok(vec!["Uno".into(), "Dos".into()])
+        );
+    }
+
+    #[test]
+    fn a_stream_without_the_export_header_or_with_a_cut_note_is_handled() {
+        assert!(titles_of("<html><note><title>x</title></note></html>".as_bytes()).is_err());
+        assert!(titles_of("".as_bytes()).is_err());
+        assert_eq!(titles_of("<en-export></en-export>".as_bytes()), Ok(vec![]));
+        // A note that never closes is left out, like before.
+        let cut = "<en-export><note><title>A</title></note><note><title>B</title>";
+        assert_eq!(titles_of(cut.as_bytes()), Ok(vec!["A".into()]));
+    }
+
+    #[test]
+    fn a_large_export_is_read_note_by_note_across_many_pieces() {
+        let body =
+            "<note><title>N</title><content><![CDATA[<en-note>texto</en-note>]]></content></note>";
+        let export = format!("<en-export>{}</en-export>", body.repeat(20_000));
+        assert!(export.len() > 3 * CHUNK_BYTES);
+        assert_eq!(
+            titles_of(export.as_bytes()).map(|titles| titles.len()),
+            Ok(20_000)
+        );
+    }
+
+    #[test]
+    fn a_note_larger_than_the_limit_is_refused_without_reading_it_all() {
+        struct Endless(usize);
+        impl std::io::Read for Endless {
+            fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize> {
+                let head = b"<en-export><note><title>";
+                let source: &[u8] = if self.0 == 0 {
+                    head
+                } else {
+                    b"xxxxxxxxxxxxxxxx"
+                };
+                let len = out.len().min(source.len());
+                out[..len].copy_from_slice(&source[..len]);
+                self.0 += len;
+                Ok(len)
+            }
+        }
+        let error = read_enex_limited(Endless(0), 1024 * 1024, &mut |_| None, &mut |_| {})
+            .expect_err("too big");
+        assert!(error.contains("demasiado grande"), "{error}");
     }
 
     #[test]

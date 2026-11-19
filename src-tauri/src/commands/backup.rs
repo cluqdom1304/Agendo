@@ -41,10 +41,9 @@ pub fn create(state: &AppState, database: &Path, target: &Path) -> AppResult<()>
         let files = database.with_file_name(attachments::DIR_NAME);
         return archive::create(state, database, &files, target);
     }
-    // The writer, not the read-only connection: `VACUUM INTO` takes a consistent snapshot there.
-    state
-        .db
-        .with_writer(|conn| db::backup::create(conn, target, &protected_files(database)))
+    // A connection of its own: `VACUUM INTO` takes a consistent snapshot without holding up the
+    // writer or the readers for as long as the copy lasts (A4-01).
+    state.db.snapshot(target, &protected_files(database))
 }
 
 pub fn restore(

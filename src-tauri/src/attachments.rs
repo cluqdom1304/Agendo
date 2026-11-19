@@ -119,7 +119,7 @@ pub fn collect_orphans(state: &AppState, dir: &Path) -> AppResult<usize> {
     let orphans = state
         .db
         .read(|conn| Ok(attachments::orphans(conn, &now, GRACE_HOURS)?))?;
-    let mut removed = 0;
+    let mut gone = Vec::new();
     for id in orphans {
         if !is_valid_id(&id) {
             continue;
@@ -130,10 +130,15 @@ pub fn collect_orphans(state: &AppState, dir: &Path) -> AppResult<usize> {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(_) => continue,
         }
-        state.db.write(|tx| Ok(attachments::delete(tx, &id)?))?;
-        removed += 1;
+        gone.push(id);
     }
-    Ok(removed)
+    // One transaction for all the rows, instead of one write (and one commit) per file.
+    state.db.write(|tx| {
+        for id in &gone {
+            attachments::delete(tx, id)?;
+        }
+        Ok(gone.len())
+    })
 }
 
 #[cfg(test)]
@@ -186,6 +191,30 @@ mod tests {
         let (found, bytes) = read(&state, &dir, &first.id).expect("read");
         assert_eq!(found, first);
         assert_eq!(bytes, PNG);
+    }
+
+    #[test]
+    fn orphans_are_collected_in_one_batch_after_the_grace_period() {
+        let (state, clock) = test_state();
+        let (_temp, dir) = dir();
+        let mut ids = Vec::new();
+        for index in 0..3_u8 {
+            let mut bytes = PNG.to_vec();
+            bytes.push(index);
+            ids.push(add(&state, &dir, &bytes).expect("add").id);
+        }
+        assert_eq!(collect_orphans(&state, &dir).expect("too early"), 0);
+
+        clock.advance(chrono::Duration::hours(i64::from(GRACE_HOURS) + 1));
+        assert_eq!(collect_orphans(&state, &dir).expect("collect"), 3);
+        assert_eq!(fs::read_dir(&dir).expect("dir").count(), 0);
+        for id in ids {
+            assert!(matches!(
+                read(&state, &dir, &id),
+                Err(AppError::NotFound(_))
+            ));
+        }
+        assert_eq!(collect_orphans(&state, &dir).expect("again"), 0);
     }
 
     #[test]

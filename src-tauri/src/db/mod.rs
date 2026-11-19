@@ -95,6 +95,18 @@ pub fn open_read_only(path: &Path) -> Result<Connection, DbError> {
     Ok(conn)
 }
 
+/// A connection of its own for taking a snapshot (`VACUUM INTO`) of a file database: opened
+/// read-only, so it cannot change the data, but without `query_only` (which also forbids
+/// writing the copy). It holds no lock the writer or the readers need.
+pub fn open_snapshot_source(path: &Path) -> Result<Connection, DbError> {
+    let flags = OpenFlags::SQLITE_OPEN_READ_ONLY
+        | OpenFlags::SQLITE_OPEN_NO_MUTEX
+        | OpenFlags::SQLITE_OPEN_URI;
+    let conn = Connection::open_with_flags(path, flags)?;
+    conn.busy_timeout(std::time::Duration::from_millis(pragmas::BUSY_TIMEOUT_MS))?;
+    Ok(conn)
+}
+
 pub fn open_in_memory(migrations: &[Migration]) -> Result<Connection, DbError> {
     prepare(Connection::open_in_memory()?, migrations)
 }
