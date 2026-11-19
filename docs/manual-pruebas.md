@@ -427,4 +427,4 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
 7. **A8 pulido visual:** revisar calendario semanal, ajustes «Acerca de» y los estados vacío/carga/error.
 
 ## U-01 — Cambio de sección sin parpadeo (`[H]`)
-- [ ] Pasar varias veces de Agenda a Notas y a Hoy (también justo tras arrancar): la barra Agenda/Notas/Hoy no debe parpadear ni saltar, y el panel lateral debe aparecer sin desplazar la barra de herramientas.
+- [x] (confirmado por el usuario) Pasar varias veces de Agenda a Notas y a Hoy (también justo tras arrancar): la barra Agenda/Notas/Hoy no debe parpadear ni saltar, y el panel lateral debe aparecer sin desplazar la barra de herramientas.
