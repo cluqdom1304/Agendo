@@ -98,3 +98,18 @@ En depuración la prueba de tareas usa 1 000 y no comprueba tiempos (comparte CP
 temporal (`MIAGENDA_DATA_DIR`, sin tocar los datos reales) y da el tiempo hasta la ventana visible (N-01) y la memoria
 en reposo (proceso principal y con WebView2, N-02). Exige cerrar antes cualquier instancia de Agendo (instancia única). La ejecución
 real y su valor siguen siendo `[H]` (F16-09); la ventana visible aproxima, no sustituye, el primer pintado.
+
+## Auditoría A0 — línea base (2026-11-19, commit 7486d25)
+
+| Medida | Valor |
+|---|---|
+| JS total (gzip) | 268,3 KB (presupuesto de `npm run size`: 300 KB; el objetivo N-04 de SPEC es 250 KB) |
+| JS carga inicial / chunks diferidos (gzip) | 86,4 KB / 181,9 KB |
+| CSS total (gzip) | 26,0 KB |
+| `agendo.exe` release | 10 823 680 B (10,32 MiB) |
+| Tests Rust (`cargo test --lib`, depuración) | 457 correctos, 9,4 s |
+| Tests TS (`vitest`) | 604 correctos en 55 archivos, 12,5 s |
+| Escala 10 000 notas/tareas (release, F16-05) | todas las consultas muy por debajo del límite (≤ 20 ms) |
+
+Tiempo por test de Rust: `--report-time` exige nightly; se medirá en A11-02 con otro método.
+Arranque y memoria (`npm run measure`) siguen siendo `[H]`.
