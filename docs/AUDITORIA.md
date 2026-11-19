@@ -93,8 +93,8 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [ ] A8-06 Trocear `i18n.ts` por dominio si `npm run audit` demuestra ganancia.
 
 ### A9 — Paridad front/back (riesgo bajo)
-- [ ] A9-01 Vectores JSON compartidos de recurrencia, orden y fechas, ejecutados por vitest y por cargo test.
-- [ ] A9-02 Decidir y documentar la fuente de verdad del orden (ADR).
+- [x] A9-01 Vectores en `src-tauri/fixtures/parity/*.json` leídos por `parity_tests.rs` y `parity.test.ts` (recurrencia, orden, fechas con DST, avisos, duración). Divergencia real corregida: `parseRule` (TS) aceptaba entradas que Rust rechaza.
+- [x] A9-02 D-80 `ACCEPTED`: el backend es la fuente de verdad de recurrencia y orden.
 
 ### A11 — Tests (riesgo bajo)
 - [ ] A11-01 Fixtures compartidos y deduplicación de tests solapados.
