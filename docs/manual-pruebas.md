@@ -425,3 +425,6 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
 5. **A2–A4 datos:** migrar una base real a la versión 14 (hacer copia antes), comprobar búsqueda, papelera, copias y exportar/importar `.agendo` y ENEX.
 6. **A5 registro:** comprobar que `agendo.log` aparece en la carpeta de datos y rota.
 7. **A8 pulido visual:** revisar calendario semanal, ajustes «Acerca de» y los estados vacío/carga/error.
+
+## U-01 — Cambio de sección sin parpadeo (`[H]`)
+- [ ] Pasar varias veces de Agenda a Notas y a Hoy (también justo tras arrancar): la barra Agenda/Notas/Hoy no debe parpadear ni saltar, y el panel lateral debe aparecer sin desplazar la barra de herramientas.

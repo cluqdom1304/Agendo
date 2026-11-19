@@ -61,9 +61,36 @@
     import("$lib/features/calendar/CalendarView.svelte");
 
   // Dialogs and the palette load from `DialogHost`; views are only requested once shown.
-  const loadFolders = () => import("$lib/features/notes/FolderSidebar.svelte");
-  const loadNotes = () => import("$lib/features/notes/NotesView.svelte");
-  const loadToday = () => import("$lib/features/today/TodayView.svelte");
+  // They are fetched once the shell is idle and then rendered synchronously: awaiting a promise
+  // inside the template leaves a frame without sidebar, which made the toolbar jump when
+  // switching section.
+  let FolderSidebar = $state<
+    typeof import("$lib/features/notes/FolderSidebar.svelte").default | null
+  >(null);
+  let NotesView = $state<
+    typeof import("$lib/features/notes/NotesView.svelte").default | null
+  >(null);
+  let TodayView = $state<
+    typeof import("$lib/features/today/TodayView.svelte").default | null
+  >(null);
+
+  async function preloadViews() {
+    const [folders, notes, today] = await Promise.all([
+      import("$lib/features/notes/FolderSidebar.svelte"),
+      import("$lib/features/notes/NotesView.svelte"),
+      import("$lib/features/today/TodayView.svelte"),
+    ]);
+    FolderSidebar = folders.default;
+    NotesView = notes.default;
+    TodayView = today.default;
+  }
+  $effect(() => {
+    const timer = setTimeout(() => void preloadViews(), 400);
+    return () => clearTimeout(timer);
+  });
+  $effect(() => {
+    if (viewStore.section !== "agenda") void preloadViews();
+  });
 
   // Tasks made from a note name it (F10-05): look the titles up as tasks come and go.
   // The key is a string so the effect only reruns when the set of origin notes changes, not on
@@ -154,7 +181,7 @@
 
 <div class="shell">
   {#if viewStore.section === "notes"}
-    {#await loadFolders() then { default: FolderSidebar }}
+    {#if FolderSidebar}
       <FolderSidebar
         notes={notesStore}
         tags={tagsStore}
@@ -164,7 +191,13 @@
           ).length}
         open={sidebarOpen}
       />
-    {/await}
+    {:else}
+      <div
+        class="sidebar-placeholder"
+        style:width={sidebarOpen ? "224px" : "0"}
+        aria-hidden="true"
+      ></div>
+    {/if}
   {:else}
     <TagSidebar tags={tagsStore} tasks={tasksStore} open={sidebarOpen} />
   {/if}
@@ -257,7 +290,7 @@
     {#if viewStore.ready}
       {#if viewStore.section === "notes"}
         <div class="content" data-menu-area="notes">
-          {#await loadNotes() then { default: NotesView }}
+          {#if NotesView}
             <NotesView
               notes={notesStore}
               tags={tagsStore}
@@ -268,11 +301,11 @@
                 void openInList(task);
               }}
             />
-          {/await}
+          {/if}
         </div>
       {:else if viewStore.section === "today"}
         <div class="content scrolls" data-menu-area="agenda">
-          {#await loadToday() then { default: TodayView }}
+          {#if TodayView}
             <TodayView
               store={tasksStore}
               notes={notesStore}
@@ -281,7 +314,7 @@
               onOpenNote={(noteId) => void showNote(noteId)}
               onOpenDaily={(date) => void showDailyNote(date)}
             />
-          {/await}
+          {/if}
         </div>
       {:else if viewStore.mode === "list"}
         <div class="content scrolls" data-menu-area="agenda">
