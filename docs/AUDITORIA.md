@@ -1,6 +1,6 @@
 # AUDITORIA.md — Plan de auditoría de Agendo
 
-**Estado:** IN_PROGRESS — A0, A1 y el carril frontend (A6, A10, A12), A8 parcial, A9 y A2–A4 hechos `[A]`. Carril de datos (A2–A4) integrado. Pendientes `[H]`: A1-01, A12-03/04, A6-06.
+**Estado:** AWAITING_HUMAN — todas las tareas `[A]` hechas. Pendientes `[H]` (ver manual-pruebas): A1-01, A6-06, A11-03, A12-03; A8-04 aplazada.
 **Objetivo:** aplicación ligera, bien estructurada, escalable, fácil de depurar y optimizar, y pulida para el usuario final.
 **Reglas:** cada tarea sigue el ciclo de CLAUDE.md §2 (plan corto, cambio coherente, batería §4, commit convencional). Lo que dependa de Windows es `[H]` y nunca se marca como verificado. Cada dependencia o cambio de esquema lleva ADR en `DECISIONS.md`; las migraciones son siempre aditivas.
 
@@ -105,7 +105,7 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [x] A12-01 `EmptyState` con variantes carga/error; corregido bug real: `TodoView` mostraba «Sin tareas» si la carga fallaba.
 - [x] A12-02 Revisado, sin cambios; teclado `[H]`.
 - [ ] A12-03 Instalador: cierre del proceso al actualizar y diff documentado contra la plantilla de Tauri `[H]`.
-- [ ] A12-04 Lista `[H]` final para Windows 11 en `docs/manual-pruebas.md`.
+- [x] A12-04 Lista `[H]` final consolidada al final de `docs/manual-pruebas.md`.
 
 ## Criterio de cierre de cada fase
 Batería de CLAUDE.md §4 en verde, métricas antes/después en `docs/metricas.md`, ADR donde corresponda, `Estado: AWAITING_HUMAN` y parada hasta confirmación.

@@ -413,3 +413,15 @@ Ninguno está verificado; requieren Windows 11 real.
 - [ ] A6-01: abrir la lista con muchas tareas y provocar cambios externos seguidos (recordatorio disparado, completar una tarea repetida, importar una copia): la lista se actualiza sin parpadeos ni perder la selección ni la fila en edición.
 - [ ] A8-05: Calendario > Semana y Día: arrastrar un tramo, escribir el título y Enter; Enter sobre una columna enfocada; Esc cancela. Igual que antes de dividir `CalendarWeek`.
 - [ ] A6-02: abrir una tarea creada desde una nota (muestra el título de la nota de origen) y una nota con enlaces a otras notas, borradas y vivas: los enlaces borrados siguen mostrándose como eliminados.
+
+## Auditoría — lista final `[H]` en Windows 11 (A12-04)
+
+Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A6-A11» de arriba detallan los pasos.
+
+1. **A1-01 CSP:** instalar una build release y comprobar que editor, imágenes pegadas, calendario y ajustes funcionan sin errores de CSP (DevTools no está en release: probar con `tauri build --debug`).
+2. **A12-03 Instalador:** actualizar sobre una versión instalada con Agendo abierto; debe cerrar el proceso y conservar los datos. Comparar `installer.nsi` con la plantilla de Tauri.
+3. **A6-06 Editor:** abrir una nota de ~1 MB y otra con 50 imágenes; escribir y medir fluidez (Performance de WebView2).
+4. **A11-03 e2e:** `npm run e2e` por primera vez (calendario, recordatorios, etiquetas, copias).
+5. **A2–A4 datos:** migrar una base real a la versión 14 (hacer copia antes), comprobar búsqueda, papelera, copias y exportar/importar `.agendo` y ENEX.
+6. **A5 registro:** comprobar que `agendo.log` aparece en la carpeta de datos y rota.
+7. **A8 pulido visual:** revisar calendario semanal, ajustes «Acerca de» y los estados vacío/carga/error.
