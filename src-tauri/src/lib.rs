@@ -16,6 +16,7 @@ pub mod notify;
 mod parity_tests;
 pub mod repo;
 pub mod scheduler;
+mod services;
 mod startup;
 pub mod state;
 #[cfg(test)]

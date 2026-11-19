@@ -16,11 +16,7 @@ use serde_json::Value;
 
 use crate::{
     attachments::{self, MAX_BYTES},
-    commands::{
-        folders::{self as folder_commands, FolderUpsertInput},
-        notes::derive,
-        tags::{self as tag_commands, TagUpsertInput},
-    },
+    commands::folders::{self as folder_commands, FolderUpsertInput},
     domain::{
         codec::base64_encode,
         dates, enex, html,
@@ -33,6 +29,10 @@ use crate::{
         model::{Folder, NewNote, Note},
         notes::{self, Scope, Sort},
         tags,
+    },
+    services::{
+        notes::derive,
+        tags::{self as tag_commands, TagUpsertInput},
     },
     state::AppState,
 };

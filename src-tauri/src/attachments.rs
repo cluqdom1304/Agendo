@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn saving_a_note_keeps_the_files_it_shows_and_releases_the_rest() {
-        use crate::commands::notes::{NoteCreateInput, NotePatchInput, create, update};
+        use crate::services::notes::{NoteCreateInput, NotePatchInput, create, update};
 
         let (state, clock) = test_state();
         let (_temp, dir) = dir();

@@ -1,0 +1,6 @@
+//! Use cases behind the Tauri commands: business rules and transactions, free of IPC concerns.
+
+pub mod notes;
+pub mod reminders;
+pub mod tags;
+pub mod tasks;

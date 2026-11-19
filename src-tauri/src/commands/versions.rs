@@ -6,12 +6,12 @@ use std::sync::Arc;
 use tauri::State;
 
 use crate::{
-    commands::notes::{self, NotePatchInput},
     error::{AppError, AppResult},
     repo::{
         model::{Note, NoteVersion, NoteVersionSummary},
         versions,
     },
+    services::notes::{self, NotePatchInput},
     state::{AppState, run_blocking},
 };
 
@@ -71,8 +71,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        commands::notes::{self as notes_cmd, NoteCreateInput},
         repo::versions::{MAX_VERSIONS, SNAPSHOT_EVERY_MINUTES},
+        services::notes::{self as notes_cmd, NoteCreateInput},
         state::test_state,
     };
 

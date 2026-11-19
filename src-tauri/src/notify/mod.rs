@@ -10,13 +10,13 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 use tauri_plugin_notification::{Action, ActionType, NotificationExt};
 
 use crate::{
-    commands::tasks,
     domain::dates,
     error::AppError,
     repo::{
         self,
         reminders::{self as reminder_repo, DueReminder},
     },
+    services::tasks,
     state::AppState,
 };
 

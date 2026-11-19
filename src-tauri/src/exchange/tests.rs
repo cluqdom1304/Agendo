@@ -1,8 +1,8 @@
 use super::*;
 use super::{export::*, import::*, paths::*};
 use crate::{
-    commands::notes::{NoteCreateInput, create},
     domain::codec::md5_hex,
+    services::notes::{NoteCreateInput, create},
     state::test_state,
     test_support::TempDir,
 };
@@ -182,7 +182,7 @@ fn exported_markdown_imports_back_with_its_structure_tags_and_images() {
             { "type": "image", "attrs": { "attachmentId": image.id, "mime": "image/png" } },
         ])),
     );
-    crate::commands::notes::set_note_tags(&source, &original.id, &[tag.id]).expect("tags");
+    crate::services::notes::set_note_tags(&source, &original.id, &[tag.id]).expect("tags");
     let out = base.join("out");
     export_notes(&source, &files, &out, Format::Markdown, &Selection::All).expect("export");
 
@@ -239,7 +239,7 @@ fn importing_the_same_folder_again_skips_what_it_already_has() {
         .into_iter()
         .find(|note| note.content_json.contains("segunda"))
         .expect("note");
-    crate::commands::notes::delete(&state, &gone.id).expect("delete");
+    crate::services::notes::delete(&state, &gone.id).expect("delete");
     let back = import_text_files(&state, &files, &source).expect("back");
     assert_eq!((back.notes, back.duplicates), (1, 1));
 }

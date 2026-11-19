@@ -91,7 +91,7 @@ fn reminders_of(state: &AppState, id: &str) -> Vec<crate::repo::model::Reminder>
 }
 
 fn timed_task_with_reminder(state: &AppState) -> Task {
-    use crate::commands::reminders::{ReminderInput, set};
+    use crate::services::reminders::{ReminderInput, set};
     let task = create(
         state,
         TaskCreateInput {
@@ -152,7 +152,7 @@ fn dragging_a_task_to_another_day_reschedules_its_reminders() {
 
 #[test]
 fn removing_the_time_removes_unsent_relative_reminders_but_not_custom_ones() {
-    use crate::commands::reminders::{ReminderInput, set};
+    use crate::services::reminders::{ReminderInput, set};
     let state = state();
     let task = timed_task_with_reminder(&state);
     let custom = ReminderInput {
@@ -348,9 +348,9 @@ fn range_view_is_flat_ascending_and_validated() {
 #[test]
 fn list_filters_by_tag() {
     let state = state();
-    let tag = crate::commands::tags::upsert(
+    let tag = crate::services::tags::upsert(
         &state,
-        crate::commands::tags::TagUpsertInput {
+        crate::services::tags::TagUpsertInput {
             id: None,
             name: "Física".into(),
             color_hex: "#112233".into(),
@@ -845,9 +845,9 @@ fn a_rule_is_validated_and_anchored_to_the_date() {
 #[test]
 fn completing_a_repeating_task_creates_the_next_one_and_hands_over_the_series() {
     let (state, _) = test_state();
-    let tag = crate::commands::tags::upsert(
+    let tag = crate::services::tags::upsert(
         &state,
-        crate::commands::tags::TagUpsertInput {
+        crate::services::tags::TagUpsertInput {
             id: None,
             name: "Casa".into(),
             color_hex: "#112233".into(),
@@ -948,10 +948,10 @@ fn the_series_ends_at_until_and_a_plain_task_creates_nothing() {
 fn relative_reminders_follow_the_series() {
     let (state, _) = test_state();
     let first = repeating(&state, "2026-03-20", "FREQ=WEEKLY");
-    crate::commands::reminders::set(
+    crate::services::reminders::set(
         &state,
         &first.id,
-        &[crate::commands::reminders::ReminderInput {
+        &[crate::services::reminders::ReminderInput {
             offset_minutes: Some(60),
             notify_at: None,
             repeat: None,
