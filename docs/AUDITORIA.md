@@ -70,11 +70,11 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [ ] A6-06 Perfil del editor con notas grandes `[H]`.
 
 ### A10 — Dependencias y build (riesgo bajo)
-- [ ] A10-01 `cargo tree -d` y revisión de features (tokio, etc.).
-- [ ] A10-02 Medir `opt-level` "s" frente a 3 (tamaño y arranque); decidir con datos.
+- [x] A10-01 Los duplicados de `cargo tree -d` son transitivos (Tauri/`sha2`), no accionables; las features de `tokio` (`macros`, `rt`, `sync`, `time`) se usan todas.
+- [x] A10-02 Ya decidido con datos en F16-03/F16-05: `s` + LTO fat ahorra 4,9 MB y la escala sigue ≪ límites; sin cambios. `panic = "abort"` descartado (D-24).
 - [x] A10-03 Medido: Tailwind cuesta 2,56 KB gzip, el preflight es necesario. D-70 `ACCEPTED`: se mantiene.
 - [x] A10-04 `npm run tokens` (9 de 67 sin uso; no se ha quitado nada).
-- [ ] A10-05 `[profile.dev.package."*"]` para acelerar tests.
+- [x] A10-05 `[profile.dev.package."*"] opt-level = 2`: tests lib 10,5 s → 8,0 s (−24 %).
 
 ### A7 — Estructura Rust (riesgo medio-alto)
 - [ ] A7-01 Mover tests grandes a archivos propios (`commands/tasks`, `notify`, `scheduler`).
