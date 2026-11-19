@@ -27,7 +27,7 @@ pub fn mark(label: &str) {
 #[cfg(debug_assertions)]
 fn log_mark(label: &str) {
     if let Some(start) = START.get() {
-        eprintln!("{}", format_mark(label, start.elapsed()));
+        crate::applog::info("startup", &format_mark(label, start.elapsed()));
     }
 }
 

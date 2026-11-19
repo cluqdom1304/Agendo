@@ -1,17 +1,20 @@
 //! Shared application state: the database handle, the clock and the id generator.
 
 use std::{
+    panic::Location,
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex, MutexGuard, PoisonError, TryLockError,
         atomic::{AtomicUsize, Ordering},
     },
+    time::{Duration, Instant},
 };
 
 use rusqlite::{Connection, Transaction};
 use tokio::sync::{Notify, watch};
 
 use crate::{
+    applog,
     db::{self, DbError, MIGRATIONS, Migration},
     error::{AppError, AppResult},
     ids::{IdGenerator, UuidV7Generator},
@@ -38,6 +41,22 @@ pub struct Db {
 /// How many read-only connections a file database opens (A4-01): a long read (a backup
 /// snapshot, a big search) leaves the others free.
 const READERS: usize = 3;
+
+/// Logs where a read or write was started and how long it took (lock wait included), only when
+/// it passed the slow-query threshold. No data goes into the line.
+fn log_if_slow(kind: &str, caller: &Location<'_>, elapsed: Duration) {
+    if elapsed >= applog::SLOW_QUERY {
+        applog::warn(
+            "db",
+            &format!(
+                "slow {kind} {} ms at {}:{}",
+                elapsed.as_millis(),
+                caller.file(),
+                caller.line()
+            ),
+        );
+    }
+}
 
 fn lock(connection: &Mutex<Connection>) -> MutexGuard<'_, Connection> {
     connection.lock().unwrap_or_else(PoisonError::into_inner)
@@ -76,7 +95,16 @@ impl Db {
 
     /// Runs a read on the first free reader (starting from a rotating one); if all are busy it
     /// waits for the one whose turn it is. In-memory databases read through the writer.
+    #[track_caller]
     pub fn read<T>(&self, operation: impl FnOnce(&Connection) -> AppResult<T>) -> AppResult<T> {
+        let started = Instant::now();
+        let caller = Location::caller();
+        let outcome = self.read_untimed(operation);
+        log_if_slow("read", caller, started.elapsed());
+        outcome
+    }
+
+    fn read_untimed<T>(&self, operation: impl FnOnce(&Connection) -> AppResult<T>) -> AppResult<T> {
         if self.readers.is_empty() {
             return operation(&lock(&self.writer));
         }
@@ -123,12 +151,19 @@ impl Db {
     }
 
     /// One logical write: a single transaction, committed on `Ok` and rolled back on `Err`.
+    #[track_caller]
     pub fn write<T>(
         &self,
         operation: impl FnOnce(&Transaction<'_>) -> AppResult<T>,
     ) -> AppResult<T> {
-        let mut connection = lock(&self.writer);
-        repo::with_tx(&mut connection, operation)
+        let started = Instant::now();
+        let caller = Location::caller();
+        let outcome = {
+            let mut connection = lock(&self.writer);
+            repo::with_tx(&mut connection, operation)
+        };
+        log_if_slow("write", caller, started.elapsed());
+        outcome
     }
 }
 

@@ -17,6 +17,10 @@ impl TempDir {
         Self(std::env::temp_dir().join(format!("agendo-test-{}-{id}", std::process::id())))
     }
 
+    pub fn path(&self) -> &std::path::Path {
+        &self.0
+    }
+
     /// `<dir>/nested/agenda.sqlite`; neither the file nor `nested` exist yet.
     pub fn database(&self) -> PathBuf {
         self.0.join("nested").join("agenda.sqlite")

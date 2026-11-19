@@ -54,7 +54,7 @@ pub struct Engine {
 }
 
 fn log(message: &str) {
-    eprintln!("[scheduler] {message}");
+    crate::applog::warn("scheduler", message);
 }
 
 /// A reminder of a repeating series has just been closed (sounded, given up or expired): store

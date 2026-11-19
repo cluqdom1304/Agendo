@@ -250,7 +250,10 @@ pub fn install_actions<R: Runtime>(app: &AppHandle<R>, state: Arc<AppState>) {
     );
     let types = vec![ActionType::builder(TASK_ACTIONS).actions(buttons).build()];
     if let Err(error) = app.notification().register_action_types(types) {
-        eprintln!("[notify] no se pudieron registrar las acciones: {error}");
+        crate::applog::error(
+            "notify",
+            &format!("no se pudieron registrar las acciones: {error}"),
+        );
         return;
     }
     let handle = app.clone();
@@ -286,7 +289,10 @@ pub fn install_actions<R: Runtime>(app: &AppHandle<R>, state: Arc<AppState>) {
         }
     });
     if let Err(error) = registered {
-        eprintln!("[notify] no se pudo escuchar las acciones: {error}");
+        crate::applog::error(
+            "notify",
+            &format!("no se pudo escuchar las acciones: {error}"),
+        );
     }
 }
 
@@ -295,7 +301,10 @@ pub struct TauriFiredSink<R: Runtime>(pub AppHandle<R>);
 impl<R: Runtime> FiredSink for TauriFiredSink<R> {
     fn fired(&self, fired: &Fired) {
         if let Err(error) = self.0.emit(FIRED_EVENT, fired) {
-            eprintln!("[scheduler] no se pudo emitir {FIRED_EVENT}: {error}");
+            crate::applog::error(
+                "scheduler",
+                &format!("no se pudo emitir {FIRED_EVENT}: {error}"),
+            );
         }
     }
 }
