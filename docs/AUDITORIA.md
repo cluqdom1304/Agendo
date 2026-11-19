@@ -85,12 +85,12 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 - [ ] A7-06 Código muerto (`fts::rebuild`) y envolturas CRUD repetidas.
 
 ### A8 — Estructura frontend (riesgo medio)
-- [ ] A8-01 Dividir `notes.svelte.ts` y `tasks.svelte.ts` por responsabilidad, con los `*.store.test.ts` como red.
-- [ ] A8-02 `+page.svelte`: atajos, eventos y `DialogHost` en módulos propios.
-- [ ] A8-03 `NoteEditor` en controladores `.svelte.ts`; `editor.ts` y `context/entries.ts` por dominio.
-- [ ] A8-04 `InlineEdit`, `EmptyState` y `CalendarChip` compartidos.
-- [ ] A8-05 Dividir `FolderSidebar`, `SettingsDialog` (carga por pestaña), `CalendarWeek` y `TaskDialog`.
-- [ ] A8-06 Trocear `i18n.ts` por dominio si `npm run audit` demuestra ganancia.
+- [~] A8-01 `notes.svelte.ts` 836→731 líneas (enlaces, plantillas, versiones, recordatorios en módulos). `tasks.svelte.ts` pendiente: se divide junto a A6-01.
+- [x] A8-02 `+page.svelte` 596→461 (`shortcuts.ts`, `backendEvents.ts`, `dialogs.svelte.ts`, `DialogHost.svelte`).
+- [x] A8-03 `editor.ts` 728→~520, `entries.ts` 574→60 (5 módulos), sugerencias de `NoteEditor` a `noteSuggestions.svelte.ts`.
+- [ ] A8-04 (aplazado: sin Windows no se verifica el aspecto) `InlineEdit`, `EmptyState` y `CalendarChip` compartidos.
+- [~] A8-05 Hecho `SettingsAbout`. Descartado `FolderSidebar` (CSS acoplado) y carga por pestaña (no hay pestañas). Pendiente `CalendarWeek` y `TaskDialog`.
+- [x] A8-06 Descartado: los dominios diferidos suman ~2,5 KB gzip (3 % del inicial) y exigiría reescribir `t.*` en ~60 archivos.
 
 ### A9 — Paridad front/back (riesgo bajo)
 - [x] A9-01 Vectores en `src-tauri/fixtures/parity/*.json` leídos por `parity_tests.rs` y `parity.test.ts` (recurrencia, orden, fechas con DST, avisos, duración). Divergencia real corregida: `parseRule` (TS) aceptaba entradas que Rust rechaza.
