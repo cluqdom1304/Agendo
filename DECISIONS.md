@@ -537,3 +537,11 @@ Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`
   - **Fallos:** una copia que falla se registra por consola y se reintenta en la siguiente vuelta; nunca detiene la aplicación ni borra copias buenas (la rotación va después de escribir la nueva).
 - **Consecuencias:** sin dependencias nuevas ni migración. La copia está en el mismo disco que los datos: protege de errores de borrado o de restauración, no de un fallo del disco; la copia manual a otra ubicación sigue disponible. Elegir otra carpeta queda como mejora futura (no hay `[H]` que la pida).
 - **Alternativas descartadas:** tarea programada de Windows (permisos y superficie nueva); copiar al cerrar (la aplicación se cierra a la bandeja, D-46, y puede pasar días abierta); carpeta elegida por el usuario (requiere diálogo y permisos de escritura en cualquier sitio, con `capabilities` más amplias).
+
+## D-62 — Índice FTS con mapa id → rowid (migración 012, A2-01)
+- **Estado:** ACCEPTED (auditoría A2) · **Fecha:** 2026-11-19 · **Validación:** `[A]` tests de migración, de deriva del mapa y de tiempo
+- **Contexto:** `tasks_fts` y `notes_fts` guardan el id en una columna `UNINDEXED` (D-11); borrar por id recorre todo el índice en cada guardado. Medido en release: 2,7 ms con 10 000 filas y 21,9 ms con 50 000 (crece lineal).
+- **Decisión:** dos tablas normales `tasks_fts_map(task_id PK, fts_rowid)` y `notes_fts_map(note_id PK, fts_rowid)` (`WITHOUT ROWID`). `repo/fts.rs` borra por `rowid` (con comprobación del id, por si un rowid se reutiliza) y apunta el rowid de cada inserción. La migración 012 es aditiva en esquema y reindexa desde `tasks`/`notes` (el índice es un dato derivado): sin duplicados ni filas huérfanas, y el contenido buscable se conserva (test).
+- **Resultado:** `fts::sync` pasa a 43 µs con 10 000 y con 50 000 filas (≈500× menos con 50 000).
+- **Consecuencias:** todo código que escriba en un índice FTS debe pasar por `repo/fts.rs` (o `rebuild`), nunca con `INSERT` directo fuera de tests. Sin dependencias nuevas.
+- **Alternativas descartadas:** rowid = rowid de la tabla base (VACUUM puede renumerarlo); `task_id` indexado en FTS (se podría encontrar por id al buscar y el índice crece); FTS external-content (exige conservar los valores antiguos para borrar y el índice solo cubre filas vivas).
