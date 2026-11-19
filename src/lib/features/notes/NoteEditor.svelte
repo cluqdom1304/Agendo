@@ -9,12 +9,11 @@
     ImageHost,
     NoteEditorHandle,
     NoteLinkHost,
-    TagQuery,
     TaskRefHost,
     ToggleName,
     ToolbarState,
   } from "./editor";
-  import { matchTags } from "./tagQuery";
+  import { LinkSuggest, TagSuggest } from "./noteSuggestions.svelte";
   import NoteToolbar from "./NoteToolbar.svelte";
   import { NoteSaver } from "./noteSaver";
   import { IDLE_TOOLBAR } from "./toolbarState";
@@ -99,113 +98,16 @@
     if (handle?.isEmpty()) onEmptyBlur?.(next instanceof Element ? next : null);
   }
 
+  const tagMenu = new TagSuggest(
+    () => tagSuggest,
+    () => handle,
+  );
+  const linkMenu = new LinkSuggest(
+    () => links,
+    () => handle,
+  );
+
   // The saver outlives the editor module's loading: edits only exist after it is ready.
-  let query = $state.raw<TagQuery | null>(null);
-  let highlighted = $state(0);
-  // Escape hides the list until the text after the `#` changes.
-  let dismissedFor = $state<string | null>(null);
-
-  const suggestions = $derived(
-    tagSuggest && query && dismissedFor !== query.query
-      ? matchTags(tagSuggest.tags, query.query)
-      : [],
-  );
-
-  function pick(tag: Tag) {
-    handle?.removeTagQuery();
-    tagSuggest?.onPick(tag);
-  }
-
-  function onTagKey(event: KeyboardEvent): boolean {
-    if (suggestions.length === 0 || event.ctrlKey || event.metaKey)
-      return false;
-    if (event.key === "ArrowDown") {
-      highlighted = (highlighted + 1) % suggestions.length;
-      return true;
-    }
-    if (event.key === "ArrowUp") {
-      highlighted = (highlighted - 1 + suggestions.length) % suggestions.length;
-      return true;
-    }
-    if (event.key === "Enter" || event.key === "Tab") {
-      const chosen = suggestions[highlighted];
-      if (chosen) pick(chosen);
-      return true;
-    }
-    if (event.key === "Escape") {
-      dismissedFor = query?.query ?? null;
-      return true;
-    }
-    return false;
-  }
-
-  // `[[note]]`: the notes that match what is typed, plus "create it" when none has that title.
-  type LinkChoice = { id: string; title: string } | { create: string };
-  let linkQuery = $state.raw<TagQuery | null>(null);
-  let linkChoices = $state.raw<LinkChoice[]>([]);
-  let linkHighlighted = $state(0);
-  let linkDismissedFor = $state<string | null>(null);
-  // Answers can arrive out of order; only the latest request may update the list.
-  let linkRequestToken = 0;
-
-  const linkVisible = $derived(
-    linkQuery !== null &&
-      linkDismissedFor !== linkQuery.query &&
-      linkChoices.length > 0,
-  );
-
-  async function refreshLinkChoices(text: string | null) {
-    const token = ++linkRequestToken;
-    if (text === null || !links) {
-      linkChoices = [];
-      return;
-    }
-    let found: { id: string; title: string }[];
-    try {
-      found = await links.search(text);
-    } catch {
-      found = [];
-    }
-    if (token !== linkRequestToken) return;
-    const wanted = text.trim();
-    const exact = found.some(
-      (item) => item.title.trim().toLowerCase() === wanted.toLowerCase(),
-    );
-    linkChoices = [...found, ...(wanted && !exact ? [{ create: wanted }] : [])];
-  }
-
-  async function pickLink(choice: LinkChoice) {
-    if ("create" in choice) {
-      const id = await links?.create(choice.create);
-      if (id) handle?.insertNoteLink(id);
-    } else {
-      handle?.insertNoteLink(choice.id);
-    }
-  }
-
-  function onLinkKey(event: KeyboardEvent): boolean {
-    if (!linkVisible || event.ctrlKey || event.metaKey) return false;
-    if (event.key === "ArrowDown") {
-      linkHighlighted = (linkHighlighted + 1) % linkChoices.length;
-      return true;
-    }
-    if (event.key === "ArrowUp") {
-      linkHighlighted =
-        (linkHighlighted - 1 + linkChoices.length) % linkChoices.length;
-      return true;
-    }
-    if (event.key === "Enter" || event.key === "Tab") {
-      const chosen = linkChoices[linkHighlighted];
-      if (chosen) void pickLink(chosen);
-      return true;
-    }
-    if (event.key === "Escape") {
-      linkDismissedFor = linkQuery?.query ?? null;
-      return true;
-    }
-    return false;
-  }
-
   const saver = new NoteSaver((json) => save(json));
 
   async function openLink(href: string) {
@@ -234,12 +136,8 @@
           ...(links
             ? {
                 linkHost: links.host,
-                onLinkQuery: (next: TagQuery | null) => {
-                  linkQuery = next;
-                  linkHighlighted = 0;
-                  void refreshLinkChoices(next ? next.query : null);
-                },
-                onLinkKey,
+                onLinkQuery: linkMenu.setQuery,
+                onLinkKey: linkMenu.onKey,
               }
             : {}),
           ...(taskHost ? { taskHost } : {}),
@@ -248,11 +146,8 @@
           ...(onTaskRequest ? { onTaskRequest } : {}),
           ...(tagSuggest
             ? {
-                onTagQuery: (next: TagQuery | null) => {
-                  query = next;
-                  highlighted = 0;
-                },
-                onTagKey,
+                onTagQuery: tagMenu.setQuery,
+                onTagKey: tagMenu.onKey,
               }
             : {}),
         });
@@ -397,26 +292,26 @@
     {/if}
   {/if}
   <div class="surface" bind:this={host}></div>
-  {#if linkQuery && linkVisible}
+  {#if linkMenu.query && linkMenu.visible}
     <ul
       class="suggest"
       role="listbox"
       aria-label={t.notesApp.linkSuggestions}
-      style:left="{linkQuery.left}px"
-      style:top="{linkQuery.bottom + 6}px"
+      style:left="{linkMenu.query.left}px"
+      style:top="{linkMenu.query.bottom + 6}px"
     >
-      {#each linkChoices as choice, index ("create" in choice ? `new:${choice.create}` : choice.id)}
+      {#each linkMenu.choices as choice, index ("create" in choice ? `new:${choice.create}` : choice.id)}
         <li role="presentation">
           <button
             type="button"
             role="option"
             class="suggestion"
-            class:active={index === linkHighlighted}
-            aria-selected={index === linkHighlighted}
+            class:active={index === linkMenu.highlighted}
+            aria-selected={index === linkMenu.highlighted}
             tabindex="-1"
             onmousedown={(event) => {
               event.preventDefault();
-              void pickLink(choice);
+              void linkMenu.pick(choice);
             }}
           >
             {#if "create" in choice}
@@ -446,26 +341,26 @@
       {/each}
     </ul>
   {/if}
-  {#if query && suggestions.length > 0}
+  {#if tagMenu.query && tagMenu.suggestions.length > 0}
     <ul
       class="suggest"
       role="listbox"
       aria-label={t.notesApp.noteTags}
-      style:left="{query.left}px"
-      style:top="{query.bottom + 6}px"
+      style:left="{tagMenu.query.left}px"
+      style:top="{tagMenu.query.bottom + 6}px"
     >
-      {#each suggestions as tag, index (tag.id)}
+      {#each tagMenu.suggestions as tag, index (tag.id)}
         <li role="presentation">
           <button
             type="button"
             role="option"
             class="suggestion"
-            class:active={index === highlighted}
-            aria-selected={index === highlighted}
+            class:active={index === tagMenu.highlighted}
+            aria-selected={index === tagMenu.highlighted}
             tabindex="-1"
             onmousedown={(event) => {
               event.preventDefault();
-              pick(tag);
+              tagMenu.pick(tag);
             }}
           >
             <span class="dot" style:background={tag.colorHex}></span>
