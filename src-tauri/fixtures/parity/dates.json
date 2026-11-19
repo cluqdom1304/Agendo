@@ -1,0 +1,27 @@
+{
+  "zone": "Europe/Madrid (UTC+1, UTC+2 from the last Sunday of March to the last Sunday of October, both changes at 01:00 UTC)",
+  "localToUtc": [
+    { "name": "winter", "local": "2026-01-15T09:30", "utc": "2026-01-15T08:30:00Z" },
+    { "name": "summer", "local": "2026-07-15T09:30", "utc": "2026-07-15T07:30:00Z" },
+    { "name": "just before spring forward", "local": "2026-03-29T01:59", "utc": "2026-03-29T00:59:00Z" },
+    { "name": "skipped hour reads with the old offset", "local": "2026-03-29T02:30", "utc": "2026-03-29T01:30:00Z" },
+    { "name": "first valid time after spring forward", "local": "2026-03-29T03:00", "utc": "2026-03-29T01:00:00Z" },
+    { "name": "repeated hour takes the first pass", "local": "2026-10-25T02:30", "utc": "2026-10-25T00:30:00Z" },
+    { "name": "just after the repeated hour", "local": "2026-10-25T03:00", "utc": "2026-10-25T02:00:00Z" },
+    { "name": "leap day", "local": "2028-02-29T23:30", "utc": "2028-02-29T22:30:00Z" },
+    { "name": "day after leap day", "local": "2028-03-01T00:30", "utc": "2028-02-29T23:30:00Z" },
+    { "name": "new year local", "local": "2026-01-01T00:30", "utc": "2025-12-31T23:30:00Z" },
+    { "name": "end of year local", "local": "2026-12-31T23:30", "utc": "2026-12-31T22:30:00Z" },
+    { "name": "start of March", "local": "2026-03-01T00:00", "utc": "2026-02-28T23:00:00Z" }
+  ],
+  "utcToLocalDate": [
+    { "utc": "2026-12-31T23:30:00Z", "date": "2027-01-01", "time": "00:30" },
+    { "utc": "2026-12-31T22:59:00Z", "date": "2026-12-31", "time": "23:59" },
+    { "utc": "2028-02-29T23:00:00Z", "date": "2028-03-01", "time": "00:00" },
+    { "utc": "2026-06-30T22:00:00Z", "date": "2026-07-01", "time": "00:00" },
+    { "utc": "2026-03-29T00:59:59Z", "date": "2026-03-29", "time": "01:59" },
+    { "utc": "2026-03-29T01:00:00Z", "date": "2026-03-29", "time": "03:00" },
+    { "utc": "2026-10-25T00:59:59Z", "date": "2026-10-25", "time": "02:59" },
+    { "utc": "2026-10-25T01:00:00Z", "date": "2026-10-25", "time": "02:00" }
+  ]
+}

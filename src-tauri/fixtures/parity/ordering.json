@@ -1,0 +1,54 @@
+{
+  "todo": [
+    {
+      "name": "pending by position then id, completed by completion time then id",
+      "tasks": [
+        { "id": "c1", "dueDate": null, "dueTime": null, "isCompleted": true, "completedAt": "2026-03-02T08:00:00Z", "position": 0 },
+        { "id": "b", "dueDate": null, "dueTime": null, "isCompleted": false, "completedAt": null, "position": 2 },
+        { "id": "a", "dueDate": "2026-03-10", "dueTime": "09:00", "isCompleted": false, "completedAt": null, "position": 2 },
+        { "id": "z", "dueDate": null, "dueTime": null, "isCompleted": false, "completedAt": null, "position": -1 },
+        { "id": "c3", "dueDate": null, "dueTime": null, "isCompleted": true, "completedAt": "2026-03-01T08:00:00Z", "position": 9 },
+        { "id": "c2", "dueDate": null, "dueTime": null, "isCompleted": true, "completedAt": "2026-03-01T08:00:00Z", "position": 1 },
+        { "id": "y", "dueDate": null, "dueTime": null, "isCompleted": false, "completedAt": null, "position": 5 },
+        { "id": "B", "dueDate": null, "dueTime": null, "isCompleted": false, "completedAt": null, "position": 2 }
+      ],
+      "expected": ["z", "B", "a", "b", "y", "c2", "c3", "c1"]
+    }
+  ],
+  "day": [
+    {
+      "name": "timed first, untimed by position, completed last",
+      "tasks": [
+        { "id": "u2", "dueDate": "2026-03-10", "dueTime": null, "isCompleted": false, "completedAt": null, "position": 3 },
+        { "id": "t2", "dueDate": "2026-03-10", "dueTime": "09:30", "isCompleted": false, "completedAt": null, "position": 5 },
+        { "id": "t1", "dueDate": "2026-03-10", "dueTime": "00:00", "isCompleted": false, "completedAt": null, "position": 9 },
+        { "id": "u1", "dueDate": "2026-03-10", "dueTime": null, "isCompleted": false, "completedAt": null, "position": 1 },
+        { "id": "t3", "dueDate": "2026-03-10", "dueTime": "09:30", "isCompleted": false, "completedAt": null, "position": 4 },
+        { "id": "t4", "dueDate": "2026-03-10", "dueTime": "09:30", "isCompleted": false, "completedAt": null, "position": 4 },
+        { "id": "d2", "dueDate": "2026-03-10", "dueTime": "07:00", "isCompleted": true, "completedAt": "2026-03-10T12:00:00Z", "position": 0 },
+        { "id": "d1", "dueDate": "2026-03-10", "dueTime": null, "isCompleted": true, "completedAt": "2026-03-09T12:00:00Z", "position": 7 }
+      ],
+      "expected": ["t1", "t3", "t4", "t2", "u1", "u2", "d1", "d2"]
+    }
+  ],
+  "groups": [
+    {
+      "name": "latest day first across month, year and leap-day boundaries; undated tasks left out",
+      "tasks": [
+        { "id": "x", "dueDate": "2025-12-31", "dueTime": "23:59", "isCompleted": false, "completedAt": null, "position": 1 },
+        { "id": "n", "dueDate": null, "dueTime": null, "isCompleted": false, "completedAt": null, "position": 0 },
+        { "id": "l2", "dueDate": "2028-02-29", "dueTime": null, "isCompleted": false, "completedAt": null, "position": 2 },
+        { "id": "y", "dueDate": "2026-01-01", "dueTime": "00:00", "isCompleted": false, "completedAt": null, "position": 1 },
+        { "id": "l1", "dueDate": "2028-02-29", "dueTime": "10:00", "isCompleted": false, "completedAt": null, "position": 5 },
+        { "id": "m", "dueDate": "2028-03-01", "dueTime": null, "isCompleted": true, "completedAt": "2028-03-01T10:00:00Z", "position": 0 },
+        { "id": "w", "dueDate": "2026-01-01", "dueTime": null, "isCompleted": false, "completedAt": null, "position": 0 }
+      ],
+      "expected": [
+        { "date": "2028-03-01", "ids": ["m"] },
+        { "date": "2028-02-29", "ids": ["l1", "l2"] },
+        { "date": "2026-01-01", "ids": ["y", "w"] },
+        { "date": "2025-12-31", "ids": ["x"] }
+      ]
+    }
+  ]
+}

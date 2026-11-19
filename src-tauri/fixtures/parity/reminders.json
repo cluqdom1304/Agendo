@@ -1,0 +1,21 @@
+{
+  "zone": "Europe/Madrid (same rules as dates.json)",
+  "offsetNotifyAt": [
+    { "dueDate": "2026-03-10", "dueTime": "09:30", "offset": 0, "notifyAt": "2026-03-10T08:30:00Z" },
+    { "dueDate": "2026-03-10", "dueTime": "09:30", "offset": 15, "notifyAt": "2026-03-10T08:15:00Z" },
+    { "dueDate": "2026-03-10", "dueTime": "09:30", "offset": 60, "notifyAt": "2026-03-10T07:30:00Z" },
+    { "dueDate": "2026-03-10", "dueTime": "09:30", "offset": 1440, "notifyAt": "2026-03-09T08:30:00Z" },
+    { "dueDate": "2026-03-10", "dueTime": "09:30", "offset": 10080, "notifyAt": "2026-03-03T08:30:00Z" },
+    { "dueDate": "2026-07-01", "dueTime": "09:00", "offset": 0, "notifyAt": "2026-07-01T07:00:00Z" },
+    { "dueDate": "2026-03-29", "dueTime": "09:00", "offset": 1440, "notifyAt": "2026-03-28T07:00:00Z" },
+    { "dueDate": "2026-03-29", "dueTime": "02:30", "offset": 0, "notifyAt": "2026-03-29T01:30:00Z" },
+    { "dueDate": "2026-03-29", "dueTime": "02:30", "offset": 60, "notifyAt": "2026-03-29T00:30:00Z" },
+    { "dueDate": "2026-10-25", "dueTime": "02:30", "offset": 0, "notifyAt": "2026-10-25T00:30:00Z" },
+    { "dueDate": "2026-10-25", "dueTime": "09:00", "offset": 1440, "notifyAt": "2026-10-24T08:00:00Z" },
+    { "dueDate": "2026-10-26", "dueTime": "09:00", "offset": 1440, "notifyAt": "2026-10-25T08:00:00Z" },
+    { "dueDate": "2028-03-01", "dueTime": "00:15", "offset": 30, "notifyAt": "2028-02-29T22:45:00Z" },
+    { "dueDate": "2028-02-29", "dueTime": "09:00", "offset": 10080, "notifyAt": "2028-02-22T08:00:00Z" },
+    { "dueDate": "2026-01-01", "dueTime": "00:10", "offset": 30, "notifyAt": "2025-12-31T22:40:00Z" },
+    { "dueDate": "2027-01-01", "dueTime": "09:00", "offset": 43200, "notifyAt": "2026-12-02T08:00:00Z" }
+  ]
+}

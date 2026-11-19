@@ -1,0 +1,32 @@
+{
+  "parse": [
+    { "rule": "FREQ=DAILY", "form": { "freq": "DAILY", "interval": 1, "until": "", "days": [], "count": null } },
+    { "rule": "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;UNTIL=20261231", "form": { "freq": "WEEKLY", "interval": 2, "until": "2026-12-31", "days": ["MO", "WE"], "count": null } },
+    { "rule": "FREQ=WEEKLY;INTERVAL=1;BYDAY=SU,MO", "form": { "freq": "WEEKLY", "interval": 1, "until": "", "days": ["MO", "SU"], "count": null } },
+    { "rule": "FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=31;COUNT=5", "form": { "freq": "MONTHLY", "interval": 1, "until": "", "days": [], "count": 5 } },
+    { "rule": "FREQ=YEARLY;INTERVAL=1;BYMONTHDAY=29;BYMONTH=2;UNTIL=20320229", "form": { "freq": "YEARLY", "interval": 1, "until": "2032-02-29", "days": [], "count": null } },
+    { "rule": "FREQ=DAILY;INTERVAL=365;COUNT=999", "form": { "freq": "DAILY", "interval": 365, "until": "", "days": [], "count": 999 } }
+  ],
+  "invalid": [
+    "",
+    "INTERVAL=2",
+    "FREQ=HOURLY",
+    "FREQ=DAILY;INTERVAL=0",
+    "FREQ=DAILY;INTERVAL=366",
+    "FREQ=DAILY;INTERVAL=x",
+    "FREQ=DAILY;COUNT=0",
+    "FREQ=DAILY;COUNT=1000",
+    "FREQ=DAILY;UNTIL=2026-12-31",
+    "FREQ=DAILY;COUNT=3;UNTIL=20261231",
+    "FREQ=DAILY;BYDAY=MO",
+    "FREQ=WEEKLY;BYDAY=XX",
+    "FREQ=DAILY;WKST=MO"
+  ],
+  "build": [
+    { "form": { "freq": "DAILY", "interval": 1, "until": "", "days": [], "count": null }, "rule": "FREQ=DAILY;INTERVAL=1" },
+    { "form": { "freq": "WEEKLY", "interval": 2, "until": "2026-12-31", "days": ["WE", "MO"], "count": null }, "rule": "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;UNTIL=20261231" },
+    { "form": { "freq": "WEEKLY", "interval": 1, "until": "", "days": [], "count": 10 }, "rule": "FREQ=WEEKLY;INTERVAL=1;COUNT=10" },
+    { "form": { "freq": "MONTHLY", "interval": 3, "until": "", "days": [], "count": 999 }, "rule": "FREQ=MONTHLY;INTERVAL=3;COUNT=999" },
+    { "form": { "freq": "YEARLY", "interval": 365, "until": "2028-02-29", "days": [], "count": null }, "rule": "FREQ=YEARLY;INTERVAL=365;UNTIL=20280229" }
+  ]
+}
