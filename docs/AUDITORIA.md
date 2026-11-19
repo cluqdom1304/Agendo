@@ -72,7 +72,7 @@ Orden de ejecución: A0, A1, A2, A3, A5, A4, A6, A10, A7, A8, A9, A11, A12.
 ### A10 — Dependencias y build (riesgo bajo)
 - [ ] A10-01 `cargo tree -d` y revisión de features (tokio, etc.).
 - [ ] A10-02 Medir `opt-level` "s" frente a 3 (tamaño y arranque); decidir con datos.
-- [x] A10-03 Medido: Tailwind cuesta 2,56 KB gzip, el preflight es necesario. D-70 `PROPOSED` recomienda mantenerlo; pendiente de tu decisión.
+- [x] A10-03 Medido: Tailwind cuesta 2,56 KB gzip, el preflight es necesario. D-70 `ACCEPTED`: se mantiene.
 - [x] A10-04 `npm run tokens` (9 de 67 sin uso; no se ha quitado nada).
 - [ ] A10-05 `[profile.dev.package."*"]` para acelerar tests.
 

@@ -485,7 +485,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Alternativas descartadas:** subir N-04 a 350 KB o más (quita la presión que mantiene la app ligera); mantener 250/15 sin cambios (obligaría a retirar funciones o a recortar la 2.1.0).
 ## D-70 — Tailwind: mantener solo el preflight y las utilidades, o prescindir de él (A10-03)
 
-- **Estado:** `PROPOSED`
+- **Estado:** `ACCEPTED` (2026-11-19, el usuario elige mantener Tailwind; opción A)
 - **Contexto:** `src/app.css` hace `@import "tailwindcss"` (D-14), pero la interfaz usa CSS propio con ámbito de componente y tokens. Medición en un `vite build` con las cuatro variantes de `app.css` (todo el CSS de `build/`, gzip nivel 9):
 
   | Variante | CSS bruto | CSS gzip |
