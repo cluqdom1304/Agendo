@@ -7,7 +7,7 @@ use serde::de::DeserializeOwned;
 
 use super::{
     fts,
-    model::{EMPTY_DOC, NewNote, Note, NotePatch, NoteSummary},
+    model::{EMPTY_DOC, NewNote, Note, NotePatch, NoteSummary, NoteTitle},
     note_tags,
 };
 
@@ -152,6 +152,25 @@ pub fn list(
     conn.prepare_cached(&sql)?
         .query_map(params![folder, tag_id], map_summary)?
         .collect()
+}
+
+/// Titles of the live notes among `ids`, in one query. Unknown and trashed ids are left out.
+/// The ids travel as one bound JSON array, however many there are.
+pub fn titles(conn: &Connection, ids: &[String]) -> rusqlite::Result<Vec<NoteTitle>> {
+    let ids = serde_json::to_string(ids)
+        .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))?;
+    conn.prepare_cached(
+        "SELECT id, title FROM notes
+         WHERE deleted_at IS NULL AND id IN (SELECT value FROM json_each(?1))
+         ORDER BY id",
+    )?
+    .query_map([ids], |row| {
+        Ok(NoteTitle {
+            id: row.get(0)?,
+            title: row.get(1)?,
+        })
+    })?
+    .collect()
 }
 
 /// Live notes that link to the note, most recently edited first (D-46 backlinks).

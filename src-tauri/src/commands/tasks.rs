@@ -161,6 +161,16 @@ pub fn list(state: &AppState, input: TasksListInput) -> AppResult<TasksListOutpu
     })
 }
 
+/// Both sections (undated tasks and the agenda) from one snapshot, for a single refresh.
+pub fn list_all(state: &AppState, tag_id: Option<&str>) -> AppResult<Sections> {
+    state.db.read(|conn| {
+        let mut todo = tasks::list(conn, Query::Todo, tag_id)?;
+        ordering::sort_todo(&mut todo);
+        let agenda = ordering::group_by_day(tasks::list(conn, Query::Agenda, tag_id)?);
+        Ok(Sections { todo, agenda })
+    })
+}
+
 pub fn create(state: &AppState, input: TaskCreateInput) -> AppResult<Task> {
     let title = input.title.unwrap_or_default();
     validation::validate_title(&title)?;
@@ -457,6 +467,17 @@ pub async fn tasks_list(
     run_blocking(state.inner().clone(), move |state| list(state, input)).await
 }
 
+#[tauri::command]
+pub async fn tasks_list_all(
+    state: State<'_, Arc<AppState>>,
+    tag_id: Option<String>,
+) -> Result<Sections, String> {
+    run_blocking(state.inner().clone(), move |state| {
+        list_all(state, tag_id.as_deref())
+    })
+    .await
+}
+
 // The IPC contract passes each field as its own argument (SPEC §7.3).
 #[allow(clippy::too_many_arguments)]
 #[tauri::command]
@@ -583,6 +604,32 @@ mod tests {
 
     fn titles(tasks: &[Task]) -> Vec<&str> {
         tasks.iter().map(|task| task.title.as_str()).collect()
+    }
+
+    #[test]
+    fn list_all_returns_both_sections_like_the_two_separate_views() {
+        let state = state();
+        create_titled(&state, "Sin fecha", None);
+        create_titled(&state, "Mañana", Some("2026-03-12"));
+        create_titled(&state, "Antes", Some("2026-03-10"));
+        let trashed = create_titled(&state, "Borrada", None);
+        delete(&state, &trashed.id).expect("trash");
+
+        let all = list_all(&state, None).expect("list all");
+        let todo_view = sections(view(&state, ListView::Todo));
+        let agenda_view = sections(view(&state, ListView::Agenda));
+        assert_eq!(all.todo, todo_view.todo);
+        assert_eq!(all.agenda, agenda_view.agenda);
+        assert_eq!(titles(&all.todo), ["Sin fecha"]);
+        assert_eq!(all.agenda.len(), 2);
+    }
+
+    #[test]
+    fn list_all_filters_by_tag() {
+        let state = state();
+        create_titled(&state, "Una", None);
+        let none = list_all(&state, Some("no-such-tag")).expect("list all");
+        assert!(none.todo.is_empty() && none.agenda.is_empty());
     }
 
     fn patch(json: &str) -> TaskPatchInput {

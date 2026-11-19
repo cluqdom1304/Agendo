@@ -12,7 +12,7 @@ use crate::{
     error::{AppError, AppResult},
     repo::{
         attachments,
-        model::{NewNote, Note, NoteContent, NotePatch, NoteSummary},
+        model::{NewNote, Note, NoteContent, NotePatch, NoteSummary, NoteTitle},
         note_tags,
         notes::{self, Scope, Sort},
         versions,
@@ -103,6 +103,19 @@ pub fn list(state: &AppState, input: NotesListInput) -> AppResult<Vec<NoteSummar
     state
         .db
         .read(|conn| Ok(notes::list(conn, scope, input.tag_id.as_deref(), sort)?))
+}
+
+/// Most ids `note_titles` accepts in one call.
+pub const MAX_TITLE_IDS: usize = 1000;
+
+/// Titles of the live notes among `ids` (unknown and trashed ones are left out), in one query.
+pub fn titles(state: &AppState, ids: &[String]) -> AppResult<Vec<NoteTitle>> {
+    if ids.len() > MAX_TITLE_IDS {
+        return Err(AppError::Validation(format!(
+            "se piden demasiados títulos de nota a la vez (máximo {MAX_TITLE_IDS})"
+        )));
+    }
+    state.db.read(|conn| Ok(notes::titles(conn, ids)?))
 }
 
 pub fn get(state: &AppState, id: &str) -> AppResult<Note> {
@@ -321,6 +334,14 @@ pub async fn notes_list(
 }
 
 #[tauri::command]
+pub async fn note_titles(
+    state: State<'_, Arc<AppState>>,
+    ids: Vec<String>,
+) -> Result<Vec<NoteTitle>, String> {
+    run_blocking(state.inner().clone(), move |state| titles(state, &ids)).await
+}
+
+#[tauri::command]
 pub async fn note_get(state: State<'_, Arc<AppState>>, id: String) -> Result<Note, String> {
     run_blocking(state.inner().clone(), move |state| get(state, &id)).await
 }
@@ -454,6 +475,43 @@ mod tests {
 
     fn doc(body: &str) -> String {
         format!(r#"{{"type":"doc","content":[{body}]}}"#)
+    }
+
+    #[test]
+    fn titles_returns_live_notes_only_in_one_call() {
+        let state = test_state().0;
+        let a = make(&state, "Álgebra");
+        let b = make(&state, "Cálculo");
+        let gone = make(&state, "Borrada");
+        delete(&state, &gone.id).expect("trash");
+
+        let ids = vec![
+            b.id.clone(),
+            a.id.clone(),
+            gone.id.clone(),
+            "unknown".into(),
+        ];
+        let found = titles(&state, &ids).expect("titles");
+        let mut expected = vec![
+            NoteTitle {
+                id: a.id.clone(),
+                title: "Álgebra".into(),
+            },
+            NoteTitle {
+                id: b.id.clone(),
+                title: "Cálculo".into(),
+            },
+        ];
+        expected.sort_by(|x, y| x.id.cmp(&y.id));
+        assert_eq!(found, expected);
+        assert!(titles(&state, &[]).expect("empty").is_empty());
+    }
+
+    #[test]
+    fn titles_rejects_more_ids_than_the_limit() {
+        let state = test_state().0;
+        let ids: Vec<String> = (0..=MAX_TITLE_IDS).map(|i| format!("n{i}")).collect();
+        assert!(code_of(titles(&state, &ids)).starts_with("VALIDATION:"));
     }
 
     fn all(state: &AppState) -> Vec<NoteSummary> {

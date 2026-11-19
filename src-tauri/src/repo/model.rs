@@ -221,6 +221,13 @@ pub struct NoteSummary {
     pub updated_at: String,
 }
 
+/// Just the title of a live note, for labels such as the origin of a task (`note_titles`).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct NoteTitle {
+    pub id: String,
+    pub title: String,
+}
+
 /// Data to create a note; like [`NewTask`], the caller supplies the id and `now`.
 #[derive(Debug, Clone, Default)]
 pub struct NewNote {

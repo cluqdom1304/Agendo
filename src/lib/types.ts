@@ -225,6 +225,12 @@ export interface NoteSummary {
   updatedAt: string;
 }
 
+/** `note_titles`: the title of a live note, to label things that point at it. */
+export interface NoteTitle {
+  id: string;
+  title: string;
+}
+
 export type NotesScope = "all" | "inbox" | "pinned" | "folder";
 export type NotesSort = "updated" | "created" | "title";
 
