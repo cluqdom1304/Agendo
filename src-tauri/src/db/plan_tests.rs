@@ -40,7 +40,7 @@ fn every_hot_lookup_uses_its_index() {
             ),
             (
                 "SELECT n.id FROM notes n WHERE n.deleted_at IS NULL AND n.is_pinned = 1",
-                "ix_notes_pinned",
+                "ix_notes_order",
             ),
             (
                 "SELECT 1 FROM notes n WHERE n.folder_id = 'f' AND n.deleted_at IS NULL",
@@ -65,6 +65,12 @@ fn every_hot_lookup_uses_its_index() {
             (
                 "SELECT id FROM reminders WHERE is_sent = 0 AND notify_at <= 'x'",
                 "ix_reminders_pending",
+            ),
+            // The default order of the notes list comes from an index: no sort of every note.
+            (
+                "SELECT n.id FROM notes n WHERE n.deleted_at IS NULL
+                 ORDER BY n.is_pinned DESC, n.updated_at DESC, n.id LIMIT 200",
+                "ix_notes_order",
             ),
             // `desde:` / `hasta:` over the note's last change compare the column itself.
             (
@@ -102,7 +108,7 @@ fn plans_with_ten_thousand_rows_and_statistics() {
         &[
             (
                 "SELECT n.id FROM notes n WHERE n.deleted_at IS NULL AND n.is_pinned = 1",
-                "ix_notes_pinned",
+                "ix_notes_order",
             ),
             (
                 "SELECT id FROM reminders r WHERE r.task_id = 't2'",

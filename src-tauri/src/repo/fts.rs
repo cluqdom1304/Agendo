@@ -7,85 +7,102 @@
 
 use rusqlite::{Transaction, params};
 
-/// Which index a function works on: the SQL differs only in table and column names.
+/// The statements that keep one index and its map in step. The text is fixed at compile time
+/// (`index!` only joins literals), so no SQL is ever built at run time.
 struct Index {
-    fts: &'static str,
-    map: &'static str,
-    key: &'static str,
-    base: &'static str,
+    delete_row: &'static str,
+    delete_map: &'static str,
+    insert_row: &'static str,
+    insert_map: &'static str,
+    clear_index: &'static str,
+    clear_map: &'static str,
+    reindex: &'static str,
+    remap: &'static str,
 }
 
-const TASKS: Index = Index {
-    fts: "tasks_fts",
-    map: "tasks_fts_map",
-    key: "task_id",
-    base: "tasks",
-};
-const NOTES: Index = Index {
-    fts: "notes_fts",
-    map: "notes_fts_map",
-    key: "note_id",
-    base: "notes",
-};
+macro_rules! index {
+    ($fts:literal, $map:literal, $key:literal, $base:literal) => {
+        Index {
+            // The `key = ?1` check keeps a stale map entry from deleting a row that reused
+            // the rowid.
+            delete_row: concat!(
+                "DELETE FROM ",
+                $fts,
+                " WHERE rowid = (SELECT fts_rowid FROM ",
+                $map,
+                " WHERE ",
+                $key,
+                " = ?1) AND ",
+                $key,
+                " = ?1"
+            ),
+            delete_map: concat!("DELETE FROM ", $map, " WHERE ", $key, " = ?1"),
+            insert_row: concat!(
+                "INSERT INTO ",
+                $fts,
+                " (",
+                $key,
+                ", title, content_text) SELECT id, title, content_text FROM ",
+                $base,
+                " WHERE id = ?1 AND deleted_at IS NULL"
+            ),
+            insert_map: concat!(
+                "INSERT OR REPLACE INTO ",
+                $map,
+                " (",
+                $key,
+                ", fts_rowid) VALUES (?1, last_insert_rowid())"
+            ),
+            clear_index: concat!("DELETE FROM ", $fts),
+            clear_map: concat!("DELETE FROM ", $map),
+            reindex: concat!(
+                "INSERT INTO ",
+                $fts,
+                " (",
+                $key,
+                ", title, content_text) SELECT id, title, content_text FROM ",
+                $base,
+                " WHERE deleted_at IS NULL"
+            ),
+            remap: concat!(
+                "INSERT INTO ",
+                $map,
+                " (",
+                $key,
+                ", fts_rowid) SELECT ",
+                $key,
+                ", rowid FROM ",
+                $fts
+            ),
+        }
+    };
+}
+
+const TASKS: Index = index!("tasks_fts", "tasks_fts_map", "task_id", "tasks");
+const NOTES: Index = index!("notes_fts", "notes_fts_map", "note_id", "notes");
 
 impl Index {
-    /// Removes the FTS row of `id` (and its map entry), if any. The `key = ?1` check keeps a
-    /// stale map entry from deleting a row that reused the rowid.
+    /// Removes the FTS row of `id` (and its map entry), if any.
     fn remove(&self, tx: &Transaction<'_>, id: &str) -> rusqlite::Result<()> {
-        let Index { fts, map, key, .. } = self;
-        tx.prepare_cached(&format!(
-            "DELETE FROM {fts} WHERE rowid = (SELECT fts_rowid FROM {map} WHERE {key} = ?1)
-               AND {key} = ?1"
-        ))?
-        .execute(params![id])?;
-        tx.prepare_cached(&format!("DELETE FROM {map} WHERE {key} = ?1"))?
-            .execute(params![id])?;
+        tx.prepare_cached(self.delete_row)?.execute(params![id])?;
+        tx.prepare_cached(self.delete_map)?.execute(params![id])?;
         Ok(())
     }
 
     /// Indexes a live row that has no FTS row (nothing happens for trashed or unknown ids).
     fn add(&self, tx: &Transaction<'_>, id: &str) -> rusqlite::Result<()> {
-        let Index {
-            fts,
-            map,
-            key,
-            base,
-        } = self;
-        let added = tx
-            .prepare_cached(&format!(
-                "INSERT INTO {fts} ({key}, title, content_text)
-                 SELECT id, title, content_text FROM {base} WHERE id = ?1 AND deleted_at IS NULL"
-            ))?
-            .execute(params![id])?;
+        let added = tx.prepare_cached(self.insert_row)?.execute(params![id])?;
         if added > 0 {
-            tx.prepare_cached(&format!(
-                "INSERT OR REPLACE INTO {map} ({key}, fts_rowid) VALUES (?1, last_insert_rowid())"
-            ))?
-            .execute(params![id])?;
+            tx.prepare_cached(self.insert_map)?.execute(params![id])?;
         }
         Ok(())
     }
 
     fn rebuild(&self, tx: &Transaction<'_>) -> rusqlite::Result<usize> {
-        let Index {
-            fts,
-            map,
-            key,
-            base,
-        } = self;
-        tx.execute(&format!("DELETE FROM {fts}"), [])?;
-        tx.execute(&format!("DELETE FROM {map}"), [])?;
-        let rebuilt = tx.execute(
-            &format!(
-                "INSERT INTO {fts} ({key}, title, content_text)
-                 SELECT id, title, content_text FROM {base} WHERE deleted_at IS NULL"
-            ),
-            [],
-        )?;
-        tx.execute(
-            &format!("INSERT INTO {map} ({key}, fts_rowid) SELECT {key}, rowid FROM {fts}"),
-            [],
-        )?;
+        tx.execute(self.clear_index, [])?;
+        tx.execute(self.clear_map, [])?;
+        let rebuilt = tx.execute(self.reindex, [])?;
+        tx.execute(self.remap, [])?;
         Ok(rebuilt)
     }
 }

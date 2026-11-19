@@ -2,8 +2,6 @@
 -- Los recordatorios de cada tarea se buscaban recorriendo toda la tabla `reminders` (una vez por
 -- tarea en cada listado, y en cada borrado en cascada de una tarea).
 CREATE INDEX ix_reminders_task ON reminders(task_id);
--- Notas fijadas: pocas, pero la consulta recorría todas las notas vivas.
-CREATE INDEX ix_notes_pinned ON notes(updated_at) WHERE is_pinned = 1 AND deleted_at IS NULL;
 
 -- Los índices sobre `deleted_at` incluían todas las filas vivas (NULL) y las estadísticas de
 -- SQLite cuentan cada NULL como valor distinto: el planificador los creía muy selectivos y los

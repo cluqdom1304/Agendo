@@ -148,18 +148,18 @@ pub fn expire_before(
     now: &str,
 ) -> rusqlite::Result<Vec<String>> {
     let mut ids: Vec<String> = Vec::new();
-    for table in ["reminders", "note_reminders"] {
-        let found: Vec<String> = tx
-            .prepare_cached(&format!(
-                "SELECT id FROM {table} WHERE is_sent = 0 AND notify_at < ?1 ORDER BY id"
-            ))?
-            .query_map(params![cutoff], |row| row.get(0))?
+    for sql in [
+        "UPDATE reminders SET is_sent = 1, sent_at = ?2
+         WHERE is_sent = 0 AND notify_at < ?1 RETURNING id",
+        "UPDATE note_reminders SET is_sent = 1, sent_at = ?2
+         WHERE is_sent = 0 AND notify_at < ?1 RETURNING id",
+    ] {
+        let mut expired: Vec<String> = tx
+            .prepare_cached(sql)?
+            .query_map(params![cutoff, now], |row| row.get(0))?
             .collect::<rusqlite::Result<_>>()?;
-        tx.prepare_cached(&format!(
-            "UPDATE {table} SET is_sent = 1, sent_at = ?2 WHERE is_sent = 0 AND notify_at < ?1"
-        ))?
-        .execute(params![cutoff, now])?;
-        ids.extend(found);
+        expired.sort();
+        ids.extend(expired);
     }
     Ok(ids)
 }
@@ -391,4 +391,50 @@ pub fn recalculate_untimed<Tz: TimeZone>(tx: &Transaction<'_>, zone: &Tz) -> rus
         recalculate(tx, &task_id, zone)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod expire_tests {
+    use super::*;
+    use crate::db::{MIGRATIONS, open_in_memory};
+
+    #[test]
+    fn expire_before_marks_only_overdue_unsent_reminders_of_both_kinds() {
+        let mut conn = open_in_memory(&MIGRATIONS).expect("database");
+        conn.execute_batch(
+            "INSERT INTO tasks (id, title, created_at, updated_at) VALUES ('t', 'T', 'x', 'x');
+             INSERT INTO notes (id, title, created_at, updated_at) VALUES ('n', 'N', 'x', 'x');
+             INSERT INTO reminders (id, task_id, notify_at, is_sent, created_at) VALUES
+               ('r-b', 't', '2026-03-01T08:00:00Z', 0, 'x'),
+               ('r-a', 't', '2026-03-01T09:00:00Z', 0, 'x'),
+               ('r-late', 't', '2026-03-05T09:00:00Z', 0, 'x'),
+               ('r-done', 't', '2026-03-01T07:00:00Z', 1, 'x');
+             INSERT INTO note_reminders (id, note_id, notify_at, created_at)
+               VALUES ('nr', 'n', '2026-03-01T10:00:00Z', 'x');",
+        )
+        .expect("seed");
+
+        let tx = conn.transaction().expect("tx");
+        let ids =
+            expire_before(&tx, "2026-03-02T00:00:00Z", "2026-03-02T00:00:01Z").expect("expire");
+        tx.commit().expect("commit");
+
+        assert_eq!(ids, ["r-a", "r-b", "nr"]);
+        let sent: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM reminders WHERE is_sent = 1 AND sent_at IS NOT NULL",
+                [],
+                |row| row.get(0),
+            )
+            .expect("count");
+        assert_eq!(sent, 2, "the already sent one keeps its empty sent_at");
+        let late: i64 = conn
+            .query_row(
+                "SELECT is_sent FROM reminders WHERE id = 'r-late'",
+                [],
+                |r| r.get(0),
+            )
+            .expect("late");
+        assert_eq!(late, 0);
+    }
 }

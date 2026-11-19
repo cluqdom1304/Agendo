@@ -3,7 +3,7 @@ use serde::de::DeserializeOwned;
 
 use super::{
     fts,
-    model::{EMPTY_DOC, NewTask, Task, TaskPatch},
+    model::{EMPTY_DOC, NewTask, Page, Task, TaskPatch},
     tags,
 };
 
@@ -326,10 +326,15 @@ pub fn restore(tx: &Transaction<'_>, id: &str, now: &str) -> rusqlite::Result<Op
 
 /// Trashed tasks, most recently deleted first.
 pub fn list_trash(conn: &Connection) -> rusqlite::Result<Vec<Task>> {
+    list_trash_page(conn, Page::ALL)
+}
+
+/// One window of [`list_trash`].
+pub fn list_trash_page(conn: &Connection, page: Page) -> rusqlite::Result<Vec<Task>> {
     conn.prepare_cached(task_sql!(
-        "WHERE t.deleted_at IS NOT NULL ORDER BY t.deleted_at DESC, t.id"
+        "WHERE t.deleted_at IS NOT NULL ORDER BY t.deleted_at DESC, t.id LIMIT ?1 OFFSET ?2"
     ))?
-    .query_map([], map_task)?
+    .query_map(params![page.sql_limit(), page.offset], map_task)?
     .collect()
 }
 

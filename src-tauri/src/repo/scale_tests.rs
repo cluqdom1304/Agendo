@@ -75,6 +75,15 @@ fn fifty_thousand_notes_list_search_and_filter_fast() {
         let all = notes::list(&conn, Scope::All, None, Sort::Updated).expect("list");
         assert_eq!(all.len(), count as usize);
     });
+    // A3-01: one window of 200 notes (what a paginating list asks for) against the whole list.
+    let list_window = best_of(runs, || {
+        let page = super::model::Page {
+            limit: Some(200),
+            offset: 1000,
+        };
+        let found = notes::list_page(&conn, Scope::All, None, Sort::Updated, page).expect("window");
+        assert_eq!(found.len(), 200);
+    });
     let list_pinned = best_of(runs, || {
         let pinned = notes::list(&conn, Scope::Pinned, None, Sort::Updated).expect("pinned");
         assert_eq!(pinned.len(), count as usize / 500);
@@ -102,12 +111,13 @@ fn fifty_thousand_notes_list_search_and_filter_fast() {
         assert!(hits.is_empty());
     });
     eprintln!(
-        "A2-05 {count} notes: list all {list_all:?}, pinned {list_pinned:?}, folder \
+        "A2-05 {count} notes: list all {list_all:?}, window of 200 {list_window:?}, pinned {list_pinned:?}, folder \
          {list_folder:?}, search worst {worst_search:?}, date filter {by_date:?} / \
          empty range {by_empty_date:?}"
     );
     if !cfg!(debug_assertions) {
         assert!(list_all.as_millis() < 1000, "list took {list_all:?}");
+        assert!(list_window.as_millis() < 10, "window took {list_window:?}");
         assert!(list_pinned.as_millis() < 100, "pinned took {list_pinned:?}");
         assert!(list_folder.as_millis() < 100, "folder took {list_folder:?}");
         // Every note matches these words, so the search ranks all 50 000 of them.
@@ -278,6 +288,47 @@ fn fifty_thousand_tasks_list_fast() {
     }
 }
 
+/// A3-02: tag counters with 100 tags, two tags per task and per note, at 50 000 rows each.
+#[test]
+fn tag_counters_stay_fast_with_fifty_thousand_tasks_and_notes() {
+    use super::tags;
+
+    let count: u32 = if cfg!(debug_assertions) {
+        2_000
+    } else {
+        50_000
+    };
+    let conn = db::open_in_memory(&MIGRATIONS).expect("database");
+    seed_tasks(&conn, count);
+    seed_notes(&conn, count);
+    conn.execute_batch(
+        "WITH RECURSIVE n(i) AS (SELECT 0 UNION ALL SELECT i + 1 FROM n WHERE i < 99)
+         INSERT INTO tags (id, name, color_hex, position, created_at)
+         SELECT 'g' || i, 'Etiqueta ' || i, '#4C8DFF', i, '2026-01-01T00:00:00Z' FROM n;
+         INSERT INTO task_tags (task_id, tag_id)
+         SELECT id, 'g' || (CAST(substr(id, 2) AS INTEGER) % 100) FROM tasks;
+         INSERT INTO task_tags (task_id, tag_id)
+         SELECT id, 'g' || ((CAST(substr(id, 2) AS INTEGER) + 7) % 100) FROM tasks;
+         INSERT INTO note_tags (note_id, tag_id)
+         SELECT id, 'g' || (CAST(substr(id, 2) AS INTEGER) % 100) FROM notes;
+         INSERT INTO note_tags (note_id, tag_id)
+         SELECT id, 'g' || ((CAST(substr(id, 2) AS INTEGER) + 7) % 100) FROM notes;",
+    )
+    .expect("tag links");
+    pragmas::analyze(&conn).expect("analyze");
+
+    let runs = if cfg!(debug_assertions) { 1 } else { 5 };
+    let counters = best_of(runs, || {
+        let listed = tags::list(&conn).expect("tags");
+        assert_eq!(listed.len(), 100);
+        assert_eq!(listed[0].pending_count, i64::from(count) * 2 / 100);
+    });
+    eprintln!("A3-02 tags::list with 100 tags over {count} tasks and notes: {counters:?}");
+    if !cfg!(debug_assertions) {
+        assert!(counters.as_millis() < 400, "tags took {counters:?}");
+    }
+}
+
 /// Start-up with 10 000 notes: open the file, check the schema, no migration pending.
 #[test]
 fn opening_a_database_with_ten_thousand_notes_is_fast() {
@@ -333,7 +384,7 @@ fn a_1_0_7_database_migrates_to_the_current_schema_keeping_its_data() {
     }
 
     let conn = db::open(&path, &MIGRATIONS).expect("migrated");
-    assert_eq!(migrate::current_version(&conn).expect("version"), 13);
+    assert_eq!(migrate::current_version(&conn).expect("version"), 14);
 
     let count = |sql: &str| -> i64 { conn.query_row(sql, [], |r| r.get(0)).expect(sql) };
     assert_eq!(count("SELECT COUNT(*) FROM tasks"), 3);

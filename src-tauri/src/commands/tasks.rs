@@ -9,6 +9,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use tauri::State;
 
 use crate::{
+    commands::page_of,
     domain::{
         content, dates,
         ordering::{self, DayGroup},
@@ -17,7 +18,7 @@ use crate::{
     },
     error::{AppError, AppResult},
     repo::{
-        model::{NewTask, Task, TaskPatch},
+        model::{NewTask, Page, Task, TaskPatch},
         reminders::{self, NewReminder},
         tasks::{self, Query},
     },
@@ -446,8 +447,15 @@ pub fn restore(state: &AppState, id: &str) -> AppResult<Task> {
     Ok(task)
 }
 
+#[cfg(test)]
 pub fn trash(state: &AppState) -> AppResult<Vec<Task>> {
-    state.db.read(|conn| Ok(tasks::list_trash(conn)?))
+    trash_page(state, Page::ALL)
+}
+
+pub fn trash_page(state: &AppState, page: Page) -> AppResult<Vec<Task>> {
+    state
+        .db
+        .read(|conn| Ok(tasks::list_trash_page(conn, page)?))
 }
 
 #[tauri::command]
@@ -555,8 +563,15 @@ pub async fn task_restore(state: State<'_, Arc<AppState>>, id: String) -> Result
 }
 
 #[tauri::command]
-pub async fn trash_list(state: State<'_, Arc<AppState>>) -> Result<Vec<Task>, String> {
-    run_blocking(state.inner().clone(), trash).await
+pub async fn trash_list(
+    state: State<'_, Arc<AppState>>,
+    limit: Option<u32>,
+    offset: Option<u32>,
+) -> Result<Vec<Task>, String> {
+    run_blocking(state.inner().clone(), move |state| {
+        trash_page(state, page_of(limit, offset)?)
+    })
+    .await
 }
 
 #[cfg(test)]

@@ -438,7 +438,7 @@ fn tasks(
             range_sql
         )
     };
-    let mut statement = conn.prepare(&sql)?;
+    let mut statement = conn.prepare_cached(&sql)?;
     let rows = statement.query_map(params_from_iter(values), |row| {
         Ok(FoundItem::Task {
             task_id: row.get(0)?,
@@ -511,7 +511,7 @@ fn notes(
             range_sql
         )
     };
-    let mut statement = conn.prepare(&sql)?;
+    let mut statement = conn.prepare_cached(&sql)?;
     let rows = statement.query_map(params_from_iter(values), |row| {
         Ok(FoundItem::Note {
             note_id: row.get(0)?,
