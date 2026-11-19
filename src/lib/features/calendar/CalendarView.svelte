@@ -38,9 +38,18 @@
   const today = $derived(toLocalIsoDate(current));
   const nowMinutes = $derived(current.getHours() * 60 + current.getMinutes());
 
+  const minuteOf = (date: Date) => Math.floor(date.getTime() / 60_000);
+
   onMount(() => {
+    const tick = () => {
+      const next = view.now();
+      // Same minute: keep the old reading so nothing derived from the clock recomputes.
+      if (minuteOf(next) !== minuteOf(current)) {
+        current = next;
+      }
+    };
     current = view.now();
-    const timer = setInterval(() => (current = view.now()), 30_000);
+    const timer = setInterval(tick, 30_000);
     return () => clearInterval(timer);
   });
   const week = $derived(weekDates(view.anchor, view.firstDay));
