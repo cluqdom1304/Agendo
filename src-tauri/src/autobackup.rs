@@ -160,11 +160,11 @@ pub async fn run(state: Arc<AppState>, data_dir: PathBuf) {
             Ok(Ok(_)) => failures = 0,
             Ok(Err(error)) => {
                 failures += 1;
-                eprintln!("[autobackup] no se pudo hacer la copia: {error}");
+                crate::applog::error("autobackup", &format!("la copia falló: {error}"));
             }
             Err(error) => {
                 failures += 1;
-                eprintln!("[autobackup] la tarea se interrumpió: {error}");
+                crate::applog::error("autobackup", &format!("la tarea se interrumpió: {error}"));
             }
         }
         // After a failure look again sooner (5 min, 10, 20, ...) but never less often than usual.

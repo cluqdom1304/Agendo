@@ -54,7 +54,7 @@ pub async fn search(
 mod tests {
     use super::*;
     use crate::{
-        commands::tasks::{self, TaskCreateInput},
+        services::tasks::{self, TaskCreateInput},
         state::test_state,
     };
 

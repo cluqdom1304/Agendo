@@ -76,11 +76,11 @@ mod tests {
 
     use super::*;
     use crate::{
-        commands::notes::{self as notes_cmd, NoteCreateInput, NotePatchInput},
         error::AppError,
         notify::{Fired, FiredSink, Notification, Notifier},
         repo::reminders,
         scheduler::Engine,
+        services::notes::{self as notes_cmd, NoteCreateInput, NotePatchInput},
         state::test_state,
     };
 

@@ -102,6 +102,7 @@ pub fn migrate(conn: &mut Connection, migrations: &[Migration]) -> Result<u32, D
         if current_version(&tx)? >= migration.version {
             continue;
         }
+        let started = std::time::Instant::now();
         let apply = |error| DbError::Migration {
             version: migration.version,
             source: error,
@@ -111,6 +112,14 @@ pub fn migrate(conn: &mut Connection, migrations: &[Migration]) -> Result<u32, D
         tx.execute_batch(&format!("PRAGMA user_version = {};", migration.version))
             .map_err(apply)?;
         tx.commit().map_err(apply)?;
+        crate::applog::info(
+            "migrate",
+            &format!(
+                "migration {} applied in {} ms",
+                migration.version,
+                started.elapsed().as_millis()
+            ),
+        );
     }
     current_version(conn)
 }

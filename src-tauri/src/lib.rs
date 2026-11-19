@@ -1,3 +1,4 @@
+pub mod applog;
 pub mod archive;
 pub mod attachments;
 pub mod autobackup;
@@ -15,6 +16,7 @@ pub mod notify;
 mod parity_tests;
 pub mod repo;
 pub mod scheduler;
+mod services;
 mod startup;
 pub mod state;
 #[cfg(test)]
@@ -85,7 +87,10 @@ pub fn run() {
             None,
         ))
         .setup(|app| {
-            let path = data_dir(app)?.join(DATABASE_FILE);
+            let dir = data_dir(app)?;
+            applog::init(&dir.join(applog::LOG_FILE), Arc::new(SystemClock));
+            applog::info("app", concat!("start, version ", env!("CARGO_PKG_VERSION")));
+            let path = dir.join(DATABASE_FILE);
             let state = AppState::open(&path, Arc::new(SystemClock))?;
             let state = Arc::new(state);
             // Files that no note uses any more (past a grace period) are removed at start-up; a
@@ -182,6 +187,8 @@ pub fn run() {
                 state.begin_shutdown();
                 state.wait_for_background_work(std::time::Duration::from_secs(5));
                 state.db.optimize();
+                applog::info("app", "exit");
+                applog::flush();
             }
         });
 }

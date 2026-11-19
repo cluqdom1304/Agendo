@@ -287,8 +287,8 @@ mod tests {
     use super::*;
     use crate::{
         attachments,
-        commands::notes::{NoteCreateInput, create as create_note},
         repo::notes,
+        services::notes::{NoteCreateInput, create as create_note},
         state::test_state,
         test_support::TempDir,
     };

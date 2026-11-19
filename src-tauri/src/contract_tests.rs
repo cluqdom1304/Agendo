@@ -8,10 +8,7 @@ use std::{fs, path::PathBuf};
 use serde_json::{Value, json};
 
 use crate::{
-    commands::{
-        attachments::AttachmentDto,
-        tasks::{Sections, TasksListOutput},
-    },
+    commands::attachments::AttachmentDto,
     domain::{
         ordering::DayGroup,
         reminders::{Repeat, RepeatUnit},
@@ -24,6 +21,7 @@ use crate::{
         },
         search::SearchHit,
     },
+    services::tasks::{Sections, TasksListOutput},
     window::effects::{EffectApplied, EffectMode},
 };
 

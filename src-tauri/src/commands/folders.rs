@@ -113,7 +113,7 @@ pub async fn folder_delete(state: State<'_, Arc<AppState>>, id: String) -> Resul
 mod tests {
     use super::*;
     use crate::{
-        commands::notes::{self, NoteCreateInput},
+        services::notes::{self, NoteCreateInput},
         state::test_state,
     };
 
