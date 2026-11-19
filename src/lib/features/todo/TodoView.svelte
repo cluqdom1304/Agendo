@@ -88,7 +88,14 @@
 
 <div class="document" role="grid" aria-label={t.app.name}>
   {#if store.status === "loading" || store.status === "idle"}
-    <p class="status">{t.tasks.loading}</p>
+    <EmptyState variant="loading" title={t.tasks.loading} />
+  {:else if store.status === "error"}
+    <EmptyState
+      variant="error"
+      title={t.tasks.loadFailed}
+      actionLabel={t.tasks.retry}
+      onAction={() => void store.load()}
+    />
   {:else if store.allFiltered && !store.draft}
     <EmptyState
       title={t.tags.allHiddenTitle}
@@ -140,10 +147,5 @@
     max-width: 780px;
     margin: 0 auto;
     padding: 0 var(--space-6) 96px;
-  }
-
-  .status {
-    padding: var(--space-6);
-    color: var(--text-secondary);
   }
 </style>

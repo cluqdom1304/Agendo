@@ -22,6 +22,8 @@ export const t = {
     pendingCount: (count: number) =>
       count === 1 ? "1 pendiente" : `${count} pendientes`,
     loading: "Cargando tareas…",
+    loadFailed: "No se pudieron cargar las tareas.",
+    retry: "Reintentar",
     dateLabel: (title: string) => `Fecha de «${title}»`,
     deleteLabel: (title: string) => `Eliminar «${title}»`,
   },

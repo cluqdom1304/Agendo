@@ -1,18 +1,36 @@
 <script lang="ts">
   interface Props {
     title: string;
-    description: string;
+    description?: string;
+    /** `loading` and `error` are announced to assistive technology; `empty` is plain content. */
+    variant?: "empty" | "loading" | "error";
     actionLabel?: string;
     shortcut?: string;
     onAction?: () => void;
   }
 
-  let { title, description, actionLabel, shortcut, onAction }: Props = $props();
+  let {
+    title,
+    description,
+    variant = "empty",
+    actionLabel,
+    shortcut,
+    onAction,
+  }: Props = $props();
 </script>
 
-<div class="empty">
+<div
+  class="empty"
+  class:error={variant === "error"}
+  role={variant === "error"
+    ? "alert"
+    : variant === "loading"
+      ? "status"
+      : undefined}
+  aria-busy={variant === "loading" ? true : undefined}
+>
   <h2>{title}</h2>
-  <p>{description}</p>
+  {#if description}<p>{description}</p>{/if}
   {#if actionLabel && onAction}
     <button type="button" class="btn primary" onclick={onAction}>
       {actionLabel}
@@ -38,6 +56,10 @@
     font-size: 20px;
     font-weight: 700;
     letter-spacing: -0.02em;
+  }
+
+  .error h2 {
+    color: var(--danger);
   }
 
   p {

@@ -22,6 +22,7 @@
   import TodoView from "$lib/features/todo/TodoView.svelte";
   import { t } from "$lib/i18n";
   import { findShortcut, focusContextOf, ROW_ATTRIBUTE } from "$lib/keymap";
+  import EmptyState from "$lib/shell/EmptyState.svelte";
   import SegmentedControl from "$lib/shell/SegmentedControl.svelte";
   import Toast from "$lib/shell/Toast.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
@@ -351,7 +352,7 @@
       {:else}
         <div class="content" data-menu-area="agenda">
           {#await loadCalendar()}
-            <p class="status">{t.calendar.loading}</p>
+            <EmptyState variant="loading" title={t.calendar.loading} />
           {:then module}
             <module.default
               store={tasksStore}
@@ -359,7 +360,7 @@
               onOpenTask={(task: Task) => (detailId = task.id)}
             />
           {:catch}
-            <p class="status">{t.calendar.loadFailed}</p>
+            <EmptyState variant="error" title={t.calendar.loadFailed} />
           {/await}
         </div>
       {/if}
@@ -575,10 +576,5 @@
 
   .scrolls {
     overflow: auto;
-  }
-
-  .status {
-    padding: var(--space-6);
-    color: var(--text-secondary);
   }
 </style>

@@ -375,3 +375,26 @@ describe("row actions", () => {
     expect(await screen.findByDisplayValue("Uno")).toBeTruthy();
   });
 });
+
+describe("load states", () => {
+  it("announces a failed load with a retry instead of an empty list", async () => {
+    const api = new FakeApi([makeTask({ id: "a", title: "Una" })]);
+    api.failing.add("tasksList");
+    const store = new TasksStore({ api, settleMs: () => 0 });
+    await store.load();
+    render(TodoView, { store });
+    expect(screen.getByRole("alert").textContent).toContain(
+      "No se pudieron cargar las tareas",
+    );
+    expect(screen.queryByText("Sin tareas")).toBeNull();
+    await fireEvent.click(screen.getByRole("button", { name: /Reintentar/ }));
+    await waitFor(() => expect(screen.getByDisplayValue("Una")).toBeTruthy());
+  });
+
+  it("shows a polite busy status while loading", () => {
+    const store = new TasksStore({ api: new FakeApi([]), settleMs: () => 0 });
+    render(TodoView, { store });
+    const status = screen.getByRole("status");
+    expect(status.getAttribute("aria-busy")).toBe("true");
+  });
+});
