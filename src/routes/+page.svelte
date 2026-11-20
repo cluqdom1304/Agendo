@@ -12,6 +12,7 @@
   import { DialogState } from "$lib/shell/dialogs.svelte";
   import EmptyState from "$lib/shell/EmptyState.svelte";
   import { dispatchShortcut } from "$lib/shell/shortcuts";
+  import { SidebarState } from "$lib/shell/sidebar.svelte";
   import Toast from "$lib/shell/Toast.svelte";
   import TopBar from "$lib/shell/TopBar.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
@@ -23,9 +24,9 @@
 
   const dialogs = new DialogState();
 
-  // Narrow windows start with the sidebar folded so the content keeps its room.
-  let sidebarOpen = $state(
-    typeof window === "undefined" || window.innerWidth >= 900,
+  // Narrow windows fold the sidebar so the panel keeps its room (F19-05).
+  const sidebar = new SidebarState(
+    typeof window === "undefined" ? Infinity : window.innerWidth,
   );
 
   // The tag filter only hides tasks: in the notes there is nothing to warn about.
@@ -91,7 +92,7 @@
 
   // The sidebar is the drop target, so it opens as soon as a drag starts.
   $effect(() => {
-    if (tagDrag.active || folderDrag.active) sidebarOpen = true;
+    if (tagDrag.active || folderDrag.active) sidebar.reveal();
   });
 
   onMount(() => {
@@ -160,18 +161,21 @@
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window
+  onkeydown={onKeydown}
+  onresize={() => sidebar.setWidth(window.innerWidth)}
+/>
 
 <div class="shell">
   <TopBar
-    {sidebarOpen}
+    sidebarOpen={sidebar.open}
     filtered={filterShown}
     canGoBack={viewStore.canGoBack}
     canGoForward={viewStore.canGoForward}
     newLabel={viewStore.section === "notes"
       ? t.topBar.newNote
       : t.newTask.button}
-    onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
+    onToggleSidebar={() => sidebar.toggle()}
     onNew={createNew}
     onBack={() => viewStore.goBack()}
     onForward={() => viewStore.goForward()}
@@ -180,7 +184,7 @@
   />
   <div class="body">
     <AppSidebar
-      open={sidebarOpen}
+      open={sidebar.open}
       section={viewStore.section}
       notes={notesStore}
       tags={tagsStore}
@@ -205,7 +209,7 @@
             {/if}
           </div>
         {:else if viewStore.section === "today"}
-          <div class="content scrolls" data-menu-area="agenda">
+          <div class="content scrolls padded" data-menu-area="agenda">
             {#if TodayView}
               <TodayView
                 store={tasksStore}
@@ -218,11 +222,11 @@
             {/if}
           </div>
         {:else if viewStore.mode === "list"}
-          <div class="content scrolls" data-menu-area="agenda">
+          <div class="content scrolls padded" data-menu-area="agenda">
             <TodoView store={tasksStore} />
           </div>
         {:else}
-          <div class="content" data-menu-area="agenda">
+          <div class="content padded" data-menu-area="agenda">
             {#await loadCalendar()}
               <EmptyState variant="loading" title={t.calendar.loading} />
             {:then module}
@@ -285,21 +289,37 @@
     display: flex;
     flex: 1;
     min-height: 0;
+    padding: 0 var(--panel-gap) var(--panel-gap);
   }
 
+  /* The content is a card over the dark window (D-92). Inside it the window surfaces are the
+     panel, so sticky headers and fills that used the window colour match the card. */
   .page {
+    --bg-window: var(--bg-panel);
+    --bg-window-solid: var(--bg-panel);
+    --bg-window-native: var(--bg-panel);
     display: flex;
     flex: 1;
     flex-direction: column;
-    min-width: 0;
-    height: 100%;
-    background: var(--bg-window-solid);
+    min-width: 420px;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: var(--radius-panel);
+    background: var(--bg-panel);
+    box-shadow:
+      0 0 0 1px var(--panel-border),
+      var(--shadow-raised);
   }
 
   .content {
     flex: 1;
     min-height: 0;
     animation: rise-in var(--motion-base) var(--ease-out);
+  }
+
+  /* The views of the agenda start below the rounded top of the card; the notes run to its edge. */
+  .padded {
+    padding-top: var(--space-4);
   }
 
   .scrolls {

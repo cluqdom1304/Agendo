@@ -431,7 +431,15 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
 
 ## Versión 3.0.0 (`[H]`, pendientes; se detallan al implementar cada fase)
 
-- **Fase 19 — shell y sistema visual:** aspecto del sidebar oscuro en tema claro y oscuro, con y sin Mica, a tamaño mínimo y con la ventana maximizada; atrás/adelante; el sidebar se pliega solo en ventanas estrechas.
+- **Fase 19 — shell y sistema visual (F19-06):**
+  - [ ] Sidebar y barra superior oscuros en tema claro y oscuro, con Mica, Acrylic y sin efecto; texto legible en todos los casos (también en las carpetas, etiquetas y el editor de etiquetas).
+  - [ ] El contenido se ve como una tarjeta redondeada con hueco de 8 px a derecha, izquierda y abajo; sin bordes cortados al maximizar ni con la ventana a 720×480.
+  - [ ] La barra superior arrastra la ventana y el doble clic la maximiza; los botones no arrastran; los botones de ventana no tapan Ajustes.
+  - [ ] «Buscar o crear…» y Ctrl+K abren la paleta; «nuevo» crea una tarea (o una nota en Notas).
+  - [ ] Atrás/adelante recorren las secciones visitadas y se desactivan cuando no hay adónde ir.
+  - [ ] Por debajo de 900 px el sidebar se pliega solo y vuelve al ensanchar; arrastrar una etiqueta o una nota lo abre.
+  - [ ] Favoritos (notas fijadas) y Recientes aparecen poco después de abrir, se pliegan y abren la nota; elegir una carpeta desde Hoy, Tareas o Calendario lleva a Notas.
+  - [ ] Una instalación que venía de la 2.0.3 con la agenda abierta en el calendario vuelve a abrir en «Calendario»; con la lista, en «Tareas».
 - **Fase 20 — Hoy, Bandeja y prioridades:** tira de días, banner de resumen, círculos de prioridad legibles, progreso de checklist, panel Bandeja plegable y arrastre desde él.
 - **Fase 21 — eventos:** crear, editar y arrastrar eventos en el calendario; notificación nativa de un recordatorio de evento; evento repetido.
 - **Fase 22 — hábitos:** marcar y desmarcar, rachas tras varios días y al cambiar de día a medianoche.
