@@ -26,14 +26,16 @@ export interface ViewStoreOptions {
   firstDay?: () => WeekDay;
 }
 
-/** The views of the sidebar. Events and habits join when their views exist (F21, F22). */
-export type Section = "today" | "upcoming" | "tasks" | "calendar" | "notes";
+/** The views of the sidebar. Habits join when their view exists (F22). */
+export type Section =
+  "today" | "upcoming" | "tasks" | "calendar" | "events" | "notes";
 
 const SECTIONS: readonly Section[] = [
   "today",
   "upcoming",
   "tasks",
   "calendar",
+  "events",
   "notes",
 ];
 

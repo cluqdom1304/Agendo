@@ -17,10 +17,12 @@ export interface CommandDeps {
   tags: TagsStore;
   /** Opens the full creation dialog (the one Ctrl+N opens). */
   newTask?: () => void;
+  /** Opens the event dialog. */
+  newEvent?: () => void;
 }
 
 export function buildCommands(deps: CommandDeps): PaletteCommand[] {
-  const { view, notes, tasks, tags, newTask } = deps;
+  const { view, notes, tasks, tags, newTask, newEvent } = deps;
   const l = t.palette.commands;
 
   const inAgenda = (action: () => void) => () => {
@@ -47,6 +49,16 @@ export function buildCommands(deps: CommandDeps): PaletteCommand[] {
       label: l.newTaskToday,
       shortcut: "Ctrl+Mayús+N",
       run: inAgenda(() => tasks.startDraft(tasks.todayTarget())),
+    },
+    {
+      id: "new-event",
+      label: l.newEvent,
+      run: () => newEvent?.(),
+    },
+    {
+      id: "go-events",
+      label: l.goEvents,
+      run: () => view.setSection("events"),
     },
     {
       id: "new-note",

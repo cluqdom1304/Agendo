@@ -54,6 +54,11 @@
       icon: "M3.5 3h9a1 1 0 011 1v8.5a1 1 0 01-1 1h-9a1 1 0 01-1-1V4a1 1 0 011-1zM2.5 6.5h11M5.5 1.5V4M10.5 1.5V4",
     },
     {
+      value: "events",
+      label: t.sidebar.events,
+      icon: "M3.5 3h9a1 1 0 011 1v8.5a1 1 0 01-1 1h-9a1 1 0 01-1-1V4a1 1 0 011-1zM2.5 6.5h11M5.5 9.5h2v2h-2z",
+    },
+    {
       value: "notes",
       label: t.sidebar.notes,
       icon: "M3 4h10M3 8h10M3 12h6",

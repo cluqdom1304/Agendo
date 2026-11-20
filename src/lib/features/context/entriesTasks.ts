@@ -127,6 +127,11 @@ export function taskEntries(taskId: string, deps: ContextDeps): ContextEntry[] {
       run: () => void deps.taskToNote(task),
     },
     {
+      id: "convert-event",
+      label: t.context.convertEvent,
+      run: () => void deps.taskToEvent(task),
+    },
+    {
       id: "delete",
       label: t.context.delete,
       danger: true,
@@ -135,6 +140,31 @@ export function taskEntries(taskId: string, deps: ContextDeps): ContextEntry[] {
     },
   );
   return entries;
+}
+
+export function eventEntries(
+  eventId: string,
+  deps: ContextDeps,
+): ContextEntry[] {
+  return [
+    {
+      id: "edit-event",
+      label: t.context.openEventTask,
+      run: () => deps.openEvent(eventId),
+    },
+    {
+      id: "event-to-task",
+      label: t.context.convertTask,
+      run: () => void deps.eventToTask(eventId),
+    },
+    {
+      id: "delete-event",
+      label: t.context.delete,
+      danger: true,
+      separated: true,
+      run: () => void deps.deleteEvent(eventId),
+    },
+  ];
 }
 
 export async function duplicate(task: Task, deps: ContextDeps): Promise<void> {
@@ -165,6 +195,13 @@ export function agendaEntries(
         ? t.context.newTaskOn(formatDisplayDate(date))
         : t.context.newTask,
       run: () => deps.newTask(date),
+    },
+    {
+      id: "new-event",
+      label: date
+        ? t.context.newEventOn(formatDisplayDate(date))
+        : t.context.newEvent,
+      run: () => deps.newEvent(date),
     },
   ];
   if (date) {

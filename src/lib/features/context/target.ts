@@ -8,11 +8,13 @@ export type MenuTarget =
   | { kind: "task-ref"; taskId: string; node: Element }
   | { kind: "editor"; node: Element; inTable: boolean }
   | { kind: "task"; taskId: string }
+  | { kind: "event"; eventId: string }
   | { kind: "note"; noteId: string }
   | { kind: "folder"; folderId: string }
   | { kind: "tag"; tagId: string }
   | { kind: "note-tag"; tagId: string }
   | { kind: "agenda"; date: string | null }
+  | { kind: "events" }
   | { kind: "notes" }
   | { kind: "none" };
 
@@ -58,6 +60,8 @@ export function resolveTarget(el: Element | null): MenuTarget {
 
   const task = valueOf(el, "[data-task-id]", "data-task-id");
   if (task) return { kind: "task", taskId: task };
+  const event = valueOf(el, "[data-event-id]", "data-event-id");
+  if (event) return { kind: "event", eventId: event };
   const note = valueOf(el, "[data-note-id]", "data-note-id");
   if (note) return { kind: "note", noteId: note };
   const folder = valueOf(el, "[data-folder-id]", "data-folder-id");
@@ -75,5 +79,6 @@ export function resolveTarget(el: Element | null): MenuTarget {
     return { kind: "agenda", date: valueOf(el, "[data-date]", "data-date") };
   }
   if (area === "notes") return { kind: "notes" };
+  if (area === "events") return { kind: "events" };
   return { kind: "none" };
 }

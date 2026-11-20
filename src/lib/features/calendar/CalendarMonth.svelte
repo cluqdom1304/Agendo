@@ -1,7 +1,8 @@
 <script lang="ts">
   import { t } from "../../i18n";
   import { sortDay } from "../../ordering";
-  import type { Tag, Task } from "../../types";
+  import type { EventOccurrence, Tag, Task } from "../../types";
+  import { timeRangeOf } from "../events/occurrences";
   import { isSameMonth, monthGrid, type WeekDay } from "./grid";
   import { dayNumber, weekdayName } from "./labels";
 
@@ -13,11 +14,14 @@
     firstDay: WeekDay;
     today: string;
     tasksByDate: Map<string, Task[]>;
+    /** The events of each day, shown before its tasks. */
+    eventsByDate?: Map<string, EventOccurrence[]>;
     label: string;
     onShowDay: (date: string) => void;
     onOpenTask: (task: Task) => void;
+    onOpenEvent?: (eventId: string) => void;
     /** The task's tag, which gives its colour and the small name on the event. */
-    tagOf?: (task: Task) => Tag | undefined;
+    tagOf?: (item: Pick<Task, "tagIds">) => Tag | undefined;
     /** How many more tags the task has besides the one shown. */
     moreTags?: (task: Task) => number;
     /** Pressed on an event: the parent starts dragging it towards a sidebar tag. */
@@ -29,9 +33,11 @@
     firstDay,
     today,
     tasksByDate,
+    eventsByDate,
     label,
     onShowDay,
     onOpenTask,
+    onOpenEvent,
     tagOf,
     moreTags,
     dragTask,
@@ -40,13 +46,24 @@
   const weeks = $derived(
     monthGrid(anchor, firstDay).map((week) =>
       week.map((date) => {
-        const tasks = sortDay(tasksByDate.get(date) ?? []);
+        const entries = [
+          ...(eventsByDate?.get(date) ?? []).map((occurrence) => ({
+            key: `e:${occurrence.eventId}:${occurrence.startDate}`,
+            occurrence,
+            task: null,
+          })),
+          ...sortDay(tasksByDate.get(date) ?? []).map((task) => ({
+            key: `t:${task.id}`,
+            occurrence: null,
+            task,
+          })),
+        ];
         return {
           date,
           outside: !isSameMonth(date, anchor),
           isToday: date === today,
-          shown: tasks.slice(0, VISIBLE_TASKS),
-          hidden: Math.max(tasks.length - VISIBLE_TASKS, 0),
+          shown: entries.slice(0, VISIBLE_TASKS),
+          hidden: Math.max(entries.length - VISIBLE_TASKS, 0),
         };
       }),
     ),
@@ -77,25 +94,45 @@
           >
             {dayNumber(day.date)}
           </button>
-          {#each day.shown as task (task.id)}
-            {@const tag = tagOf?.(task)}
-            <button
-              type="button"
-              class="chip"
-              data-task-id={task.id}
-              class:done={task.isCompleted}
-              style:--tag={tag?.colorHex}
-              onpointerdown={(event) => dragTask?.(event, task)}
-              title={t.calendar.openTask(task.title || t.calendar.untitled)}
-              onclick={() => onOpenTask(task)}
-            >
-              {#if task.dueTime}<span class="time">{task.dueTime}</span>{/if}
-              {task.title || t.calendar.untitled}
-              {#if tag}<span class="tag-name"
-                  >{tag.name}{#if moreTags?.(task)}
-                    +{moreTags(task)}{/if}</span
-                >{/if}
-            </button>
+          {#each day.shown as entry (entry.key)}
+            {#if entry.occurrence}
+              {@const occurrence = entry.occurrence}
+              {@const tag = tagOf?.(occurrence)}
+              {@const name = occurrence.title || t.calendar.untitled}
+              <button
+                type="button"
+                class="chip event"
+                data-event-id={occurrence.eventId}
+                style:--tag={tag?.colorHex}
+                title={t.calendar.openEvent(name)}
+                onclick={() => onOpenEvent?.(occurrence.eventId)}
+              >
+                {#if timeRangeOf(occurrence)}<span class="time"
+                    >{occurrence.startTime}</span
+                  >{/if}
+                {name}
+              </button>
+            {:else if entry.task}
+              {@const task = entry.task}
+              {@const tag = tagOf?.(task)}
+              <button
+                type="button"
+                class="chip"
+                data-task-id={task.id}
+                class:done={task.isCompleted}
+                style:--tag={tag?.colorHex}
+                onpointerdown={(event) => dragTask?.(event, task)}
+                title={t.calendar.openTask(task.title || t.calendar.untitled)}
+                onclick={() => onOpenTask(task)}
+              >
+                {#if task.dueTime}<span class="time">{task.dueTime}</span>{/if}
+                {task.title || t.calendar.untitled}
+                {#if tag}<span class="tag-name"
+                    >{tag.name}{#if moreTags?.(task)}
+                      +{moreTags(task)}{/if}</span
+                  >{/if}
+              </button>
+            {/if}
           {/each}
           {#if day.hidden > 0}
             <button
@@ -212,6 +249,11 @@
 
   .chip:active {
     transform: scale(0.98);
+  }
+
+  .chip.event {
+    background: color-mix(in srgb, var(--tag, var(--accent)) 38%, transparent);
+    font-weight: 500;
   }
 
   .chip.done {

@@ -449,7 +449,14 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Bandeja de entrada en Hoy, Próximas y Calendario: añadir con Intro, completar, abrir y menú contextual; se pliega desde la barra superior y desaparece por debajo de 1100 px. (El arrastre desde la Bandeja a una franja queda para la Fase 24.)
   - [ ] Próximas: Vencidas, Hoy, Mañana, los días con nombre y «Más adelante».
   - [ ] Tareas: los filtros de fecha, prioridad mínima y «Mostrar completadas» se combinan con el filtro de etiquetas; «Quitar filtros» devuelve la lista entera.
-- **Fase 21 — eventos:** crear, editar y arrastrar eventos en el calendario; notificación nativa de un recordatorio de evento; evento repetido.
+- **Fase 21 — eventos (F21-05):**
+  - [ ] Sidebar «Eventos»: «Nuevo evento» crea con título, fecha, hora de inicio y fin, etiquetas, aviso y notas; el evento sale en la lista, en Hoy, en Próximas y en el calendario.
+  - [ ] Todo el día y varios días: sin horas, en la fila «Todo el día» de Semana y Día y como chip en Mes.
+  - [ ] Calendario Semana y Día: un evento y una tarea con hora a la vez se reparten el ancho sin taparse; arrastrar un evento cambia su hora y de columna cambia su día; el borde inferior cambia la hora de fin; Esc a mitad de un arrastre lo cancela; un arrastre no abre el diálogo y un clic sí.
+  - [ ] Evento repetido (semanal): aparece cada semana; arrastrar una ocurrencia mueve toda la serie y el diálogo avisa de que los cambios son para toda la serie.
+  - [ ] Notificación nativa de un evento con aviso «15 min antes»: sale a su hora con el título; pulsarla abre la app en el diálogo del evento. No hay botones de «Hecha» ni de posponer.
+  - [ ] Menú contextual: «Convertir en evento» en una tarea (la tarea va a la papelera) y «Convertir en tarea» en un evento; «Borrar» un evento ofrece «Deshacer»; clic derecho en un día del calendario ofrece «Nuevo evento el …».
+  - [ ] Los eventos respetan el filtro de etiquetas del sidebar; contraste legible de los bloques de evento en claro, oscuro y Mica.
 - **Fase 22 — hábitos:** marcar y desmarcar, rachas tras varios días y al cambiar de día a medianoche.
 - **Fase 24 — planificar el día:** arrastrar de la Bandeja a una franja; asistente de «Planificar mi día».
 - **Fase 25 — enfoque:** temporizador, notificación al terminar y cierre de la app con el temporizador activo.

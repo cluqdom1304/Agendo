@@ -4,6 +4,8 @@
     createNoteForTask,
     showNote,
   } from "$lib/features/notes/navigation";
+  import { eventToTask, taskToEvent } from "$lib/features/events/convert";
+  import { eventsStore } from "$lib/stores/events.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
@@ -26,6 +28,8 @@
   const loadMenu = () => import("$lib/features/context/ContextMenu.svelte");
   const loadPalette = () => import("$lib/features/palette/PaletteHost.svelte");
   const loadTaskDialog = () => import("$lib/features/todo/TaskDialog.svelte");
+  const loadEventDialog = () =>
+    import("$lib/features/events/EventDialog.svelte");
   const loadTaskDetail = () =>
     import("$lib/features/todo/TaskDetailDialog.svelte");
   const loadSettings = () =>
@@ -47,6 +51,7 @@
       mode={dialogs.palette}
       onTask={(taskId) => onShowTask(taskId)}
       onNewTask={() => dialogs.openNewTask()}
+      onNewEvent={() => dialogs.openNewEvent()}
       onClose={() => (dialogs.palette = null)}
     />
   {/await}
@@ -60,6 +65,18 @@
       tags: tagsStore,
       notes: notesStore,
       newTask: (date) => dialogs.openNewTask(date),
+      newEvent: (date) => dialogs.openNewEvent(date),
+      openEvent: (eventId) => dialogs.openEvent(eventId),
+      taskToEvent: (task) =>
+        taskToEvent(task, eventsStore, tasksStore, viewStore.today()),
+      eventToTask: async (eventId) => {
+        const event = await eventsStore.get(eventId);
+        return event ? eventToTask(event, eventsStore, tasksStore) : null;
+      },
+      deleteEvent: async (eventId) => {
+        const event = await eventsStore.get(eventId);
+        return event ? eventsStore.remove(event) : null;
+      },
       editTask: (task) => (dialogs.editing = task),
       openTask: (taskId) => (dialogs.detailId = taskId),
       showNote,
@@ -77,6 +94,25 @@
         (viewStore.mode === "list" ? null : viewStore.anchor)}
       onClose={() => (dialogs.newTaskOpen = false)}
     />
+  {/await}
+{/if}
+
+{#if dialogs.event}
+  {#await loadEventDialog() then { default: EventDialog }}
+    {#key dialogs.event}
+      <EventDialog
+        store={eventsStore}
+        eventId={dialogs.event.id}
+        defaultDate={dialogs.event.date ??
+          (viewStore.mode === "list" ? viewStore.today() : viewStore.anchor)}
+        defaultTime={dialogs.event.time}
+        onClose={() => (dialogs.event = null)}
+        onConvert={(event) => {
+          dialogs.event = null;
+          void eventToTask(event, eventsStore, tasksStore);
+        }}
+      />
+    {/key}
   {/await}
 {/if}
 

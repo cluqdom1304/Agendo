@@ -18,6 +18,12 @@ export interface ContextDeps {
   editTask(task: Task): void;
   /** Shows the view of one task. */
   openTask(taskId: string): void;
+  /** Opens the event dialog, on a day if one is given. */
+  newEvent(date: string | null): void;
+  openEvent(eventId: string): void;
+  taskToEvent(task: Task): Promise<unknown>;
+  eventToTask(eventId: string): Promise<unknown>;
+  deleteEvent(eventId: string): Promise<unknown>;
   /** Switches to the notes and opens the note. */
   showNote(noteId: string): Promise<void>;
   noteForTask(task: Task): Promise<Note | null>;

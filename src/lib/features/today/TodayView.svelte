@@ -2,28 +2,46 @@
   import { onMount } from "svelte";
 
   import { t } from "../../i18n";
+  import type { EventsStore } from "../../stores/events.svelte";
   import type { NotesStore } from "../../stores/notes.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ViewStore } from "../../stores/view.svelte";
   import type { NoteSummary } from "../../types";
   import { addDays } from "../calendar/grid";
+  import EventRow from "../events/EventRow.svelte";
   import Checkbox from "../todo/Checkbox.svelte";
   import ChecklistProgress from "../todo/ChecklistProgress.svelte";
-  import { pendingByDate, stripDates, summarizeDay } from "./summary";
+  import {
+    pendingByDate,
+    STRIP_DAYS,
+    stripDates,
+    summarizeDay,
+  } from "./summary";
 
   // «Hoy» (F13-07, F20-01): what a day holds in one place: a summary, its tasks, its daily
   // note and the notes pinned in the notes section. The strip picks the day, today by default.
   interface Props {
     store: TasksStore;
+    /** The events of the days of the strip; without it «Hoy» shows tasks only. */
+    eventStore?: EventsStore;
     notes: NotesStore;
     view: ViewStore;
     onOpenTask: (taskId: string) => void;
+    onOpenEvent?: (eventId: string) => void;
     onOpenNote: (noteId: string) => void;
     onOpenDaily: (date: string) => void;
   }
 
-  let { store, notes, view, onOpenTask, onOpenNote, onOpenDaily }: Props =
-    $props();
+  let {
+    store,
+    eventStore,
+    notes,
+    view,
+    onOpenTask,
+    onOpenEvent,
+    onOpenNote,
+    onOpenDaily,
+  }: Props = $props();
   const l = t.today;
 
   // A window left open overnight must not keep showing yesterday.
@@ -56,6 +74,11 @@
         : capitalize(longWeekday.format(asDate(selected))),
   );
 
+  $effect(() => {
+    void eventStore?.show(today, addDays(today, STRIP_DAYS - 1));
+  });
+  const dayEvents = $derived(eventStore?.byDate.get(selected) ?? []);
+
   const pendingCounts = $derived(pendingByDate(store.visibleTasks));
   const strip = $derived(
     stripDates(today).map((date) => {
@@ -65,6 +88,7 @@
         weekday: shortWeekday.format(asDate(date)).replace(".", ""),
         day: Number(date.slice(8)),
         pending,
+        marked: pending > 0 || (eventStore?.byDate.has(date) ?? false),
         label: l.stripDay(longDate.format(asDate(date)), pending),
       };
     }),
@@ -152,13 +176,16 @@
       >
         <span class="weekday">{day.weekday}</span>
         <span class="number">{day.day}</span>
-        <span class="mark" class:shown={day.pending > 0}></span>
+        <span class="mark" class:shown={day.marked}></span>
       </button>
     {/each}
   </div>
 
   <section class="banner" aria-label={l.summary}>
     <p class="headline">{summaryText}</p>
+    {#if dayEvents.length > 0}
+      <p class="events-line">{t.events.summary(dayEvents.length)}</p>
+    {/if}
     {#if summary.overdue > 0}
       <p class="overdue">{l.overdue(summary.overdue)}</p>
     {/if}
@@ -178,6 +205,20 @@
       </div>
     {/if}
   </section>
+
+  {#if dayEvents.length > 0}
+    <section class="block" aria-labelledby="today-events">
+      <h3 id="today-events">
+        {t.events.dayEvents}
+        <span class="count">{dayEvents.length}</span>
+      </h3>
+      <ul class="card">
+        {#each dayEvents as occurrence (occurrence.eventId + occurrence.startDate)}
+          <EventRow {occurrence} onOpen={(eventId) => onOpenEvent?.(eventId)} />
+        {/each}
+      </ul>
+    </section>
+  {/if}
 
   <section class="block" aria-labelledby="today-tasks">
     <h3 id="today-tasks">
@@ -419,7 +460,8 @@
     font-weight: 600;
   }
 
-  .overdue {
+  .overdue,
+  .events-line {
     color: var(--text-secondary);
     font-size: 13px;
   }

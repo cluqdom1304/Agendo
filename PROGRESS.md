@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** versión 3.0.0, Fase 20 (Fases 18 y 19 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
+**Fase activa:** versión 3.0.0, Fase 21 (Fases 18 a 20 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** Fase 20 terminada (`[A]` en verde); falta la validación humana F20-06 en Windows 11. La Fase 21 (F21-01) no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-20 (Fase 19 validada por el usuario; Fase 20 completada a la espera de F20-06)
+**Siguiente tarea:** Fase 21 terminada (`[A]` en verde); falta la validación humana F21-05 en Windows 11. La Fase 22 (F22-01) no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-20 (Fase 20 validada por el usuario; Fase 21 completada a la espera de F21-05)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -518,7 +518,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F20-03 `[A]` Progreso de checklist «2/5» en la fila.
 - [x] F20-04 `[A]` Panel derecho «Bandeja de entrada» (carga diferida, plegable, oculto en ventanas estrechas).
 - [x] F20-05 `[A]` Vista Próximas y vista Tareas con filtros.
-- [ ] F20-06 `[H]` Validación en Windows 11.
+- [x] F20-06 `[H]` Validación en Windows 11.
 
 **Verificaciones [A] de la Fase 20:**
 - Inicio: el usuario validó F19-06 en Windows 11 y ordenó empezar la Fase 20 el 2026-11-20.
@@ -530,11 +530,20 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - Cierre de F20: batería completa en verde (`cargo fmt --check`, `clippy -D warnings`, Rust 552, lint, check 0/0, TS 817, build, size 280,4 KB de 300; quedan 19,6 KB). Sin dependencias ni migraciones nuevas. D-05 ampliada en F20-02 (prioridad dentro del día, con paridad Rust/TS). Pendiente `[H]`: F20-06 (lista en `docs/manual-pruebas.md` § «Versión 3.0.0»). `cargo check --target x86_64-pc-windows-msvc` no aplica: la fase no toca `window/` ni `notify/`.
 
 ## Fase 21 — Eventos (D-94)
-- [ ] F21-01 `[A]` Diálogo y fila de evento; sección Eventos.
-- [ ] F21-02 `[A]` Calendario mixto (eventos y tareas con duración), arrastre y redimensionado.
-- [ ] F21-03 `[A]` Eventos en Hoy/Próximas y en el banner; recordatorios con notificación nativa.
-- [ ] F21-04 `[A]` Convertir tarea ↔ evento desde el menú contextual.
+- [x] F21-01 `[A]` Diálogo y fila de evento; sección Eventos.
+- [x] F21-02 `[A]` Calendario mixto (eventos y tareas con duración), arrastre y redimensionado.
+- [x] F21-03 `[A]` Eventos en Hoy/Próximas y en el banner; recordatorios con notificación nativa.
+- [x] F21-04 `[A]` Convertir tarea ↔ evento desde el menú contextual.
 - [ ] F21-05 `[H]` Validación en Windows 11.
+
+**Verificaciones [A] de la Fase 21:**
+- Inicio: el usuario validó F20-06 en Windows 11 y ordenó empezar la Fase 21 el 2026-11-20.
+- F21-01: `stores/events.svelte.ts` (`EventsStore`: ventana de ocurrencias, `byDate` que reparte los eventos de varios días, filtro de etiquetas, crear, editar, mover, redimensionar y borrar con «Deshacer»; el aviso reutiliza `TaskNotices`), `features/events/occurrences.ts` (puro: orden del día, bloques de la rejilla, parches de mover y redimensionar), `EventForm`/`EventDialog` (título, etiquetas, todo el día, inicio y fin con el fin siguiendo al inicio, repetición con el mismo editor que las tareas, avisos como «N antes» —sin hora solo días enteros—, notas; editar, eliminar y convertir en tarea), `EventRow` y `EventsView` (próximos 90 días agrupados por día). Sección `events` en `ViewStore` y el sidebar (entre Calendario y Notas), botón «Nuevo evento» de la barra superior, y «Ir a Eventos» y «Nuevo evento» en la paleta.
+- F21-02: `CalendarWeek`/`CalendarDay` mezclan bloques de tarea y de evento en los mismos carriles (`layoutBlocks`, genérico; `layoutDay` se apoya en él); los eventos de todo el día o de varios días van a la fila «Todo el día»; el mes los muestra antes que las tareas. `eventDrag.svelte.ts`: arrastrar el cuerpo mueve (hora a cuartos de hora y día de la columna bajo el puntero), el borde inferior cambia la hora de fin, umbral de 4 px para no confundirlo con un clic, Esc cancela, vista previa punteada y nada se guarda hasta soltar. **Una serie se edita entera:** mover una ocurrencia desplaza toda la serie los mismos días (D-94). Los eventos de todo el día se cambian desde el diálogo (no se arrastran). Botón «Nuevo evento» en la barra del calendario y «Nuevo evento el …» en el menú contextual de un día.
+- F21-03: Hoy muestra «Eventos del día» antes de las tareas, «N eventos» en el banner y marca en la tira los días con eventos; Próximas añade los eventos a su día (un día solo con eventos también tiene encabezado). `notify/`: la notificación de un evento lleva `eventId` y su clic emite `reminder:open` con `eventId` (`perform_action` gana un parámetro; test del clic ampliado) y la página abre el diálogo del evento. Los avisos del evento ya los programaba el scheduler (F18-03).
+- F21-04: `features/events/convert.ts`: tarea → evento (fecha, hora, fin por la duración, repetición, etiquetas, avisos «N antes» y las notas como texto plano; sin fecha, hoy) y evento → tarea (duración si empieza y acaba el mismo día, notas como documento, avisos «N antes»). Crea primero y manda a la papelera después, así un fallo no pierde nada. «Convertir en evento» en el menú de tarea; el menú de un evento ofrece «Editar evento…», «Convertir en tarea» y «Borrar». Se pierden en la conversión los avisos a una hora fija, la prioridad y las casillas de las notas.
+- **Discrepancias y avisos:** (1) los resultados de búsqueda de eventos aún no salen en la paleta (no figura en F21; solo los dos comandos); (2) la prop de las vistas se llama `eventStore`, no `events`, porque `events` es una opción de Svelte que rompe `render` en los tests; (3) JS 291,4 KB de 300 (+11 KB en la fase): quedan 8,6 KB para las Fases 22 a 26, así que conviene cargar con `import()` lo que venga y revisar el presupuesto de D-98 antes de la Fase 22; (4) D-94 sigue `PROPOSED`.
+- Cierre de F21: batería completa en verde (`cargo fmt --check`, `clippy -D warnings`, Rust 552, lint, check 0/0, TS 873, build, size 291,4 KB de 300). Sin dependencias ni migraciones nuevas. `cargo check --target x86_64-pc-windows-msvc` es el destino propio de este equipo (Windows) y lo cubre `clippy`. Pendiente `[H]`: F21-05 (lista en `docs/manual-pruebas.md` § «Versión 3.0.0»).
 
 ## Fase 22 — Hábitos (D-95)
 - [ ] F22-01 `[A]` Diálogo de hábito y vista Hábitos con racha y últimos 7 días.

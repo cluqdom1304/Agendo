@@ -16,6 +16,21 @@ export class DialogState {
   /** The task being edited in the creation dialog; the view comes back when it closes. */
   editing = $state.raw<Task | null>(null);
 
+  /** The event dialog: a new event (on a day, at a time) or the event with `id`. */
+  event = $state.raw<{
+    id?: string;
+    date: string | null;
+    time: string | null;
+  } | null>(null);
+
+  openNewEvent(date: string | null = null, time: string | null = null): void {
+    this.event = { date, time };
+  }
+
+  openEvent(id: string): void {
+    this.event = { id, date: null, time: null };
+  }
+
   openNewTask(date: string | null = null): void {
     this.newTaskDate = date;
     this.newTaskOpen = true;

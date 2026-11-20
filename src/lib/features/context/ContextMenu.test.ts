@@ -64,6 +64,11 @@ async function setup(html: string) {
     showNote: vi.fn(async () => undefined),
     noteForTask: vi.fn(async () => null),
     taskToNote: vi.fn(async () => null),
+    newEvent: vi.fn(),
+    openEvent: vi.fn(),
+    taskToEvent: vi.fn(async () => null),
+    eventToTask: vi.fn(async () => null),
+    deleteEvent: vi.fn(async () => null),
   };
   const host = document.createElement("div");
   host.innerHTML = html;
@@ -204,6 +209,49 @@ describe("ContextMenu", () => {
     await rightClick("#row");
     await fireEvent.click(await screen.findByText("Editar…"));
     expect(editTask).toHaveBeenCalledWith(tasks.find("t1"));
+  });
+
+  it("converts a task into an event from its menu (F21-04)", async () => {
+    const { taskToEvent, tasks } = await setup(
+      '<div data-task-id="t1" tabindex="0" id="row">Estudiar</div>',
+    );
+    await rightClick("#row");
+    await fireEvent.click(await screen.findByText("Convertir en evento"));
+    expect(taskToEvent).toHaveBeenCalledWith(tasks.find("t1"));
+  });
+
+  it("offers an event its own actions (F21-04)", async () => {
+    const { openEvent, eventToTask, deleteEvent } = await setup(
+      '<div data-menu-area="events"><div data-event-id="e1" tabindex="0" id="row">Cita</div></div>',
+    );
+    await rightClick("#row");
+    expect(await screen.findByRole("menu")).toBeTruthy();
+    expect(names()).toEqual(["Editar evento…", "Convertir en tarea", "Borrar"]);
+    await fireEvent.click(screen.getByText("Editar evento…"));
+    expect(openEvent).toHaveBeenCalledWith("e1");
+
+    await rightClick("#row");
+    await fireEvent.click(await screen.findByText("Convertir en tarea"));
+    expect(eventToTask).toHaveBeenCalledWith("e1");
+
+    await rightClick("#row");
+    await fireEvent.click(await screen.findByText("Borrar"));
+    expect(deleteEvent).toHaveBeenCalledWith("e1");
+  });
+
+  it("offers a new event on the background of the calendar and of the events", async () => {
+    const { newEvent } = await setup(
+      '<div data-menu-area="agenda"><div data-date="2026-03-12" id="day">12</div></div><div data-menu-area="events" id="list">Eventos</div>',
+    );
+    await rightClick("#day");
+    await fireEvent.click(
+      await screen.findByText("Nuevo evento el 12/03/2026"),
+    );
+    expect(newEvent).toHaveBeenCalledWith("2026-03-12");
+
+    await rightClick("#list");
+    await fireEvent.click(await screen.findByText("Nuevo evento"));
+    expect(newEvent).toHaveBeenLastCalledWith(null);
   });
 
   it("sets the priority from its submenu (F20-02)", async () => {

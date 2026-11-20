@@ -43,6 +43,8 @@ export interface ReminderFired {
   /** Set for the reminder of a task; `noteId` for the reminder of a note (D-52). */
   taskId?: string;
   noteId?: string;
+  /** Set for the reminder of an event (D-94). */
+  eventId?: string;
   reminderId: string;
 }
 

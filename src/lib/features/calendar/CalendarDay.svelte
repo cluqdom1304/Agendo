@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Tag, Task } from "../../types";
+  import type { EventOccurrence, Tag, Task } from "../../types";
   import CalendarWeek from "./CalendarWeek.svelte";
 
   interface Props {
@@ -7,6 +7,7 @@
     today: string;
     nowMinutes: number;
     tasksByDate: Map<string, Task[]>;
+    eventsByDate?: Map<string, EventOccurrence[]>;
     label: string;
     onCreate: (
       title: string,
@@ -15,7 +16,14 @@
       duration?: number,
     ) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
-    tagOf?: (task: Task) => Tag | undefined;
+    onOpenEvent?: (eventId: string) => void;
+    onMoveEvent?: (
+      occurrence: EventOccurrence,
+      date: string,
+      start: number,
+    ) => void;
+    onResizeEvent?: (occurrence: EventOccurrence, end: number) => void;
+    tagOf?: (item: Pick<Task, "tagIds">) => Tag | undefined;
     moreTags?: (task: Task) => number;
     /** Pressed on an event: the parent starts dragging it towards a sidebar tag. */
     dragTask?: (event: PointerEvent, task: Task) => void;

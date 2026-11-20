@@ -50,6 +50,7 @@ const TOMORROW_AT: (u32, u32) = (9, 0);
 /// Keys of what a notification carries so that an action knows what it belongs to.
 const EXTRA_TASK: &str = "taskId";
 const EXTRA_NOTE: &str = "noteId";
+const EXTRA_EVENT: &str = "eventId";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Notification {
@@ -153,6 +154,9 @@ impl<R: Runtime> Notifier for TauriNotifier<R> {
         if let Some(id) = &notification.note_id {
             builder = builder.extra(EXTRA_NOTE, id);
         }
+        if let Some(id) = &notification.event_id {
+            builder = builder.extra(EXTRA_EVENT, id);
+        }
         builder
             .show()
             .map_err(|error| AppError::Notify(error.to_string()))
@@ -166,10 +170,11 @@ pub enum ActionOutcome {
     Completed(String),
     /// The notification was postponed: a new reminder of the task will sound later.
     Snoozed(String),
-    /// Bring the app forward on this task or note.
+    /// Bring the app forward on this task, note or event.
     Open {
         task_id: Option<String>,
         note_id: Option<String>,
+        event_id: Option<String>,
     },
     /// Nothing to do (the platform did not say which notification, or the task is gone).
     Ignored,
@@ -183,6 +188,7 @@ pub fn perform_action(
     action_id: &str,
     task_id: Option<&str>,
     note_id: Option<&str>,
+    event_id: Option<&str>,
 ) -> ActionOutcome {
     if action_id == ACTION_DONE {
         let Some(id) = task_id else {
@@ -202,12 +208,13 @@ pub fn perform_action(
             Err(_) => ActionOutcome::Ignored,
         };
     }
-    if task_id.is_none() && note_id.is_none() {
+    if task_id.is_none() && note_id.is_none() && event_id.is_none() {
         return ActionOutcome::Ignored;
     }
     ActionOutcome::Open {
         task_id: task_id.map(str::to_string),
         note_id: note_id.map(str::to_string),
+        event_id: event_id.map(str::to_string),
     }
 }
 
@@ -274,12 +281,17 @@ pub fn install_actions<R: Runtime>(app: &AppHandle<R>, state: Arc<AppState>) {
             performed.action_id(),
             text(EXTRA_TASK),
             text(EXTRA_NOTE),
+            text(EXTRA_EVENT),
         );
         match outcome {
             ActionOutcome::Completed(id) | ActionOutcome::Snoozed(id) => {
                 let _ = handle.emit(TASKS_CHANGED_EVENT, serde_json::json!({ "ids": [id] }));
             }
-            ActionOutcome::Open { task_id, note_id } => {
+            ActionOutcome::Open {
+                task_id,
+                note_id,
+                event_id,
+            } => {
                 if let Some(window) = handle.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.unminimize();
@@ -287,7 +299,7 @@ pub fn install_actions<R: Runtime>(app: &AppHandle<R>, state: Arc<AppState>) {
                 }
                 let _ = handle.emit(
                     OPEN_EVENT,
-                    serde_json::json!({ "taskId": task_id, "noteId": note_id }),
+                    serde_json::json!({ "taskId": task_id, "noteId": note_id, "eventId": event_id }),
                 );
             }
             ActionOutcome::Ignored => {}

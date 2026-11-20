@@ -7,9 +7,15 @@ import TodoView from "../features/todo/TodoView.svelte";
 import Palette from "../features/palette/Palette.svelte";
 import WindowControls from "../shell/WindowControls.svelte";
 import EmptyState from "../shell/EmptyState.svelte";
+import { EventsStore } from "../stores/events.svelte";
 import { TasksStore } from "../stores/tasks.svelte";
 import { ViewStore } from "../stores/view.svelte";
-import { FakeApi, installLayoutStubs, makeTask } from "../testing";
+import {
+  FakeApi,
+  FakeEventsApi,
+  installLayoutStubs,
+  makeTask,
+} from "../testing";
 import type { ViewMode } from "../types";
 import { unnamedControls } from "./names";
 
@@ -65,8 +71,11 @@ describe("accessible names", () => {
       view.mode = mode;
       const { container } = render(CalendarView, {
         store: await tasksStore(),
+        eventStore: new EventsStore({ api: new FakeEventsApi() }),
         view,
         onOpenTask: () => undefined,
+        onOpenEvent: () => undefined,
+        onNewEvent: () => undefined,
       });
       expect(unnamedControls(container)).toEqual([]);
     },

@@ -1,7 +1,12 @@
 // Test helpers shared by the store and component tests. Not imported by the app.
 import { groupByDay, sortTodo } from "./ordering";
+import type { EventsApi } from "./stores/events.svelte";
 import type { TasksApi } from "./stores/tasks.svelte";
 import type {
+  CalendarEvent,
+  EventInput,
+  EventOccurrence,
+  EventPatch,
   FoundItem,
   Note,
   ReminderInput,
@@ -281,4 +286,107 @@ export function installLayoutStubs(): void {
   Object.assign(Range.prototype, rects);
   Object.assign(Text.prototype, rects);
   document.elementFromPoint = () => null;
+}
+
+/** In-memory events API for tests: no repetitions, every event shows on the days it covers. */
+export class FakeEventsApi implements EventsApi {
+  events: CalendarEvent[] = [];
+  trashed: CalendarEvent[] = [];
+  failWith: string | null = null;
+  #ids = 0;
+
+  makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
+    const event: CalendarEvent = {
+      id: `e${++this.#ids}`,
+      title: "Evento",
+      notes: "",
+      startDate: "2026-03-10",
+      startTime: "10:00",
+      endDate: "2026-03-10",
+      endTime: "11:00",
+      allDay: false,
+      rrule: null,
+      tagIds: [],
+      reminderOffsets: [],
+      createdAt: "2026-03-01T00:00:00Z",
+      updatedAt: "2026-03-01T00:00:00Z",
+      ...overrides,
+    };
+    this.events.push(event);
+    return event;
+  }
+
+  #check(): void {
+    if (this.failWith) throw this.failWith;
+  }
+
+  async eventsList(from: string, to: string): Promise<EventOccurrence[]> {
+    this.#check();
+    return this.events
+      .filter((event) => event.startDate <= to && event.endDate >= from)
+      .map((event) => ({
+        eventId: event.id,
+        title: event.title,
+        startDate: event.startDate,
+        startTime: event.startTime,
+        endDate: event.endDate,
+        endTime: event.endTime,
+        allDay: event.allDay,
+        recurring: event.rrule !== null,
+        tagIds: event.tagIds,
+      }));
+  }
+
+  async eventGet(id: string): Promise<CalendarEvent> {
+    this.#check();
+    const event = this.events.find((item) => item.id === id);
+    if (!event) throw "NOT_FOUND: evento no encontrado";
+    return event;
+  }
+
+  async eventCreate(input: EventInput): Promise<CalendarEvent> {
+    this.#check();
+    return this.makeEvent({
+      title: input.title ?? "",
+      notes: input.notes ?? "",
+      startDate: input.startDate,
+      startTime: input.startTime ?? null,
+      endDate: input.endDate ?? input.startDate,
+      endTime: input.startTime ? (input.endTime ?? null) : null,
+      allDay: !input.startTime,
+      rrule: input.rrule ?? null,
+      tagIds: input.tagIds ?? [],
+      reminderOffsets: input.reminderOffsets ?? [],
+    });
+  }
+
+  async eventUpdate(id: string, patch: EventPatch): Promise<CalendarEvent> {
+    this.#check();
+    const event = await this.eventGet(id);
+    const { startTime, rrule, ...rest } = patch;
+    Object.assign(event, rest);
+    if (startTime !== undefined) {
+      event.startTime = startTime;
+      event.allDay = startTime === null;
+      if (startTime === null) event.endTime = null;
+    }
+    if (rrule !== undefined) event.rrule = rrule;
+    return event;
+  }
+
+  async eventDelete(id: string): Promise<void> {
+    this.#check();
+    const event = await this.eventGet(id);
+    this.events = this.events.filter((item) => item.id !== id);
+    this.trashed.push(event);
+  }
+
+  async eventRestore(id: string): Promise<CalendarEvent> {
+    this.#check();
+    const event = this.trashed.find((item) => item.id === id);
+    if (!event) throw "NOT_FOUND: evento no encontrado";
+    this.trashed = this.trashed.filter((item) => item.id !== id);
+    this.events.push(event);
+    return event;
+  }
 }

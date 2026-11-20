@@ -9,6 +9,7 @@ export interface BackendEventHandlers {
   tasksChanged(): void;
   openTask(taskId: string): void;
   openNote(noteId: string): void;
+  openEvent(eventId: string): void;
 }
 
 /** Registers the listeners; the returned function releases them. */
@@ -26,6 +27,7 @@ export function listenBackendEvents(
     onReminderOpen((target) => {
       if (target.taskId) handlers.openTask(target.taskId);
       else if (target.noteId) handlers.openNote(target.noteId);
+      else if (target.eventId) handlers.openEvent(target.eventId);
     }),
   ].map((listener) => listener.catch(() => undefined));
   return () => {

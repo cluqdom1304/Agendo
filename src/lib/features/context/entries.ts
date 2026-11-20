@@ -6,7 +6,7 @@ import type { ContextEntry } from "./context.svelte";
 import type { ContextDeps } from "./deps";
 import { editorEntries, removeEntry, taskRefEntries } from "./entriesEditor";
 import { folderEntries, noteEntries, tagEntries } from "./entriesNotes";
-import { agendaEntries, taskEntries } from "./entriesTasks";
+import { agendaEntries, eventEntries, taskEntries } from "./entriesTasks";
 import type { MenuTarget } from "./target";
 
 export type { ContextDeps } from "./deps";
@@ -18,6 +18,16 @@ export function buildEntries(
   switch (target.kind) {
     case "task":
       return taskEntries(target.taskId, deps);
+    case "event":
+      return eventEntries(target.eventId, deps);
+    case "events":
+      return [
+        {
+          id: "new-event",
+          label: t.context.newEvent,
+          run: () => deps.newEvent(null),
+        },
+      ];
     case "note":
       return noteEntries(target.noteId, deps);
     case "folder":

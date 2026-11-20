@@ -2,9 +2,15 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
 
+import { EventsStore } from "../../stores/events.svelte";
 import { TasksStore } from "../../stores/tasks.svelte";
 import { ViewStore, type ViewApi } from "../../stores/view.svelte";
-import { FakeApi, installLayoutStubs, makeTask } from "../../testing";
+import {
+  FakeApi,
+  FakeEventsApi,
+  installLayoutStubs,
+  makeTask,
+} from "../../testing";
 import type { Task, ViewMode } from "../../types";
 import CalendarView from "./CalendarView.svelte";
 
@@ -24,7 +30,11 @@ class FakeViewApi implements ViewApi {
   }
 }
 
-async function mount(mode: ViewMode, tasks: Task[] = []) {
+async function mount(
+  mode: ViewMode,
+  tasks: Task[] = [],
+  seed: (api: FakeEventsApi) => void = () => undefined,
+) {
   const api = new FakeApi(tasks);
   const store = new TasksStore({
     api,
@@ -38,8 +48,29 @@ async function mount(mode: ViewMode, tasks: Task[] = []) {
   });
   view.mode = mode;
   const onOpenTask = vi.fn();
-  render(CalendarView, { store, view, onOpenTask });
-  return { api, store, view, onOpenTask };
+  const eventsApi = new FakeEventsApi();
+  seed(eventsApi);
+  const events = new EventsStore({ api: eventsApi });
+  const onOpenEvent = vi.fn();
+  const onNewEvent = vi.fn();
+  render(CalendarView, {
+    store,
+    eventStore: events,
+    view,
+    onOpenTask,
+    onOpenEvent,
+    onNewEvent,
+  });
+  return {
+    api,
+    store,
+    view,
+    onOpenTask,
+    events,
+    eventsApi,
+    onOpenEvent,
+    onNewEvent,
+  };
 }
 
 /** Column of a day: the grid has no layout in jsdom, so its top is pinned to 0. */
@@ -410,7 +441,14 @@ describe("keyboard creation (N-08)", () => {
         firstDay: () => 1,
       });
       view.mode = "day";
-      render(CalendarView, { store, view, onOpenTask: vi.fn() });
+      render(CalendarView, {
+        store,
+        eventStore: new EventsStore({ api: new FakeEventsApi() }),
+        view,
+        onOpenTask: vi.fn(),
+        onOpenEvent: vi.fn(),
+        onNewEvent: vi.fn(),
+      });
       const line = () =>
         document.querySelector<HTMLElement>("[data-now-line]")?.style.top;
       const before = line();
@@ -423,5 +461,84 @@ describe("keyboard creation (N-08)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("events in the calendar (F21-02)", () => {
+  const meeting = (api: FakeEventsApi) =>
+    api.makeEvent({
+      id: "m",
+      title: "Reunión",
+      startTime: "10:00",
+      endTime: "11:00",
+    });
+
+  it("shows a timed event as a block of the week and opens it on click", async () => {
+    const { onOpenEvent } = await mount("week", [], meeting);
+    const block = await screen.findByTitle("Editar el evento «Reunión»");
+    expect(block.dataset.eventId).toBe("m");
+    expect(block.textContent).toContain("10:00 – 11:00");
+    await fireEvent.click(block);
+    expect(onOpenEvent).toHaveBeenCalledWith("m");
+  });
+
+  it("puts an all-day event in the all-day row", async () => {
+    await mount("week", [], (api) =>
+      api.makeEvent({
+        title: "Vacaciones",
+        startTime: null,
+        endTime: null,
+        allDay: true,
+        startDate: "2026-03-10",
+        endDate: "2026-03-11",
+      }),
+    );
+    const chips = await screen.findAllByTitle("Editar el evento «Vacaciones»");
+    expect(chips).toHaveLength(2);
+    expect(chips[0].closest("[data-block]")).toBeNull();
+  });
+
+  it("shows events in the month before the tasks", async () => {
+    await mount(
+      "month",
+      [makeTask({ id: "t", title: "Tarea", dueDate: "2026-03-10" })],
+      meeting,
+    );
+    const chip = await screen.findByTitle("Editar el evento «Reunión»");
+    const task = screen.getByText("Tarea");
+    expect(
+      chip.compareDocumentPosition(task) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("dragging the block changes its time and a drag does not open it", async () => {
+    const { eventsApi, onOpenEvent } = await mount("week", [], meeting);
+    const block = await screen.findByTitle("Editar el evento «Reunión»");
+    await pointer("pointerdown", block, 0);
+    await pointer("pointermove", window, HOUR_PX);
+    expect(document.querySelector("[data-drag-preview]")).not.toBeNull();
+    await pointer("pointerup", window, HOUR_PX);
+    await fireEvent.click(block);
+    await waitFor(() => expect(eventsApi.events[0].startTime).toBe("11:00"));
+    expect(eventsApi.events[0].endTime).toBe("12:00");
+    expect(onOpenEvent).not.toHaveBeenCalled();
+  });
+
+  it("dragging the lower edge changes when it ends", async () => {
+    const { eventsApi } = await mount("week", [], meeting);
+    await screen.findByTitle("Editar el evento «Reunión»");
+    const handle = document.querySelector<HTMLElement>("[data-resize]");
+    if (!handle) throw new Error("no handle");
+    await pointer("pointerdown", handle, 0);
+    await pointer("pointermove", window, HOUR_PX);
+    await pointer("pointerup", window, HOUR_PX);
+    await waitFor(() => expect(eventsApi.events[0].endTime).toBe("12:00"));
+    expect(eventsApi.events[0].startTime).toBe("10:00");
+  });
+
+  it("asks for a new event from the button of the bar", async () => {
+    const { onNewEvent } = await mount("week");
+    await fireEvent.click(screen.getByRole("button", { name: "Nuevo evento" }));
+    expect(onNewEvent).toHaveBeenCalledWith("2026-03-10", null);
   });
 });

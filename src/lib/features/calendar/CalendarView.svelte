@@ -5,25 +5,31 @@
   import { showDailyNote } from "../notes/navigation";
   import { t } from "../../i18n";
   import SegmentedControl from "../../shell/SegmentedControl.svelte";
+  import type { EventsStore } from "../../stores/events.svelte";
   import { tagDrag } from "../../stores/tagDrag.svelte";
   import { NO_TAG, tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ViewStore } from "../../stores/view.svelte";
-  import type { Task, ViewMode } from "../../types";
+  import type { EventOccurrence, Task, ViewMode } from "../../types";
   import CalendarDay from "./CalendarDay.svelte";
   import CalendarMonth from "./CalendarMonth.svelte";
   import CalendarWeek from "./CalendarWeek.svelte";
-  import { tasksByDate, weekDates } from "./grid";
+  import { addDays, monthGrid, tasksByDate, weekDates } from "./grid";
   import { periodLabel } from "./labels";
 
   interface Props {
     store: TasksStore;
+    eventStore: EventsStore;
     view: ViewStore;
     /** Leaves the calendar and shows the task in the list. */
     onOpenTask: (task: Task) => void;
+    onOpenEvent: (eventId: string) => void;
+    /** Opens the dialog of a new event on a day, at a time if one is given. */
+    onNewEvent: (date: string, time: string | null) => void;
   }
 
-  let { store, view, onOpenTask }: Props = $props();
+  let { store, eventStore, view, onOpenTask, onOpenEvent, onNewEvent }: Props =
+    $props();
 
   const SCALES: { value: ViewMode; label: string }[] = [
     { value: "day", label: t.views.day },
@@ -54,7 +60,25 @@
   });
   const week = $derived(weekDates(view.anchor, view.firstDay));
 
-  const tagOf = (task: Task) => tagsStore.tagOf(task);
+  // The events of the days on screen; the month also shows the days of its neighbours.
+  const range = $derived.by(() => {
+    if (view.mode === "day") return { from: view.anchor, to: view.anchor };
+    if (view.mode === "week") return { from: week[0], to: week[6] };
+    const grid = monthGrid(view.anchor, view.firstDay);
+    return { from: grid[0][0], to: addDays(grid[grid.length - 1][0], 6) };
+  });
+  $effect(() => {
+    void eventStore.show(range.from, range.to);
+  });
+  const moveEvent = (
+    occurrence: EventOccurrence,
+    date: string,
+    start: number,
+  ) => void eventStore.move(occurrence, date, start);
+  const resizeEvent = (occurrence: EventOccurrence, end: number) =>
+    void eventStore.resize(occurrence, end);
+
+  const tagOf = (item: Pick<Task, "tagIds">) => tagsStore.tagOf(item);
   const moreTags = (task: Task) =>
     Math.max(0, tagsStore.tagsOf(task).length - 1);
   const dragTask = (event: PointerEvent, task: Task) =>
@@ -88,6 +112,13 @@
       >
         {t.calendar.dailyNote}
       </button>
+      <button
+        type="button"
+        class="btn small"
+        onclick={() => onNewEvent(view.anchor, null)}
+      >
+        {t.events.newEvent}
+      </button>
       <button type="button" class="btn small" onclick={() => view.shift(-1)}>
         {t.calendar.previous}
       </button>
@@ -107,9 +138,11 @@
         firstDay={view.firstDay}
         {today}
         tasksByDate={byDate}
+        eventsByDate={eventStore.byDate}
         label={t.calendar.monthGrid}
         onShowDay={(date) => view.showDay(date)}
         {onOpenTask}
+        {onOpenEvent}
         {tagOf}
         {moreTags}
         {dragTask}
@@ -120,9 +153,13 @@
         {today}
         {nowMinutes}
         tasksByDate={byDate}
+        eventsByDate={eventStore.byDate}
         label={t.calendar.weekGrid}
         onCreate={create}
         {onOpenTask}
+        {onOpenEvent}
+        onMoveEvent={moveEvent}
+        onResizeEvent={resizeEvent}
         {tagOf}
         {moreTags}
         {dragTask}
@@ -133,9 +170,13 @@
         {today}
         {nowMinutes}
         tasksByDate={byDate}
+        eventsByDate={eventStore.byDate}
         label={t.calendar.dayGrid}
         onCreate={create}
         {onOpenTask}
+        {onOpenEvent}
+        onMoveEvent={moveEvent}
+        onResizeEvent={resizeEvent}
         {tagOf}
         {moreTags}
         {dragTask}

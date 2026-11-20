@@ -1,23 +1,28 @@
 <script lang="ts">
   import { t } from "../../i18n";
   import EmptyState from "../../shell/EmptyState.svelte";
+  import type { EventsStore } from "../../stores/events.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ViewStore } from "../../stores/view.svelte";
-  import type { Task } from "../../types";
+  import type { EventOccurrence, Task } from "../../types";
   import { addDays } from "../calendar/grid";
+  import EventRow from "../events/EventRow.svelte";
   import Checkbox from "../todo/Checkbox.svelte";
   import ChecklistProgress from "../todo/ChecklistProgress.svelte";
-  import { upcomingGroups } from "./upcoming";
+  import { UPCOMING_DAYS, upcomingGroups } from "./upcoming";
 
   // «Próximas» (F20-05): what is still to do, overdue first, then day by day for a month and
   // the rest under «Más adelante».
   interface Props {
     store: TasksStore;
+    /** The events of the coming days; without it «Próximas» shows tasks only. */
+    eventStore?: EventsStore;
     view: ViewStore;
     onOpenTask: (taskId: string) => void;
+    onOpenEvent?: (eventId: string) => void;
   }
 
-  let { store, view, onOpenTask }: Props = $props();
+  let { store, eventStore, view, onOpenTask, onOpenEvent }: Props = $props();
   const l = t.upcoming;
 
   // A window left open overnight must not keep yesterday as today.
@@ -37,12 +42,30 @@
   const capitalize = (text: string) =>
     text.charAt(0).toUpperCase() + text.slice(1);
 
+  $effect(() => {
+    void eventStore?.show(today, addDays(today, UPCOMING_DAYS - 1));
+  });
+
   const groups = $derived(upcomingGroups(store.visibleTasks, today));
+  // A day with events but no tasks gets a heading too.
+  const dayList = $derived.by(() => {
+    const withTasks = groups.days.map((day) => day.date);
+    const onlyEvents = [...(eventStore?.byDate.keys() ?? [])].filter(
+      (date) => !withTasks.includes(date),
+    );
+    return [...withTasks, ...onlyEvents]
+      .toSorted((x, y) => (x < y ? -1 : 1))
+      .map((date) => ({
+        date,
+        tasks: groups.days.find((day) => day.date === date)?.tasks ?? [],
+        occurrences: eventStore?.byDate.get(date) ?? [],
+      }));
+  });
   const empty = $derived(
-    groups.overdue.length + groups.days.length + groups.later.length === 0,
+    groups.overdue.length + dayList.length + groups.later.length === 0,
   );
   const days = $derived(
-    groups.days.map((day) => ({
+    dayList.map((day) => ({
       ...day,
       heading:
         day.date === today
@@ -66,7 +89,13 @@
       {@render group("upcoming-overdue", l.overdue, groups.overdue, true)}
     {/if}
     {#each days as day (day.date)}
-      {@render group(`upcoming-${day.date}`, day.heading, day.tasks, false)}
+      {@render group(
+        `upcoming-${day.date}`,
+        day.heading,
+        day.tasks,
+        false,
+        day.occurrences,
+      )}
     {/each}
     {#if groups.later.length > 0}
       {@render group("upcoming-later", l.later, groups.later, true)}
@@ -74,13 +103,22 @@
   {/if}
 </div>
 
-{#snippet group(id: string, heading: string, tasks: Task[], dated: boolean)}
+{#snippet group(
+  id: string,
+  heading: string,
+  tasks: Task[],
+  dated: boolean,
+  occurrences: EventOccurrence[] = [],
+)}
   <section class="block" aria-labelledby={id}>
     <h3 {id}>
       {heading}
-      <span class="count">{tasks.length}</span>
+      <span class="count">{tasks.length + occurrences.length}</span>
     </h3>
     <ul class="card">
+      {#each occurrences as occurrence (occurrence.eventId + occurrence.startDate)}
+        <EventRow {occurrence} onOpen={(eventId) => onOpenEvent?.(eventId)} />
+      {/each}
       {#each tasks as task (task.id)}
         <li class="row" data-task-id={task.id}>
           <Checkbox

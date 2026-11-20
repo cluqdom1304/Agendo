@@ -3,8 +3,10 @@
 
   import { t } from "../../i18n";
   import { timeRange } from "../../schedule";
-  import type { Tag, Task } from "../../types";
-  import { layoutDay, minutesToTime } from "./grid";
+  import type { EventOccurrence, Tag, Task } from "../../types";
+  import { blockOf, isTimedBlock, timeRangeOf } from "../events/occurrences";
+  import { columnDateAt, EventDrag } from "./eventDrag.svelte";
+  import { layoutBlocks, minutesToTime, spanOf, timeToMinutes } from "./grid";
   import { dayNumber, weekdayName } from "./labels";
   import { WeekCompose } from "./weekCompose.svelte";
 
@@ -19,6 +21,8 @@
     /** Minutes since midnight of the current time, for the "now" line. */
     nowMinutes: number;
     tasksByDate: Map<string, Task[]>;
+    /** The events of each day: timed ones are blocks of the grid, the rest sit in the all-day row. */
+    eventsByDate?: Map<string, EventOccurrence[]>;
     label: string;
     /** `duration` is only given when the span was dragged out (D-33). */
     onCreate: (
@@ -28,8 +32,17 @@
       duration?: number,
     ) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
-    /** The task's tag, which gives its colour and the small name on the event. */
-    tagOf?: (task: Task) => Tag | undefined;
+    onOpenEvent?: (eventId: string) => void;
+    /** An event was dragged to `date` at `start` (minutes since midnight). */
+    onMoveEvent?: (
+      occurrence: EventOccurrence,
+      date: string,
+      start: number,
+    ) => void;
+    /** The lower edge of an event was dragged to `end`. */
+    onResizeEvent?: (occurrence: EventOccurrence, end: number) => void;
+    /** The tag of the task or event, which gives its colour and the small name on it. */
+    tagOf?: (item: Pick<Task, "tagIds">) => Tag | undefined;
     /** How many more tags the task has besides the one shown. */
     moreTags?: (task: Task) => number;
     /** Pressed on an event: the parent starts dragging it towards a sidebar tag. */
@@ -41,13 +54,21 @@
     today,
     nowMinutes,
     tasksByDate,
+    eventsByDate,
     label,
     tagOf,
     moreTags,
     dragTask,
     onCreate,
     onOpenTask,
+    onOpenEvent,
+    onMoveEvent,
+    onResizeEvent,
   }: Props = $props();
+
+  type Item =
+    | { kind: "task"; task: Task }
+    | { kind: "event"; occurrence: EventOccurrence };
 
   let scroller: HTMLElement | undefined = $state();
   // The body scrolls and its scrollbar narrows the columns; the fixed rows above get the same
@@ -66,10 +87,18 @@
     onCreate: (...args) => onCreate(...args),
   });
 
+  const eventDrag = new EventDrag({
+    hourPx: HOUR_PX,
+    dateAt: columnDateAt,
+    onMove: (...args) => onMoveEvent?.(...args),
+    onResize: (...args) => onResizeEvent?.(...args),
+  });
+
   const showNow = $derived(dates.includes(today));
   const columns = $derived(
     dates.map((date) => {
       const tasks = tasksByDate.get(date) ?? [];
+      const occurrences = eventsByDate?.get(date) ?? [];
       return {
         date,
         isToday: date === today,
@@ -77,7 +106,22 @@
         // before it only get a faint trace.
         nowLine: today < date ? "full" : date === today ? "start" : "faint",
         allDay: tasks.filter((task) => task.dueTime === null),
-        placed: layoutDay(tasks),
+        allDayEvents: occurrences.filter((item) => !isTimedBlock(item)),
+        placed: layoutBlocks<Item>([
+          ...tasks
+            .filter((task) => task.dueTime !== null)
+            .map((task) => ({
+              item: { kind: "task" as const, task },
+              key: task.id,
+              start: timeToMinutes(task.dueTime ?? "00:00"),
+              span: spanOf(task),
+            })),
+          ...occurrences.filter(isTimedBlock).map((occurrence) => ({
+            item: { kind: "event" as const, occurrence },
+            key: occurrence.eventId,
+            ...blockOf(occurrence),
+          })),
+        ]),
       };
     }),
   );
@@ -97,8 +141,17 @@
 </script>
 
 <svelte:window
-  onpointermove={(event) => week.pointerMove(event)}
-  onpointerup={(event) => week.pointerUp(event)}
+  onpointermove={(event) => {
+    week.pointerMove(event);
+    eventDrag.pointerMove(event);
+  }}
+  onpointerup={(event) => {
+    week.pointerUp(event);
+    eventDrag.pointerUp(event);
+  }}
+  onkeydown={(event) => {
+    if (event.key === "Escape") eventDrag.cancel();
+  }}
   onresize={measureScrollbar}
 />
 
@@ -123,6 +176,20 @@
     <div class="gutter">{t.calendar.allDay}</div>
     {#each columns as column (column.date)}
       <div class="allday-cell" role="gridcell">
+        {#each column.allDayEvents as occurrence (occurrence.eventId + occurrence.startDate)}
+          {@const tag = tagOf?.(occurrence)}
+          {@const name = occurrence.title || t.calendar.untitled}
+          <button
+            type="button"
+            class="chip event"
+            data-event-id={occurrence.eventId}
+            style:--tag={tag?.colorHex}
+            title={t.calendar.openEvent(name)}
+            onclick={() => onOpenEvent?.(occurrence.eventId)}
+          >
+            {name}
+          </button>
+        {/each}
         {#each column.allDay as task (task.id)}
           {@const tag = tagOf?.(task)}
           <button
@@ -165,35 +232,109 @@
           onpointerdown={(event) => week.pointerDown(event, column.date)}
           onkeydown={(event) => week.columnKeydown(event, column.date)}
         >
-          {#each column.placed as item (item.task.id)}
-            {@const tag = tagOf?.(item.task)}
-            <button
-              type="button"
-              class="block"
-              class:done={item.task.isCompleted}
-              style:--tag={tag?.colorHex}
-              onpointerdown={(event) => dragTask?.(event, item.task)}
-              data-block
-              data-task-id={item.task.id}
-              style:top="{top(item.start)}px"
-              style:height="{top(item.span) - 2}px"
-              style:left="{(item.lane / item.lanes) * 100}%"
-              style:width="calc({100 / item.lanes}% - 2px)"
-              title={t.calendar.openTask(
-                item.task.title || t.calendar.untitled,
-              )}
-              onclick={() => onOpenTask(item.task)}
+          {#each column.placed as block (block.item.kind === "task" ? `t:${block.item.task.id}` : `e:${block.item.occurrence.eventId}:${block.item.occurrence.startDate}`)}
+            {#if block.item.kind === "task"}
+              {@const item = { ...block, task: block.item.task }}
+              {@const tag = tagOf?.(item.task)}
+              <button
+                type="button"
+                class="block"
+                class:done={item.task.isCompleted}
+                style:--tag={tag?.colorHex}
+                onpointerdown={(event) => dragTask?.(event, item.task)}
+                data-block
+                data-task-id={item.task.id}
+                style:top="{top(item.start)}px"
+                style:height="{top(item.span) - 2}px"
+                style:left="{(item.lane / item.lanes) * 100}%"
+                style:width="calc({100 / item.lanes}% - 2px)"
+                title={t.calendar.openTask(
+                  item.task.title || t.calendar.untitled,
+                )}
+                onclick={() => onOpenTask(item.task)}
+              >
+                <span class="time">
+                  {timeRange(
+                    item.task.dueTime ?? "",
+                    item.task.durationMinutes,
+                  )}
+                </span>
+                {item.task.title || t.calendar.untitled}
+                {#if tag}<span class="tag-name"
+                    >{tag.name}{#if moreTags?.(item.task)}
+                      +{moreTags(item.task)}{/if}</span
+                  >{/if}
+              </button>
+            {:else}
+              {@const occurrence = block.item.occurrence}
+              {@const tag = tagOf?.(occurrence)}
+              {@const name = occurrence.title || t.calendar.untitled}
+              <button
+                type="button"
+                class="block event"
+                class:dragging={eventDrag.preview?.occurrence === occurrence}
+                style:--tag={tag?.colorHex}
+                data-block
+                data-event-id={occurrence.eventId}
+                style:top="{top(block.start)}px"
+                style:height="{top(block.span) - 2}px"
+                style:left="{(block.lane / block.lanes) * 100}%"
+                style:width="calc({100 / block.lanes}% - 2px)"
+                title={t.calendar.openEvent(name)}
+                onpointerdown={(event) =>
+                  eventDrag.begin(
+                    event,
+                    occurrence,
+                    "move",
+                    column.date,
+                    block.start,
+                    block.span,
+                  )}
+                onclick={() => {
+                  if (!eventDrag.consumeClick())
+                    onOpenEvent?.(occurrence.eventId);
+                }}
+              >
+                <span class="time">{timeRangeOf(occurrence)}</span>
+                {name}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <span
+                  class="handle"
+                  data-resize
+                  title={t.events.resizeHandle(name)}
+                  onpointerdown={(event) => {
+                    event.stopPropagation();
+                    eventDrag.begin(
+                      event,
+                      occurrence,
+                      "resize",
+                      column.date,
+                      block.start,
+                      block.span,
+                    );
+                  }}
+                ></span>
+              </button>
+            {/if}
+          {/each}
+
+          {#if eventDrag.preview && eventDrag.preview.date === column.date}
+            {@const preview = eventDrag.preview}
+            <div
+              class="block event ghost"
+              data-drag-preview
+              style:top="{top(preview.start)}px"
+              style:height="{top(preview.end - preview.start) - 2}px"
             >
               <span class="time">
-                {timeRange(item.task.dueTime ?? "", item.task.durationMinutes)}
+                {t.calendar.span(
+                  minutesToTime(preview.start),
+                  minutesToTime(preview.end),
+                )}
               </span>
-              {item.task.title || t.calendar.untitled}
-              {#if tag}<span class="tag-name"
-                  >{tag.name}{#if moreTags?.(item.task)}
-                    +{moreTags(item.task)}{/if}</span
-                >{/if}
-            </button>
-          {/each}
+              {preview.occurrence.title || t.calendar.untitled}
+            </div>
+          {/if}
 
           {#if showNow}
             <div
@@ -407,6 +548,38 @@
     color: color-mix(in srgb, var(--tag) 45%, var(--text-primary));
     font-size: 10px;
     font-weight: 600;
+  }
+
+  .chip.event,
+  .block.event {
+    background: color-mix(in srgb, var(--tag, var(--accent)) 38%, transparent);
+    font-weight: 500;
+  }
+
+  .block.event {
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .block.event.dragging {
+    opacity: 0.35;
+  }
+
+  .block.ghost {
+    right: 2px;
+    left: 0;
+    border: 1px dashed var(--tag, var(--accent));
+    box-shadow: var(--shadow-raised);
+    pointer-events: none;
+  }
+
+  .handle {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 6px;
+    cursor: ns-resize;
   }
 
   .block .time {

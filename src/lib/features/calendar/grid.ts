@@ -23,6 +23,11 @@ export function addDays(iso: string, days: number): string {
   return fromUtc(toUtc(iso) + days * DAY_MS);
 }
 
+/** Whole days from `from` to `to` (negative when `to` is earlier). */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((toUtc(to) - toUtc(from)) / DAY_MS);
+}
+
 /** Same day of another month, or the last day when that month is shorter (31 Jan + 1 → 28 Feb). */
 export function addMonths(iso: string, months: number): string {
   const [year, month, day] = iso.split("-").map(Number);
@@ -145,37 +150,60 @@ export interface PlacedTask {
   lanes: number;
 }
 
-/** Tasks with a time, side by side when their blocks would overlap. */
-export function layoutDay(tasks: readonly Task[]): PlacedTask[] {
-  const timed = tasks
-    .filter((task) => task.dueTime !== null)
-    .map((task) => ({ task, start: timeToMinutes(task.dueTime ?? "00:00") }))
-    .sort((a, b) => a.start - b.start || (a.task.id < b.task.id ? -1 : 1));
+/** Something that takes a stretch of the day on the grid: a timed task or event. */
+export interface Block<T> {
+  item: T;
+  start: number;
+  /** Minutes the block lasts. */
+  span: number;
+  lane: number;
+  lanes: number;
+}
 
-  const placed: PlacedTask[] = [];
-  let cluster: PlacedTask[] = [];
+/** Blocks side by side when they would overlap; `key` breaks ties between equal starts. */
+export function layoutBlocks<T>(
+  entries: readonly { item: T; key: string; start: number; span: number }[],
+): Block<T>[] {
+  const sorted = entries.toSorted(
+    (a, b) => a.start - b.start || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0),
+  );
+  const placed: Block<T>[] = [];
+  let cluster: Block<T>[] = [];
   let clusterEnd = -1;
   const laneEnds: number[] = [];
 
   const closeCluster = () => {
-    for (const item of cluster) item.lanes = laneEnds.length;
+    for (const block of cluster) block.lanes = laneEnds.length;
     cluster = [];
     laneEnds.length = 0;
   };
 
-  for (const { task, start } of timed) {
+  for (const { item, start, span } of sorted) {
     if (start >= clusterEnd) closeCluster();
     let lane = laneEnds.findIndex((end) => end <= start);
     if (lane < 0) lane = laneEnds.length;
-    const span = spanOf(task);
     laneEnds[lane] = start + span;
     clusterEnd = Math.max(clusterEnd, start + span);
-    const item: PlacedTask = { task, start, span, lane, lanes: 1 };
-    cluster.push(item);
-    placed.push(item);
+    const block: Block<T> = { item, start, span, lane, lanes: 1 };
+    cluster.push(block);
+    placed.push(block);
   }
   closeCluster();
   return placed;
+}
+
+/** Tasks with a time, side by side when their blocks would overlap. */
+export function layoutDay(tasks: readonly Task[]): PlacedTask[] {
+  return layoutBlocks(
+    tasks
+      .filter((task) => task.dueTime !== null)
+      .map((task) => ({
+        item: task,
+        key: task.id,
+        start: timeToMinutes(task.dueTime ?? "00:00"),
+        span: spanOf(task),
+      })),
+  ).map(({ item, ...rest }) => ({ task: item, ...rest }));
 }
 
 /** Dated tasks by day, in the order given. */

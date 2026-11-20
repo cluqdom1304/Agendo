@@ -16,6 +16,7 @@
   import { SidebarState } from "$lib/shell/sidebar.svelte";
   import Toast from "$lib/shell/Toast.svelte";
   import TopBar from "$lib/shell/TopBar.svelte";
+  import { eventsStore } from "$lib/stores/events.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
   import { folderDrag, tagDrag } from "$lib/stores/tagDrag.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
@@ -64,16 +65,21 @@
   let UpcomingView = $state<
     typeof import("$lib/features/upcoming/UpcomingView.svelte").default | null
   >(null);
+  let EventsView = $state<
+    typeof import("$lib/features/events/EventsView.svelte").default | null
+  >(null);
 
   async function preloadViews() {
-    const [notes, today, upcoming] = await Promise.all([
+    const [notes, today, upcoming, events] = await Promise.all([
       import("$lib/features/notes/NotesView.svelte"),
       import("$lib/features/today/TodayView.svelte"),
       import("$lib/features/upcoming/UpcomingView.svelte"),
+      import("$lib/features/events/EventsView.svelte"),
     ]);
     NotesView = notes.default;
     TodayView = today.default;
     UpcomingView = upcoming.default;
+    EventsView = events.default;
   }
   $effect(() => {
     const timer = setTimeout(() => void preloadViews(), 400);
@@ -130,6 +136,7 @@
 
   onMount(() => {
     tasksStore.filter = (task) => tagsStore.isVisible(task);
+    eventsStore.filter = (occurrence) => tagsStore.isVisible(occurrence);
     void tagsStore.load();
     void tasksStore.load();
     void viewStore.load();
@@ -139,6 +146,7 @@
       tasksChanged: () => void tasksStore.refresh(),
       openTask: (taskId) => void showTask(taskId),
       openNote: (noteId) => void showNote(noteId),
+      openEvent: (eventId) => dialogs.openEvent(eventId),
     });
     return () => {
       stop();
@@ -172,6 +180,8 @@
   function createNew() {
     if (viewStore.section === "notes") {
       void notesStore.ensureLoaded().then(() => notesStore.createNote());
+    } else if (viewStore.section === "events") {
+      dialogs.openNewEvent();
     } else {
       dialogs.openNewTask();
     }
@@ -204,7 +214,9 @@
     canGoForward={viewStore.canGoForward}
     newLabel={viewStore.section === "notes"
       ? t.topBar.newNote
-      : t.newTask.button}
+      : viewStore.section === "events"
+        ? t.events.newEvent
+        : t.newTask.button}
     inboxAvailable={inbox.available && inboxSection}
     inboxOpen={inboxShown}
     onToggleInbox={() => inbox.toggle()}
@@ -246,9 +258,11 @@
             {#if TodayView}
               <TodayView
                 store={tasksStore}
+                eventStore={eventsStore}
                 notes={notesStore}
                 view={viewStore}
                 onOpenTask={(taskId) => (dialogs.detailId = taskId)}
+                onOpenEvent={(eventId) => dialogs.openEvent(eventId)}
                 onOpenNote={(noteId) => void showNote(noteId)}
                 onOpenDaily={(date) => void showDailyNote(date)}
               />
@@ -259,8 +273,21 @@
             {#if UpcomingView}
               <UpcomingView
                 store={tasksStore}
+                eventStore={eventsStore}
                 view={viewStore}
                 onOpenTask={(taskId) => (dialogs.detailId = taskId)}
+                onOpenEvent={(eventId) => dialogs.openEvent(eventId)}
+              />
+            {/if}
+          </div>
+        {:else if viewStore.section === "events"}
+          <div class="content scrolls padded" data-menu-area="events">
+            {#if EventsView}
+              <EventsView
+                store={eventsStore}
+                view={viewStore}
+                onOpenEvent={(eventId) => dialogs.openEvent(eventId)}
+                onNewEvent={() => dialogs.openNewEvent()}
               />
             {/if}
           </div>
@@ -276,7 +303,11 @@
               <module.default
                 store={tasksStore}
                 view={viewStore}
+                eventStore={eventsStore}
                 onOpenTask={(task: Task) => (dialogs.detailId = task.id)}
+                onOpenEvent={(eventId: string) => dialogs.openEvent(eventId)}
+                onNewEvent={(date: string, time: string | null) =>
+                  dialogs.openNewEvent(date, time)}
               />
             {:catch}
               <EmptyState variant="error" title={t.calendar.loadFailed} />
@@ -314,6 +345,23 @@
       onClose={() => tasksStore.dismissNotice()}
     />
   {/if}
+{/if}
+
+{#if eventsStore.deleted}
+  <Toast
+    message={t.events.deleted}
+    actionLabel={t.events.undo}
+    closeLabel={t.events.dismiss}
+    onAction={() => void eventsStore.undoDelete()}
+    onClose={() => eventsStore.dismissDeleted()}
+  />
+{:else if eventsStore.notice}
+  <Toast
+    kind={eventsStore.notice.kind}
+    message={eventsStore.notice.message}
+    closeLabel={t.events.dismiss}
+    onClose={() => eventsStore.dismissNotice()}
+  />
 {/if}
 
 <DialogHost

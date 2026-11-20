@@ -259,12 +259,17 @@ export function onTasksChanged(
 
 /** The user clicked a notification: show the task or the note it is about (F13-06). */
 export function onReminderOpen(
-  handler: (target: { taskId?: string | null; noteId?: string | null }) => void,
+  handler: (target: {
+    taskId?: string | null;
+    noteId?: string | null;
+    eventId?: string | null;
+  }) => void,
 ): Promise<UnlistenFn> {
-  return listen<{ taskId?: string | null; noteId?: string | null }>(
-    "reminder:open",
-    (event) => handler(event.payload),
-  );
+  return listen<{
+    taskId?: string | null;
+    noteId?: string | null;
+    eventId?: string | null;
+  }>("reminder:open", (event) => handler(event.payload));
 }
 
 /** Calls `handler` each time the scheduler delivers a reminder (SPEC §7.4). */

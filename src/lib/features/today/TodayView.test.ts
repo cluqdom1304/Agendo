@@ -2,10 +2,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 
+import { EventsStore } from "../../stores/events.svelte";
 import { NotesStore } from "../../stores/notes.svelte";
 import { TasksStore } from "../../stores/tasks.svelte";
 import { ViewStore } from "../../stores/view.svelte";
-import { FakeApi, makeTask } from "../../testing";
+import { FakeApi, FakeEventsApi, makeTask } from "../../testing";
 import { FakeNotesApi, note } from "../notes/testing";
 import TodayView from "./TodayView.svelte";
 
@@ -14,6 +15,7 @@ const NOW = new Date("2026-03-10T10:00:00");
 async function mount(
   tasks = [makeTask({ id: "a", title: "Entregar", dueDate: "2026-03-10" })],
   pinned: string[] = [],
+  seed: (api: FakeEventsApi) => void = () => undefined,
 ) {
   const api = new FakeApi(tasks);
   const store = new TasksStore({ api, now: () => NOW, settleMs: () => 0 });
@@ -27,12 +29,16 @@ async function mount(
     api: { settingsGet: async () => null, settingsSet: async () => undefined },
     now: () => NOW,
   });
+  const eventsApi = new FakeEventsApi();
+  seed(eventsApi);
   const opened: string[] = [];
   render(TodayView, {
     store,
+    eventStore: new EventsStore({ api: eventsApi }),
     notes,
     view,
     onOpenTask: (id: string) => opened.push(`task:${id}`),
+    onOpenEvent: (id: string) => opened.push(`event:${id}`),
     onOpenNote: (id: string) => opened.push(`note:${id}`),
     onOpenDaily: (date: string) => opened.push(`daily:${date}`),
   });
@@ -157,5 +163,53 @@ describe("TodayView", () => {
     expect(screen.getByText("Nada para este día")).toBeTruthy();
     await fireEvent.keyDown(days[2], { key: "Home" });
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Hoy");
+  });
+});
+
+describe("TodayView with events (F21-03)", () => {
+  it("lists the events of the day before its tasks, counts them in the banner and opens one", async () => {
+    const { opened } = await mount(undefined, [], (api) => {
+      api.makeEvent({
+        id: "e1",
+        title: "Dentista",
+        startTime: "09:00",
+        endTime: "09:30",
+      });
+      api.makeEvent({
+        id: "e2",
+        title: "Mañana libre",
+        startDate: "2026-03-11",
+        endDate: "2026-03-11",
+      });
+    });
+    expect(await screen.findByText("Dentista")).toBeTruthy();
+    expect(screen.getByText("1 evento")).toBeTruthy();
+    expect(screen.queryByText("Mañana libre")).toBeNull();
+    const headings = screen
+      .getAllByRole("heading", { level: 3 })
+      .map((heading) => heading.firstChild?.textContent?.trim());
+    expect(headings.indexOf("Eventos del día")).toBeLessThan(
+      headings.indexOf("Tareas de hoy"),
+    );
+    await fireEvent.click(screen.getByText("Dentista"));
+    expect(opened).toEqual(["event:e1"]);
+  });
+
+  it("marks the days of the strip that have events", async () => {
+    await mount([], [], (api) =>
+      api.makeEvent({ startDate: "2026-03-12", endDate: "2026-03-12" }),
+    );
+    await waitFor(() =>
+      expect(
+        document
+          .querySelector('[data-date="2026-03-12"] .mark')
+          ?.classList.contains("shown"),
+      ).toBe(true),
+    );
+    expect(
+      document
+        .querySelector('[data-date="2026-03-11"] .mark')
+        ?.classList.contains("shown"),
+    ).toBe(false);
   });
 });

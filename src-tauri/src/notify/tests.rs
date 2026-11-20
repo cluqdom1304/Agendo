@@ -118,11 +118,11 @@ fn snooze_buttons_add_a_reminder_later_and_keep_the_others() {
     let (state, _) = crate::state::test_state();
     let id = task_in(&state, "Entregar");
     assert_eq!(
-        perform_action(&state, ACTION_SNOOZE_10, Some(&id), None),
+        perform_action(&state, ACTION_SNOOZE_10, Some(&id), None, None),
         ActionOutcome::Snoozed(id.clone())
     );
     assert_eq!(
-        perform_action(&state, ACTION_SNOOZE_HOUR, Some(&id), None),
+        perform_action(&state, ACTION_SNOOZE_HOUR, Some(&id), None, None),
         ActionOutcome::Snoozed(id.clone())
     );
     assert_eq!(
@@ -140,16 +140,16 @@ fn snoozing_to_tomorrow_uses_nine_local_time_and_refuses_unknown_or_finished_tas
     assert_eq!(unsent_times(&state, &id), ["2026-03-11T08:00:00Z"]);
 
     assert_eq!(
-        perform_action(&state, ACTION_SNOOZE_10, None, None),
+        perform_action(&state, ACTION_SNOOZE_10, None, None, None),
         ActionOutcome::Ignored
     );
     assert_eq!(
-        perform_action(&state, ACTION_SNOOZE_10, Some("no-existe"), None),
+        perform_action(&state, ACTION_SNOOZE_10, Some("no-existe"), None, None),
         ActionOutcome::Ignored
     );
     tasks::complete(&state, &id, true, None).expect("done");
     assert_eq!(
-        perform_action(&state, ACTION_SNOOZE_10, Some(&id), None),
+        perform_action(&state, ACTION_SNOOZE_10, Some(&id), None, None),
         ActionOutcome::Ignored,
         "a finished task is not brought back"
     );
@@ -173,7 +173,7 @@ fn the_done_button_completes_the_task_of_the_notification() {
     let (state, _) = crate::state::test_state();
     let id = task_in(&state, "Entregar");
     assert_eq!(
-        perform_action(&state, ACTION_DONE, Some(&id), None),
+        perform_action(&state, ACTION_DONE, Some(&id), None, None),
         ActionOutcome::Completed(id.clone())
     );
     let done = state
@@ -189,11 +189,11 @@ fn the_done_button_never_guesses_which_task() {
     let (state, _) = crate::state::test_state();
     let id = task_in(&state, "Entregar");
     assert_eq!(
-        perform_action(&state, ACTION_DONE, None, None),
+        perform_action(&state, ACTION_DONE, None, None, None),
         ActionOutcome::Ignored
     );
     assert_eq!(
-        perform_action(&state, ACTION_DONE, Some("no-existe"), None),
+        perform_action(&state, ACTION_DONE, Some("no-existe"), None, None),
         ActionOutcome::Ignored
     );
     let open = state
@@ -209,21 +209,31 @@ fn a_click_opens_the_task_or_the_note_and_does_not_complete_anything() {
     let (state, _) = crate::state::test_state();
     let id = task_in(&state, "Entregar");
     assert_eq!(
-        perform_action(&state, "tap", Some(&id), None),
+        perform_action(&state, "tap", Some(&id), None, None),
         ActionOutcome::Open {
             task_id: Some(id.clone()),
-            note_id: None
+            note_id: None,
+            event_id: None
         }
     );
     assert_eq!(
-        perform_action(&state, "tap", None, Some("n1")),
+        perform_action(&state, "tap", None, Some("n1"), None),
         ActionOutcome::Open {
             task_id: None,
-            note_id: Some("n1".into())
+            note_id: Some("n1".into()),
+            event_id: None
         }
     );
     assert_eq!(
-        perform_action(&state, "tap", None, None),
+        perform_action(&state, "tap", None, None, Some("e1")),
+        ActionOutcome::Open {
+            task_id: None,
+            note_id: None,
+            event_id: Some("e1".into())
+        }
+    );
+    assert_eq!(
+        perform_action(&state, "tap", None, None, None),
         ActionOutcome::Ignored
     );
     let still_open = state

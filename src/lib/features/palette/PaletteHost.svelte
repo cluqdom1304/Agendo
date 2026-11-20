@@ -19,10 +19,12 @@
     onTask: (taskId: string) => void;
     /** Opens the creation dialog. */
     onNewTask?: () => void;
+    /** Opens the event dialog. */
+    onNewEvent?: () => void;
     onClose: () => void;
   }
 
-  let { mode, onTask, onNewTask, onClose }: Props = $props();
+  let { mode, onTask, onNewTask, onNewEvent, onClose }: Props = $props();
 
   const commands = buildCommands({
     view: viewStore,
@@ -30,6 +32,7 @@
     tasks: tasksStore,
     tags: tagsStore,
     newTask: () => onNewTask?.(),
+    newEvent: () => onNewEvent?.(),
   });
 
   // The recent notes are known by id: their titles are looked up when the palette opens.
