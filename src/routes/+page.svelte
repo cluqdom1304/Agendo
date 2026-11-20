@@ -17,6 +17,7 @@
   import Toast from "$lib/shell/Toast.svelte";
   import TopBar from "$lib/shell/TopBar.svelte";
   import { eventsStore } from "$lib/stores/events.svelte";
+  import { habitsStore } from "$lib/stores/habits.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
   import { folderDrag, tagDrag } from "$lib/stores/tagDrag.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
@@ -65,21 +66,26 @@
   let UpcomingView = $state<
     typeof import("$lib/features/upcoming/UpcomingView.svelte").default | null
   >(null);
+  let HabitsView = $state<
+    typeof import("$lib/features/habits/HabitsView.svelte").default | null
+  >(null);
   let EventsView = $state<
     typeof import("$lib/features/events/EventsView.svelte").default | null
   >(null);
 
   async function preloadViews() {
-    const [notes, today, upcoming, events] = await Promise.all([
+    const [notes, today, upcoming, events, habits] = await Promise.all([
       import("$lib/features/notes/NotesView.svelte"),
       import("$lib/features/today/TodayView.svelte"),
       import("$lib/features/upcoming/UpcomingView.svelte"),
       import("$lib/features/events/EventsView.svelte"),
+      import("$lib/features/habits/HabitsView.svelte"),
     ]);
     NotesView = notes.default;
     TodayView = today.default;
     UpcomingView = upcoming.default;
     EventsView = events.default;
+    HabitsView = habits.default;
   }
   $effect(() => {
     const timer = setTimeout(() => void preloadViews(), 400);
@@ -137,6 +143,8 @@
   onMount(() => {
     tasksStore.filter = (task) => tagsStore.isVisible(task);
     eventsStore.filter = (occurrence) => tagsStore.isVisible(occurrence);
+    habitsStore.filter = (habit) =>
+      tagsStore.isVisible({ tagIds: habit.tagId ? [habit.tagId] : [] });
     void tagsStore.load();
     void tasksStore.load();
     void viewStore.load();
@@ -182,6 +190,8 @@
       void notesStore.ensureLoaded().then(() => notesStore.createNote());
     } else if (viewStore.section === "events") {
       dialogs.openNewEvent();
+    } else if (viewStore.section === "habits") {
+      dialogs.openNewHabit();
     } else {
       dialogs.openNewTask();
     }
@@ -216,7 +226,9 @@
       ? t.topBar.newNote
       : viewStore.section === "events"
         ? t.events.newEvent
-        : t.newTask.button}
+        : viewStore.section === "habits"
+          ? t.habits.newHabit
+          : t.newTask.button}
     inboxAvailable={inbox.available && inboxSection}
     inboxOpen={inboxShown}
     onToggleInbox={() => inbox.toggle()}
@@ -259,6 +271,7 @@
               <TodayView
                 store={tasksStore}
                 eventStore={eventsStore}
+                habitStore={habitsStore}
                 notes={notesStore}
                 view={viewStore}
                 onOpenTask={(taskId) => (dialogs.detailId = taskId)}
@@ -288,6 +301,17 @@
                 view={viewStore}
                 onOpenEvent={(eventId) => dialogs.openEvent(eventId)}
                 onNewEvent={() => dialogs.openNewEvent()}
+              />
+            {/if}
+          </div>
+        {:else if viewStore.section === "habits"}
+          <div class="content scrolls padded" data-menu-area="habits">
+            {#if HabitsView}
+              <HabitsView
+                store={habitsStore}
+                view={viewStore}
+                onOpenHabit={(habit) => dialogs.openHabit(habit)}
+                onNewHabit={() => dialogs.openNewHabit()}
               />
             {/if}
           </div>
@@ -347,7 +371,30 @@
   {/if}
 {/if}
 
-{#if eventsStore.deleted}
+{#if habitsStore.marked}
+  <Toast
+    message={t.habits.marked(habitsStore.marked.habit.title)}
+    actionLabel={t.habits.undo}
+    closeLabel={t.habits.dismiss}
+    onAction={() => void habitsStore.undoMark()}
+    onClose={() => habitsStore.dismissMarked()}
+  />
+{:else if habitsStore.deleted}
+  <Toast
+    message={t.habits.deleted}
+    actionLabel={t.habits.undo}
+    closeLabel={t.habits.dismiss}
+    onAction={() => void habitsStore.undoDelete()}
+    onClose={() => habitsStore.dismissDeleted()}
+  />
+{:else if habitsStore.notice}
+  <Toast
+    kind={habitsStore.notice.kind}
+    message={habitsStore.notice.message}
+    closeLabel={t.habits.dismiss}
+    onClose={() => habitsStore.dismissNotice()}
+  />
+{:else if eventsStore.deleted}
   <Toast
     message={t.events.deleted}
     actionLabel={t.events.undo}

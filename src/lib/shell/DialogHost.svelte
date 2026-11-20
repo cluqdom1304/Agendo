@@ -6,6 +6,7 @@
   } from "$lib/features/notes/navigation";
   import { eventToTask, taskToEvent } from "$lib/features/events/convert";
   import { eventsStore } from "$lib/stores/events.svelte";
+  import { habitsStore } from "$lib/stores/habits.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
@@ -30,6 +31,8 @@
   const loadTaskDialog = () => import("$lib/features/todo/TaskDialog.svelte");
   const loadEventDialog = () =>
     import("$lib/features/events/EventDialog.svelte");
+  const loadHabitDialog = () =>
+    import("$lib/features/habits/HabitDialog.svelte");
   const loadTaskDetail = () =>
     import("$lib/features/todo/TaskDetailDialog.svelte");
   const loadSettings = () =>
@@ -52,6 +55,7 @@
       onTask={(taskId) => onShowTask(taskId)}
       onNewTask={() => dialogs.openNewTask()}
       onNewEvent={() => dialogs.openNewEvent()}
+      onNewHabit={() => dialogs.openNewHabit()}
       onClose={() => (dialogs.palette = null)}
     />
   {/await}
@@ -111,6 +115,18 @@
           dialogs.event = null;
           void eventToTask(event, eventsStore, tasksStore);
         }}
+      />
+    {/key}
+  {/await}
+{/if}
+
+{#if dialogs.habit}
+  {#await loadHabitDialog() then { default: HabitDialog }}
+    {#key dialogs.habit}
+      <HabitDialog
+        store={habitsStore}
+        habit={dialogs.habit.habit}
+        onClose={() => (dialogs.habit = null)}
       />
     {/key}
   {/await}

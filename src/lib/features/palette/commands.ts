@@ -19,10 +19,12 @@ export interface CommandDeps {
   newTask?: () => void;
   /** Opens the event dialog. */
   newEvent?: () => void;
+  /** Opens the habit dialog. */
+  newHabit?: () => void;
 }
 
 export function buildCommands(deps: CommandDeps): PaletteCommand[] {
-  const { view, notes, tasks, tags, newTask, newEvent } = deps;
+  const { view, notes, tasks, tags, newTask, newEvent, newHabit } = deps;
   const l = t.palette.commands;
 
   const inAgenda = (action: () => void) => () => {
@@ -54,6 +56,16 @@ export function buildCommands(deps: CommandDeps): PaletteCommand[] {
       id: "new-event",
       label: l.newEvent,
       run: () => newEvent?.(),
+    },
+    {
+      id: "new-habit",
+      label: l.newHabit,
+      run: () => newHabit?.(),
+    },
+    {
+      id: "go-habits",
+      label: l.goHabits,
+      run: () => view.setSection("habits"),
     },
     {
       id: "go-events",

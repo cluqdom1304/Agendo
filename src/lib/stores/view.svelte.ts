@@ -28,7 +28,7 @@ export interface ViewStoreOptions {
 
 /** The views of the sidebar. Habits join when their view exists (F22). */
 export type Section =
-  "today" | "upcoming" | "tasks" | "calendar" | "events" | "notes";
+  "today" | "upcoming" | "tasks" | "calendar" | "events" | "habits" | "notes";
 
 const SECTIONS: readonly Section[] = [
   "today",
@@ -36,6 +36,7 @@ const SECTIONS: readonly Section[] = [
   "tasks",
   "calendar",
   "events",
+  "habits",
   "notes",
 ];
 

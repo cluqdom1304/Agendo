@@ -59,6 +59,11 @@
       icon: "M3.5 3h9a1 1 0 011 1v8.5a1 1 0 01-1 1h-9a1 1 0 01-1-1V4a1 1 0 011-1zM2.5 6.5h11M5.5 9.5h2v2h-2z",
     },
     {
+      value: "habits",
+      label: t.sidebar.habits,
+      icon: "M2.5 8.5l3 3 5-6M10 11.5h3.5",
+    },
+    {
       value: "notes",
       label: t.sidebar.notes,
       icon: "M3 4h10M3 8h10M3 12h6",

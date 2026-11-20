@@ -2,7 +2,7 @@
 // shows them.
 
 import type { PaletteMode } from "../features/palette/palette";
-import type { Task } from "../types";
+import type { Habit, Task } from "../types";
 
 export class DialogState {
   settingsOpen = $state(false);
@@ -29,6 +29,17 @@ export class DialogState {
 
   openEvent(id: string): void {
     this.event = { id, date: null, time: null };
+  }
+
+  /** The habit dialog: a new habit (`habit` absent) or the one being edited. */
+  habit = $state.raw<{ habit?: Habit } | null>(null);
+
+  openNewHabit(): void {
+    this.habit = {};
+  }
+
+  openHabit(habit: Habit): void {
+    this.habit = { habit };
   }
 
   openNewTask(date: string | null = null): void {

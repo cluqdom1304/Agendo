@@ -3,12 +3,14 @@
 
   import { t } from "../../i18n";
   import type { EventsStore } from "../../stores/events.svelte";
+  import type { HabitsStore } from "../../stores/habits.svelte";
   import type { NotesStore } from "../../stores/notes.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ViewStore } from "../../stores/view.svelte";
   import type { NoteSummary } from "../../types";
   import { addDays } from "../calendar/grid";
   import EventRow from "../events/EventRow.svelte";
+  import { isScheduled } from "../habits/habits";
   import Checkbox from "../todo/Checkbox.svelte";
   import ChecklistProgress from "../todo/ChecklistProgress.svelte";
   import {
@@ -24,6 +26,8 @@
     store: TasksStore;
     /** The events of the days of the strip; without it «Hoy» shows tasks only. */
     eventStore?: EventsStore;
+    /** The habits of the day; without it «Hoy» shows no habits. */
+    habitStore?: HabitsStore;
     notes: NotesStore;
     view: ViewStore;
     onOpenTask: (taskId: string) => void;
@@ -35,6 +39,7 @@
   let {
     store,
     eventStore,
+    habitStore,
     notes,
     view,
     onOpenTask,
@@ -77,6 +82,19 @@
   $effect(() => {
     void eventStore?.show(today, addDays(today, STRIP_DAYS - 1));
   });
+  // The habits are only ticked for today: a later day has nothing to mark yet.
+  $effect(() => {
+    void habitStore?.show(addDays(today, -6), today);
+  });
+  const dayHabits = $derived(
+    isToday
+      ? (habitStore?.active.filter((habit) => isScheduled(habit.days, today)) ??
+          [])
+      : [],
+  );
+  const habitsDone = $derived(
+    dayHabits.filter((habit) => habitStore?.isDone(habit.id, today)).length,
+  );
   const dayEvents = $derived(eventStore?.byDate.get(selected) ?? []);
 
   const pendingCounts = $derived(pendingByDate(store.visibleTasks));
@@ -186,6 +204,11 @@
     {#if dayEvents.length > 0}
       <p class="events-line">{t.events.summary(dayEvents.length)}</p>
     {/if}
+    {#if dayHabits.length > 0}
+      <p class="events-line">
+        {t.habits.todayCount(habitsDone, dayHabits.length)}
+      </p>
+    {/if}
     {#if summary.overdue > 0}
       <p class="overdue">{l.overdue(summary.overdue)}</p>
     {/if}
@@ -215,6 +238,39 @@
       <ul class="card">
         {#each dayEvents as occurrence (occurrence.eventId + occurrence.startDate)}
           <EventRow {occurrence} onOpen={(eventId) => onOpenEvent?.(eventId)} />
+        {/each}
+      </ul>
+    </section>
+  {/if}
+
+  {#if dayHabits.length > 0 && habitStore}
+    <section class="block" aria-labelledby="today-habits">
+      <h3 id="today-habits">
+        {t.habits.today}
+        <span class="count">
+          {t.habits.todayCount(habitsDone, dayHabits.length)}
+        </span>
+      </h3>
+      <ul class="card">
+        {#each dayHabits as habit (habit.id)}
+          {@const done = habitStore.isDone(habit.id, today)}
+          <li class="row" class:done data-habit-id={habit.id}>
+            <Checkbox
+              checked={done}
+              label={done
+                ? t.habits.unmarkToday(habit.title)
+                : t.habits.markToday(habit.title)}
+              onToggle={() =>
+                void habitStore.setDone(habit, today, !done, !done)}
+            />
+            <span class="open habit">
+              <span class="title">{habit.title}</span>
+              {#if habit.currentStreak > 0}
+                <span class="time">{t.habits.streak(habit.currentStreak)}</span>
+              {/if}
+              {#if habit.time}<span class="time">{habit.time}</span>{/if}
+            </span>
+          </li>
         {/each}
       </ul>
     </section>

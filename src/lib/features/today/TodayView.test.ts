@@ -3,10 +3,11 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 
 import { EventsStore } from "../../stores/events.svelte";
+import { HabitsStore } from "../../stores/habits.svelte";
 import { NotesStore } from "../../stores/notes.svelte";
 import { TasksStore } from "../../stores/tasks.svelte";
 import { ViewStore } from "../../stores/view.svelte";
-import { FakeApi, FakeEventsApi, makeTask } from "../../testing";
+import { FakeApi, FakeEventsApi, FakeHabitsApi, makeTask } from "../../testing";
 import { FakeNotesApi, note } from "../notes/testing";
 import TodayView from "./TodayView.svelte";
 
@@ -16,6 +17,7 @@ async function mount(
   tasks = [makeTask({ id: "a", title: "Entregar", dueDate: "2026-03-10" })],
   pinned: string[] = [],
   seed: (api: FakeEventsApi) => void = () => undefined,
+  seedHabits: (api: FakeHabitsApi) => void = () => undefined,
 ) {
   const api = new FakeApi(tasks);
   const store = new TasksStore({ api, now: () => NOW, settleMs: () => 0 });
@@ -31,10 +33,14 @@ async function mount(
   });
   const eventsApi = new FakeEventsApi();
   seed(eventsApi);
+  const habitsApi = new FakeHabitsApi();
+  seedHabits(habitsApi);
+  const habits = new HabitsStore({ api: habitsApi });
   const opened: string[] = [];
   render(TodayView, {
     store,
     eventStore: new EventsStore({ api: eventsApi }),
+    habitStore: habits,
     notes,
     view,
     onOpenTask: (id: string) => opened.push(`task:${id}`),
@@ -42,7 +48,7 @@ async function mount(
     onOpenNote: (id: string) => opened.push(`note:${id}`),
     onOpenDaily: (date: string) => opened.push(`daily:${date}`),
   });
-  return { api, opened };
+  return { api, opened, habitsApi, habits };
 }
 
 describe("TodayView", () => {
@@ -211,5 +217,52 @@ describe("TodayView with events (F21-03)", () => {
         .querySelector('[data-date="2026-03-11"] .mark')
         ?.classList.contains("shown"),
     ).toBe(false);
+  });
+});
+
+describe("TodayView with habits (F22-02)", () => {
+  const seed = (api: FakeHabitsApi) => {
+    api.makeHabit({ id: "h1", title: "Leer", currentStreak: 2 });
+    // Hoy es martes: este hábito solo toca los lunes.
+    api.makeHabit({ id: "h2", title: "Gimnasio", days: 0b1 });
+    api.makeHabit({ id: "h3", title: "Viejo", isArchived: true });
+  };
+
+  it("lists the habits scheduled today with the counter in the banner", async () => {
+    await mount(undefined, [], undefined, seed);
+    expect(await screen.findByText("Leer")).toBeTruthy();
+    expect(screen.queryByText("Gimnasio")).toBeNull();
+    expect(screen.queryByText("Viejo")).toBeNull();
+    expect(screen.getAllByText("0 de 1 hábitos").length).toBeGreaterThan(0);
+    expect(screen.getByText("Racha de 2 días")).toBeTruthy();
+  });
+
+  it("ticks a habit in one click and counts it", async () => {
+    const { habitsApi, habits } = await mount(undefined, [], undefined, seed);
+    await fireEvent.click(
+      await screen.findByRole("checkbox", {
+        name: "Marcar «Leer» como hecho hoy",
+      }),
+    );
+    await waitFor(() =>
+      expect(habitsApi.logs).toEqual([{ habitId: "h1", date: "2026-03-10" }]),
+    );
+    expect(habits.marked?.habit.title).toBe("Leer");
+    expect(screen.getAllByText("1 de 1 hábitos").length).toBeGreaterThan(0);
+    await fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Quitar la marca de «Leer» de hoy",
+      }),
+    );
+    await waitFor(() => expect(habitsApi.logs).toEqual([]));
+  });
+
+  it("shows no habits for another day", async () => {
+    await mount(undefined, [], undefined, seed);
+    await screen.findByText("Leer");
+    await fireEvent.click(
+      document.querySelector('[data-date="2026-03-11"]') as Element,
+    );
+    expect(screen.queryByText("Leer")).toBeNull();
   });
 });

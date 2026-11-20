@@ -1,6 +1,7 @@
 // Test helpers shared by the store and component tests. Not imported by the app.
 import { groupByDay, sortTodo } from "./ordering";
 import type { EventsApi } from "./stores/events.svelte";
+import type { HabitsApi } from "./stores/habits.svelte";
 import type { TasksApi } from "./stores/tasks.svelte";
 import type {
   CalendarEvent,
@@ -8,6 +9,10 @@ import type {
   EventOccurrence,
   EventPatch,
   FoundItem,
+  Habit,
+  HabitInput,
+  HabitLog,
+  HabitPatch,
   Note,
   ReminderInput,
   SearchHit,
@@ -388,5 +393,98 @@ export class FakeEventsApi implements EventsApi {
     this.trashed = this.trashed.filter((item) => item.id !== id);
     this.events.push(event);
     return event;
+  }
+}
+
+/** In-memory habits API for tests. Streaks are not computed: they are what the test sets. */
+export class FakeHabitsApi implements HabitsApi {
+  habits: Habit[] = [];
+  trashed: Habit[] = [];
+  logs: HabitLog[] = [];
+  failWith: string | null = null;
+  today = "2026-03-10";
+  #ids = 0;
+
+  makeHabit(overrides: Partial<Habit> = {}): Habit {
+    const habit: Habit = {
+      id: `h${++this.#ids}`,
+      title: "Leer",
+      days: 127,
+      time: null,
+      tagId: null,
+      position: this.#ids,
+      isArchived: false,
+      scheduledToday: true,
+      doneToday: false,
+      currentStreak: 0,
+      bestStreak: 0,
+      createdAt: "2026-03-01T00:00:00Z",
+      updatedAt: "2026-03-01T00:00:00Z",
+      ...overrides,
+    };
+    this.habits.push(habit);
+    return habit;
+  }
+
+  #check(): void {
+    if (this.failWith) throw this.failWith;
+  }
+
+  async habitsList(includeArchived = false): Promise<Habit[]> {
+    this.#check();
+    return this.habits.filter((habit) => includeArchived || !habit.isArchived);
+  }
+
+  async habitLogs(from: string, to: string): Promise<HabitLog[]> {
+    this.#check();
+    return this.logs.filter((log) => log.date >= from && log.date <= to);
+  }
+
+  async habitCreate(input: HabitInput): Promise<Habit> {
+    this.#check();
+    return this.makeHabit({
+      title: input.title,
+      days: input.days ?? 127,
+      time: input.time ?? null,
+      tagId: input.tagId ?? null,
+    });
+  }
+
+  async habitUpdate(id: string, patch: HabitPatch): Promise<Habit> {
+    this.#check();
+    const habit = this.habits.find((item) => item.id === id);
+    if (!habit) throw "NOT_FOUND: hábito no encontrado";
+    const { archived, ...rest } = patch;
+    Object.assign(habit, rest);
+    if (archived !== undefined) habit.isArchived = archived;
+    return habit;
+  }
+
+  async habitDelete(id: string): Promise<void> {
+    this.#check();
+    const habit = await this.habitUpdate(id, {});
+    this.habits = this.habits.filter((item) => item.id !== id);
+    this.trashed.push(habit);
+  }
+
+  async habitRestore(id: string): Promise<Habit> {
+    this.#check();
+    const habit = this.trashed.find((item) => item.id === id);
+    if (!habit) throw "NOT_FOUND: hábito no encontrado";
+    this.trashed = this.trashed.filter((item) => item.id !== id);
+    this.habits.push(habit);
+    return habit;
+  }
+
+  async habitSetDone(id: string, date: string, done: boolean): Promise<Habit> {
+    this.#check();
+    const habit = await this.habitUpdate(id, {});
+    this.logs = this.logs.filter(
+      (log) => !(log.habitId === id && log.date === date),
+    );
+    if (done) this.logs.push({ habitId: id, date });
+    if (date === this.today) habit.doneToday = done;
+    habit.currentStreak = this.logs.filter((log) => log.habitId === id).length;
+    return habit;
   }
 }

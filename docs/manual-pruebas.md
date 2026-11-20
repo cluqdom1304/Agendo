@@ -457,7 +457,13 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Notificación nativa de un evento con aviso «15 min antes»: sale a su hora con el título; pulsarla abre la app en el diálogo del evento. No hay botones de «Hecha» ni de posponer.
   - [ ] Menú contextual: «Convertir en evento» en una tarea (la tarea va a la papelera) y «Convertir en tarea» en un evento; «Borrar» un evento ofrece «Deshacer»; clic derecho en un día del calendario ofrece «Nuevo evento el …».
   - [ ] Los eventos respetan el filtro de etiquetas del sidebar; contraste legible de los bloques de evento en claro, oscuro y Mica.
-- **Fase 22 — hábitos:** marcar y desmarcar, rachas tras varios días y al cambiar de día a medianoche.
+- **Fase 22 — hábitos (F22-03):**
+  - [ ] Sidebar «Hábitos»: «Nuevo hábito» con nombre, días, hora y etiqueta; aparece en la vista con sus 7 días.
+  - [ ] Marcar y desmarcar hoy y un día pasado de la semana; la racha sube y baja; un día no programado sale punteado y no rompe la racha.
+  - [ ] Hoy: «Hábitos de hoy» solo con los programados hoy; un clic marca, sale «Deshacer» y el banner cuenta «N de M hábitos»; no aparecen al elegir otro día de la tira.
+  - [ ] Con la app abierta pasada la medianoche, al volver a la ventana Hoy y Hábitos cambian de día y la racha se mantiene.
+  - [ ] Archivar, desarchivar y eliminar con «Deshacer»; los hábitos respetan el filtro de etiquetas.
+  - [ ] Contraste de las casillas marcadas, punteadas y con foco en claro, oscuro y Mica.
 - **Fase 24 — planificar el día:** arrastrar de la Bandeja a una franja; asistente de «Planificar mi día».
 - **Fase 25 — enfoque:** temporizador, notificación al terminar y cierre de la app con el temporizador activo.
 - **Fase 26 — resumen semanal:** cifras coherentes con la agenda y exportación a Markdown.

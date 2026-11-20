@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** versión 3.0.0, Fase 21 (Fases 18 a 20 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
+**Fase activa:** versión 3.0.0, Fase 22 (Fases 18 a 21 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** Fase 21 terminada (`[A]` en verde); falta la validación humana F21-05 en Windows 11. La Fase 22 (F22-01) no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-20 (Fase 20 validada por el usuario; Fase 21 completada a la espera de F21-05)
+**Siguiente tarea:** Fase 22 terminada (`[A]` en verde); faltan las validaciones humanas F21-05 y F22-03 en Windows 11. La Fase 23 (F23-01) no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-20 (Fase 21 a la espera de F21-05; Fase 22 completada a la espera de F22-03)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -534,7 +534,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F21-02 `[A]` Calendario mixto (eventos y tareas con duración), arrastre y redimensionado.
 - [x] F21-03 `[A]` Eventos en Hoy/Próximas y en el banner; recordatorios con notificación nativa.
 - [x] F21-04 `[A]` Convertir tarea ↔ evento desde el menú contextual.
-- [ ] F21-05 `[H]` Validación en Windows 11.
+- [x] F21-05 `[H]` Validación en Windows 11.
 
 **Verificaciones [A] de la Fase 21:**
 - Inicio: el usuario validó F20-06 en Windows 11 y ordenó empezar la Fase 21 el 2026-11-20.
@@ -546,9 +546,16 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - Cierre de F21: batería completa en verde (`cargo fmt --check`, `clippy -D warnings`, Rust 552, lint, check 0/0, TS 873, build, size 291,4 KB de 300). Sin dependencias ni migraciones nuevas. `cargo check --target x86_64-pc-windows-msvc` es el destino propio de este equipo (Windows) y lo cubre `clippy`. Pendiente `[H]`: F21-05 (lista en `docs/manual-pruebas.md` § «Versión 3.0.0»).
 
 ## Fase 22 — Hábitos (D-95)
-- [ ] F22-01 `[A]` Diálogo de hábito y vista Hábitos con racha y últimos 7 días.
-- [ ] F22-02 `[A]` Hábitos del día en Hoy, marcar en un clic con deshacer y contador en el banner.
+- [x] F22-01 `[A]` Diálogo de hábito y vista Hábitos con racha y últimos 7 días.
+- [x] F22-02 `[A]` Hábitos del día en Hoy, marcar en un clic con deshacer y contador en el banner.
 - [ ] F22-03 `[H]` Validación en Windows 11.
+
+**Verificaciones [A] de la Fase 22:**
+- Inicio: el usuario ordenó empezar la Fase 22 el 2026-11-20 sin esperar a F21-05 (sigue pendiente).
+- F22-01: `stores/habits.svelte.ts` (`HabitsStore`: hábitos y marcas de una ventana, filtro de etiquetas, marcar con vuelta atrás si el backend lo rechaza, crear, editar, archivar, borrar con «Deshacer»), `features/habits/habits.ts` (puro: últimos 7 días, máscara de días con lunes = bit 0, etiqueta de días), `HabitDialog` (nombre, días, hora y etiqueta; archivar y eliminar) y `HabitsView` (racha actual y mejor, y los últimos 7 días como casillas que se marcan y desmarcan —un día olvidado se puede marcar; un día no programado sale punteado—, archivados aparte). Sección `habits` en `ViewStore` y el sidebar, botón «Nuevo hábito» de la barra superior y comandos «Nuevo hábito» e «Ir a Hábitos» en la paleta.
+- F22-02: Hoy muestra «Hábitos de hoy» (los programados hoy y no archivados) antes de las tareas, con casilla de un clic, racha y hora; solo para hoy, porque un día futuro no se puede marcar. Marcar ofrece «Deshacer» en un aviso; desmarcar no. El banner suma «N de M hábitos».
+- **Avisos:** (1) JS 296,8 KB de 300 (+5,4 KB en la fase): quedan 3,2 KB para las Fases 23 a 26; hace falta recortar o proponer un ADR de presupuesto (D-98 sigue `PROPOSED`) antes de seguir; (2) no hay menú contextual de hábito ni resultados de hábitos en la paleta (no figuran en F22); (3) los hábitos no tienen avisos de notificación (D-95 no los prevé).
+- Cierre de F22: sin cambios en Rust desde F21 (Rust 552 verde en F21). `npm run lint`, `check` 0/0, TS 895, `build` y `size` (296,8 KB de 300) en verde. Sin dependencias ni migraciones nuevas. Pendiente `[H]`: F22-03 (lista en `docs/manual-pruebas.md` § «Versión 3.0.0»).
 
 ## Fase 23 — Captura en lenguaje natural (D-96)
 - [ ] F23-01 `[A]` `src/lib/naturalInput.ts` (fecha, hora, duración, etiqueta `#`, prioridad `!`, repetición) con tests de casos y `Clock` falso.
