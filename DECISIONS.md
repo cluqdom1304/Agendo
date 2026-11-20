@@ -502,6 +502,48 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Opciones:** (A) mantener como está; (B) importar solo `preflight.css` y `utilities.css` por capas (ahorra 0,24 KB; no merece el riesgo); (C) quitar Tailwind y sustituir el preflight por un reinicio propio de unas 20 líneas en `base.css` (ahorra hasta ~2,4 KB gzip de CSS y dos devDependencies; hay que fijar a mano `box-sizing`, `margin: 0` de encabezados, `button/input/select/textarea { font: inherit }`, `img { display: block }` y revisar visualmente todas las vistas `[H]`).
 - **Recomendación:** C, pero solo con revisión visual en Windows; el CSS no cuenta en el presupuesto de 250 KB de JS y el beneficio principal es eliminar las reglas accidentales y dos dependencias. Mientras no se confirme, A. No se ha tocado nada.
 
+## D-91 — La 2.1.0 no se publica: versión 3.0.0
+- **Estado:** PROPOSED · **Fecha:** 2026-11-20
+- **Contexto:** las Fases 16 y 17 estaban pensadas para una 2.1.0 y el usuario añade un rediseño completo y dos entidades nuevas.
+- **Decisión:** no se etiqueta ni publica la 2.1.0; todo se publica como **3.0.0**. `package.json`, `Cargo.toml`, `tauri.conf.json` y los lockfiles siguen en 2.0.3 hasta F27-02. Una sola etiqueta `v3.0.0`.
+- **Alternativas descartadas:** publicar la 2.1.0 con lo ya hecho y la 3.0.0 después (más instaladores y dos migraciones de usuario).
+
+## D-92 — Sistema visual v3: sidebar oscuro fijo y paneles tipo tarjeta
+- **Estado:** PROPOSED · **Fecha:** 2026-11-20 · **Validación visual:** `[H]`
+- **Contexto:** el usuario quiere parecerse a la captura de referencia (sidebar oscuro con el contenido en tarjetas redondeadas, barra superior con buscador central). Hoy `--bg-sidebar` es un velo casi transparente (D-39) y el tema claro es opaco (D-36).
+- **Decisión (amplía D-39 y D-55; solo CSS y marcado):** tokens nuevos `--sidebar-*` con **los mismos valores en ambos temas** (sidebar siempre oscuro), `--priority-*` (cuatro niveles con contraste AA, comprobado en `src/lib/a11y/tokens.test.ts`) y paneles tipo tarjeta (`--radius-panel`, hueco de 8 px) sobre el fondo de ventana. Un único `AppSidebar` sustituye a `TagSidebar`, `FolderSidebar` y al control de sección. Siguen prohibidos `backdrop-filter` y las animaciones de salida; cero colores fijos fuera de tokens.
+- **Alternativas descartadas:** que el sidebar siga el tema (el usuario eligió oscuro fijo).
+
+## D-93 — Prioridad de tarea y progreso de checklist almacenado (migración 015)
+- **Estado:** PROPOSED · **Fecha:** 2026-11-20
+- **Decisión:** `tasks.priority INTEGER NOT NULL DEFAULT 0` (0 ninguna, 1 media, 2 alta, 3 urgente) con restricción de rango, y `checklist_done`/`checklist_total INTEGER NOT NULL DEFAULT 0` **almacenados**, recalculados al guardar con `domain/content.rs` (casillas de D-37). Migración aditiva: las filas existentes quedan en 0.
+- **Consecuencias:** la lista no parsea `content_json` por fila; el contrato, `types.ts`, la exportación y las pruebas de paridad ganan los campos.
+- **Alternativas descartadas:** calcular el progreso en cada lectura (coste en listas de 10 000 filas) y una entidad de subtarea (descartada en D-37).
+
+## D-94 — Eventos como entidad propia (migración 016)
+- **Estado:** PROPOSED · **Fecha:** 2026-11-20
+- **Decisión:** tablas `events` (título, nota, inicio y fin o todo el día, `rrule` opcional, `deleted_at`), `event_tags` y `event_reminders` (mismo patrón que `note_reminders`, D-52). Un evento no tiene casilla de completado. Las repeticiones se **expanden por consulta** con `domain/recurrence::occurrences_in` (reutiliza D-57); no se materializan filas por ocurrencia. Convertir tarea ↔ evento es una operación explícita.
+- **Alternativas descartadas:** un tipo `kind` dentro de `tasks` (mezcla semánticas de completado y obliga a filtrar en todas las consultas) y materializar ocurrencias (crecimiento de la base y ediciones en serie).
+
+## D-95 — Hábitos (migración 017)
+- **Estado:** PROPOSED · **Fecha:** 2026-11-20
+- **Decisión:** `habits` (título, días programados —diario o `BYDAY`—, hora opcional, etiqueta, `archived_at`) y `habit_logs(habit_id, date)` con clave primaria compuesta (marcar es insertar, desmarcar es borrar esa fila de registro del propio hábito). La racha actual y la mejor racha se **derivan** en `domain/habits.rs` con `Clock`. Fuera de alcance: objetivos «N veces por semana».
+- **Alternativas descartadas:** guardar la racha como columna (se desincroniza al editar días pasados) y modelar el hábito como tarea recurrente (cada ocurrencia crearía una tarea).
+
+## D-96 — Lenguaje natural al crear tareas: analizador propio
+- **Estado:** PROPOSED · **Fecha:** 2026-11-20
+- **Decisión:** módulo puro `src/lib/naturalInput.ts` en español (fecha relativa y absoluta, hora, duración, `#etiqueta`, `!1`–`!3`, repetición simple) con vista previa de lo detectado y Esc para ignorarlo. Sin dependencias.
+- **Alternativas descartadas:** una librería de fechas en lenguaje natural (peso en el bundle y soporte débil del español) y hacerlo en Rust (coste de IPC en cada pulsación).
+
+## D-97 — Registro de tiempo de enfoque (migración 018)
+- **Estado:** PROPOSED · **Fecha:** 2026-11-20
+- **Decisión:** `time_entries(id, task_id, started_at, ended_at, planned_minutes)`. Inicio y fin los marca el backend con `Clock`. Al arrancar, una entrada sin `ended_at` se cierra con `planned_minutes` como tope. La notificación de fin usa el notificador existente.
+- **Alternativas descartadas:** guardar el tiempo solo en memoria del frontend (se pierde al cerrar).
+
+## D-98 — Presupuestos de la 3.0.0
+- **Estado:** PROPOSED · **Fecha:** 2026-11-20
+- **Decisión:** se parte de la medida real de F18-00. N-04 (JS gzip, D-56) se mantiene en 300 KB **para la carga inicial**; Eventos, Hábitos, Resumen, Planificar, Enfoque y el panel de Bandeja se cargan con `import()`. Si no caben, un ADR posterior propone un valor explícito con las cifras delante. N-03 18 MB, N-01 y N-02 sin cambios.
+
 ---
 
 ## Decisiones pendientes de producto

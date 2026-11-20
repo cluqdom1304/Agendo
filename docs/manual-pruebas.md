@@ -428,3 +428,15 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
 
 ## U-01 — Cambio de sección sin parpadeo (`[H]`)
 - [x] (confirmado por el usuario) Pasar varias veces de Agenda a Notas y a Hoy (también justo tras arrancar): la barra Agenda/Notas/Hoy no debe parpadear ni saltar, y el panel lateral debe aparecer sin desplazar la barra de herramientas.
+
+## Versión 3.0.0 (`[H]`, pendientes; se detallan al implementar cada fase)
+
+- **Fase 19 — shell y sistema visual:** aspecto del sidebar oscuro en tema claro y oscuro, con y sin Mica, a tamaño mínimo y con la ventana maximizada; atrás/adelante; el sidebar se pliega solo en ventanas estrechas.
+- **Fase 20 — Hoy, Bandeja y prioridades:** tira de días, banner de resumen, círculos de prioridad legibles, progreso de checklist, panel Bandeja plegable y arrastre desde él.
+- **Fase 21 — eventos:** crear, editar y arrastrar eventos en el calendario; notificación nativa de un recordatorio de evento; evento repetido.
+- **Fase 22 — hábitos:** marcar y desmarcar, rachas tras varios días y al cambiar de día a medianoche.
+- **Fase 24 — planificar el día:** arrastrar de la Bandeja a una franja; asistente de «Planificar mi día».
+- **Fase 25 — enfoque:** temporizador, notificación al terminar y cierre de la app con el temporizador activo.
+- **Fase 26 — resumen semanal:** cifras coherentes con la agenda y exportación a Markdown.
+- **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.
+

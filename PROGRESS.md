@@ -1,10 +1,10 @@
 # PROGRESS.md
 
-**Fase activa:** Fase 17 de la 2.1.0 (tareas `[A]` F17-01 a F17-09 hechas; falta la validación humana F17-10); la 2.0.3 está publicada
+**Fase activa:** versión 3.0.0 planificada (la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** validación humana F17-10 (ítems de F17 en `docs/manual-pruebas.md`); no se inicia la Fase 18 sin confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F15 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-16 (V2.0.0 cerrada y publicada)
-**Última actualización:** 2026-11-18 (Fase 17: tareas `[A]` completas)
+**Siguiente tarea:** el usuario valida F17-10 y da la orden de empezar la Fase 18 (F18-00: medir la línea base). No se inicia ninguna fase sin confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F17 y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-20 (plan de la 3.0.0 aprobado y documentado; código sin tocar)
+
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
 ---
@@ -15,7 +15,7 @@
 |---------|--------|-------|-----------|
 | 1.0.x | publicada (1.0.0 a 1.0.7) | 0–6 | Agenda con recordatorios, calendario, etiquetas, copia de seguridad |
 | 2.0.x | publicada (2.0.0 a 2.0.3) | 7–15 (+11B) | Notas con carpetas, editor, adjuntos, historial, enlaces, recurrencia, interoperabilidad; 2.0.1–2.0.3 corrigen menús cortados |
-| 2.1.0 | **planificada** | 16–18 (+ cierre) | Rendimiento y presupuestos, mejoras de funciones existentes, resumen semanal |
+| 3.0.0 | **planificada** (la 2.1.0 no se publica; incluye lo hecho en 16–17) | 16–27 | Rendimiento, mejoras de lo existente, rediseño tipo «Woday», prioridades, eventos, hábitos, lenguaje natural, planificar el día, enfoque y resumen semanal |
 | Anexos | — | — | Métricas, discrepancias, cierre de 1.0.0 y registro cronológico de sesión |
 
 ---
@@ -432,12 +432,14 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 
 ---
 
-# Versión 2.1.0 — Ligera, rápida y con más utilidad (APROBADA, código sin empezar)
+# Versión 3.0.0 — Rediseño y productividad (PLANIFICADA; la 2.1.0 no se publica)
 
-> **Estado:** `READY`. Plan aprobado por el usuario el 2026-11-18 y documentación preparada (`DECISIONS.md` D-56 `ACCEPTED`, `docs/metricas.md`, `docs/manual-pruebas.md`). **El código no se toca hasta que el usuario lo ordene.**
-> **Por qué 2.1.0 y no 3.0.0:** todo es aditivo (migraciones nuevas, sin cambiar el formato de datos existente). La 3.0.0 se reserva para lo que cambie el almacenamiento (cifrado de notas).
-> **Principio:** aplicación ligera, rápida y eficiente. Cada función nueva se paga con presupuesto medido; la Fase 16 va primero para recuperar margen antes de añadir nada.
-> **Presupuestos aprobados (D-56):** JS gzip 250 → **300 KB** (objetivo de cierre ≤ 285 KB tras diferir código, para no consumir todo el margen); ejecutable 15 → **18 MB** (hoy 14,65 MiB ≈ 15,36 MB decimales, ya roza el límite); N-01 (arranque < 200 ms) y N-02 (RAM < 40 MB) **se mantienen** y se miden por primera vez en la 16.
+> **Estado:** `PLANNED`. Plan aprobado por el usuario el 2026-11-20 (plan completo en la conversación y ADR `PROPOSED` D-91 a D-98 en `DECISIONS.md`). **El código de las Fases 18 a 27 no se toca hasta que el usuario lo ordene.**
+> **Decisión del usuario:** no se publica la 2.1.0; se publica directamente la **3.0.0** cuando todo esté hecho. Las Fases 16 y 17 (ya hechas) forman parte de ella; la versión de `package.json` y demás sigue en 2.0.3 hasta F27-02.
+> **Objetivo:** que Agendo se parezca en diseño y funcionalidad a la captura de referencia (sidebar oscuro con Hoy/Próximas/Calendario/Notas/Tareas/Eventos, Favoritos, Recientes, Carpetas y Etiquetas; vista Hoy con tira de días, banner de resumen y prioridades; panel «Bandeja de entrada»; barra superior «Buscar o crear»; eventos y hábitos distintos de las tareas), con lenguaje natural, bloques de tiempo, «Planificar mi día», enfoque, progreso de checklist y resumen semanal.
+> **Alcance elegido:** eventos **y** hábitos; sidebar oscuro fijo también con tema claro.
+> **Principio:** aplicación ligera, rápida y eficiente. Cada función nueva se paga con presupuesto medido; las vistas nuevas se cargan con `import()` y la F18-00 fija la línea base antes de empezar.
+> **Presupuestos vigentes (D-56):** JS gzip 300 KB, ejecutable 18 MB, N-01 < 200 ms y N-02 < 40 MB; D-98 (`PROPOSED`) los revisa con la medida real.
 
 ## Fase 16 — Rendimiento y base
 - [x] F16-01 `[A]` Auditoría del bundle (análisis de tamaños de `vite build`): módulos por peso y qué entra en la carga inicial.
@@ -473,18 +475,73 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - F17-08 (D-60): filtros `desde:` / `hasta:` en la búsqueda unificada (`repo/find.rs`, parámetros enlazados, sin SQL con datos del usuario) y alias `is:pending`/`is:done`; vistas guardadas en la paleta (ajuste `saved_searches`, lista JSON validada de ≤ 20 textos de ≤ 200 caracteres; `stores/savedSearches.svelte.ts`). Tests: 1 de búsqueda con rangos, 1 de ajustes, 3 de store y 1 de paleta.
 - F17-09 (D-61): `autobackup.rs` (bucle de fondo, `run_if_due`, rotación) y ajustes `auto_backup` / `auto_backup_keep` / `auto_backup_last`; sección «Copia automática» en Ajustes. 5 tests de Rust (apagada, diaria con rotación y reloj manual, semanal con margen, no toca archivos ajenos, valores por defecto), 1 de validación de ajustes, 1 de store y 1 de diálogo.
 
-## Fase 18 — Resumen semanal (única función nueva elegida por el usuario)
-- [ ] F18-01 `[A]` Consulta y dominio del resumen: tareas completadas, pendientes y vencidas de una semana, agrupadas por etiqueta; inicio de semana configurable (lunes por defecto) vía `domain/dates.rs` y `Clock`.
-- [ ] F18-02 `[A]` Vista «Resumen» (en la agenda y en la paleta Ctrl+K): navegación entre semanas, recuentos y lista por etiqueta; cálculo en `$derived`, sin lógica en la plantilla.
-- [ ] F18-03 `[A]` Exportar el resumen a Markdown (reutiliza `exchange.rs`, sin dependencias nuevas).
-- [ ] F18-04 `[H]` Revisión visual y de textos en Windows 11.
+## Fase 18 — Cimientos de datos (`[A]`; migraciones 015 a 018, D-93 a D-97)
+- [ ] F18-00 `[A]` Medir la línea base (`npm run build && npm run size`, tamaño del exe, escala) en `docs/metricas.md` y fijar D-98.
+- [ ] F18-01 `[A]` Migración 015 (`tasks.priority`, `checklist_done`, `checklist_total`) con test de migración desde el esquema 14 con datos; actualizar `MIGRATIONS` y los tests que esperan 14.
+- [ ] F18-02 `[A]` Cableado de prioridad y checklist: `repo/model.rs`, `task_sql!`/`map_task`, `services/tasks.rs`, `commands/tasks.rs`, `types.ts`, `api.ts`, tests de contrato y paridad, `repo/export.rs`.
+- [ ] F18-03 `[A]` Migración 016 (`events`, `event_tags`, `event_reminders`), `repo/events.rs`, servicio, comandos, `domain/recurrence::occurrences_in` y recordatorios de evento en el scheduler.
+- [ ] F18-04 `[A]` Migración 017 (`habits`, `habit_logs`), `repo/habits.rs`, `domain/habits.rs` (racha con `Clock`), comandos y tests.
+- [ ] F18-05 `[A]` Migración 018 (`time_entries`), comandos de enfoque y recuperación de entradas huérfanas.
+- [ ] F18-06 `[A]` Búsqueda unificada y papelera incluyen eventos y hábitos.
+- [ ] F18-07 `[A]` Copia `.agendo` y exportación JSON/Markdown incluyen las tablas nuevas.
 
-## Cierre de 2.1.0
-- [ ] F19-01 `[A]` Versión `2.1.0` en los 5 sitios (CLAUDE.md §10), entrada en este archivo, `docs/manual-pruebas.md` § «Versión 2.1.0» y `docs/metricas.md` actualizadas.
-- [ ] F19-02 `[A]` Batería completa de CLAUDE.md §4 en verde; al terminar, `Estado: AWAITING_HUMAN` con los `[H]` de F16 a F18. Etiqueta, push e instaladores **solo** si el usuario dice «subir a GitHub» / «sacar la nueva versión».
+## Fase 19 — Sistema visual y shell (D-92)
+- [ ] F19-01 `[A]` Tokens `--sidebar-*`, `--priority-*` y paneles tipo tarjeta; test de contraste ampliado (`src/lib/a11y/tokens.test.ts`).
+- [ ] F19-02 `[A]` `AppSidebar.svelte` único (navegación, Favoritos = notas fijadas, Recientes, Carpetas, Etiquetas); se retiran `TagSidebar`, `FolderSidebar` y el control de sección.
+- [ ] F19-03 `[A]` Barra superior: plegar, nuevo, atrás/adelante y buscador central que abre la paleta.
+- [ ] F19-04 `[A]` `viewStore.section` ampliado (`today|upcoming|calendar|notes|tasks|events|habits`) y migración del ajuste `app_section`.
+- [ ] F19-05 `[A]` Capas de tarjeta en `.page`, ancho mínimo y plegado automático del sidebar.
+- [ ] F19-06 `[H]` Revisión visual en Windows 11 (claro/oscuro, Mica, tamaños).
 
-**Riesgos:** F17-01 y F17-06 tocan el esquema (migraciones aditivas, nunca destructivas, CLAUDE.md §7); F16-03 puede cambiar el comportamiento ante pánicos (`panic = "abort"`), por eso va con medida; subir el límite de JS no es excusa: el objetivo de cierre es ≤ 285 KB.
-**Aplazado a 2.2 / 3.0 (no incluido):** captura rápida con atajo global, Kanban por etiqueta, grafo de enlaces, importar/exportar ICS, OCR, subpáginas, cifrado de notas.
+## Fase 20 — Hoy, Próximas, Bandeja y prioridades
+- [ ] F20-01 `[A]` Hoy: título grande, tira de 14 días y banner de resumen (todo `$derived`).
+- [ ] F20-02 `[A]` Círculo de prioridad en `Checkbox`/`TaskRow`, selector en el diálogo y el menú contextual, orden por prioridad dentro del día.
+- [ ] F20-03 `[A]` Progreso de checklist «2/5» en la fila.
+- [ ] F20-04 `[A]` Panel derecho «Bandeja de entrada» (carga diferida, plegable, oculto en ventanas estrechas).
+- [ ] F20-05 `[A]` Vista Próximas y vista Tareas con filtros.
+- [ ] F20-06 `[H]` Validación en Windows 11.
+
+## Fase 21 — Eventos (D-94)
+- [ ] F21-01 `[A]` Diálogo y fila de evento; sección Eventos.
+- [ ] F21-02 `[A]` Calendario mixto (eventos y tareas con duración), arrastre y redimensionado.
+- [ ] F21-03 `[A]` Eventos en Hoy/Próximas y en el banner; recordatorios con notificación nativa.
+- [ ] F21-04 `[A]` Convertir tarea ↔ evento desde el menú contextual.
+- [ ] F21-05 `[H]` Validación en Windows 11.
+
+## Fase 22 — Hábitos (D-95)
+- [ ] F22-01 `[A]` Diálogo de hábito y vista Hábitos con racha y últimos 7 días.
+- [ ] F22-02 `[A]` Hábitos del día en Hoy, marcar en un clic con deshacer y contador en el banner.
+- [ ] F22-03 `[H]` Validación en Windows 11.
+
+## Fase 23 — Captura en lenguaje natural (D-96)
+- [ ] F23-01 `[A]` `src/lib/naturalInput.ts` (fecha, hora, duración, etiqueta `#`, prioridad `!`, repetición) con tests de casos y `Clock` falso.
+- [ ] F23-02 `[A]` Integración en borrador en línea, creación rápida del calendario, diálogo y Bandeja, con vista previa y Esc para ignorar.
+- [ ] F23-03 `[A]` «Crear cualquier cosa» en la paleta: tarea, evento, hábito y nota.
+
+## Fase 24 — Planificar mi día y bloques de tiempo
+- [ ] F24-01 `[A]` Arrastrar una tarea de la Bandeja a una franja de Día/Semana (fija hora y duración).
+- [ ] F24-02 `[A]` Asistente «Planificar mi día»: vencidas, elegir las de hoy, suma de tiempo estimado y aviso de sobrecarga.
+- [ ] F24-03 `[H]` Validación en Windows 11.
+
+## Fase 25 — Enfoque (D-97)
+- [ ] F25-01 `[A]` Temporizador por tarea en la barra superior (`focus.svelte.ts`) y notificación al terminar.
+- [ ] F25-02 `[A]` Tiempo dedicado en la fila y el detalle; entradas manuales.
+- [ ] F25-03 `[H]` Validación en Windows 11.
+
+## Fase 26 — Resumen semanal
+- [ ] F26-01 `[A]` Consulta y dominio: completadas, pendientes y vencidas por etiqueta, eventos, cumplimiento de hábitos y tiempo de enfoque; inicio de semana configurable vía `domain/dates.rs` y `Clock`.
+- [ ] F26-02 `[A]` Vista «Resumen» (carga diferida, también desde la paleta) con navegación entre semanas.
+- [ ] F26-03 `[A]` Exportar el resumen a Markdown (reutiliza `exchange.rs`, sin dependencias nuevas).
+- [ ] F26-04 `[H]` Revisión visual y de textos en Windows 11.
+
+## Fase 27 — Cierre de 3.0.0
+- [ ] F27-01 `[A]` Migración real desde una base 2.0.3 con datos (integridad) y pruebas de escala en release con eventos y hábitos.
+- [ ] F27-02 `[A]` Versión `3.0.0` en los 5 sitios (CLAUDE.md §10), entrada en este archivo, `docs/manual-pruebas.md` § «Versión 3.0.0», `docs/metricas.md` y README.
+- [ ] F27-03 `[A]` Batería completa de CLAUDE.md §4 en verde; `Estado: AWAITING_HUMAN` con los `[H]` de F16 a F26. Etiqueta, push e instaladores **solo** si el usuario dice «subir a GitHub» / «sacar la nueva versión».
+
+**Riesgos:** es la versión más grande (3 migraciones nuevas, 2 entidades nuevas y rediseño del shell). Los eventos repetidos y sus recordatorios tocan el scheduler (`Clock`, `domain/dates.rs`); el sidebar oscuro fijo exige revisar contraste y Mica en claro (D-36); el presupuesto de JS obliga a cargar las vistas nuevas con `import()`. Cada fase termina en `AWAITING_HUMAN` (CLAUDE.md §3); se pueden agrupar fases en una sola validación si el usuario lo pide.
+**Orden de recorte si falta tiempo:** Enfoque (F25) → atrás/adelante (F19-03) → expansión de eventos repetidos (F21) → gráfico de 7 días en hábitos.
+**Aplazado a una versión posterior (no incluido):** captura rápida con atajo global del sistema, Kanban por etiqueta, grafo de enlaces, importar/exportar ICS, OCR, subpáginas, cifrado de notas.
 **Descartado por el usuario (2026-11-18):** sincronización con Google Calendar y Tasks; no se planifica en ninguna versión (D-56).
 
 ---
