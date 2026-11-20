@@ -2,6 +2,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
 
+import { focusStore } from "../../stores/focus.svelte";
 import { TasksStore } from "../../stores/tasks.svelte";
 import { FakeApi, installLayoutStubs, makeTask } from "../../testing";
 import type { Task } from "../../types";
@@ -88,5 +89,17 @@ describe("TaskDetailDialog", () => {
       screen.getByRole("button", { name: "Ver en la lista" }),
     );
     expect(onShowInList).toHaveBeenCalled();
+  });
+
+  it("starts a focus session with the chosen minutes and closes (F25-01)", async () => {
+    const start = vi.spyOn(focusStore, "start").mockResolvedValue();
+    const { onClose } = await mount();
+    await fireEvent.change(screen.getByLabelText("Minutos"), {
+      target: { value: "45" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Enfocar" }));
+    expect(start).toHaveBeenCalledWith("t1", 45);
+    expect(onClose).toHaveBeenCalled();
+    start.mockRestore();
   });
 });

@@ -80,4 +80,16 @@ describe("TopBar (F19-03)", () => {
       }),
     ).toBeNull();
   });
+
+  it("shows the focus countdown and stops the session from it (F25-01)", async () => {
+    const onStopFocus = vi.fn();
+    mount({ focusLabel: "12:34", focusTitle: "Informe", onStopFocus });
+    expect(screen.getByText("12:34")).toBeTruthy();
+    await fireEvent.click(
+      screen.getByRole("button", {
+        name: "Terminar la sesión de enfoque: Informe",
+      }),
+    );
+    expect(onStopFocus).toHaveBeenCalledOnce();
+  });
 });

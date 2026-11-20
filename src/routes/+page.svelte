@@ -17,6 +17,7 @@
   import Toast from "$lib/shell/Toast.svelte";
   import TopBar from "$lib/shell/TopBar.svelte";
   import { eventsStore } from "$lib/stores/events.svelte";
+  import { focusStore } from "$lib/stores/focus.svelte";
   import { habitsStore } from "$lib/stores/habits.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
   import SlotTip from "$lib/features/calendar/SlotTip.svelte";
@@ -149,6 +150,7 @@
     void tagsStore.load();
     void tasksStore.load();
     void viewStore.load();
+    void focusStore.load();
     const stop = listenBackendEvents({
       taskReminderFired: (taskId) => tasksStore.onReminderFired(taskId),
       noteReminderFired: (noteId) => notesStore.onReminderFired(noteId),
@@ -233,6 +235,11 @@
     inboxAvailable={inbox.available && inboxSection}
     inboxOpen={inboxShown}
     onToggleInbox={() => inbox.toggle()}
+    focusLabel={focusStore.current ? focusStore.label : null}
+    focusTitle={focusStore.current
+      ? (tasksStore.find(focusStore.current.taskId)?.title ?? "")
+      : ""}
+    onStopFocus={() => void focusStore.stop()}
     onToggleSidebar={() => sidebar.toggle()}
     onNew={createNew}
     onBack={() => viewStore.goBack()}
@@ -412,6 +419,15 @@
     message={eventsStore.notice.message}
     closeLabel={t.events.dismiss}
     onClose={() => eventsStore.dismissNotice()}
+  />
+{/if}
+
+{#if focusStore.notice}
+  <Toast
+    kind={focusStore.notice.kind}
+    message={focusStore.notice.message}
+    closeLabel={t.tasks.dismiss}
+    onClose={() => focusStore.dismissNotice()}
   />
 {/if}
 

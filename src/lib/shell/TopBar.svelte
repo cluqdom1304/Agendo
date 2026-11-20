@@ -13,6 +13,10 @@
     inboxAvailable?: boolean;
     inboxOpen?: boolean;
     onToggleInbox?: () => void;
+    /** The countdown of the focus session in progress; `null` when there is none (F25-01). */
+    focusLabel?: string | null;
+    focusTitle?: string;
+    onStopFocus?: () => void;
     onToggleSidebar: () => void;
     onNew: () => void;
     onBack: () => void;
@@ -30,6 +34,9 @@
     inboxAvailable = false,
     inboxOpen = false,
     onToggleInbox,
+    focusLabel = null,
+    focusTitle = "",
+    onStopFocus,
     onToggleSidebar,
     onNew,
     onBack,
@@ -157,6 +164,18 @@
   </button>
 
   <div class="trail" data-tauri-drag-region>
+    {#if focusLabel}
+      <button
+        type="button"
+        class="focus"
+        aria-label={`${t.focus.stop}: ${focusTitle}`}
+        title={`${t.focus.running}: ${focusTitle}`}
+        onclick={() => onStopFocus?.()}
+      >
+        <span class="dot" aria-hidden="true"></span>
+        <span class="time">{focusLabel}</span>
+      </button>
+    {/if}
     {#if inboxAvailable}
       <button
         type="button"
@@ -257,6 +276,36 @@
     height: 7px;
     border-radius: var(--radius-chip);
     background: var(--accent);
+  }
+
+  .focus {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 28px;
+    padding: 0 var(--space-3);
+    border: 0;
+    border-radius: var(--radius-control);
+    background: var(--bg-control);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .focus:hover {
+    background: var(--bg-control-hover);
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-chip);
+    background: var(--accent);
+  }
+
+  .time {
+    font-variant-numeric: tabular-nums;
   }
 
   .search {

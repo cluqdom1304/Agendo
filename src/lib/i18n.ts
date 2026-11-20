@@ -18,6 +18,14 @@ export const t = {
     collapseGroup: (name: string) => `Plegar ${name}`,
     expandGroup: (name: string) => `Desplegar ${name}`,
   },
+  focus: {
+    start: "Enfocar",
+    startHint: "Empieza una sesión de enfoque en esta tarea",
+    minutes: "Minutos",
+    running: "Sesión de enfoque en marcha",
+    stop: "Terminar la sesión de enfoque",
+    stopped: "Sesión de enfoque terminada",
+  },
   topBar: {
     back: "Atrás",
     forward: "Adelante",

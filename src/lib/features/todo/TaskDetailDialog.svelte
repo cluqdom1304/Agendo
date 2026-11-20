@@ -11,6 +11,7 @@
   } from "../../reminders";
   import { durationLabel, timeRange } from "../../schedule";
   import Modal from "../../shell/Modal.svelte";
+  import { focusStore } from "../../stores/focus.svelte";
   import { tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { Reminder, Task } from "../../types";
@@ -85,6 +86,15 @@
   async function toggleDone() {
     if (!task || busy) return;
     await store.setCompleted(task.id, !task.isCompleted);
+  }
+
+  let focusMinutes = $state(25);
+  const focusBusy = $derived(focusStore.current !== null);
+
+  function focus() {
+    if (!task || focusBusy) return;
+    void focusStore.start(task.id, focusMinutes);
+    onClose();
   }
 
   function remove() {
@@ -230,6 +240,24 @@
           onclick={() => void convert()}
         >
           {t.notesApp.convertToNote}
+        </button>
+        <select
+          class="btn quiet"
+          aria-label={t.focus.minutes}
+          bind:value={focusMinutes}
+        >
+          {#each [15, 25, 45, 60] as minutes (minutes)}
+            <option value={minutes}>{minutes} min</option>
+          {/each}
+        </select>
+        <button
+          type="button"
+          class="btn quiet"
+          title={t.focus.startHint}
+          disabled={focusBusy}
+          onclick={focus}
+        >
+          {t.focus.start}
         </button>
         <span class="spacer"></span>
         <button type="button" class="btn" onclick={() => onEdit(task)}>
