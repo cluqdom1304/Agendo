@@ -12,7 +12,7 @@
   import EventRow from "../events/EventRow.svelte";
   import { isScheduled } from "../habits/habits";
   import Checkbox from "../todo/Checkbox.svelte";
-  import ChecklistProgress from "../todo/ChecklistProgress.svelte";
+  import TaskLine from "../todo/TaskLine.svelte";
   import {
     pendingByDate,
     STRIP_DAYS,
@@ -176,15 +176,19 @@
 
 <svelte:window onfocus={refresh} />
 
-<div class="today">
-  <header class="head">
-    <p class="date">{heading}</p>
-    <h2>{title}</h2>
-    {#if onPlan}
-      <button type="button" class="btn small plan" onclick={onPlan}>
-        {t.plan.open}
-      </button>
-    {/if}
+<div class="today view">
+  <header class="view-head">
+    <div class="view-heading">
+      <h2 class="view-title">{title}</h2>
+      <p class="view-sub">{heading}</p>
+    </div>
+    <div class="view-actions">
+      {#if onPlan}
+        <button type="button" class="btn small" onclick={onPlan}>
+          {t.plan.open}
+        </button>
+      {/if}
+    </div>
   </header>
 
   <div class="strip" role="group" aria-label={l.strip} bind:this={stripEl}>
@@ -193,6 +197,7 @@
         type="button"
         class="day"
         class:selected={day.date === selected}
+        class:is-today={day.date === today}
         data-date={day.date}
         aria-pressed={day.date === selected}
         aria-label={day.label}
@@ -200,8 +205,8 @@
         onclick={() => (selected = day.date)}
         onkeydown={onStripKey}
       >
-        <span class="weekday">{day.weekday}</span>
         <span class="number">{day.day}</span>
+        <span class="weekday">{day.weekday}</span>
         <span class="mark" class:shown={day.marked}></span>
       </button>
     {/each}
@@ -209,16 +214,20 @@
 
   <section class="banner" aria-label={l.summary}>
     <p class="headline">{summaryText}</p>
-    {#if dayEvents.length > 0}
-      <p class="events-line">{t.events.summary(dayEvents.length)}</p>
-    {/if}
-    {#if dayHabits.length > 0}
-      <p class="events-line">
-        {t.habits.todayCount(habitsDone, dayHabits.length)}
+    {#if dayEvents.length > 0 || dayHabits.length > 0 || summary.overdue > 0}
+      <p class="pills">
+        {#if dayEvents.length > 0}
+          <span class="pill event">{t.events.summary(dayEvents.length)}</span>
+        {/if}
+        {#if dayHabits.length > 0}
+          <span class="pill habit">
+            {t.habits.todayCount(habitsDone, dayHabits.length)}
+          </span>
+        {/if}
+        {#if summary.overdue > 0}
+          <span class="pill overdue">{l.overdue(summary.overdue)}</span>
+        {/if}
       </p>
-    {/if}
-    {#if summary.overdue > 0}
-      <p class="overdue">{l.overdue(summary.overdue)}</p>
     {/if}
     {#if summary.total > 0}
       <div class="progress">
@@ -239,11 +248,11 @@
 
   {#if dayEvents.length > 0}
     <section class="block" aria-labelledby="today-events">
-      <h3 id="today-events">
+      <h3 id="today-events" class="group-label">
         {t.events.dayEvents}
         <span class="count">{dayEvents.length}</span>
       </h3>
-      <ul class="card">
+      <ul class="list">
         {#each dayEvents as occurrence (occurrence.eventId + occurrence.startDate)}
           <EventRow {occurrence} onOpen={(eventId) => onOpenEvent?.(eventId)} />
         {/each}
@@ -253,13 +262,13 @@
 
   {#if dayHabits.length > 0 && habitStore}
     <section class="block" aria-labelledby="today-habits">
-      <h3 id="today-habits">
+      <h3 id="today-habits" class="group-label">
         {t.habits.today}
         <span class="count">
           {t.habits.todayCount(habitsDone, dayHabits.length)}
         </span>
       </h3>
-      <ul class="card">
+      <ul class="list">
         {#each dayHabits as habit (habit.id)}
           {@const done = habitStore.isDone(habit.id, today)}
           <li class="row" class:done data-habit-id={habit.id}>
@@ -285,7 +294,7 @@
   {/if}
 
   <section class="block" aria-labelledby="today-tasks">
-    <h3 id="today-tasks">
+    <h3 id="today-tasks" class="group-label">
       {isToday ? l.tasks : l.dayTasks}
       <span class="count">{l.pending(pending)}</span>
     </h3>
@@ -295,33 +304,26 @@
         <span>{isToday ? l.noTasksDescription : l.noDayTasks}</span>
       </div>
     {:else}
-      <ul class="card">
+      <ul class="list">
         {#each dayTasks as task (task.id)}
-          <li class="row" class:done={task.isCompleted}>
-            <Checkbox
-              checked={task.isCompleted}
-              label={(task.isCompleted
+          <li class="row task">
+            <TaskLine
+              title={task.title}
+              priority={task.priority}
+              completed={task.isCompleted}
+              checklistDone={task.checklistDone}
+              checklistTotal={task.checklistTotal}
+              time={task.dueTime ?? l.allDay}
+              overdue={!task.isCompleted && selected < today}
+              tagIds={task.tagIds}
+              checkLabel={(task.isCompleted
                 ? l.markOpen(task.title || t.reminders.untitled)
                 : l.markDone(task.title || t.reminders.untitled)) +
                 t.priority.suffix(task.priority)}
-              priority={task.priority}
               onToggle={() =>
                 void store.setCompleted(task.id, !task.isCompleted)}
+              onOpen={() => onOpenTask(task.id)}
             />
-            <button
-              type="button"
-              class="open"
-              onclick={() => onOpenTask(task.id)}
-            >
-              <span class="title">{task.title || t.reminders.untitled}</span>
-              {#if task.checklistTotal > 0}
-                <ChecklistProgress
-                  done={task.checklistDone}
-                  total={task.checklistTotal}
-                />
-              {/if}
-              <span class="time">{task.dueTime ?? l.allDay}</span>
-            </button>
           </li>
         {/each}
       </ul>
@@ -329,7 +331,7 @@
   </section>
 
   <section class="block" aria-labelledby="today-daily">
-    <h3 id="today-daily">{l.daily}</h3>
+    <h3 id="today-daily" class="group-label">{l.daily}</h3>
     <div class="card">
       <button
         type="button"
@@ -359,7 +361,7 @@
   </section>
 
   <section class="block" aria-labelledby="today-pinned">
-    <h3 id="today-pinned">{l.pinned}</h3>
+    <h3 id="today-pinned" class="group-label">{l.pinned}</h3>
     {#if pinnedLoaded && pinned.length === 0}
       <p class="card none"><span>{l.noPinned}</span></p>
     {:else if pinned.length > 0}
@@ -407,67 +409,43 @@
 
 <style>
   .today {
-    display: grid;
-    align-content: start;
-    gap: var(--space-6);
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 680px;
-    margin: 0 auto;
-    padding: var(--space-4) var(--space-6) var(--space-8);
-  }
-
-  /* The day over a large title, as the sections of the agenda are headed. */
-  .plan {
-    margin-top: var(--space-2);
-  }
-
-  .date {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .date::first-letter {
-    text-transform: uppercase;
-  }
-
-  h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 34px;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.025em;
+    gap: 22px;
   }
 
   /* Fourteen equal columns that shrink with the panel; it scrolls only below their minimum. */
   .strip {
     display: grid;
-    grid-template-columns: repeat(14, minmax(30px, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(14, minmax(34px, 1fr));
+    gap: 2px;
     overflow-x: auto;
-    margin: calc(var(--space-2) * -1) 0 0;
+    margin: calc(var(--space-2) * -1) -6px 0;
+    padding: 2px;
   }
 
   .day {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
     padding: 6px 0 5px;
     border: 0;
-    border-radius: var(--radius-control);
+    border-radius: 12px;
     background: transparent;
     color: var(--text-primary);
     font: inherit;
     cursor: pointer;
-    transition: background-color var(--motion-instant) linear;
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      box-shadow var(--motion-base) var(--ease-out),
+      transform var(--motion-fast) var(--ease-spring);
   }
 
   .day:hover {
     background: var(--bg-hover);
+  }
+
+  .day:active {
+    transform: scale(0.94);
   }
 
   .day:focus-visible {
@@ -482,40 +460,51 @@
   }
 
   .number {
-    font-size: 15px;
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.25;
     font-variant-numeric: tabular-nums;
+  }
+
+  .day.is-today .number,
+  .day.is-today .weekday {
+    color: var(--accent);
+    font-weight: 600;
   }
 
   .mark {
     width: 4px;
     height: 4px;
+    margin-top: 1px;
     border-radius: var(--radius-chip);
   }
 
   .mark.shown {
-    background: var(--accent);
+    background: var(--text-secondary);
   }
 
+  /* The chosen day sits in a raised, outlined tile, as in the reference. */
   .day.selected {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--bg-panel);
+    box-shadow:
+      0 0 0 1px var(--border-subtle),
+      0 1px 3px rgba(0, 0, 0, 0.06);
   }
 
-  .day.selected .weekday {
-    color: inherit;
-  }
-
-  .day.selected .mark.shown {
-    background: var(--on-accent);
+  .day.selected .number {
+    font-weight: 700;
   }
 
   .banner {
-    display: grid;
-    gap: var(--space-2);
-    padding: var(--space-4);
-    border-radius: var(--radius-card);
-    background: color-mix(in srgb, var(--accent) 10%, var(--bg-panel));
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-panel);
+    background: var(--bg-card);
+    box-shadow: inset 0 0 0 1px var(--panel-border);
   }
 
   .banner p {
@@ -523,37 +512,61 @@
   }
 
   .headline {
-    font-family: var(--font-display);
-    font-size: 17px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: var(--radius-chip);
+    font-size: 12px;
     font-weight: 600;
   }
 
-  .overdue,
-  .events-line {
-    color: var(--text-secondary);
-    font-size: 13px;
+  .pill.event {
+    background: color-mix(in srgb, var(--danger) 13%, transparent);
+    color: var(--danger);
+  }
+
+  .pill.habit {
+    background: var(--bg-control-hover);
+    color: var(--text-primary);
+  }
+
+  .pill.overdue {
+    background: color-mix(in srgb, var(--priority-2) 15%, transparent);
+    color: var(--priority-2);
   }
 
   .progress {
     display: flex;
+    flex-basis: 100%;
     align-items: center;
     gap: var(--space-3);
   }
 
   .track {
     flex: 1;
-    height: 6px;
+    height: 4px;
     overflow: hidden;
     border-radius: var(--radius-chip);
-    background: var(--bg-control);
+    background: var(--bg-control-hover);
   }
 
   .fill {
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: var(--accent);
-    transition: width var(--motion-base) var(--ease-out);
+    background: var(--ink);
+    transition: width var(--motion-spring) var(--ease-spring);
   }
 
   .ratio {
@@ -566,33 +579,16 @@
   .block {
     display: grid;
     align-content: start;
-    gap: 6px;
+    gap: 4px;
   }
 
-  h3 {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0 2px;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .count {
-    font-weight: 400;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* One grouped card per block, its rows parted by a hairline (as the settings are). */
+  /* Flat rows, as in the reference: the hover lights a rounded tile, no hairlines. */
+  .list,
   .card {
-    margin: 0;
+    display: grid;
+    gap: 1px;
+    margin: 0 -10px;
     padding: 0;
-    overflow: hidden;
-    border-radius: var(--radius-card);
-    background: var(--bg-control);
     list-style: none;
   }
 
@@ -600,17 +596,22 @@
     position: relative;
     display: flex;
     align-items: center;
-    padding-left: var(--space-3);
+    gap: 10px;
+    min-height: 36px;
+    padding: 0 10px;
+    border-radius: var(--radius-card);
+    transition: background-color var(--motion-fast) var(--ease-out);
   }
 
-  .row + .row::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: var(--space-3);
-    height: 1px;
-    background: var(--separator);
+  .row.task {
+    align-items: flex-start;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  .row:hover,
+  .open.solo:hover {
+    background: var(--bg-hover);
   }
 
   .open {
@@ -619,36 +620,26 @@
     align-items: center;
     gap: var(--space-3);
     min-width: 0;
-    min-height: 40px;
-    padding: 6px var(--space-3) 6px 10px;
+    min-height: 36px;
+    padding: 0;
     border: 0;
     background: transparent;
     color: var(--text-primary);
     font: inherit;
-    font-size: 13px;
+    font-size: var(--text-body);
     text-align: left;
     cursor: pointer;
-    transition: background-color var(--motion-instant) linear;
   }
 
   .open.solo {
     width: 100%;
-    padding-left: var(--space-3);
+    padding: 0 10px;
+    border-radius: var(--radius-card);
+    transition: background-color var(--motion-fast) var(--ease-out);
   }
 
   .open.stacked {
-    min-height: 48px;
-    padding-left: 0;
-  }
-
-  .row {
-    transition: background-color var(--motion-instant) linear;
-  }
-
-  /* The whole row lights up, checkbox included, not only the part that opens. */
-  .row:hover,
-  .open.solo:hover {
-    background: var(--bg-hover);
+    min-height: 44px;
   }
 
   .open.solo:active {
@@ -658,7 +649,7 @@
   .open:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: -2px;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-card);
   }
 
   .text {
@@ -719,7 +710,7 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: var(--space-3);
+    padding: var(--space-2) 10px;
     color: var(--text-secondary);
     font-size: 13px;
   }

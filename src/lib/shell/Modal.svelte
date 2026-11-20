@@ -7,10 +7,19 @@
     onClose: () => void;
     /** Room for two columns (a list next to its preview). */
     wide?: boolean;
+    /** Docked to the right edge as a card, the way the reference shows a task (F26.1). */
+    side?: boolean;
     children: Snippet;
   }
 
-  let { label, closeLabel, onClose, wide = false, children }: Props = $props();
+  let {
+    label,
+    closeLabel,
+    onClose,
+    wide = false,
+    side = false,
+    children,
+  }: Props = $props();
 
   let dialog = $state<HTMLDivElement>();
 
@@ -58,11 +67,12 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="backdrop" onclick={onClose}>
+<div class="backdrop" class:side onclick={onClose}>
   <div
     bind:this={dialog}
     class="dialog ui-form"
     class:wide
+    class:side
     role="dialog"
     aria-modal="true"
     aria-label={label}
@@ -100,7 +110,8 @@
     align-items: flex-start;
     padding-top: 8vh;
     background: var(--backdrop);
-    animation: fade-in var(--motion-fast) linear;
+    backdrop-filter: blur(2px);
+    animation: fade-in var(--motion-base) var(--ease-out);
   }
 
   .dialog {
@@ -108,10 +119,10 @@
     box-sizing: border-box;
     width: min(520px, calc(100vw - 2 * var(--space-6)));
     max-height: 84vh;
-    padding: 20px var(--space-6) var(--space-6);
+    padding: 22px var(--space-6) var(--space-6);
     overflow-x: hidden;
     overflow-y: auto;
-    border-radius: var(--radius-panel);
+    border-radius: var(--radius-sheet);
     background: var(--bg-popover);
     box-shadow: var(--shadow-modal);
     outline: none;
@@ -122,14 +133,31 @@
     width: min(760px, calc(100vw - 2 * var(--space-6)));
   }
 
+  /* The side card sits over the content, under the top bar, with the same gap as the panels. */
+  .backdrop.side {
+    justify-content: flex-end;
+    align-items: stretch;
+    padding: 52px var(--panel-gap) var(--panel-gap);
+    background: color-mix(in srgb, var(--backdrop) 45%, transparent);
+    backdrop-filter: none;
+  }
+
+  .dialog.side {
+    width: min(400px, calc(100vw - 2 * var(--space-4)));
+    max-height: none;
+    border-radius: var(--radius-panel);
+    background: var(--bg-panel);
+    animation: slide-in-right var(--motion-spring) var(--ease-spring);
+  }
+
   .close {
     position: absolute;
     top: var(--space-3);
     right: var(--space-3);
     display: grid;
     place-items: center;
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     padding: 0;
     border: 0;
     border-radius: var(--radius-chip);

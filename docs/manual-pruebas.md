@@ -496,5 +496,17 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Eventos (incluidos repetidos), hábitos (porcentaje) y enfoque (barras por día) son coherentes con sus vistas.
   - [ ] «Exportar a Markdown…» abre el diálogo de guardado, escribe el archivo, se lee bien en un editor y avisa «Resumen exportado.»; cancelar no hace nada.
   - [ ] Lectura correcta en claro, oscuro y Mica, con teclado y Narrador.
+- **Fase 26.1 — rediseño visual completo (F26.1-12):**
+  - [ ] Barra superior: botones redondos con relleno suave, buscador en cápsula con `Ctrl K`; el punto del enfoque «respira» y se queda quieto en pausa.
+  - [ ] Sidebar: selección en píldora redondeada, icono activo en coral, estrella de Favoritos amarilla y rellena; carpetas y etiquetas con la misma altura de fila.
+  - [ ] Hoy: título grande con la fecha debajo, tira de días con el día elegido en baldosa con borde y hoy en coral, resumen con píldoras (eventos, hábitos, vencidas) y filas planas con hora y etiquetas debajo del título.
+  - [ ] Próximas y Eventos: cada día en dos columnas (nombre a la izquierda, tarjetas a la derecha); «Hoy» en coral; por debajo de 560 px el nombre pasa arriba.
+  - [ ] Bandeja: título grande, fila «Nueva tarea» con anillo discontinuo y filas con etiquetas; entra deslizándose desde la derecha.
+  - [ ] Tareas, Calendario, Hábitos y Resumen abren con la misma cabecera (título grande, subtítulo y botones a la derecha); calendario con «‹ ›» redondos.
+  - [ ] Casilla: anillo al estar pendiente y cuadrado de tinta (negro en claro, blanco en oscuro) al completarla, con el trazo animado; los días de la semana de los diálogos usan la misma tinta.
+  - [ ] Menús, menú contextual, menú de etiquetas y paleta: resaltado gris suave (no de color), esquinas de 12 px y entrada con muelle; los elementos peligrosos se tiñen de rojo.
+  - [ ] Detalle de tarea como tarjeta anclada a la derecha; el resto de diálogos centrados con esquinas de 16 px.
+  - [ ] Ajustes como lista agrupada (filas unidas con separador fino) en claro, oscuro y Mica.
+  - [ ] Contraste y legibilidad del acento coral en claro y oscuro (texto, foco y número de hoy); con «Reducir movimiento» de Windows no hay animaciones.
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.
 

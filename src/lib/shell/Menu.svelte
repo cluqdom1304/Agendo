@@ -136,16 +136,16 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
-    min-width: 184px;
-    max-width: 260px;
-    max-height: 300px;
+    min-width: 196px;
+    max-width: 280px;
+    max-height: 320px;
     padding: 5px;
     overflow-y: auto;
-    border-radius: var(--radius-card);
+    border-radius: var(--radius-menu);
     background: var(--bg-popover);
     box-shadow: var(--shadow-popover);
     transform-origin: top right;
-    animation: pop-in var(--motion-fast) var(--ease-out);
+    animation: menu-in var(--motion-base) var(--ease-spring);
   }
 
   .menu.left {
@@ -159,10 +159,10 @@
     flex: none;
     align-items: center;
     gap: var(--space-2);
-    min-height: 26px;
+    min-height: 28px;
     padding: 0 var(--space-2);
     border: 0;
-    border-radius: var(--radius-small);
+    border-radius: 7px;
     background: transparent;
     color: var(--text-primary);
     font: inherit;
@@ -171,11 +171,10 @@
     cursor: pointer;
   }
 
-  /* Solid accent, as in a system menu and in the context menu (D-50). */
+  /* A soft neutral highlight, the same in every menu (F26.1, D-101). */
   .item:hover,
   .item:focus-visible {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--bg-menu-hover);
     outline: none;
   }
 
@@ -185,8 +184,7 @@
 
   .item.danger:hover,
   .item.danger:focus-visible {
-    background: var(--danger);
-    color: var(--on-danger);
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
   }
 
   /* The hairline sits in the gap above the item, clear of its hover background. */
@@ -215,11 +213,6 @@
 
   svg {
     flex: none;
-    color: var(--accent);
-  }
-
-  .item:hover svg,
-  .item:focus-visible svg {
-    color: inherit;
+    color: var(--text-primary);
   }
 </style>

@@ -138,6 +138,14 @@
       onAction={() => store.startDraft({ section: "todo" })}
     />
   {:else}
+    <header class="view-head head">
+      <div class="view-heading">
+        <h2 class="view-title">{t.sidebar.tasks}</h2>
+        <p class="view-sub">
+          {t.tasks.pendingCount(store.listTodoBlock.open.length)}
+        </p>
+      </div>
+    </header>
     <ListFilters
       filter={store.listFilter}
       onChange={(filter) => (store.listFilter = filter)}
@@ -200,6 +208,10 @@
   .document {
     max-width: 780px;
     margin: 0 auto;
-    padding: 0 var(--space-6) 96px;
+    padding: var(--space-3) var(--space-6) 96px;
+  }
+
+  .head {
+    padding: 0 var(--space-3) var(--space-4);
   }
 </style>

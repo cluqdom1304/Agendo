@@ -414,11 +414,11 @@
     min-width: 0;
     box-sizing: border-box;
     padding: 6px;
-    border-radius: var(--radius-card);
+    border-radius: var(--radius-menu);
     background: var(--bg-popover);
     box-shadow: var(--shadow-popover);
     transform-origin: top left;
-    animation: pop-in var(--motion-fast) var(--ease-out);
+    animation: menu-in var(--motion-base) var(--ease-spring);
   }
 
   .link-input {

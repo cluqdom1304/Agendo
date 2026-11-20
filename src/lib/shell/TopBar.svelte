@@ -288,16 +288,35 @@
     align-items: center;
     gap: var(--space-3);
     flex: none;
-    height: 48px;
-    padding-left: var(--space-3);
+    height: 52px;
+    padding-left: var(--space-4);
   }
 
   .lead,
   .trail {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
+    gap: 6px;
     height: 100%;
+  }
+
+  /* Round, softly filled buttons, as in the reference toolbar. */
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    background: var(--bg-control);
+  }
+
+  .icon-btn:hover:not(:disabled) {
+    background: var(--bg-control-hover);
+  }
+
+  .icon-btn[aria-pressed="true"] {
+    color: var(--text-primary);
+  }
+
+  .lead .icon-btn:nth-child(3) {
+    margin-left: 4px;
   }
 
   .trail {
@@ -307,6 +326,7 @@
   }
 
   .icon-btn:disabled {
+    background: transparent;
     opacity: 0.35;
     cursor: default;
   }
@@ -318,38 +338,55 @@
   .fold.filtered::after {
     content: "";
     position: absolute;
-    top: 4px;
-    right: 4px;
+    top: 5px;
+    right: 5px;
     width: 7px;
     height: 7px;
     border-radius: var(--radius-chip);
-    background: var(--accent);
+    background: var(--sidebar-accent);
+    box-shadow: 0 0 0 2px var(--sidebar-bg);
   }
 
   .focus {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    height: 28px;
-    padding: 0 var(--space-3);
+    height: 32px;
+    padding: 0 14px;
     border: 0;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-chip);
     background: var(--bg-control);
     color: var(--text-primary);
     font: inherit;
     font-size: 13px;
     cursor: pointer;
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      transform var(--motion-fast) var(--ease-spring);
+  }
+
+  .focus:active {
+    transform: scale(0.97);
   }
 
   .focus:hover {
     background: var(--bg-control-hover);
   }
 
+  /* A running session breathes; a paused one holds still. */
   .dot {
     width: 7px;
     height: 7px;
     border-radius: var(--radius-chip);
-    background: var(--accent);
+    background: var(--sidebar-accent);
+    animation: breathe 2.4s var(--ease-out) infinite;
+  }
+
+  @keyframes breathe {
+    50% {
+      opacity: 0.45;
+      transform: scale(0.8);
+    }
   }
 
   .time {
@@ -370,6 +407,7 @@
 
   /* A paused session stops pulsing the accent: the dot goes grey and the time dims. */
   .focus.paused .dot {
+    animation: none;
     background: var(--text-secondary);
   }
 
@@ -382,16 +420,23 @@
     align-items: center;
     gap: var(--space-2);
     min-width: 0;
-    height: 30px;
-    padding: 0 6px 0 var(--space-3);
+    height: 34px;
+    padding: 0 8px 0 14px;
     border: 0;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-chip);
     background: var(--bg-control);
     color: var(--text-secondary);
     font: inherit;
     font-size: 13px;
     cursor: text;
-    transition: background-color var(--motion-instant) linear;
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      box-shadow var(--motion-fast) var(--ease-out);
+  }
+
+  .search:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--sidebar-focus);
   }
 
   .search:hover {
@@ -409,10 +454,12 @@
 
   kbd {
     flex: none;
-    padding: 1px 6px;
-    border-radius: var(--radius-small);
+    padding: 2px 7px;
+    border-radius: var(--radius-chip);
     background: var(--bg-control);
     font: inherit;
     font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
   }
 </style>

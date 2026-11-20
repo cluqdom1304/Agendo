@@ -126,17 +126,17 @@
 </script>
 
 <section class="calendar">
-  <div class="nav">
-    <div class="title">
+  <header class="nav view-head">
+    <div class="view-heading">
+      <h2 class="view-title">{heading}</h2>
+    </div>
+    <div class="view-actions">
       <SegmentedControl
         label={t.views.label}
         options={SCALES}
         value={view.mode}
         onChange={(mode) => view.setMode(mode)}
       />
-      <h2>{heading}</h2>
-    </div>
-    <div class="buttons">
       <button
         type="button"
         class="btn small"
@@ -151,17 +151,46 @@
       >
         {t.events.newEvent}
       </button>
-      <button type="button" class="btn small" onclick={() => view.shift(-1)}>
-        {t.calendar.previous}
-      </button>
+      <span class="gap" aria-hidden="true"></span>
       <button type="button" class="btn small" onclick={() => view.goToToday()}>
         {t.calendar.today}
       </button>
-      <button type="button" class="btn small" onclick={() => view.shift(1)}>
-        {t.calendar.next}
-      </button>
+      <button
+        type="button"
+        class="icon-btn filled"
+        aria-label={t.calendar.previous}
+        title={t.calendar.previous}
+        onclick={() => view.shift(-1)}
+        ><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"
+          ><path
+            d="M10 3.5L5.5 8l4.5 4.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /></svg
+        ></button
+      >
+      <button
+        type="button"
+        class="icon-btn filled"
+        aria-label={t.calendar.next}
+        title={t.calendar.next}
+        onclick={() => view.shift(1)}
+        ><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"
+          ><path
+            d="M6 3.5L10.5 8 6 12.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /></svg
+        ></button
+      >
     </div>
-  </div>
+  </header>
 
   <div class="surface">
     {#if view.mode === "month"}
@@ -231,40 +260,22 @@
   }
 
   .nav {
-    display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    padding: var(--space-1) var(--space-1) var(--space-3);
+    padding: var(--space-1) var(--space-2) var(--space-4) 12px;
   }
 
-  .title {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    min-width: 0;
+  .nav .view-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding-top: 0;
   }
 
-  h2 {
-    margin: 0;
-    overflow: hidden;
-    color: var(--text-primary);
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  h2::first-letter {
+  .view-title::first-letter {
     text-transform: uppercase;
   }
 
-  .buttons {
-    display: flex;
-    flex: none;
-    gap: var(--space-1);
+  .gap {
+    width: 4px;
   }
 
   /* The grid sits on its own card, clipped to the rounded corners. */

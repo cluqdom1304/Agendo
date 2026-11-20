@@ -2,8 +2,8 @@
 
 **Fase activa:** versión 3.0.0, Fase 24 (Fases 18 a 23 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** Fase 24 terminada (`[A]` en verde); falta F24-03 `[H]` (lista «Fase 24» de `docs/manual-pruebas.md`) y F21-05. Fase 25 terminada (`[A]` en verde, F25-03 validada); falta F25-06 `[H]`, la ampliación de pausa, cambio de tarea y registro exacto (últimos ítems de la lista «Fase 25» de `docs/manual-pruebas.md`). Fase 26 terminada (`[A]` en verde); falta F26-04 `[H]`. La Fase 27 no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-20 (Fase 26 completada; Fase 25 y 24 pendientes de `[H]`)
+**Siguiente tarea:** Fase 24 terminada (`[A]` en verde); falta F24-03 `[H]` (lista «Fase 24» de `docs/manual-pruebas.md`) y F21-05. Fase 25 terminada (`[A]` en verde, F25-03 validada); falta F25-06 `[H]`, la ampliación de pausa, cambio de tarea y registro exacto (últimos ítems de la lista «Fase 25» de `docs/manual-pruebas.md`). Fase 26 terminada (`[A]` en verde); falta F26-04 `[H]`. Fase 26.1 (rediseño visual, D-101) terminada (`[A]` en verde); falta F26.1-12 `[H]`. La Fase 27 no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-20 (Fase 26.1 de rediseño visual completada; Fases 24 a 26.1 pendientes de `[H]`)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -603,6 +603,29 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F26-02 `[A]` Vista «Resumen» (carga diferida, también desde la paleta) con navegación entre semanas.
 - [x] F26-03 `[A]` Exportar el resumen a Markdown (reutiliza `exchange.rs`, sin dependencias nuevas).
 - [ ] F26-04 `[H]` Revisión visual y de textos en Windows 11.
+
+## Fase 26.1 — Rediseño visual completo (D-101)
+Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la interfaz a las capturas de `resources-claude/reference-imgs` (Woday) y a la filosofía de Apple (jerarquía tipográfica clara, superficies tranquilas, un único acento, movimiento con muelles) y dar consistencia a vistas, menús, ajustes, botones y animaciones.
+- [x] F26.1-01 `[A]` Tokens: acento coral AA (`#c8361a` claro / `#ff6a55` oscuro), tinta neutra `--ink`/`--on-ink`, `--bg-card`/`--bg-card-hover`, `--bg-menu-hover`, panel claro más cálido, radios `--radius-menu`/`--radius-sheet`, escala tipográfica y sombras de popover y modal más suaves.
+- [x] F26.1-02 `[A]` Controles compartidos (`base.css`): botones en cápsula con pulsación en muelle, primario en tinta, `.btn.accent`, `.icon-btn` redondo y `.icon-btn.filled`, chips pulsados en tinta, campos de formulario de 30 px; clases de vista `.view*`, `.group-label`, `.tag-badge`; animaciones `view-in`, `menu-in`, `slide-in-right`.
+- [x] F26.1-03 `[A]` Barra superior: botones redondos de 32 px con relleno suave, buscador en cápsula de 34 px, `kbd` en píldora, punto del enfoque que «respira» (quieto en pausa).
+- [x] F26.1-04 `[A]` Sidebar, carpetas y etiquetas: filas de 32 px con selección en píldora de 10 px, pulsación en muelle, estrella de Favoritos amarilla y rellena.
+- [x] F26.1-05 `[A]` `TaskLine.svelte` compartida (casilla + título + metadatos: día, hora en rojo si vence, lista de comprobación y hasta dos etiquetas); `EventRow` con punto de color y hora debajo, alineado con las casillas.
+- [x] F26.1-06 `[A]` Hoy: cabecera común (título grande y fecha debajo), tira de días con número arriba, hoy en coral y día elegido en baldosa con borde; resumen en tarjeta con píldoras (eventos, hábitos, vencidas) y barra de progreso en tinta; listas planas.
+- [x] F26.1-07 `[A]` Próximas y Eventos en dos columnas (día a la izquierda, una tarjeta por elemento a la derecha, «Hoy» en coral, apilado por debajo de 560 px con container query); subtítulo «Próximos 30 días».
+- [x] F26.1-08 `[A]` Bandeja: título grande, contador en píldora, fila «Nueva tarea» con anillo discontinuo, filas con `TaskLine` y entrada deslizante.
+- [x] F26.1-09 `[A]` Cabecera común en Tareas, Calendario, Eventos, Hábitos y Resumen; calendario con el control de escala a la derecha, «Hoy» en cápsula y «‹ ›» redondos; grupos de la lista con separador; filas de tarea de 38 px con contorno al enfocar (como la referencia) y selección múltiple en tinta.
+- [x] F26.1-10 `[A]` Menús, menú contextual, menú y editor de etiquetas, paleta, sugerencias del editor y barra de notas: resaltado neutro, radio 12, entrada con muelle; casillas de «hecho» de notas, paleta y tareas de etiqueta en tinta; modales con radio 16 y fondo con desenfoque leve; aviso (toast) con acción en tinta; detalle de tarea como tarjeta anclada a la derecha (`Modal side`).
+- [x] F26.1-11 `[A]` Ajustes como lista agrupada inset (filas unidas, separador desde el texto, notas al pie sangradas); notas con título de 32 px, sello de edición en chip y botón de etiquetas con borde discontinuo; lista de notas con selección neutra.
+- [ ] F26.1-12 `[H]` Revisión visual en Windows 11 (lista «Fase 26.1» de `docs/manual-pruebas.md`).
+
+**Verificaciones [A] de la Fase 26.1:**
+- Inicio: el usuario pidió el 2026-11-20 una revisión completa de la interfaz para asemejarla a las capturas de referencia y a la filosofía de Apple, registrada como Fase 26.1. Decisión en **D-101** (`ACCEPTED`); sustituye en lo visual la nota de acento sólido de D-50.
+- Contraste: los tokens nuevos están en los tres bloques de tema (test «same set of names»); el acento coral pasa AA sobre panel, ventana sólida, translúcida y Mica en claro y oscuro (`tokens.test.ts`). Las sombras de popover y modal se dejan en dos capas para que el bloque claro forzado y el del sistema sigan siendo idénticos.
+- Tests: sin tests desactivados; `EventRow` mantiene el texto exacto «Se repite» (el «·» va en CSS) y los encabezados `h2`/`h3` que comprueban los tests de Hoy y Próximas.
+- Batería completa en verde: `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test` (568 + integración), `npm run lint`, `npm run check` (0/0), `npm run test` (1046), `npm run build`, `npm run size` (JS inicial 107,6 KB de 120, total 315,8 KB de 340; CSS 35,0 KB). `npm run tokens`: sin tokens nuevos sin usar (`--priority-2` pasa a usarse).
+- Sin dependencias ni migraciones nuevas. `cargo check --target x86_64-pc-windows-msvc` no aplica: la fase no toca `window/` ni `notify/`.
+- **Discrepancia:** CLAUDE.md §2 pide un commit por tarea; las tareas de esta fase comparten tokens y clases y se entregan en un solo commit de diseño.
 
 ## Fase 27 — Cierre de 3.0.0
 - [ ] F27-01 `[A]` Migración real desde una base 2.0.3 con datos (integridad) y pruebas de escala en release con eventos y hábitos.

@@ -50,11 +50,14 @@
     width: fit-content;
     max-width: calc(100vw - 2 * var(--space-4));
     margin-inline: auto;
-    padding: 5px 6px 5px var(--space-4);
+    min-height: 38px;
+    box-sizing: border-box;
+    padding: 5px 6px 5px 18px;
     border-radius: var(--radius-chip);
     background: var(--bg-popover);
     box-shadow: var(--shadow-popover);
     font-size: 13px;
+    font-weight: 500;
     animation: toast-in var(--motion-spring) var(--ease-bounce);
   }
 
@@ -90,9 +93,15 @@
   }
 
   .action {
-    padding: 0 10px;
-    color: var(--accent);
+    height: 28px;
+    padding: 0 12px;
+    background: var(--ink);
+    color: var(--on-ink);
     font-weight: 600;
+  }
+
+  .action:hover {
+    background: color-mix(in srgb, var(--ink) 84%, var(--bg-popover));
   }
 
   .close {

@@ -367,33 +367,56 @@
 
 <style>
   h2 {
-    margin: 0 0 var(--space-1);
+    margin: 0 0 var(--space-2);
     font-family: var(--font-display);
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-size: var(--text-title);
+    font-weight: 700;
+    letter-spacing: -0.015em;
   }
 
   h3 {
-    margin: 20px 0 6px;
-    padding-left: 2px;
+    margin: 22px 0 6px;
+    padding-left: 14px;
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 600;
   }
 
-  /* Each setting is a row card: label on the left, its control on the right. */
+  /* Settings read as an inset grouped list (F26.1): rows that follow each other share one rounded
+     card, parted by a hairline that starts at the text, as in the system settings. */
   .row {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: var(--space-4);
     min-height: 44px;
-    margin-bottom: 6px;
-    padding: 6px var(--space-3);
-    border-radius: var(--radius-card);
-    background: var(--bg-control);
+    padding: 6px 14px;
+    background: var(--bg-card);
     font-size: 13px;
+  }
+
+  .row:first-child,
+  :not(.row) + .row {
+    border-top-left-radius: var(--radius-card);
+    border-top-right-radius: var(--radius-card);
+  }
+
+  .row:last-child,
+  .row:has(+ :not(.row)) {
+    margin-bottom: 8px;
+    border-bottom-left-radius: var(--radius-card);
+    border-bottom-right-radius: var(--radius-card);
+  }
+
+  .row + .row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 14px;
+    height: 1px;
+    background: var(--separator);
   }
 
   .hint {
@@ -401,6 +424,12 @@
     margin: 0;
     color: var(--text-secondary);
     font-size: 12px;
+  }
+
+  /* A note under a group is indented with the rows, as a footer of the list. */
+  p.hint {
+    margin: 0 0 8px;
+    padding: 0 14px;
   }
 
   .buttons {
@@ -448,9 +477,9 @@
 
   .confirm {
     margin-top: var(--space-3);
-    padding: var(--space-3);
+    padding: var(--space-3) 14px;
     border-radius: var(--radius-card);
-    background: var(--bg-control);
+    background: var(--bg-card);
     font-size: 13px;
     animation: rise-in var(--motion-base) var(--ease-out);
   }

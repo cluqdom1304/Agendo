@@ -242,6 +242,7 @@
               onclick={() => openNote(item.id)}
             >
               <svg
+                class:star={id === "favorites"}
                 viewBox="0 0 16 16"
                 width="14"
                 height="14"
@@ -314,17 +315,24 @@
     align-items: center;
     gap: 10px;
     width: 100%;
-    min-height: 30px;
-    padding: 5px var(--space-2);
+    min-height: 32px;
+    padding: 5px 10px;
     border: 0;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-card);
     background: transparent;
     color: var(--text-primary);
     font: inherit;
     font-size: 13px;
     text-align: left;
     cursor: pointer;
-    transition: background-color var(--motion-instant) linear;
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      transform var(--motion-fast) var(--ease-spring);
+  }
+
+  .item:active {
+    transform: scale(0.98);
+    transition-duration: var(--motion-instant);
   }
 
   .item:hover {
@@ -345,6 +353,15 @@
     color: var(--sidebar-accent);
   }
 
+  /* Favourites carry a filled yellow star, as pinned items do in the reference. */
+  .item svg.star {
+    color: #ffcc00;
+  }
+
+  .item svg.star path {
+    fill: currentColor;
+  }
+
   .label {
     flex: 1;
     min-width: 0;
@@ -363,19 +380,25 @@
     margin: 0;
     font-size: 11px;
     font-weight: 600;
+    letter-spacing: 0.01em;
   }
 
   .group-toggle {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px var(--space-2);
+    padding: 3px 10px;
     border: 0;
     border-radius: var(--radius-small);
     background: transparent;
     color: var(--text-secondary);
     font: inherit;
     cursor: pointer;
+    transition: color var(--motion-fast) var(--ease-out);
+  }
+
+  .group-toggle svg {
+    transition: transform var(--motion-base) var(--ease-spring);
   }
 
   .group-toggle:hover {

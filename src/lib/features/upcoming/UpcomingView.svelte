@@ -7,8 +7,7 @@
   import type { EventOccurrence, Task } from "../../types";
   import { addDays } from "../calendar/grid";
   import EventRow from "../events/EventRow.svelte";
-  import Checkbox from "../todo/Checkbox.svelte";
-  import ChecklistProgress from "../todo/ChecklistProgress.svelte";
+  import TaskLine from "../todo/TaskLine.svelte";
   import { UPCOMING_DAYS, upcomingGroups } from "./upcoming";
 
   // «Próximas» (F20-05): what is still to do, overdue first, then day by day for a month and
@@ -61,12 +60,17 @@
         occurrences: eventStore?.byDate.get(date) ?? [],
       }));
   });
+  const subtitle = $derived(l.horizon(UPCOMING_DAYS));
   const empty = $derived(
     groups.overdue.length + dayList.length + groups.later.length === 0,
   );
   const days = $derived(
     dayList.map((day) => ({
       ...day,
+      sub:
+        day.date === today || day.date === addDays(today, 1)
+          ? shortDate.format(asDate(day.date))
+          : "",
       heading:
         day.date === today
           ? l.today
@@ -79,26 +83,45 @@
 
 <svelte:window onfocus={() => (today = view.today())} />
 
-<div class="upcoming">
-  <h2>{l.title}</h2>
+<div class="upcoming view">
+  <header class="view-head">
+    <div class="view-heading">
+      <h2 class="view-title">{l.title}</h2>
+      <p class="view-sub">{subtitle}</p>
+    </div>
+  </header>
 
   {#if empty}
     <EmptyState title={l.emptyTitle} description={l.emptyDescription} />
   {:else}
     {#if groups.overdue.length > 0}
-      {@render group("upcoming-overdue", l.overdue, groups.overdue, true)}
+      {@render group(
+        "upcoming-overdue",
+        l.overdue,
+        String(groups.overdue.length),
+        groups.overdue,
+        true,
+      )}
     {/if}
     {#each days as day (day.date)}
       {@render group(
         `upcoming-${day.date}`,
         day.heading,
+        day.sub,
         day.tasks,
         false,
         day.occurrences,
+        day.date === today,
       )}
     {/each}
     {#if groups.later.length > 0}
-      {@render group("upcoming-later", l.later, groups.later, true)}
+      {@render group(
+        "upcoming-later",
+        l.later,
+        String(groups.later.length),
+        groups.later,
+        true,
+      )}
     {/if}
   {/if}
 </div>
@@ -106,47 +129,39 @@
 {#snippet group(
   id: string,
   heading: string,
+  sub: string,
   tasks: Task[],
   dated: boolean,
   occurrences: EventOccurrence[] = [],
+  current = false,
 )}
   <section class="block" aria-labelledby={id}>
-    <h3 {id}>
+    <h3 {id} class:current>
       {heading}
-      <span class="count">{tasks.length + occurrences.length}</span>
+      {#if sub}<span class="sub">{sub}</span>{/if}
     </h3>
-    <ul class="card">
+    <ul class="cards">
       {#each occurrences as occurrence (occurrence.eventId + occurrence.startDate)}
         <EventRow {occurrence} onOpen={(eventId) => onOpenEvent?.(eventId)} />
       {/each}
       {#each tasks as task (task.id)}
         <li class="row" data-task-id={task.id}>
-          <Checkbox
-            checked={false}
-            label={t.today.markDone(task.title || t.reminders.untitled) +
-              t.priority.suffix(task.priority)}
+          <TaskLine
+            title={task.title}
             priority={task.priority}
+            checklistDone={task.checklistDone}
+            checklistTotal={task.checklistTotal}
+            dateLabel={dated && task.dueDate
+              ? shortDate.format(asDate(task.dueDate))
+              : ""}
+            time={task.dueTime ?? (dated ? null : l.allDay)}
+            overdue={dated && !!task.dueDate && task.dueDate < today}
+            tagIds={task.tagIds}
+            checkLabel={t.today.markDone(task.title || t.reminders.untitled) +
+              t.priority.suffix(task.priority)}
             onToggle={() => void store.setCompleted(task.id, true)}
+            onOpen={() => onOpenTask(task.id)}
           />
-          <button
-            type="button"
-            class="open"
-            onclick={() => onOpenTask(task.id)}
-          >
-            <span class="title">{task.title || t.reminders.untitled}</span>
-            {#if task.checklistTotal > 0}
-              <ChecklistProgress
-                done={task.checklistDone}
-                total={task.checklistTotal}
-              />
-            {/if}
-            <span class="when">
-              {#if dated && task.dueDate}
-                {shortDate.format(asDate(task.dueDate))}
-              {/if}
-              {task.dueTime ?? (dated ? "" : l.allDay)}
-            </span>
-          </button>
         </li>
       {/each}
     </ul>
@@ -154,115 +169,78 @@
 {/snippet}
 
 <style>
+  /* Each day is a row of two columns, as in the reference: its name on the left and its items,
+     one card each, on the right. Below 560 px the name goes on top. */
   .upcoming {
-    display: grid;
-    align-content: start;
-    gap: var(--space-6);
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 680px;
-    margin: 0 auto;
-    padding: var(--space-4) var(--space-6) var(--space-8);
-  }
-
-  h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 34px;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.025em;
+    gap: 28px;
+    container-type: inline-size;
   }
 
   .block {
     display: grid;
-    gap: 6px;
+    grid-template-columns: 132px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-3);
+  }
+
+  @container (max-width: 560px) {
+    .block {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+    }
   }
 
   h3 {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-2);
+    flex-direction: column;
+    gap: 1px;
     margin: 0;
-    padding: 0 2px;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
+    padding-top: 6px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
 
-  .count {
+  h3.current {
+    color: var(--accent);
+  }
+
+  .sub {
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-size: 12px;
     font-weight: 400;
+    letter-spacing: 0;
     font-variant-numeric: tabular-nums;
   }
 
-  .card {
+  .sub::first-letter {
+    text-transform: uppercase;
+  }
+
+  .cards {
+    display: grid;
+    gap: 6px;
     margin: 0;
     padding: 0;
-    overflow: hidden;
-    border-radius: var(--radius-card);
-    background: var(--bg-control);
     list-style: none;
   }
 
+  .cards > :global(li) {
+    border-radius: var(--radius-card);
+    background: var(--bg-card);
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      transform var(--motion-fast) var(--ease-spring);
+  }
+
+  .cards > :global(li:hover) {
+    background: var(--bg-card-hover);
+  }
+
   .row {
-    position: relative;
     display: flex;
-    align-items: center;
-    padding-left: var(--space-3);
-    transition: background-color var(--motion-instant) linear;
-  }
-
-  .row + .row::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: var(--space-3);
-    height: 1px;
-    background: var(--separator);
-  }
-
-  .row:hover {
-    background: var(--bg-hover);
-  }
-
-  .open {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    gap: var(--space-3);
-    min-width: 0;
-    min-height: 40px;
-    padding: 6px var(--space-3) 6px 10px;
-    border: 0;
-    background: transparent;
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 13px;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .open:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: -2px;
-    border-radius: var(--radius-control);
-  }
-
-  .title {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    font-weight: 500;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .when {
-    flex: none;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
+    padding: 8px 10px;
   }
 </style>

@@ -319,13 +319,13 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
-    min-width: 200px;
+    min-width: 210px;
     max-width: 300px;
     padding: 5px;
-    border-radius: var(--radius-card);
+    border-radius: var(--radius-menu);
     background: var(--bg-popover);
     box-shadow: var(--shadow-popover);
-    animation: pop-in var(--motion-fast) var(--ease-out);
+    animation: menu-in var(--motion-base) var(--ease-spring);
     transform-origin: top left;
   }
 
@@ -351,10 +351,10 @@
     align-items: center;
     gap: var(--space-2);
     width: 100%;
-    min-height: 26px;
+    min-height: 28px;
     padding: 0 var(--space-2) 0 10px;
     border: 0;
-    border-radius: var(--radius-small);
+    border-radius: 7px;
     background: transparent;
     color: var(--text-primary);
     font: inherit;
@@ -363,12 +363,11 @@
     cursor: default;
   }
 
-  /* Solid accent, as in a system menu: the entry under the pointer is unmistakable. */
+  /* A soft neutral highlight, the same in every menu (F26.1, D-101). */
   .item:hover:not(:disabled),
   .item:focus-visible,
   .item.open {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--bg-menu-hover);
     outline: none;
   }
 
@@ -378,8 +377,7 @@
 
   .item.danger:hover:not(:disabled),
   .item.danger:focus-visible {
-    background: var(--danger);
-    color: var(--on-accent);
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
   }
 
   .item:disabled {

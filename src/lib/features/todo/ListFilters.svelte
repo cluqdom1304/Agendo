@@ -69,7 +69,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
-    padding: 0 var(--space-6) var(--space-3);
+    padding: 0 var(--space-3) var(--space-2);
   }
 
   .dates {
@@ -80,7 +80,8 @@
 
   select {
     width: auto;
-    height: 28px;
+    height: 26px;
+    border-radius: var(--radius-chip);
     font-size: 12px;
   }
 </style>

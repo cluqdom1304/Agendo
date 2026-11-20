@@ -357,12 +357,13 @@
     align-items: flex-start;
     padding-top: 12vh;
     background: var(--backdrop);
-    animation: fade-in var(--motion-fast) linear;
+    backdrop-filter: blur(2px);
+    animation: fade-in var(--motion-base) var(--ease-out);
   }
 
   .dialog {
     width: min(620px, calc(100vw - 2 * var(--space-6)));
-    border-radius: var(--radius-panel);
+    border-radius: var(--radius-sheet);
     background: var(--bg-popover);
     box-shadow: var(--shadow-modal);
     overflow: hidden;
@@ -373,7 +374,7 @@
   .query {
     width: 100%;
     box-sizing: border-box;
-    padding: 14px 18px;
+    padding: 16px 20px;
     border: 0;
     background: transparent;
     color: var(--text-primary);
@@ -414,14 +415,15 @@
     grid-template-columns: 18px 1fr auto;
     align-items: center;
     gap: 1px var(--space-3);
-    padding: 6px 10px;
-    border-radius: var(--radius-control);
+    padding: 7px 10px;
+    border-radius: var(--radius-card);
     cursor: pointer;
+    transition: background-color var(--motion-instant) linear;
   }
 
-  /* Solid accent, as in a system launcher: the choice is unmistakable at a glance. */
+  /* The same soft highlight as every menu (F26.1, D-101). */
   .hit.active {
-    background: var(--accent);
+    background: var(--bg-menu-hover);
   }
 
   .lead {
@@ -444,8 +446,9 @@
   }
 
   .box.done {
-    border-color: var(--accent);
-    background: var(--accent);
+    border-color: var(--ink);
+    border-radius: 3px;
+    background: var(--ink);
   }
 
   .title {
@@ -479,17 +482,6 @@
     white-space: nowrap;
     color: var(--text-secondary);
     font-size: 12px;
-  }
-
-  .hit.active .title,
-  .hit.active .detail,
-  .hit.active .snippet,
-  .hit.active .lead {
-    color: var(--on-accent);
-  }
-
-  .hit.active .box {
-    border-color: var(--on-accent);
   }
 
   .save,

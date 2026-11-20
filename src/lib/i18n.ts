@@ -613,6 +613,7 @@ export const t = {
     emptyTitle: "Nada por delante",
     emptyDescription: "No hay tareas pendientes con fecha.",
     allDay: "Todo el día",
+    horizon: (days: number) => `Próximos ${days} días`,
   },
   plan: {
     title: "Planificar mi día",

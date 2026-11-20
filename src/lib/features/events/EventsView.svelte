@@ -56,15 +56,17 @@
 
 <svelte:window onfocus={() => (today = view.today())} />
 
-<div class="events">
-  <header class="head">
-    <div>
-      <h2>{l.title}</h2>
-      <p class="horizon">{l.horizon}</p>
+<div class="events view">
+  <header class="view-head">
+    <div class="view-heading">
+      <h2 class="view-title">{l.title}</h2>
+      <p class="view-sub">{l.horizon}</p>
     </div>
-    <button type="button" class="btn primary" onclick={onNewEvent}>
-      {l.newEvent}
-    </button>
+    <div class="view-actions">
+      <button type="button" class="btn primary" onclick={onNewEvent}>
+        {l.newEvent}
+      </button>
+    </div>
   </header>
 
   {#if days.length === 0}
@@ -72,7 +74,7 @@
   {:else}
     {#each days as day (day.date)}
       <section class="block" aria-labelledby="events-{day.date}">
-        <h3 id="events-{day.date}">
+        <h3 id="events-{day.date}" class="group-label">
           {day.heading}
           <span class="count">{day.occurrences.length}</span>
         </h3>
@@ -87,67 +89,25 @@
 </div>
 
 <style>
-  .events {
-    display: grid;
-    align-content: start;
-    gap: var(--space-6);
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 680px;
-    margin: 0 auto;
-    padding: var(--space-4) var(--space-6) var(--space-8);
-  }
-
-  .head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--space-4);
-  }
-
-  h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 34px;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.025em;
-  }
-
-  .horizon {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 12px;
-  }
-
   .block {
     display: grid;
     gap: 6px;
   }
 
-  h3 {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0 2px;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .count {
-    font-weight: 400;
-    font-variant-numeric: tabular-nums;
-  }
-
+  /* One card per event, as «Próximas» draws its items. */
   .card {
+    display: grid;
+    gap: 6px;
     margin: 0;
     padding: 0;
-    overflow: hidden;
-    border-radius: var(--radius-card);
-    background: var(--bg-control);
     list-style: none;
+  }
+
+  .card > :global(li) {
+    background: var(--bg-card);
+  }
+
+  .card > :global(li:hover) {
+    background: var(--bg-card-hover);
   }
 </style>

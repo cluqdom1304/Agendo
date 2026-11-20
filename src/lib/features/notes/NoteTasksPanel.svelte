@@ -216,8 +216,8 @@
   }
 
   .done .check {
-    border-color: var(--accent);
-    background: var(--accent);
+    border-color: var(--ink);
+    background: var(--ink);
   }
 
   .done .check::after {
@@ -227,7 +227,7 @@
     left: 4.5px;
     width: 4px;
     height: 7px;
-    border: solid var(--on-accent);
+    border: solid var(--on-ink);
     border-width: 0 1.5px 1.5px 0;
     transform: rotate(45deg);
   }

@@ -4,8 +4,7 @@
   import type { TasksStore } from "../../stores/tasks.svelte";
   import { BLOCK_MINUTES, minutesToTime, slotAt } from "../calendar/grid";
   import { slotDrag } from "../../stores/tagDrag.svelte";
-  import Checkbox from "../todo/Checkbox.svelte";
-  import ChecklistProgress from "../todo/ChecklistProgress.svelte";
+  import TaskLine from "../todo/TaskLine.svelte";
   import { CaptureField, captureOptions } from "../capture/capture.svelte";
   import CapturePreview from "../capture/CapturePreview.svelte";
 
@@ -69,6 +68,7 @@
   </header>
 
   <form class="add" onsubmit={add}>
+    <span class="ring" aria-hidden="true"></span>
     <input
       type="text"
       aria-label={l.addLabel}
@@ -94,26 +94,17 @@
           data-task-id={task.id}
           onpointerdown={(event) => drag(event, task.id, task.title)}
         >
-          <Checkbox
-            checked={false}
-            label={t.tasks.markDone(task.title || t.reminders.untitled) +
-              t.priority.suffix(task.priority)}
+          <TaskLine
+            title={task.title}
             priority={task.priority}
+            checklistDone={task.checklistDone}
+            checklistTotal={task.checklistTotal}
+            tagIds={task.tagIds}
+            checkLabel={t.tasks.markDone(task.title || t.reminders.untitled) +
+              t.priority.suffix(task.priority)}
             onToggle={() => void store.setCompleted(task.id, true)}
+            onOpen={() => onOpenTask(task.id)}
           />
-          <button
-            type="button"
-            class="open"
-            onclick={() => onOpenTask(task.id)}
-          >
-            <span class="title">{task.title || t.reminders.untitled}</span>
-            {#if task.checklistTotal > 0}
-              <ChecklistProgress
-                done={task.checklistDone}
-                total={task.checklistTotal}
-              />
-            {/if}
-          </button>
         </li>
       {/each}
     </ul>
@@ -125,7 +116,7 @@
     display: flex;
     flex: none;
     flex-direction: column;
-    width: 280px;
+    width: 290px;
     min-height: 0;
     margin-left: var(--panel-gap);
     overflow: hidden;
@@ -134,7 +125,7 @@
     box-shadow:
       0 0 0 1px var(--panel-border),
       var(--shadow-raised);
-    animation: rise-in var(--motion-base) var(--ease-out);
+    animation: slide-in-right var(--motion-spring) var(--ease-spring);
   }
 
   .head {
@@ -142,106 +133,104 @@
     align-items: baseline;
     justify-content: space-between;
     gap: var(--space-2);
-    padding: var(--space-4) var(--space-4) var(--space-2);
+    padding: 18px 18px 10px;
   }
 
   h2 {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: var(--text-title);
     font-weight: 700;
+    letter-spacing: -0.015em;
   }
 
   .count {
+    padding: 1px 8px;
+    border-radius: var(--radius-chip);
+    background: var(--bg-control);
     color: var(--text-secondary);
     font-size: 12px;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
 
+  /* «Nueva tarea» reads as one more row: an empty ring and a field with no box. */
   .add {
-    padding: 0 var(--space-3) var(--space-2);
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 0 8px 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-card);
+    transition: background-color var(--motion-fast) var(--ease-out);
+  }
+
+  .add:focus-within {
+    background: var(--bg-control);
+  }
+
+  .ring {
+    flex: none;
+    box-sizing: border-box;
+    width: 18px;
+    height: 18px;
+    border: 1.5px dashed
+      color-mix(in srgb, var(--text-secondary) 70%, transparent);
+    border-radius: var(--radius-chip);
   }
 
   .add input {
+    flex: 1;
     box-sizing: border-box;
-    width: 100%;
-    height: 30px;
-    padding: 0 var(--space-3);
+    min-width: 0;
+    height: 28px;
+    padding: 0;
     border: 0;
-    border-radius: var(--radius-control);
-    background: var(--bg-control);
+    background: transparent;
     color: var(--text-primary);
     font: inherit;
-    font-size: 13px;
+    font-size: var(--text-body);
+    outline: none;
   }
 
   .add input::placeholder {
     color: var(--text-secondary);
   }
 
-  .add input:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: -1px;
+  .add :global([data-capture-preview]) {
+    flex-basis: 100%;
   }
 
   .list {
+    display: grid;
+    align-content: start;
+    gap: 1px;
     flex: 1;
     min-height: 0;
     margin: 0;
-    padding: 0 var(--space-2) var(--space-3);
+    padding: 0 8px 12px;
     overflow: auto;
     list-style: none;
   }
 
   .row {
     display: flex;
-    align-items: center;
-    gap: 2px;
-    padding-left: var(--space-2);
-    border-radius: var(--radius-control);
-    transition: background-color var(--motion-instant) linear;
+    padding: 7px 10px;
+    border-radius: var(--radius-card);
+    transition: background-color var(--motion-fast) var(--ease-out);
   }
 
   .row:hover {
     background: var(--bg-hover);
   }
 
-  .open {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    gap: var(--space-2);
-    min-width: 0;
-    min-height: 34px;
-    padding: 4px var(--space-2);
-    border: 0;
-    background: transparent;
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 13px;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .open:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: -2px;
-    border-radius: var(--radius-control);
-  }
-
-  .title {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .none {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-3) 18px;
     color: var(--text-secondary);
     font-size: 12px;
   }

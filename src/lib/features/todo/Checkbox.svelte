@@ -44,18 +44,20 @@
     display: grid;
     flex: none;
     place-items: center;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     padding: 0;
-    border: 1.5px solid var(--text-secondary);
+    border: 1.5px solid
+      color-mix(in srgb, var(--text-secondary) 75%, transparent);
     border-radius: var(--radius-chip);
     background: transparent;
-    color: var(--on-accent);
+    color: var(--on-ink);
     cursor: pointer;
     transition:
       background-color var(--motion-fast) var(--ease-out),
       border-color var(--motion-fast) var(--ease-out),
-      transform var(--motion-instant) var(--ease-out);
+      border-radius var(--motion-base) var(--ease-spring),
+      transform var(--motion-fast) var(--ease-spring);
   }
 
   /* The level shows in the ring and a faint fill; the label names it for screen readers. */
@@ -65,11 +67,12 @@
   }
 
   .checkbox:hover:not(:disabled) {
-    border-color: var(--accent);
+    border-color: var(--text-primary);
   }
 
   .checkbox:active:not(:disabled) {
-    transform: scale(0.88);
+    transform: scale(0.86);
+    transition-duration: var(--motion-instant);
   }
 
   .checkbox:disabled {
@@ -77,9 +80,12 @@
     opacity: 0.4;
   }
 
+  /* Done turns the ring into a filled ink square, as in the reference: the shape changes too,
+     so it reads without relying on colour. */
   .checkbox.checked {
-    border-color: var(--accent);
-    background: var(--accent);
+    border-color: var(--ink);
+    border-radius: 5px;
+    background: var(--ink);
     animation: check-pop var(--motion-spring) var(--ease-bounce);
   }
 

@@ -144,7 +144,7 @@
 </script>
 
 {#if task}
-  <Modal label={t.detail.label} closeLabel={t.detail.close} {onClose}>
+  <Modal label={t.detail.label} closeLabel={t.detail.close} side {onClose}>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="detail" onkeydown={onKeydown}>
       <h2 class:done>{task.title || t.calendar.untitled}</h2>
@@ -366,7 +366,7 @@
     margin: 0;
     padding-right: var(--space-8);
     font-family: var(--font-display);
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
     line-height: 1.25;
     letter-spacing: -0.02em;
@@ -390,7 +390,7 @@
     display: grid;
     margin: 0;
     border-radius: var(--radius-card);
-    background: var(--bg-control);
+    background: var(--bg-card);
   }
 
   .facts div {

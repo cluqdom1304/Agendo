@@ -664,12 +664,17 @@
     user-select: none;
   }
 
+  /* When the note was last edited, as a soft chip over the title (as in the reference). */
   .stamp {
     flex: none;
-    margin: 0 0 var(--space-3);
+    align-self: flex-start;
+    margin: var(--space-3) 0 var(--space-2);
+    padding: 2px 10px;
+    border-radius: var(--radius-chip);
+    background: var(--bg-control);
     color: var(--text-secondary);
-    font-size: 11px;
-    text-align: center;
+    font-size: 11.5px;
+    font-weight: 500;
     user-select: none;
   }
 
@@ -681,9 +686,9 @@
     background: transparent;
     color: var(--text-primary);
     font-family: var(--font-display);
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
-    letter-spacing: -0.022em;
+    letter-spacing: -0.025em;
     line-height: 1.2;
     text-overflow: ellipsis;
     outline: none;
@@ -720,9 +725,8 @@
     align-items: center;
     gap: 5px;
     height: 22px;
-    margin-left: -6px;
-    padding: 0 8px 0 6px;
-    border: 0;
+    padding: 0 9px 0 7px;
+    border: 1px dashed var(--border-subtle);
     border-radius: var(--radius-chip);
     background: transparent;
     color: var(--text-secondary);
@@ -735,7 +739,6 @@
   }
 
   .add-tags.compact {
-    margin-left: 0;
     padding: 0 6px;
   }
 

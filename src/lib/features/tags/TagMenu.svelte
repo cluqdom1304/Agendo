@@ -141,11 +141,11 @@
     max-height: 260px;
     padding: 5px;
     overflow-y: auto;
-    border-radius: var(--radius-card);
+    border-radius: var(--radius-menu);
     background: var(--bg-popover);
     box-shadow: var(--shadow-popover);
     transform-origin: top right;
-    animation: pop-in var(--motion-fast) var(--ease-out);
+    animation: menu-in var(--motion-base) var(--ease-spring);
   }
 
   .item {
@@ -166,21 +166,8 @@
 
   .item:hover,
   .item:focus-visible {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--bg-menu-hover);
     outline: none;
-  }
-
-  /* On the accent the dot keeps its edge. */
-  .item:hover .dot,
-  .item:focus-visible .dot {
-    box-shadow: 0 0 0 1px var(--on-accent);
-  }
-
-  .item:hover .dot.none,
-  .item:focus-visible .dot.none {
-    border-color: var(--on-accent);
-    box-shadow: none;
   }
 
   .dot {

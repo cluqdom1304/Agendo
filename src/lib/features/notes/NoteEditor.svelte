@@ -427,11 +427,11 @@
     max-width: 260px;
     margin: 0;
     padding: 4px;
-    border-radius: var(--radius-card);
+    border-radius: var(--radius-menu);
     background: var(--bg-popover);
     box-shadow: var(--shadow-popover);
     list-style: none;
-    animation: pop-in var(--motion-fast) var(--ease-out);
+    animation: menu-in var(--motion-base) var(--ease-spring);
   }
 
   .suggestion {
@@ -455,8 +455,8 @@
   }
 
   .suggestion.active {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--bg-menu-hover);
+    color: var(--text-primary);
   }
 
   .dot {
@@ -841,8 +841,8 @@
 
   .surface
     :global(.tiptap ul[data-type="taskList"] input[type="checkbox"]:checked) {
-    border-color: var(--accent);
-    background: var(--accent);
+    border-color: var(--ink);
+    background: var(--ink);
   }
 
   .surface
@@ -855,7 +855,7 @@
     left: 4px;
     width: 4px;
     height: 7px;
-    border: solid var(--on-accent);
+    border: solid var(--on-ink);
     border-width: 0 1.5px 1.5px 0;
     transform: rotate(45deg);
   }
@@ -921,8 +921,8 @@
   }
 
   .surface :global(.task-ref.is-done .tr-check) {
-    border-color: var(--accent);
-    background: var(--accent);
+    border-color: var(--ink);
+    background: var(--ink);
   }
 
   .surface :global(.task-ref.is-done .tr-check::after) {
@@ -932,7 +932,7 @@
     left: 4.5px;
     width: 4px;
     height: 7px;
-    border: solid var(--on-accent);
+    border: solid var(--on-ink);
     border-width: 0 1.5px 1.5px 0;
     transform: rotate(45deg);
   }

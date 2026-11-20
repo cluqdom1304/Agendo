@@ -268,11 +268,11 @@
     flex-direction: column;
     gap: 10px;
     padding: 10px;
-    border-radius: var(--radius-card);
+    border-radius: var(--radius-menu);
     background: var(--bg-popover);
     box-shadow: var(--shadow-popover);
     transform-origin: top center;
-    animation: pop-in var(--motion-base) var(--ease-out);
+    animation: menu-in var(--motion-base) var(--ease-spring);
   }
 
   .field {

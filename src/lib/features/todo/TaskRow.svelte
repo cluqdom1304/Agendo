@@ -334,15 +334,16 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    min-height: 34px;
-    padding: 3px var(--space-3);
-    border-radius: var(--radius-control);
+    gap: 10px;
+    min-height: 38px;
+    padding: 4px var(--space-3);
+    border-radius: var(--radius-card);
     outline: none;
     transition:
       opacity 220ms var(--ease-apple),
       transform 220ms var(--ease-apple),
-      background-color var(--motion-instant) linear;
+      box-shadow var(--motion-fast) var(--ease-out),
+      background-color var(--motion-fast) var(--ease-out);
   }
 
   .row:hover,
@@ -360,16 +361,15 @@
     opacity: 1;
   }
 
+  /* The row the keyboard is on wears an outline, as the selected task in the reference. */
   .row:focus-visible {
-    box-shadow: inset 0 0 0 1.5px var(--accent);
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--text-primary);
   }
 
   .row.picked,
   .row.picked:hover {
-    background: var(
-      --accent-soft,
-      color-mix(in srgb, var(--accent) 16%, transparent)
-    );
+    background: color-mix(in srgb, var(--ink) 9%, transparent);
   }
 
   .row.settling {

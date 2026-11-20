@@ -48,7 +48,7 @@
     grid-auto-columns: 1fr;
     grid-auto-flow: column;
     padding: 2px;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-chip);
     background: var(--bg-control);
   }
 
@@ -60,8 +60,8 @@
     bottom: 2px;
     left: 2px;
     width: calc((100% - 4px) / var(--count));
-    border-radius: var(--radius-small);
-    background: var(--thumb);
+    border-radius: var(--radius-chip);
+    background: var(--ink);
     box-shadow: var(--shadow-raised);
     transform: translateX(calc(var(--index) * 100%));
     transition: transform var(--motion-spring) var(--ease-spring);
@@ -72,7 +72,7 @@
     min-height: 24px;
     padding: 0 14px;
     border: 0;
-    border-radius: var(--radius-small);
+    border-radius: var(--radius-chip);
     background: transparent;
     color: var(--text-secondary);
     font: inherit;
@@ -81,13 +81,18 @@
     white-space: nowrap;
     cursor: pointer;
     transition:
-      color var(--motion-fast) var(--ease-out),
-      transform var(--motion-instant) var(--ease-out);
+      color var(--motion-base) var(--ease-out),
+      transform var(--motion-fast) var(--ease-spring);
   }
 
-  button:hover,
-  button.active {
+  button:hover {
     color: var(--text-primary);
+  }
+
+  /* The label over the dark thumb turns light with it. */
+  button.active {
+    color: var(--on-ink);
+    font-weight: 600;
   }
 
   button:active {

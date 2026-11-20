@@ -630,9 +630,9 @@
   }
 
   .day[aria-pressed="true"] {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: var(--on-accent, #fff);
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--on-ink);
   }
 
   .durations {

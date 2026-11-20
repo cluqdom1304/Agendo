@@ -88,36 +88,56 @@
   }
 </script>
 
-<div class="summary">
-  <header class="head">
-    <div>
-      <h2>{l.title}</h2>
-      <p class="sub">{summary ? l.weekOf(label) : l.subtitle}</p>
+<div class="summary view">
+  <header class="view-head">
+    <div class="view-heading">
+      <h2 class="view-title">{l.title}</h2>
+      <p class="view-sub">{summary ? l.weekOf(label) : l.subtitle}</p>
     </div>
-    <div class="actions">
+    <div class="view-actions">
       <button
         type="button"
-        class="btn"
-        aria-label={l.previous}
-        title={l.previous}
-        onclick={() => void store.go(-1)}>‹</button
-      >
-      <button
-        type="button"
-        class="btn"
+        class="btn small"
         disabled={store.current}
         onclick={() => void store.show()}>{l.thisWeek}</button
       >
       <button
         type="button"
-        class="btn"
-        aria-label={l.next}
-        title={l.next}
-        onclick={() => void store.go(1)}>›</button
+        class="icon-btn filled"
+        aria-label={l.previous}
+        title={l.previous}
+        onclick={() => void store.go(-1)}
+        ><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"
+          ><path
+            d="M10 3.5L5.5 8l4.5 4.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /></svg
+        ></button
       >
       <button
         type="button"
-        class="btn primary"
+        class="icon-btn filled"
+        aria-label={l.next}
+        title={l.next}
+        onclick={() => void store.go(1)}
+        ><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"
+          ><path
+            d="M6 3.5L10.5 8 6 12.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /></svg
+        ></button
+      >
+      <button
+        type="button"
+        class="btn small primary"
         disabled={!summary}
         onclick={() => void exportMarkdown()}>{l.exportMarkdown}</button
       >
@@ -249,40 +269,6 @@
 </div>
 
 <style>
-  .summary {
-    display: grid;
-    align-content: start;
-    gap: var(--space-4);
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 720px;
-    margin: 0 auto;
-    padding: var(--space-4) var(--space-6) var(--space-8);
-  }
-
-  .head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--space-4);
-  }
-
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 34px;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.025em;
-  }
-
   h3 {
     margin: 0 0 var(--space-3);
     color: var(--text-secondary);
@@ -290,7 +276,6 @@
     font-weight: 600;
   }
 
-  .sub,
   .muted {
     margin: 0;
     color: var(--text-secondary);
@@ -312,7 +297,7 @@
   .card {
     padding: var(--space-4);
     border-radius: var(--radius-card);
-    background: var(--bg-control);
+    background: var(--bg-card);
   }
 
   .line {

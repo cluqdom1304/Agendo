@@ -496,7 +496,8 @@
   .content {
     flex: 1;
     min-height: 0;
-    animation: rise-in var(--motion-base) var(--ease-out);
+    /* Each section arrives with a short, damped rise: quick enough not to delay the reading. */
+    animation: view-in var(--motion-spring) var(--ease-spring);
   }
 
   /* The views of the agenda start below the rounded top of the card; the notes run to its edge. */

@@ -335,8 +335,8 @@
     display: flex;
     flex: none;
     align-items: center;
-    gap: 2px;
-    height: 44px;
+    gap: 4px;
+    height: 52px;
     padding: 0 var(--space-2) 0 var(--space-4);
   }
 
@@ -352,9 +352,9 @@
     margin: 0;
     overflow: hidden;
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.012em;
     line-height: 1.3;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -391,18 +391,18 @@
   .item {
     position: relative;
     height: 100%;
-    border-radius: var(--radius-control);
-    transition: background-color var(--motion-instant) linear;
+    border-radius: var(--radius-card);
+    transition: background-color var(--motion-fast) var(--ease-out);
   }
 
   .item:hover {
     background: var(--bg-hover);
   }
 
-  /* A tint of the accent instead of a solid block: the open note is clear at a glance and
-     the text keeps its own colours. */
+  /* A neutral tile, as the selected item of the sidebar: the open note is clear at a glance
+     and the text keeps its own colours. */
   .item.selected {
-    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    background: var(--bg-active);
   }
 
   .card {

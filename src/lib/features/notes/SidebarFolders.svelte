@@ -531,8 +531,9 @@
   .row {
     display: flex;
     align-items: center;
-    min-height: 30px;
-    transition: background-color var(--motion-instant) linear;
+    min-height: 32px;
+    border-radius: var(--radius-card);
+    transition: background-color var(--motion-fast) var(--ease-out);
   }
 
   .row:hover,

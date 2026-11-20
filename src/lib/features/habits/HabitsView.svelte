@@ -37,15 +37,17 @@
 
 <svelte:window onfocus={() => (today = view.today())} />
 
-<div class="habits">
-  <header class="head">
-    <div>
-      <h2>{l.title}</h2>
-      <p class="sub">{l.last7}</p>
+<div class="habits view">
+  <header class="view-head">
+    <div class="view-heading">
+      <h2 class="view-title">{l.title}</h2>
+      <p class="view-sub">{l.last7}</p>
     </div>
-    <button type="button" class="btn primary" onclick={onNewHabit}>
-      {l.newHabit}
-    </button>
+    <div class="view-actions">
+      <button type="button" class="btn primary" onclick={onNewHabit}>
+        {l.newHabit}
+      </button>
+    </div>
   </header>
 
   {#if store.active.length + store.archived.length === 0}
@@ -53,7 +55,7 @@
   {:else}
     {@render group(store.active)}
     {#if store.archived.length > 0}
-      <h3 class="group">{l.archived}</h3>
+      <h3 class="group-label">{l.archived}</h3>
       {@render group(store.archived)}
     {/if}
   {/if}
@@ -116,53 +118,12 @@
 {/snippet}
 
 <style>
-  .habits {
-    display: grid;
-    align-content: start;
-    gap: var(--space-5);
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 720px;
-    margin: 0 auto;
-    padding: var(--space-4) var(--space-6) var(--space-8);
-  }
-
-  .head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--space-4);
-  }
-
-  h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 34px;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.025em;
-  }
-
-  .sub {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 12px;
-  }
-
-  .group {
-    margin: 0;
-    padding: 0 2px;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
-  }
-
   .card {
     margin: 0;
     padding: 0;
     overflow: hidden;
     border-radius: var(--radius-card);
-    background: var(--bg-control);
+    background: var(--bg-card);
     list-style: none;
   }
 
@@ -271,8 +232,8 @@
   }
 
   .dot.done {
-    border-color: var(--accent);
-    background: var(--accent);
+    border-color: var(--ink);
+    background: var(--ink);
   }
 
   .dot.off {
