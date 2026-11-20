@@ -16,7 +16,8 @@ process.env.TZ = "Europe/Madrid";
 type Row = Pick<
   Task,
   "id" | "dueDate" | "dueTime" | "isCompleted" | "completedAt" | "position"
->;
+> &
+  Partial<Pick<Task, "priority">>;
 
 function load<T>(name: string): T {
   const url = new URL(

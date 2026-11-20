@@ -183,6 +183,31 @@ describe("rename", () => {
   });
 });
 
+describe("priority (F20-02)", () => {
+  it("changes at once, reorders the day and restores it when refused", async () => {
+    const day = "2026-03-10";
+    const { api, store } = setup([
+      makeTask({ id: "a", title: "Primera", dueDate: day, position: 0 }),
+      makeTask({ id: "b", title: "Segunda", dueDate: day, position: 1 }),
+    ]);
+    await store.load();
+    const dayTitles = () =>
+      titles(
+        store.agendaBlocks.find((block) => block.date === day)?.open ?? [],
+      );
+    expect(dayTitles()).toEqual(["Primera", "Segunda"]);
+
+    await store.setPriority("b", 2);
+    expect(store.find("b")?.priority).toBe(2);
+    expect(dayTitles()).toEqual(["Segunda", "Primera"]);
+
+    api.failing.add("taskUpdate");
+    await store.setPriority("b", 3);
+    expect(store.find("b")?.priority).toBe(2);
+    expect(store.notice).not.toBeNull();
+  });
+});
+
 describe("drafts", () => {
   it("creates in POR HACER and opens the next draft on Enter", async () => {
     const { api, store } = setup([]);

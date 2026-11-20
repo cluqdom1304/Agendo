@@ -201,6 +201,7 @@ export class FakeApi implements TasksApi {
         patch.durationMinutes === undefined
           ? before.durationMinutes
           : patch.durationMinutes,
+      priority: patch.priority ?? before.priority,
     });
   }
 

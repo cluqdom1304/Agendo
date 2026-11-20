@@ -63,6 +63,7 @@
     dueTime={task.dueTime}
     durationMinutes={task.durationMinutes}
     dueDate={task.dueDate}
+    priority={task.priority}
     tags={tagsStore.tagsOf(task)}
     onTagsChange={(tagIds) => store.setTags(task.id, tagIds)}
     sourceNote={sourceOf(task)}

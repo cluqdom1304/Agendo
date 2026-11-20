@@ -378,6 +378,8 @@ export class TasksStore {
       reminders?: ReminderInput[];
       /** Absent = leave as is; `null` = stop repeating (F13-05). */
       rrule?: string | null;
+      /** Absent = leave as is (D-93). */
+      priority?: number;
     },
   ): Promise<boolean> {
     const before = this.find(id);
@@ -393,6 +395,9 @@ export class TasksStore {
     if (input.rrule !== undefined) {
       const rule = input.dueDate ? input.rrule : null;
       if (!sameRule(rule, before.rrule)) patch.rrule = rule;
+    }
+    if (input.priority !== undefined && input.priority !== before.priority) {
+      patch.priority = input.priority;
     }
     this.#notes.suspend(id);
     try {
@@ -445,6 +450,19 @@ export class TasksStore {
           date === null ? { dueDate: null, dueTime: null } : { dueDate: date },
         ),
       );
+    } catch (error) {
+      this.#replace(before);
+      this.#notices.report(error);
+    }
+  }
+
+  /** Optimistic: the ring and the order change at once; a refusal puts them back (F20-02). */
+  async setPriority(id: string, priority: number): Promise<void> {
+    const before = this.find(id);
+    if (!before || before.priority === priority) return;
+    this.#replace({ ...before, priority });
+    try {
+      this.#replace(await this.#api.taskUpdate(id, { priority }));
     } catch (error) {
       this.#replace(before);
       this.#notices.report(error);

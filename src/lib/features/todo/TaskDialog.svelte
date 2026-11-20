@@ -59,6 +59,8 @@
   // svelte-ignore state_referenced_locally
   let tagIds = $state<string[]>(task?.tagIds ?? []);
   // svelte-ignore state_referenced_locally
+  let priority = $state(task?.priority ?? 0);
+  // svelte-ignore state_referenced_locally
   const startRepeat = parseRule(task?.rrule);
   let repeatFreq = $state<Freq | "">(startRepeat?.freq ?? "");
   let repeatInterval = $state<number | null>(startRepeat?.interval ?? 1);
@@ -191,6 +193,7 @@
         durationMinutes,
         tagIds,
         rrule: rule,
+        priority,
         ...(remindersTouched && !isDone ? { reminders: usable } : {}),
       });
     } else {
@@ -203,6 +206,7 @@
         ...(tagIds.length > 0 ? { tagIds } : {}),
         ...(contentJson ? { contentJson } : {}),
         ...(rule ? { rrule: rule } : {}),
+        ...(priority > 0 ? { priority } : {}),
         reminders: usable,
       });
     }
@@ -344,6 +348,23 @@
         {/if}
       </section>
     {/if}
+
+    <section class="block" aria-label={t.priority.label}>
+      <span class="label">{t.priority.label}</span>
+      <div class="durations">
+        {#each t.priority.levels as name, level (level)}
+          <button
+            type="button"
+            class="toggle-chip priority"
+            aria-pressed={priority === level}
+            onclick={() => (priority = level)}
+          >
+            <span class="dot" style:--level="var(--priority-{level})"></span>
+            {name}
+          </button>
+        {/each}
+      </div>
+    </section>
 
     {#if !editing}
       <label class="block">
@@ -572,6 +593,21 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
+  }
+
+  .priority {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* The ring of the checkbox, small, so the level reads the same here and in the list. */
+  .dot {
+    width: 9px;
+    height: 9px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--level);
+    border-radius: var(--radius-chip);
   }
 
   .end {

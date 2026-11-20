@@ -16,6 +16,8 @@
     dueTime: string | null;
     durationMinutes?: number | null;
     dueDate?: string | null;
+    /** 0 none … 3 urgent (D-93), drawn on the checkbox. */
+    priority?: number;
     /** Tags of the task, in order; the row shows the first two and counts the rest. */
     tags?: { id: string; name: string; colorHex: string }[];
     onTagsChange?: (tagIds: string[]) => void;
@@ -55,6 +57,7 @@
     dueTime,
     durationMinutes = null,
     dueDate = null,
+    priority = 0,
     tags = [],
     onTagsChange,
     sourceNote = null,
@@ -92,7 +95,8 @@
   // While settling, the checkbox already shows the state the task is moving to.
   const checked = $derived(settling ? !isCompleted : isCompleted);
   const checkboxLabel = $derived(
-    checked ? t.tasks.markOpen(title) : t.tasks.markDone(title),
+    (checked ? t.tasks.markOpen(title) : t.tasks.markDone(title)) +
+      t.priority.suffix(priority),
   );
 </script>
 
@@ -130,6 +134,7 @@
     {checked}
     label={checkboxLabel}
     disabled={draft}
+    {priority}
     onToggle={() => onToggle?.()}
   />
   {#if !draft && tags.length > 0}

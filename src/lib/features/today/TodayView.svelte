@@ -79,7 +79,7 @@
     summary.total === 0 ? 0 : (summary.done / summary.total) * 100,
   );
 
-  /** The tasks of the day: open ones first, by time (all-day ones before timed), then done. */
+  /** The tasks of the day: open ones first, by time (all-day ones before timed) and priority, then done. */
   const dayTasks = $derived(
     store.visibleTasks
       .filter((task) => task.dueDate === selected)
@@ -87,6 +87,7 @@
         (a, b) =>
           Number(a.isCompleted) - Number(b.isCompleted) ||
           (a.dueTime ?? "").localeCompare(b.dueTime ?? "") ||
+          b.priority - a.priority ||
           a.position - b.position,
       ),
   );
@@ -193,9 +194,11 @@
           <li class="row" class:done={task.isCompleted}>
             <Checkbox
               checked={task.isCompleted}
-              label={task.isCompleted
+              label={(task.isCompleted
                 ? l.markOpen(task.title || t.reminders.untitled)
-                : l.markDone(task.title || t.reminders.untitled)}
+                : l.markDone(task.title || t.reminders.untitled)) +
+                t.priority.suffix(task.priority)}
+              priority={task.priority}
               onToggle={() =>
                 void store.setCompleted(task.id, !task.isCompleted)}
             />

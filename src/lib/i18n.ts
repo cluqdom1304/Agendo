@@ -533,6 +533,16 @@ export const t = {
       "La repetición no puede terminar antes de la fecha de la tarea.",
     detail: "Se repite",
   },
+  priority: {
+    label: "Prioridad",
+    /** Indexed by level: 0 none, 1 medium, 2 high, 3 urgent (D-93). */
+    levels: ["Sin prioridad", "Media", "Alta", "Urgente"],
+    /** Appended to a checkbox's name so the level is not told by colour alone. */
+    suffix: (level: number) =>
+      level === 0
+        ? ""
+        : `, prioridad ${["", "media", "alta", "urgente"][level] ?? "urgente"}`,
+  },
   today: {
     title: "Hoy",
     tasks: "Tareas de hoy",

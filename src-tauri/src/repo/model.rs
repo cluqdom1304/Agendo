@@ -53,6 +53,9 @@ impl Sortable for Task {
     fn position(&self) -> i64 {
         self.position
     }
+    fn priority(&self) -> i64 {
+        self.priority
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

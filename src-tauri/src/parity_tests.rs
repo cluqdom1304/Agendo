@@ -193,6 +193,8 @@ struct Item {
     is_completed: bool,
     completed_at: Option<String>,
     position: i64,
+    #[serde(default)]
+    priority: i64,
 }
 
 impl Sortable for Item {
@@ -213,6 +215,9 @@ impl Sortable for Item {
     }
     fn position(&self) -> i64 {
         self.position
+    }
+    fn priority(&self) -> i64 {
+        self.priority
     }
 }
 

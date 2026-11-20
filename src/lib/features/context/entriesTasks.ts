@@ -66,6 +66,16 @@ export function taskEntries(taskId: string, deps: ContextDeps): ContextEntry[] {
       separated: true,
       children: dates,
     },
+    {
+      id: "priority",
+      label: t.priority.label,
+      children: t.priority.levels.map((name, level) => ({
+        id: `priority:${level}`,
+        label: name,
+        checked: task.priority === level,
+        run: () => void tasks.setPriority(task.id, level),
+      })),
+    },
   ];
   if (!task.isCompleted) {
     entries.push({
@@ -136,6 +146,7 @@ export async function duplicate(task: Task, deps: ContextDeps): Promise<void> {
       ? { durationMinutes: task.durationMinutes }
       : {}),
     ...(task.tagIds.length > 0 ? { tagIds: task.tagIds } : {}),
+    ...(task.priority > 0 ? { priority: task.priority } : {}),
     ...(task.contentJson.trim().startsWith("{")
       ? { contentJson: task.contentJson }
       : {}),

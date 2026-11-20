@@ -72,6 +72,15 @@ describe("TaskDialog", () => {
     expect(task.reminders[0].offsetMinutes).toBe(15);
   });
 
+  it("creates a task with a priority (F20-02)", async () => {
+    const { store, onClose } = await mount();
+    await fireEvent.input(title(), { target: { value: "Pagar" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Urgente" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Crear tarea" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(store.tasks[0]?.priority).toBe(3);
+  });
+
   it("ignores the partial years reported while the date is typed", async () => {
     const { store, onClose } = await mount();
     await fireEvent.input(title(), { target: { value: "Entrega" } });
@@ -208,6 +217,21 @@ describe("TaskDialog editing a task", () => {
       durationMinutes: 15,
       dueTime: "09:00",
     });
+  });
+
+  it("shows and changes the priority (F20-02)", async () => {
+    const { store, onClose } = await edit({ ...timed, priority: 1 });
+    expect(
+      screen
+        .getByRole("button", { name: "Media" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+    await fireEvent.click(screen.getByRole("button", { name: "Alta" }));
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Guardar cambios" }),
+    );
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(store.find("t1")?.priority).toBe(2);
   });
 
   it("drops the duration when the time is removed", async () => {

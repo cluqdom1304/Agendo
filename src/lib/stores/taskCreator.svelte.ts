@@ -115,6 +115,7 @@ export class TaskCreator {
         ...(input.contentJson ? { contentJson: input.contentJson } : {}),
         ...(input.sourceNoteId ? { sourceNoteId: input.sourceNoteId } : {}),
         ...(input.dueDate && input.rrule ? { rrule: input.rrule } : {}),
+        ...(input.priority ? { priority: input.priority } : {}),
       });
       host.setTasks([...host.tasks(), created]);
       host.warnIfHidden(created);

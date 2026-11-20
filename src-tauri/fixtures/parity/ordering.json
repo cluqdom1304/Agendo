@@ -29,6 +29,20 @@
         { "id": "d1", "dueDate": "2026-03-10", "dueTime": null, "isCompleted": true, "completedAt": "2026-03-09T12:00:00Z", "position": 7 }
       ],
       "expected": ["t1", "t3", "t4", "t2", "u1", "u2", "d1", "d2"]
+    },
+    {
+      "name": "priority first among untimed and among tasks at the same time (F20-02)",
+      "tasks": [
+        { "id": "u0", "dueDate": "2026-03-10", "dueTime": null, "isCompleted": false, "completedAt": null, "position": 0, "priority": 0 },
+        { "id": "u3", "dueDate": "2026-03-10", "dueTime": null, "isCompleted": false, "completedAt": null, "position": 5, "priority": 3 },
+        { "id": "u1", "dueDate": "2026-03-10", "dueTime": null, "isCompleted": false, "completedAt": null, "position": 1, "priority": 1 },
+        { "id": "u1b", "dueDate": "2026-03-10", "dueTime": null, "isCompleted": false, "completedAt": null, "position": 0, "priority": 1 },
+        { "id": "t9", "dueDate": "2026-03-10", "dueTime": "09:00", "isCompleted": false, "completedAt": null, "position": 0, "priority": 0 },
+        { "id": "t9h", "dueDate": "2026-03-10", "dueTime": "09:00", "isCompleted": false, "completedAt": null, "position": 4, "priority": 2 },
+        { "id": "t8", "dueDate": "2026-03-10", "dueTime": "08:00", "isCompleted": false, "completedAt": null, "position": 0, "priority": 0 },
+        { "id": "d3", "dueDate": "2026-03-10", "dueTime": null, "isCompleted": true, "completedAt": "2026-03-10T08:00:00Z", "position": 0, "priority": 3 }
+      ],
+      "expected": ["t8", "t9h", "t9", "u3", "u1b", "u1", "u0", "d3"]
     }
   ],
   "groups": [

@@ -206,6 +206,25 @@ describe("ContextMenu", () => {
     expect(editTask).toHaveBeenCalledWith(tasks.find("t1"));
   });
 
+  it("sets the priority from its submenu (F20-02)", async () => {
+    const { api } = await setup(
+      '<div data-task-id="t1" tabindex="0" id="row">Estudiar</div>',
+    );
+    await rightClick("#row");
+    await fireEvent.click(
+      await screen.findByRole("menuitem", { name: /Prioridad/ }),
+    );
+    expect(
+      screen
+        .getByRole("menuitemradio", { name: "Sin prioridad" })
+        .getAttribute("aria-checked"),
+    ).toBe("true");
+    await fireEvent.click(
+      screen.getByRole("menuitemradio", { name: "Urgente" }),
+    );
+    await waitFor(() => expect(api.tasks[0]?.priority).toBe(3));
+  });
+
   it("duplicates and deletes a task", async () => {
     const { api, tasks } = await setup(
       '<div data-task-id="t1" tabindex="0" id="row">Estudiar</div>',

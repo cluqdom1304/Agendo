@@ -5,7 +5,8 @@ import type { Task } from "./types";
 type Sortable = Pick<
   Task,
   "id" | "dueDate" | "dueTime" | "isCompleted" | "completedAt" | "position"
->;
+> &
+  Partial<Pick<Task, "priority">>;
 
 /** Fixed-width, zero-padded formats compare correctly as text; `null` sorts first. */
 function compareText(a: string | null, b: string | null): number {
@@ -23,15 +24,19 @@ const byPosition = (a: Sortable, b: Sortable) =>
 const byCompletion = (a: Sortable, b: Sortable) =>
   compareText(a.completedAt, b.completedAt) || compareId(a, b);
 
+/** Higher priority first (F20-02), then by position. */
+const byPriority = (a: Sortable, b: Sortable) =>
+  (b.priority ?? 0) - (a.priority ?? 0) || byPosition(a, b);
+
 function byDay(a: Sortable, b: Sortable): number {
   if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
   if (a.isCompleted) return byCompletion(a, b);
   if (a.dueTime !== null && b.dueTime !== null) {
-    return compareText(a.dueTime, b.dueTime) || byPosition(a, b);
+    return compareText(a.dueTime, b.dueTime) || byPriority(a, b);
   }
   if (a.dueTime !== null) return -1;
   if (b.dueTime !== null) return 1;
-  return byPosition(a, b);
+  return byPriority(a, b);
 }
 
 /** POR HACER: pending by position, then the completed ones. */
@@ -42,7 +47,7 @@ export function sortTodo<T extends Sortable>(tasks: readonly T[]): T[] {
   });
 }
 
-/** One day: timed, untimed, then completed. */
+/** One day: timed, untimed (each by priority within), then completed. */
 export function sortDay<T extends Sortable>(tasks: readonly T[]): T[] {
   return [...tasks].sort(byDay);
 }

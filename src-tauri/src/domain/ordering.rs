@@ -3,8 +3,8 @@
 //!
 //! * POR HACER: `position` ascending.
 //! * AGENDA: days with the latest `due_date` first.
-//! * Inside a day: tasks with a time first (time ascending), then tasks without time
-//!   (`position` ascending).
+//! * Inside a day: tasks with a time first (time ascending, then priority descending), then
+//!   tasks without time (priority descending, then `position` ascending; F20-02).
 //! * Completed tasks form a "Completadas" subsection at the end of their block (the "to do"
 //!   list or a day), ordered by `completed_at` ascending.
 //!
@@ -24,6 +24,10 @@ pub trait Sortable {
     fn is_completed(&self) -> bool;
     fn completed_at(&self) -> Option<&str>;
     fn position(&self) -> i64;
+    /// 0 none … 3 urgent (D-93). Defaults to none for types that carry no priority.
+    fn priority(&self) -> i64 {
+        0
+    }
 }
 
 /// Tasks of one day, already in display order.
@@ -59,6 +63,13 @@ pub fn sort_todo<T: Sortable>(tasks: &mut [T]) {
     });
 }
 
+/// Higher priority first, then by position.
+fn priority_order<T: Sortable>(a: &T, b: &T) -> Ordering {
+    b.priority()
+        .cmp(&a.priority())
+        .then_with(|| position_order(a, b))
+}
+
 /// Orders the tasks of a single day: timed, untimed, then completed.
 pub fn sort_day<T: Sortable>(tasks: &mut [T]) {
     tasks.sort_by(|a, b| {
@@ -67,10 +78,10 @@ pub fn sort_day<T: Sortable>(tasks: &mut [T]) {
                 return completed_order(a, b);
             }
             match (a.due_time(), b.due_time()) {
-                (Some(x), Some(y)) => x.cmp(y).then_with(|| position_order(a, b)),
+                (Some(x), Some(y)) => x.cmp(y).then_with(|| priority_order(a, b)),
                 (Some(_), None) => Ordering::Less,
                 (None, Some(_)) => Ordering::Greater,
-                (None, None) => position_order(a, b),
+                (None, None) => priority_order(a, b),
             }
         })
     });

@@ -42,4 +42,6 @@ export interface NewTaskDetails {
   sourceNoteId?: string;
   /** Repeat rule (F13-05); needs a date. */
   rrule?: string;
+  /** 0 none … 3 urgent (D-93). */
+  priority?: number;
 }
