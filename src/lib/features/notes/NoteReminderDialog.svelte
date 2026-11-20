@@ -121,14 +121,6 @@
     min-width: min(360px, 90vw);
   }
 
-  h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
-
   .muted {
     margin: 0;
     color: var(--text-secondary);

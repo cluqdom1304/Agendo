@@ -125,14 +125,6 @@
     min-width: 0;
   }
 
-  h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
-
   .muted {
     margin: 0;
     color: var(--text-secondary);
@@ -161,9 +153,9 @@
     display: grid;
     gap: 2px;
     width: 100%;
-    padding: 6px var(--space-2);
+    padding: 8px 12px;
     border: 0;
-    border-radius: var(--radius-small);
+    border-radius: var(--radius-card);
     background: transparent;
     color: inherit;
     font: inherit;
@@ -178,7 +170,7 @@
 
   /* The chosen version, tinted like the open note in the list. */
   .version[aria-pressed="true"] {
-    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    background: var(--bg-active);
   }
 
   .version:focus-visible {
@@ -188,14 +180,14 @@
 
   .stamp {
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
     font-variant-numeric: tabular-nums;
   }
 
   .vtitle {
     overflow: hidden;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -212,7 +204,7 @@
     padding: var(--space-2) 0;
     overflow-y: auto;
     border-radius: var(--radius-card);
-    background: var(--bg-control);
+    background: var(--bg-card);
   }
 
   .line {

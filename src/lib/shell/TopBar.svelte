@@ -436,7 +436,7 @@
 
   .search:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--sidebar-focus);
+    box-shadow: 0 0 0 2px var(--sidebar-accent);
   }
 
   .search:hover {

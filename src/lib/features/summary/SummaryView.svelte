@@ -272,8 +272,9 @@
   h3 {
     margin: 0 0 var(--space-3);
     color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
   }
 
   .muted {
@@ -295,15 +296,15 @@
   }
 
   .card {
-    padding: var(--space-4);
-    border-radius: var(--radius-card);
+    padding: 18px 20px;
+    border-radius: var(--radius-panel);
     background: var(--bg-card);
   }
 
   .line {
-    margin: 0 0 2px;
+    margin: 0 0 6px;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .figures {
@@ -329,6 +330,7 @@
   .figures dt {
     color: var(--text-secondary);
     font-size: 12px;
+    font-weight: 600;
   }
 
   .figures .late dd {
@@ -352,16 +354,17 @@
 
   .tags th,
   .tags td {
-    padding: 6px 0;
+    padding: 9px 0;
     border-top: 1px solid var(--separator);
     text-align: right;
-    font-weight: 400;
+    font-weight: 500;
   }
 
   .tags thead th {
     border-top: 0;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 11.5px;
+    font-weight: 700;
   }
 
   .tags th:first-child {
@@ -378,7 +381,7 @@
 
   .habits {
     display: grid;
-    gap: var(--space-3);
+    gap: var(--space-4);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -387,8 +390,9 @@
   .habits li {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 4px var(--space-3);
-    font-size: 13px;
+    gap: 6px var(--space-3);
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .name {
@@ -402,13 +406,14 @@
     height: 6px;
     overflow: hidden;
     border-radius: 3px;
-    background: var(--separator);
+    background: var(--bg-control-hover);
   }
 
   .fill {
     display: block;
     height: 100%;
-    background: var(--accent);
+    border-radius: inherit;
+    background: var(--ink);
   }
 
   .bars {
@@ -437,13 +442,14 @@
     display: block;
     width: 100%;
     min-height: 2px;
-    border-radius: 3px 3px 0 0;
-    background: var(--accent);
+    border-radius: 4px 4px 0 0;
+    background: var(--ink);
   }
 
   .day {
     color: var(--text-secondary);
-    font-size: 10px;
+    font-size: 10.5px;
+    font-weight: 700;
     text-transform: uppercase;
   }
 </style>

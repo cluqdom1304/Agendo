@@ -180,14 +180,6 @@
     gap: var(--space-4);
   }
 
-  h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
-
   .block {
     display: grid;
     gap: 6px;
@@ -223,7 +215,8 @@
   .day {
     width: 32px;
     height: 32px;
-    border: 1px solid var(--border);
+    border: 0;
+    background: var(--bg-control);
     border-radius: 50%;
     background: transparent;
     color: var(--text-secondary);

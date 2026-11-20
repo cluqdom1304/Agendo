@@ -50,7 +50,7 @@
     {#if matches.length === 0}
       <p class="hint">{l.switchNone}</p>
     {:else}
-      <ul>
+      <ul class="choice-list">
         {#each matches as task (task.id)}
           <li>
             <button
@@ -79,39 +79,14 @@
     min-width: 0;
   }
 
-  h2 {
-    margin: 0;
-    padding-right: var(--space-8);
-    font-family: var(--font-display);
-    font-size: 18px;
-  }
-
   .hint {
     margin: 0;
     color: var(--text-secondary);
     font-size: 13px;
   }
 
-  input {
-    height: 32px;
-    padding: 0 var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-control);
-    background: var(--bg-control);
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 13px;
-  }
-
-  ul {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
+  .choice-list {
     max-height: 320px;
-    margin: 0;
-    padding: 0;
-    overflow-y: auto;
-    list-style: none;
   }
 
   .choice {
@@ -120,19 +95,21 @@
     justify-content: space-between;
     gap: var(--space-2);
     width: 100%;
-    padding: 6px var(--space-3);
+    min-height: 40px;
+    padding: 0 14px;
     border: 0;
-    border-radius: var(--radius-control);
     background: transparent;
     color: var(--text-primary);
     font: inherit;
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 600;
     text-align: left;
     cursor: pointer;
+    transition: background-color var(--motion-fast) var(--ease-out);
   }
 
   .choice:hover:not(:disabled) {
-    background: var(--bg-control-hover);
+    background: var(--bg-card-hover);
   }
 
   .choice:disabled {
@@ -149,6 +126,10 @@
 
   .tag {
     flex: none;
-    font-size: 11px;
+    padding: 1px 9px;
+    border-radius: var(--radius-chip);
+    background: var(--bg-control-hover);
+    font-size: 11.5px;
+    font-weight: 600;
   }
 </style>

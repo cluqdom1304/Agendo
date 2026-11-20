@@ -620,6 +620,8 @@ export const t = {
     open: "Planificar mi día",
     close: "Cerrar",
     cancel: "Cancelar",
+    subtitle: "Elige qué pasa a hoy y comprueba cuánto tiempo te llevará.",
+    dayLabel: "Tu día",
     alreadyToday: "Ya son de hoy",
     overdue: "Vencidas",
     undated: "Sin fecha",

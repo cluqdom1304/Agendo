@@ -147,8 +147,8 @@
 
   .title {
     flex: 1;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
   }
 
   .progress-text {

@@ -237,8 +237,9 @@
   h2 {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .add,

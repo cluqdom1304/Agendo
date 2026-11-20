@@ -142,21 +142,6 @@
     min-width: 0;
   }
 
-  h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
-
-  h3 {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
-  }
-
   .muted {
     margin: 0;
     color: var(--text-secondary);
@@ -168,7 +153,7 @@
     padding: 0;
     overflow: hidden;
     border-radius: var(--radius-card);
-    background: var(--bg-control);
+    background: var(--bg-card);
     list-style: none;
   }
 
@@ -190,8 +175,8 @@
     flex: 1;
     min-width: 96px;
     overflow-wrap: anywhere;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .buttons,
@@ -239,8 +224,8 @@
 
   .label {
     color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 12.5px;
+    font-weight: 700;
   }
 
   .text {

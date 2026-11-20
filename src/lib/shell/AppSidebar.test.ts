@@ -108,4 +108,11 @@ describe("AppSidebar (F19-02)", () => {
     expect(await screen.findByText("Papelera")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Etiquetas" })).toBeNull();
   });
+
+  it("takes the dark chrome tokens, so its text stays light in the light theme", () => {
+    mount({ section: "today" });
+    expect(
+      screen.getByRole("complementary", { name: "Barra lateral" }).className,
+    ).toContain("chrome-dark");
+  });
 });

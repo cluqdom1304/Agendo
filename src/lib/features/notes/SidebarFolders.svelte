@@ -455,8 +455,9 @@
     padding: 3px var(--space-2);
     border-radius: var(--radius-small);
     color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .icon,

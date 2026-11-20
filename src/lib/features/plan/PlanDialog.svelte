@@ -51,8 +51,11 @@
 {#snippet group(title: string, tasks: Task[])}
   {#if tasks.length > 0}
     <section class="group" aria-label={title}>
-      <h3>{title}</h3>
-      <ul>
+      <h3 class="group-label">
+        {title}
+        <span class="count">{tasks.length}</span>
+      </h3>
+      <ul class="choice-list">
         {#each tasks as task (task.id)}
           <li>
             <label>
@@ -62,7 +65,7 @@
                 onchange={() => toggle(task.id)}
               />
               <span class="name">{task.title || t.reminders.untitled}</span>
-              <span class="meta">
+              <span class="meta" class:none={task.durationMinutes === null}>
                 {task.durationMinutes === null
                   ? l.noEstimate
                   : durationLabel(task.durationMinutes)}
@@ -77,16 +80,23 @@
 
 <Modal label={l.title} closeLabel={l.close} {onClose}>
   <div class="plan">
-    <h2>{l.title}</h2>
+    <header>
+      <h2>{l.title}</h2>
+      <p class="subtitle">{l.subtitle}</p>
+    </header>
 
     {#if candidates.today.length > 0}
       <section class="group" aria-label={l.alreadyToday}>
-        <h3>{l.alreadyToday}</h3>
-        <ul>
+        <h3 class="group-label">
+          {l.alreadyToday}
+          <span class="count">{candidates.today.length}</span>
+        </h3>
+        <ul class="choice-list">
           {#each candidates.today as task (task.id)}
             <li class="fixed">
+              <span class="pin" aria-hidden="true"></span>
               <span class="name">{task.title || t.reminders.untitled}</span>
-              <span class="meta">
+              <span class="meta" class:none={task.durationMinutes === null}>
                 {task.durationMinutes === null
                   ? l.noEstimate
                   : durationLabel(task.durationMinutes)}
@@ -101,14 +111,21 @@
     {@render group(l.undated, candidates.undated)}
 
     {#if candidates.overdue.length === 0 && candidates.undated.length === 0}
-      <p class="empty">{l.nothingToAdd}</p>
+      <p class="callout empty">{l.nothingToAdd}</p>
     {/if}
 
-    <p class="total" class:over={totals.overloaded} aria-live="polite">
-      {l.total(totals.tasks, durationLabel(totals.minutes), totals.unestimated)}
-    </p>
+    <section class="summary" class:over={totals.overloaded}>
+      <span class="summary-label">{l.dayLabel}</span>
+      <p class="total" aria-live="polite">
+        {l.total(
+          totals.tasks,
+          durationLabel(totals.minutes),
+          totals.unestimated,
+        )}
+      </p>
+    </section>
     {#if totals.overloaded}
-      <p class="warn" role="alert">{l.overloaded}</p>
+      <p class="callout warn" role="alert">{l.overloaded}</p>
     {/if}
 
     <div class="actions">
@@ -128,84 +145,117 @@
 <style>
   .plan {
     display: grid;
-    gap: var(--space-3);
+    gap: 20px;
     min-width: 0;
   }
 
-  h2 {
+  .subtitle {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: 17px;
-  }
-
-  h3 {
-    margin: 0 0 var(--space-1);
     color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
   }
 
-  ul {
-    max-height: 180px;
-    margin: 0;
-    padding: 0;
-    overflow: auto;
-    list-style: none;
+  .group {
+    display: grid;
+    gap: 6px;
+  }
+
+  .choice-list {
+    max-height: 200px;
   }
 
   label,
   .fixed {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    min-height: 32px;
-    padding: 0 var(--space-2);
-    border-radius: var(--radius-control);
-    font-size: 13px;
+    gap: 12px;
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 14px;
   }
 
   label {
     cursor: pointer;
+    transition: background-color var(--motion-fast) var(--ease-out);
   }
 
   label:hover {
-    background: var(--bg-hover);
+    background: var(--bg-card-hover);
+  }
+
+  /* Tasks already in today have no box to tick: a small mark keeps the names aligned. */
+  .pin {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+  }
+
+  .pin::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-chip);
+    background: var(--text-secondary);
   }
 
   .name {
     flex: 1;
     min-width: 0;
     overflow: hidden;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .meta {
-    color: var(--text-secondary);
+    flex: none;
+    padding: 1px 9px;
+    border-radius: var(--radius-chip);
+    background: var(--bg-control);
+    color: var(--text-primary);
     font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 18px;
+  }
+
+  .meta.none {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .empty {
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  .summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 12px 14px;
+    border-radius: var(--radius-card);
+    background: var(--bg-card);
+  }
+
+  .summary-label {
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+
+  .total {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
 
-  .empty,
-  .total {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 13px;
-  }
-
-  .total {
-    color: var(--text-primary);
-    font-weight: 600;
-  }
-
-  .total.over,
-  .warn {
+  .summary.over .total {
     color: var(--danger);
-  }
-
-  .warn {
-    margin: 0;
-    font-size: 13px;
   }
 
   .actions {

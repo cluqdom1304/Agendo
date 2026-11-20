@@ -128,7 +128,7 @@
 </script>
 
 <aside
-  class="app-sidebar"
+  class="app-sidebar chrome-dark"
   class:open
   aria-label={t.sidebar.label}
   inert={!open}

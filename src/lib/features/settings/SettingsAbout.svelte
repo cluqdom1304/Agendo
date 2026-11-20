@@ -87,11 +87,12 @@
 
 <style>
   h3 {
-    margin: 20px 0 6px;
-    padding-left: 2px;
+    margin: 22px 0 6px;
+    padding-left: 14px;
     color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
   }
 
   .hint {
@@ -106,14 +107,19 @@
     grid-template-columns: max-content 1fr;
     gap: 4px var(--space-4);
     margin: 8px 0;
-    padding: 8px var(--space-3);
+    padding: 12px 14px;
     border-radius: var(--radius-card);
-    background: var(--bg-control);
-    font-size: 12px;
+    background: var(--bg-card);
+    font-size: 13px;
   }
 
   .info dt {
     color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .info dd {
+    font-weight: 500;
   }
 
   .info dd {

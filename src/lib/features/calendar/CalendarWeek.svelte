@@ -492,7 +492,8 @@
 
   .gutter {
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 11.5px;
+    font-weight: 500;
     padding: 4px 6px 0 0;
     text-align: right;
   }
@@ -547,8 +548,12 @@
   .chip,
   .block {
     border: 0;
-    border-radius: 5px;
-    background: color-mix(in srgb, var(--tag, var(--accent)) 22%, transparent);
+    border-radius: 8px;
+    background: color-mix(
+      in srgb,
+      var(--tag, var(--accent)) 14%,
+      var(--bg-card)
+    );
     color: var(--text-primary);
     font: inherit;
     font-size: 12px;
@@ -564,7 +569,11 @@
 
   .chip:hover,
   .block:hover {
-    background: color-mix(in srgb, var(--tag, var(--accent)) 34%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--tag, var(--accent)) 24%,
+      var(--bg-card)
+    );
   }
 
   .chip:active,
@@ -630,8 +639,8 @@
   .block {
     position: absolute;
     min-height: 14px;
-    padding: 1px 6px;
-    line-height: 1.2;
+    padding: 4px 8px;
+    line-height: 1.25;
     border-left: 3px solid var(--tag, var(--accent));
   }
 
@@ -647,8 +656,12 @@
 
   .chip.event,
   .block.event {
-    background: color-mix(in srgb, var(--tag, var(--accent)) 38%, transparent);
-    font-weight: 500;
+    background: color-mix(
+      in srgb,
+      var(--tag, var(--accent)) 22%,
+      var(--bg-card)
+    );
+    font-weight: 600;
   }
 
   .block[data-task-id],

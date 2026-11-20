@@ -65,6 +65,7 @@
 {/if}
 
 <style>
+  /* A floating capsule over the list, like the toast: the selection is the one thing on screen. */
   .bar {
     position: fixed;
     left: 50%;
@@ -73,33 +74,57 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
+    padding: 6px 8px 6px 18px;
     transform: translateX(-50%);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-control);
-    background: var(--bg-elevated, var(--bg-hover));
-    box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+    border-radius: var(--radius-chip);
+    background: var(--bg-popover);
+    box-shadow: var(--shadow-popover);
     font-size: 13px;
+    animation: bar-in var(--motion-spring) var(--ease-spring);
+  }
+
+  @keyframes bar-in {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(12px) scale(0.96);
+    }
   }
 
   .count {
     padding-right: var(--space-2);
-    color: var(--text-secondary);
+    color: var(--text-primary);
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
 
   .action {
-    padding: 4px var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-control);
-    background: transparent;
+    box-sizing: border-box;
+    min-height: 28px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-chip);
+    background: var(--bg-control);
     color: var(--text-primary);
     font: inherit;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      transform var(--motion-fast) var(--ease-spring);
   }
 
   .action:hover {
-    background: var(--bg-hover);
+    background: var(--bg-control-hover);
+  }
+
+  .action:active {
+    transform: scale(0.96);
+  }
+
+  .action:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   .danger {

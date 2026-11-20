@@ -166,14 +166,6 @@
     gap: var(--space-4);
   }
 
-  h2 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
-
   .block {
     display: grid;
     min-width: 0;

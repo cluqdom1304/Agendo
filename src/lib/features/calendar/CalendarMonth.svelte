@@ -225,11 +225,15 @@
   }
 
   .chip {
-    padding: 1px 6px;
+    padding: 2px 6px;
     border: 0;
-    border-radius: 5px;
+    border-radius: 6px;
     border-left: 3px solid var(--tag, var(--accent));
-    background: color-mix(in srgb, var(--tag, var(--accent)) 22%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--tag, var(--accent)) 14%,
+      var(--bg-card)
+    );
     color: var(--text-primary);
     font: inherit;
     font-size: 12px;
@@ -244,7 +248,11 @@
   }
 
   .chip:hover {
-    background: color-mix(in srgb, var(--tag, var(--accent)) 34%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--tag, var(--accent)) 24%,
+      var(--bg-card)
+    );
   }
 
   .chip:active {
@@ -252,8 +260,12 @@
   }
 
   .chip.event {
-    background: color-mix(in srgb, var(--tag, var(--accent)) 38%, transparent);
-    font-weight: 500;
+    background: color-mix(
+      in srgb,
+      var(--tag, var(--accent)) 22%,
+      var(--bg-card)
+    );
+    font-weight: 600;
   }
 
   .chip.done {

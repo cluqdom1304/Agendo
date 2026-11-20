@@ -132,7 +132,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: 0 var(--space-3);
+    padding: 0 16px;
   }
 
   .legend {
@@ -148,7 +148,7 @@
     position: absolute;
     top: 0;
     right: 0;
-    left: var(--space-3);
+    left: 16px;
     height: 1px;
     background: var(--separator);
   }
@@ -170,7 +170,8 @@
   .cell-head {
     width: 22px;
     color: var(--text-secondary);
-    font-size: 10px;
+    font-size: 10.5px;
+    font-weight: 700;
     text-align: center;
     text-transform: uppercase;
   }
@@ -180,7 +181,7 @@
     flex: 1;
     gap: 2px;
     min-width: 0;
-    padding: 8px 0;
+    padding: 12px 0;
     border: 0;
     background: transparent;
     color: var(--text-primary);
@@ -197,8 +198,8 @@
 
   .title {
     overflow: hidden;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -206,7 +207,7 @@
   .meta,
   .streak {
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .dot {
