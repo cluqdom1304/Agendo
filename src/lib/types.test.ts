@@ -4,6 +4,8 @@ import fixtureJson from "../../src-tauri/fixtures/dto.json";
 import { parseError } from "./api";
 import type {
   Attachment,
+  CalendarEvent,
+  EventOccurrence,
   DayGroup,
   EffectApplied,
   Folder,
@@ -44,6 +46,9 @@ interface Fixture {
   noteSummary: NoteSummary;
   noteTitle: NoteTitle;
   noteTemplate: NoteTemplate;
+  event: CalendarEvent;
+  eventAllDay: CalendarEvent;
+  eventOccurrence: EventOccurrence;
   noteReminder: NoteReminder;
   noteVersionSummary: NoteVersionSummary;
   noteVersion: NoteVersion;
@@ -155,6 +160,34 @@ const noteVersionKeys: Record<keyof NoteVersion, true> = {
   contentJson: true,
   createdAt: true,
 };
+const eventKeys: Record<keyof CalendarEvent, true> = {
+  id: true,
+  title: true,
+  notes: true,
+  startDate: true,
+  startTime: true,
+  endDate: true,
+  endTime: true,
+  allDay: true,
+  rrule: true,
+  tagIds: true,
+  reminderOffsets: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
+const eventOccurrenceKeys: Record<keyof EventOccurrence, true> = {
+  eventId: true,
+  title: true,
+  startDate: true,
+  startTime: true,
+  endDate: true,
+  endTime: true,
+  allDay: true,
+  recurring: true,
+  tagIds: true,
+};
+
 const noteReminderKeys: Record<keyof NoteReminder, true> = {
   id: true,
   noteId: true,
@@ -240,6 +273,12 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
     expect(keys(fixture.noteTitle)).toEqual(keys(noteTitleKeys));
     expect(keys(fixture.noteTemplate)).toEqual(keys(noteTemplateKeys));
     expect(keys(fixture.noteReminder)).toEqual(keys(noteReminderKeys));
+    expect(keys(fixture.event)).toEqual(keys(eventKeys));
+    expect(keys(fixture.eventAllDay)).toEqual(keys(eventKeys));
+    expect(keys(fixture.eventOccurrence)).toEqual(keys(eventOccurrenceKeys));
+    expect(fixture.event.allDay).toBe(false);
+    expect(fixture.eventAllDay.startTime).toBeNull();
+    expect(fixture.eventAllDay.allDay).toBe(true);
     expect(keys(fixture.noteVersionSummary)).toEqual(
       keys(noteVersionSummaryKeys),
     );

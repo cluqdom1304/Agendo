@@ -49,6 +49,55 @@
     "applied": "acrylic",
     "requested": "mica"
   },
+  "event": {
+    "allDay": false,
+    "createdAt": "2026-03-10T10:00:00Z",
+    "endDate": "2026-03-12",
+    "endTime": "11:30",
+    "id": "event-1",
+    "notes": "Sala 3",
+    "reminderOffsets": [
+      15
+    ],
+    "rrule": "FREQ=WEEKLY;INTERVAL=1",
+    "startDate": "2026-03-12",
+    "startTime": "10:00",
+    "tagIds": [
+      "tag-1"
+    ],
+    "title": "Seminario",
+    "updatedAt": "2026-03-10T11:00:00Z"
+  },
+  "eventAllDay": {
+    "allDay": true,
+    "createdAt": "2026-03-10T10:00:00Z",
+    "endDate": "2026-03-12",
+    "endTime": null,
+    "id": "event-1",
+    "notes": "Sala 3",
+    "reminderOffsets": [],
+    "rrule": null,
+    "startDate": "2026-03-12",
+    "startTime": null,
+    "tagIds": [
+      "tag-1"
+    ],
+    "title": "Seminario",
+    "updatedAt": "2026-03-10T11:00:00Z"
+  },
+  "eventOccurrence": {
+    "allDay": false,
+    "endDate": "2026-03-12",
+    "endTime": "11:30",
+    "eventId": "event-1",
+    "recurring": true,
+    "startDate": "2026-03-12",
+    "startTime": "10:00",
+    "tagIds": [
+      "tag-1"
+    ],
+    "title": "Seminario"
+  },
   "folder": {
     "id": "folder-1",
     "name": "Grado",

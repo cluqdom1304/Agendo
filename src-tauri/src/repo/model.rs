@@ -286,3 +286,57 @@ pub struct NoteContent {
     pub task_ids: Vec<String>,
     pub note_ids: Vec<String>,
 }
+
+/// An appointment with a start and an end (D-94). It has no completion state. Dates and times
+/// are local; an event without times lasts whole days.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Event {
+    pub id: String,
+    pub title: String,
+    pub notes: String,
+    pub start_date: String,
+    pub start_time: Option<String>,
+    pub end_date: String,
+    pub end_time: Option<String>,
+    pub all_day: bool,
+    /// Repeat rule of `domain::recurrence`, anchored on `start_date`.
+    pub rrule: Option<String>,
+    pub tag_ids: Vec<String>,
+    /// Minutes before the start at which the event warns; one entry per reminder.
+    pub reminder_offsets: Vec<i64>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// One appearance of an event on the calendar: the event itself or one repetition of it.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EventOccurrence {
+    pub event_id: String,
+    pub title: String,
+    pub start_date: String,
+    pub start_time: Option<String>,
+    pub end_date: String,
+    pub end_time: Option<String>,
+    pub all_day: bool,
+    pub recurring: bool,
+    pub tag_ids: Vec<String>,
+}
+
+/// Every editable field of an event, to create it or to replace what it has. The caller supplies
+/// the id and the UTC instant `now`.
+#[derive(Debug, Clone, Default)]
+pub struct EventData {
+    pub id: String,
+    pub title: String,
+    pub notes: String,
+    pub start_date: String,
+    pub start_time: Option<String>,
+    pub end_date: String,
+    pub end_time: Option<String>,
+    pub rrule: Option<String>,
+    pub tag_ids: Vec<String>,
+    pub reminder_offsets: Vec<i64>,
+    pub now: String,
+}

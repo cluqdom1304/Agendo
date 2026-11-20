@@ -1,6 +1,7 @@
 pub mod attachments;
 pub mod autostart;
 pub mod backup;
+pub mod events;
 pub mod exchange;
 pub mod folders;
 pub mod info;

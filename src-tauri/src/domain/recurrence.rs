@@ -267,6 +267,59 @@ impl Rule {
     }
 }
 
+/// Most occurrences looked at in one expansion, so a rule from long ago cannot make a query
+/// walk for ever (a daily series needs 20 000 steps to cover 55 years).
+pub const MAX_SCANNED_OCCURRENCES: usize = 20_000;
+
+/// The dates of a series, in order, starting with its first one (D-94).
+pub struct Occurrences {
+    rule: Rule,
+    next: Option<NaiveDate>,
+}
+
+impl Iterator for Occurrences {
+    type Item = NaiveDate;
+
+    fn next(&mut self) -> Option<NaiveDate> {
+        let current = self.next?;
+        self.next = self.rule.next_after(current, current);
+        self.rule = self.rule.successor();
+        Some(current)
+    }
+}
+
+impl Rule {
+    /// Every date of the series that starts on `start`, which must be the date the rule was
+    /// anchored to. Without `UNTIL` or `COUNT` the series never ends: take what you need.
+    pub fn occurrences(&self, start: NaiveDate) -> Occurrences {
+        Occurrences {
+            rule: self.clone(),
+            next: Some(start),
+        }
+    }
+
+    /// The dates of the series from `start` that fall in `from..=to`.
+    pub fn occurrences_in(
+        &self,
+        start: NaiveDate,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> Vec<NaiveDate> {
+        self.occurrences(start)
+            .take(MAX_SCANNED_OCCURRENCES)
+            .take_while(|date| *date <= to)
+            .filter(|date| *date >= from)
+            .collect()
+    }
+
+    /// The first date of the series on or after `from`.
+    pub fn first_on_or_after(&self, start: NaiveDate, from: NaiveDate) -> Option<NaiveDate> {
+        self.occurrences(start)
+            .take(MAX_SCANNED_OCCURRENCES)
+            .find(|date| *date >= from)
+    }
+}
+
 /// Whole weeks since a fixed Monday, so that two dates in the same Monday-to-Sunday week match.
 fn week_index(date: NaiveDate) -> i64 {
     let monday = date - Duration::days(i64::from(date.weekday().num_days_from_monday()));
@@ -322,6 +375,62 @@ mod tests {
                 .expect("parse")
                 .anchored(d("2026-02-01"))
                 .is_err()
+        );
+    }
+
+    #[test]
+    fn occurrences_expand_a_series_inside_a_window() {
+        let weekly = rule("FREQ=WEEKLY;INTERVAL=1", "2026-03-02");
+        assert_eq!(
+            weekly.occurrences_in(d("2026-03-02"), d("2026-03-10"), d("2026-03-24")),
+            [d("2026-03-16"), d("2026-03-23")]
+        );
+
+        let counted = rule("FREQ=DAILY;INTERVAL=1;COUNT=3", "2026-03-30");
+        assert_eq!(
+            counted.occurrences_in(d("2026-03-30"), d("2026-01-01"), d("2026-12-31")),
+            [d("2026-03-30"), d("2026-03-31"), d("2026-04-01")]
+        );
+
+        let until = rule("FREQ=DAILY;INTERVAL=2;UNTIL=20260307", "2026-03-01");
+        assert_eq!(
+            until.occurrences_in(d("2026-03-01"), d("2026-03-02"), d("2026-04-01")),
+            [d("2026-03-03"), d("2026-03-05"), d("2026-03-07")]
+        );
+
+        let days = rule("FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE", "2026-03-02");
+        assert_eq!(
+            days.occurrences_in(d("2026-03-02"), d("2026-03-02"), d("2026-03-11")),
+            [
+                d("2026-03-02"),
+                d("2026-03-04"),
+                d("2026-03-09"),
+                d("2026-03-11")
+            ]
+        );
+
+        let month_end = rule("FREQ=MONTHLY;INTERVAL=1", "2026-01-31");
+        assert_eq!(
+            month_end.occurrences_in(d("2026-01-31"), d("2026-02-01"), d("2026-04-30")),
+            [d("2026-02-28"), d("2026-03-31"), d("2026-04-30")]
+        );
+        assert!(
+            weekly
+                .occurrences_in(d("2026-03-02"), d("2026-03-20"), d("2026-03-01"))
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn first_on_or_after_finds_the_next_date_of_a_series() {
+        let daily = rule("FREQ=DAILY;INTERVAL=1;COUNT=3", "2026-03-01");
+        assert_eq!(
+            daily.first_on_or_after(d("2026-03-01"), d("2026-03-02")),
+            Some(d("2026-03-02"))
+        );
+        assert_eq!(
+            daily.first_on_or_after(d("2026-03-01"), d("2026-03-04")),
+            None
         );
     }
 

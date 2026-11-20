@@ -18,6 +18,8 @@ pub struct DueReminder {
     /// Set for the reminder of a task; `note_id` for the reminder of a note (D-52).
     pub task_id: Option<String>,
     pub note_id: Option<String>,
+    /// Set for the reminder of an event (D-94).
+    pub event_id: Option<String>,
     pub title: String,
     pub due_time: Option<String>,
     /// Plain text of the task's notes (`content_text`), possibly empty.
@@ -39,6 +41,7 @@ pub struct NewReminder {
 pub fn due(conn: &Connection, now: &str) -> rusqlite::Result<Vec<DueReminder>> {
     let mut found = due_tasks(conn, now)?;
     found.extend(due_notes(conn, now)?);
+    found.extend(due_events(conn, now)?);
     found.sort_by(|a, b| (&a.notify_at, &a.id).cmp(&(&b.notify_at, &b.id)));
     Ok(found)
 }
@@ -65,10 +68,36 @@ fn due_notes(conn: &Connection, now: &str) -> rusqlite::Result<Vec<DueReminder>>
             notify_at: row.get(4)?,
             task_id: None,
             note_id: Some(row.get(1)?),
+            event_id: None,
             title: row.get(2)?,
             due_time: None,
             notes: row.get(3)?,
             tag_names: tag_names(row, 5)?,
+        })
+    })?
+    .collect()
+}
+
+fn due_events(conn: &Connection, now: &str) -> rusqlite::Result<Vec<DueReminder>> {
+    conn.prepare_cached(
+        "SELECT r.id, e.id, e.title, e.start_time, e.notes, r.notify_at,
+                (SELECT json_group_array(g.name ORDER BY g.name)
+                   FROM event_tags et JOIN tags g ON g.id = et.tag_id WHERE et.event_id = e.id)
+         FROM event_reminders r JOIN events e ON e.id = r.event_id
+         WHERE r.is_sent = 0 AND r.notify_at <= ?1 AND e.deleted_at IS NULL
+         ORDER BY r.notify_at, r.id",
+    )?
+    .query_map(params![now], |row| {
+        Ok(DueReminder {
+            id: row.get(0)?,
+            notify_at: row.get(5)?,
+            task_id: None,
+            note_id: None,
+            event_id: Some(row.get(1)?),
+            title: row.get(2)?,
+            due_time: row.get(3)?,
+            notes: row.get(4)?,
+            tag_names: tag_names(row, 6)?,
         })
     })?
     .collect()
@@ -91,6 +120,7 @@ fn due_tasks(conn: &Connection, now: &str) -> rusqlite::Result<Vec<DueReminder>>
             notify_at: row.get(6)?,
             task_id: Some(row.get(1)?),
             note_id: None,
+            event_id: None,
             title: row.get(2)?,
             due_time: row.get(3)?,
             notes: row.get(4)?,
@@ -117,10 +147,14 @@ pub fn next_after(conn: &Connection, now: &str) -> rusqlite::Result<Option<Strin
              WHERE r.is_sent = 0 AND r.notify_at > ?1 AND n.deleted_at IS NULL",
         )?
         .query_row(params![now], |row| row.get(0))?;
-    Ok(match (task, note) {
-        (Some(a), Some(b)) => Some(a.min(b)),
-        (a, b) => a.or(b),
-    })
+    let event: Option<String> = conn
+        .prepare_cached(
+            "SELECT MIN(r.notify_at)
+             FROM event_reminders r JOIN events e ON e.id = r.event_id
+             WHERE r.is_sent = 0 AND r.notify_at > ?1 AND e.deleted_at IS NULL",
+        )?
+        .query_row(params![now], |row| row.get(0))?;
+    Ok([task, note, event].into_iter().flatten().min())
 }
 
 pub fn mark_sent(tx: &Transaction<'_>, id: &str, now: &str) -> rusqlite::Result<bool> {
@@ -132,12 +166,15 @@ pub fn mark_sent(tx: &Transaction<'_>, id: &str, now: &str) -> rusqlite::Result<
     if changed > 0 {
         return Ok(true);
     }
-    let changed = tx
-        .prepare_cached(
-            "UPDATE note_reminders SET is_sent = 1, sent_at = ?2 WHERE id = ?1 AND is_sent = 0",
-        )?
-        .execute(params![id, now])?;
-    Ok(changed > 0)
+    for sql in [
+        "UPDATE note_reminders SET is_sent = 1, sent_at = ?2 WHERE id = ?1 AND is_sent = 0",
+        "UPDATE event_reminders SET is_sent = 1, sent_at = ?2 WHERE id = ?1 AND is_sent = 0",
+    ] {
+        if tx.prepare_cached(sql)?.execute(params![id, now])? > 0 {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 /// Marks as sent, without notifying, every unsent reminder due before `cutoff` (F-14).
@@ -152,6 +189,8 @@ pub fn expire_before(
         "UPDATE reminders SET is_sent = 1, sent_at = ?2
          WHERE is_sent = 0 AND notify_at < ?1 RETURNING id",
         "UPDATE note_reminders SET is_sent = 1, sent_at = ?2
+         WHERE is_sent = 0 AND notify_at < ?1 RETURNING id",
+        "UPDATE event_reminders SET is_sent = 1, sent_at = ?2
          WHERE is_sent = 0 AND notify_at < ?1 RETURNING id",
     ] {
         let mut expired: Vec<String> = tx

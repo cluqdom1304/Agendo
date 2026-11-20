@@ -145,6 +145,7 @@ fn fires_exactly_when_the_time_comes_and_only_once() {
         [Fired {
             task_id: Some("t1".into()),
             note_id: None,
+            event_id: None,
             reminder_id: "r1".into()
         }]
     );
@@ -568,4 +569,74 @@ fn an_expired_sounding_is_skipped_and_the_series_goes_on_in_the_future() {
     assert_eq!(all.len(), 2);
     assert!(all[1].0.as_str() > "2026-03-13T10:00:00Z");
     assert!(!all[1].1);
+}
+
+#[test]
+fn an_event_warns_once_and_a_series_schedules_the_next_occurrence() {
+    use crate::services::events::{self, EventInput};
+
+    let (state, clock) = test_state();
+    let (notifier, sink) = (FakeNotifier::default(), FakeSink::default());
+    let event = events::create(
+        &state,
+        EventInput {
+            title: Some("Seminario".into()),
+            start_date: "2026-03-20".into(),
+            start_time: Some("12:00".into()),
+            rrule: Some("FREQ=WEEKLY;INTERVAL=1".into()),
+            reminder_offsets: Some(vec![0]),
+            ..EventInput::default()
+        },
+    )
+    .expect("event");
+    let waiting = |state: &AppState| -> Vec<String> {
+        state
+            .db
+            .read(|conn| {
+                Ok(conn
+                    .prepare(
+                        "SELECT notify_at FROM event_reminders WHERE is_sent = 0 ORDER BY notify_at",
+                    )?
+                    .query_map([], |r| r.get(0))?
+                    .collect::<rusqlite::Result<_>>()?)
+            })
+            .expect("rows")
+    };
+    let first = waiting(&state);
+    assert_eq!(first.len(), 1);
+    let mut engine = Engine::default();
+
+    // Nothing sounds before its time.
+    assert!(
+        engine
+            .tick(&state, &notifier, &sink)
+            .expect("tick")
+            .fired
+            .is_empty()
+    );
+
+    clock.set(dates::parse_instant(&first[0]).expect("instant"));
+    let report = engine.tick(&state, &notifier, &sink).expect("tick");
+    assert_eq!(report.fired.len(), 1);
+    assert_eq!(notifier.titles(), ["Seminario"]);
+    assert_eq!(
+        sink.0.lock().expect("lock")[0].event_id.as_deref(),
+        Some(event.id.as_str())
+    );
+
+    let next = waiting(&state);
+    assert_eq!(next.len(), 1, "the series keeps one warning waiting");
+    let gap = dates::parse_instant(&next[0]).expect("next")
+        - dates::parse_instant(&first[0]).expect("first");
+    assert!(
+        gap >= Duration::days(6) && gap <= Duration::days(8),
+        "next occurrence is a week later, got {gap}"
+    );
+    assert!(
+        engine
+            .tick(&state, &notifier, &sink)
+            .expect("tick")
+            .fired
+            .is_empty()
+    );
 }

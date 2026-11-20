@@ -16,8 +16,9 @@ use crate::{
     repo::{
         find::FoundItem,
         model::{
-            Folder, FolderWithCount, Note, NoteReminder, NoteSummary, NoteTemplate, NoteTitle,
-            NoteVersion, NoteVersionSummary, Reminder, Tag, TagWithCount, Task,
+            Event, EventOccurrence, Folder, FolderWithCount, Note, NoteReminder, NoteSummary,
+            NoteTemplate, NoteTitle, NoteVersion, NoteVersionSummary, Reminder, Tag, TagWithCount,
+            Task,
         },
         search::SearchHit,
     },
@@ -61,6 +62,24 @@ fn task(with_values: bool) -> Task {
                 occurrence: 3,
             }),
         }],
+        created_at: "2026-03-10T10:00:00Z".into(),
+        updated_at: "2026-03-10T11:00:00Z".into(),
+    }
+}
+
+fn event(timed: bool) -> Event {
+    Event {
+        id: "event-1".into(),
+        title: "Seminario".into(),
+        notes: "Sala 3".into(),
+        start_date: "2026-03-12".into(),
+        start_time: timed.then(|| "10:00".to_string()),
+        end_date: "2026-03-12".into(),
+        end_time: timed.then(|| "11:30".to_string()),
+        all_day: !timed,
+        rrule: timed.then(|| "FREQ=WEEKLY;INTERVAL=1".to_string()),
+        tag_ids: vec!["tag-1".into()],
+        reminder_offsets: if timed { vec![15] } else { vec![] },
         created_at: "2026-03-10T10:00:00Z".into(),
         updated_at: "2026-03-10T11:00:00Z".into(),
     }
@@ -152,6 +171,19 @@ fn current() -> Value {
         "folderWithCount": FolderWithCount { folder: folder(), note_count: 3 },
         "note": note(true),
         "noteInInbox": note(false),
+        "event": event(true),
+        "eventAllDay": event(false),
+        "eventOccurrence": EventOccurrence {
+            event_id: "event-1".into(),
+            title: "Seminario".into(),
+            start_date: "2026-03-12".into(),
+            start_time: Some("10:00".into()),
+            end_date: "2026-03-12".into(),
+            end_time: Some("11:30".into()),
+            all_day: false,
+            recurring: true,
+            tag_ids: vec!["tag-1".into()],
+        },
         "noteReminder": NoteReminder {
             id: "nreminder-1".into(),
             note_id: "note-1".into(),

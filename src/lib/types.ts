@@ -53,6 +53,63 @@ export interface NoteReminder {
   notifyAt: string;
 }
 
+/** An appointment with a start and an end; it is not completed (D-94). */
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  notes: string;
+  startDate: string;
+  /** `null` for an all-day event. */
+  startTime: string | null;
+  endDate: string;
+  endTime: string | null;
+  allDay: boolean;
+  rrule: string | null;
+  tagIds: string[];
+  /** Minutes before the start at which the event warns. */
+  reminderOffsets: number[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One appearance of an event on the calendar: the event itself or a repetition of it. */
+export interface EventOccurrence {
+  eventId: string;
+  title: string;
+  startDate: string;
+  startTime: string | null;
+  endDate: string;
+  endTime: string | null;
+  allDay: boolean;
+  recurring: boolean;
+  tagIds: string[];
+}
+
+export interface EventInput {
+  title?: string;
+  notes?: string;
+  startDate: string;
+  startTime?: string;
+  endDate?: string;
+  endTime?: string;
+  rrule?: string;
+  tagIds?: string[];
+  reminderOffsets?: number[];
+}
+
+/** Absent = leave as is; `null` = clear (`startTime: null` makes it an all-day event). */
+export interface EventPatch {
+  title?: string;
+  notes?: string;
+  startDate?: string;
+  startTime?: string | null;
+  endDate?: string;
+  endTime?: string;
+  rrule?: string | null;
+  tagIds?: string[];
+  reminderOffsets?: number[];
+}
+
 export interface Task {
   id: string;
   title: string;

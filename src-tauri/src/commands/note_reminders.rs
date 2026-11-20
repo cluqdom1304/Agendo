@@ -186,6 +186,7 @@ mod tests {
             [Fired {
                 task_id: None,
                 note_id: Some(id.clone()),
+                event_id: None,
                 reminder_id: reminder.id
             }]
         );

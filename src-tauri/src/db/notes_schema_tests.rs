@@ -311,7 +311,7 @@ fn upgrading_a_v1_database_keeps_every_row() {
     conn.execute("INSERT INTO settings VALUES ('theme', 'dark')", [])
         .expect("setting");
 
-    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v15"), 15);
+    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v16"), 16);
 
     assert_eq!(count(&conn, "SELECT COUNT(*) FROM tasks"), 3);
     assert_eq!(
@@ -347,7 +347,10 @@ fn migration_15_keeps_tasks_and_adds_priority_and_checklist_counters() {
         task(&conn, id);
     }
 
-    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v15"), 15);
+    assert_eq!(
+        migrate::migrate(&mut conn, &MIGRATIONS[..15]).expect("v15"),
+        15
+    );
 
     assert_eq!(count(&conn, "SELECT COUNT(*) FROM tasks"), 2);
     assert_eq!(
@@ -366,4 +369,53 @@ fn migration_15_keeps_tasks_and_adds_priority_and_checklist_counters() {
     ] {
         assert!(conn.execute(bad, []).is_err(), "{bad} should be rejected");
     }
+}
+
+fn event(conn: &Connection, id: &str) {
+    conn.execute(
+        "INSERT INTO events (id, start_date, end_date, created_at, updated_at)
+         VALUES (?1, '2026-03-12', '2026-03-12', ?2, ?2)",
+        params![id, NOW],
+    )
+    .expect("insert event");
+}
+
+#[test]
+fn events_check_their_dates_and_cascade_to_tags_and_reminders() {
+    let conn = database();
+    event(&conn, "e1");
+    tag(&conn, "tag", "Clase");
+    conn.execute("INSERT INTO event_tags VALUES ('e1', 'tag')", [])
+        .expect("link");
+    conn.execute(
+        "INSERT INTO event_reminders (id, event_id, offset_minutes, notify_at, created_at)
+         VALUES ('r1', 'e1', 15, ?1, ?1)",
+        [NOW],
+    )
+    .expect("reminder");
+
+    for bad in [
+        // ends before it starts
+        "INSERT INTO events (id, start_date, end_date, created_at, updated_at)
+         VALUES ('b1', '2026-03-12', '2026-03-11', 'x', 'x')",
+        // a start time without an end time
+        "INSERT INTO events (id, start_date, start_time, end_date, created_at, updated_at)
+         VALUES ('b2', '2026-03-12', '09:00', '2026-03-12', 'x', 'x')",
+        // ends earlier on the same day
+        "INSERT INTO events (id, start_date, start_time, end_date, end_time, created_at, updated_at)
+         VALUES ('b3', '2026-03-12', '09:00', '2026-03-12', '08:00', 'x', 'x')",
+        "INSERT INTO event_tags VALUES ('e1', 'missing')",
+        "INSERT INTO event_reminders (id, event_id, offset_minutes, notify_at, created_at)
+         VALUES ('r2', 'missing', 0, 'x', 'x')",
+    ] {
+        assert!(conn.execute(bad, []).is_err(), "{bad} should be rejected");
+    }
+
+    conn.execute("DELETE FROM tags WHERE id = 'tag'", [])
+        .expect("delete tag");
+    assert_eq!(count(&conn, "SELECT COUNT(*) FROM event_tags"), 0);
+    assert_eq!(count(&conn, "SELECT COUNT(*) FROM events"), 1);
+    conn.execute("DELETE FROM events WHERE id = 'e1'", [])
+        .expect("delete event");
+    assert_eq!(count(&conn, "SELECT COUNT(*) FROM event_reminders"), 0);
 }

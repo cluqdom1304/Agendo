@@ -8,9 +8,13 @@ import type {
   ExportReport,
   ImportReport,
   Attachment,
+  CalendarEvent,
   EffectApplied,
   EffectMode,
   ErrorCode,
+  EventInput,
+  EventOccurrence,
+  EventPatch,
   Folder,
   FolderUpsertInput,
   FolderWithCount,
@@ -95,6 +99,37 @@ export function tasksList(
 /** Everything in one call: the undated tasks and every day of the agenda (optionally one tag). */
 export function tasksListAll(tagId?: string): Promise<TasksSections> {
   return invoke<TasksSections>("tasks_list_all", { tagId });
+}
+
+/** Events (and the repetitions of series) that show between two local days, inclusive (D-94). */
+export function eventsList(
+  from: string,
+  to: string,
+): Promise<EventOccurrence[]> {
+  return invoke<EventOccurrence[]>("events_list", { from, to });
+}
+
+export function eventGet(id: string): Promise<CalendarEvent> {
+  return invoke<CalendarEvent>("event_get", { id });
+}
+
+export function eventCreate(input: EventInput): Promise<CalendarEvent> {
+  return invoke<CalendarEvent>("event_create", { input });
+}
+
+export function eventUpdate(
+  id: string,
+  patch: EventPatch,
+): Promise<CalendarEvent> {
+  return invoke<CalendarEvent>("event_update", { id, patch });
+}
+
+export function eventDelete(id: string): Promise<void> {
+  return invoke<void>("event_delete", { id });
+}
+
+export function eventRestore(id: string): Promise<CalendarEvent> {
+  return invoke<CalendarEvent>("event_restore", { id });
 }
 
 export function taskCreate(input: TaskCreateInput = {}): Promise<Task> {

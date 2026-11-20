@@ -6,6 +6,7 @@ fn reminder(title: &str, tags: &[&str], time: Option<&str>) -> DueReminder {
         notify_at: "2026-03-10T10:00:00Z".into(),
         task_id: Some("t".into()),
         note_id: None,
+        event_id: None,
         title: title.into(),
         due_time: time.map(str::to_string),
         notes: String::new(),
@@ -78,6 +79,7 @@ fn the_fired_payload_is_camel_case() {
     let json = serde_json::to_value(Fired {
         task_id: Some("t".into()),
         note_id: None,
+        event_id: None,
         reminder_id: "r".into(),
     })
     .expect("json");

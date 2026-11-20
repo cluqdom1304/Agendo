@@ -11,7 +11,7 @@ pub struct Migration {
 }
 
 /// Every schema migration of the app, in order. A schema change is always a new numbered file.
-pub const MIGRATIONS: [Migration; 15] = [
+pub const MIGRATIONS: [Migration; 16] = [
     Migration {
         version: 1,
         sql: include_str!("../../migrations/001_init.sql"),
@@ -71,6 +71,10 @@ pub const MIGRATIONS: [Migration; 15] = [
     Migration {
         version: 15,
         sql: include_str!("../../migrations/015_task_priority_checklist.sql"),
+    },
+    Migration {
+        version: 16,
+        sql: include_str!("../../migrations/016_events.sql"),
     },
 ];
 

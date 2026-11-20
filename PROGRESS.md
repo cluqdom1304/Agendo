@@ -479,7 +479,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F18-00 `[A]` Medir la línea base (`npm run build && npm run size`, tamaño del exe, escala) en `docs/metricas.md` y fijar D-98.
 - [x] F18-01 `[A]` Migración 015 (`tasks.priority`, `checklist_done`, `checklist_total`) con test de migración desde el esquema 14 con datos; actualizar `MIGRATIONS` y los tests que esperan 14.
 - [x] F18-02 `[A]` Cableado de prioridad y checklist: `repo/model.rs`, `task_sql!`/`map_task`, `services/tasks.rs`, `commands/tasks.rs`, `types.ts`, `api.ts`, tests de contrato y paridad, `repo/export.rs`.
-- [ ] F18-03 `[A]` Migración 016 (`events`, `event_tags`, `event_reminders`), `repo/events.rs`, servicio, comandos, `domain/recurrence::occurrences_in` y recordatorios de evento en el scheduler.
+- [x] F18-03 `[A]` Migración 016 (`events`, `event_tags`, `event_reminders`), `repo/events.rs`, servicio, comandos, `domain/recurrence::occurrences_in` y recordatorios de evento en el scheduler.
 - [ ] F18-04 `[A]` Migración 017 (`habits`, `habit_logs`), `repo/habits.rs`, `domain/habits.rs` (racha con `Clock`), comandos y tests.
 - [ ] F18-05 `[A]` Migración 018 (`time_entries`), comandos de enfoque y recuperación de entradas huérfanas.
 - [ ] F18-06 `[A]` Búsqueda unificada y papelera incluyen eventos y hábitos.

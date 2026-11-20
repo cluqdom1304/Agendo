@@ -17,6 +17,7 @@ use crate::{
     error::AppResult,
     notify::{Fired, FiredSink, Notification, Notifier},
     repo::reminders,
+    services::events,
     state::AppState,
 };
 
@@ -66,7 +67,7 @@ fn continue_series(
     now: DateTime<Utc>,
 ) -> AppResult<()> {
     let Some(member) = reminders::series_member(tx, id)? else {
-        return Ok(());
+        return events::continue_after_reminder(state, tx, id, now, &Local);
     };
     let current = dates::parse_instant(&member.notify_at)?;
     if let Some((at, occurrence)) = rules::next_occurrence(&Local, current, &member.repeat, now)? {
@@ -134,6 +135,7 @@ impl Engine {
                     sink.fired(&Fired {
                         task_id: reminder.task_id.clone(),
                         note_id: reminder.note_id.clone(),
+                        event_id: reminder.event_id.clone(),
                         reminder_id: reminder.id.clone(),
                     });
                     report.fired.push(reminder.id);

@@ -5,6 +5,7 @@
 //! mapped to IPC error codes by `error.rs`. "Not found" is `None` / `false`, never an error.
 
 pub mod attachments;
+pub mod events;
 pub mod export;
 pub mod find;
 pub mod folders;

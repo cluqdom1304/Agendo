@@ -58,6 +58,7 @@ pub struct Notification {
     /// What the notification is about; actions and clicks refer to it (F13-06).
     pub task_id: Option<String>,
     pub note_id: Option<String>,
+    pub event_id: Option<String>,
 }
 
 impl Notification {
@@ -86,6 +87,7 @@ impl Notification {
             title,
             task_id: reminder.task_id.clone(),
             note_id: reminder.note_id.clone(),
+            event_id: reminder.event_id.clone(),
             body: lines.join(
                 "
 ",
@@ -124,6 +126,9 @@ pub struct Fired {
     pub task_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note_id: Option<String>,
+    /// The event (D-94) when the reminder is an event's.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_id: Option<String>,
     pub reminder_id: String,
 }
 
