@@ -19,7 +19,7 @@
   import { eventsStore } from "$lib/stores/events.svelte";
   import { habitsStore } from "$lib/stores/habits.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
-  import { folderDrag, tagDrag } from "$lib/stores/tagDrag.svelte";
+  import { folderDrag, slotDrag, tagDrag } from "$lib/stores/tagDrag.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
   import { tasksStore } from "$lib/stores/tasks.svelte";
   import { viewStore } from "$lib/stores/view.svelte";
@@ -278,6 +278,7 @@
                 onOpenEvent={(eventId) => dialogs.openEvent(eventId)}
                 onOpenNote={(noteId) => void showNote(noteId)}
                 onOpenDaily={(date) => void showDailyNote(date)}
+                onPlan={() => (dialogs.planOpen = true)}
               />
             {/if}
           </div>
@@ -350,6 +351,7 @@
 </div>
 
 <TagDragGhost drag={tagDrag} />
+<TagDragGhost drag={slotDrag} hint={t.inbox.dragHint} />
 <TagDragGhost drag={folderDrag} hint={t.notesApp.dragHint} />
 
 {#if viewStore.section === "calendar"}

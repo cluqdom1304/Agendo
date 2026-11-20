@@ -34,6 +34,8 @@
     onOpenEvent?: (eventId: string) => void;
     onOpenNote: (noteId: string) => void;
     onOpenDaily: (date: string) => void;
+    /** Opens «Planificar mi día». */
+    onPlan?: () => void;
   }
 
   let {
@@ -46,6 +48,7 @@
     onOpenEvent,
     onOpenNote,
     onOpenDaily,
+    onPlan,
   }: Props = $props();
   const l = t.today;
 
@@ -177,6 +180,11 @@
   <header class="head">
     <p class="date">{heading}</p>
     <h2>{title}</h2>
+    {#if onPlan}
+      <button type="button" class="btn small plan" onclick={onPlan}>
+        {t.plan.open}
+      </button>
+    {/if}
   </header>
 
   <div class="strip" role="group" aria-label={l.strip} bind:this={stripEl}>
@@ -410,6 +418,10 @@
   }
 
   /* The day over a large title, as the sections of the agenda are headed. */
+  .plan {
+    margin-top: var(--space-2);
+  }
+
   .date {
     margin: 0;
     color: var(--text-secondary);

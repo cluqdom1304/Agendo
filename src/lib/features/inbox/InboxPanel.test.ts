@@ -118,4 +118,50 @@ describe("InboxPanel (F20-04)", () => {
       ).toBe(true),
     );
   });
+
+  it("dropping a row on a column of the calendar sets day, start and length (F24-01)", async () => {
+    const { api, store } = await mount();
+    const column = document.createElement("div");
+    column.dataset.slotDrop = "2026-03-11";
+    column.getBoundingClientRect = () => ({ top: 100 }) as DOMRect;
+    document.body.append(column);
+    document.elementFromPoint = () => column;
+    try {
+      const row = screen.getByText("Comprar pan").closest("li") as HTMLElement;
+      await fireEvent.pointerDown(row, { button: 0, clientX: 5, clientY: 5 });
+      // 148 px below the top of the column at 48 px/hour is 3 h 04 min: the 03:00 quarter.
+      await fireEvent.pointerMove(window, { clientX: 50, clientY: 248 });
+      await fireEvent.pointerUp(window, { clientX: 50, clientY: 248 });
+      await waitFor(() =>
+        expect(store.find("a")).toMatchObject({
+          dueDate: "2026-03-11",
+          dueTime: "03:00",
+          durationMinutes: 30,
+        }),
+      );
+      expect(api.calls.some((call) => call.startsWith("taskUpdate"))).toBe(
+        true,
+      );
+    } finally {
+      delete (document as { elementFromPoint?: unknown }).elementFromPoint;
+      column.remove();
+    }
+  });
+
+  it("dropping outside the calendar changes nothing", async () => {
+    const { api, store } = await mount();
+    document.elementFromPoint = () => document.body;
+    try {
+      const row = screen.getByText("Comprar pan").closest("li") as HTMLElement;
+      await fireEvent.pointerDown(row, { button: 0, clientX: 5, clientY: 5 });
+      await fireEvent.pointerMove(window, { clientX: 50, clientY: 90 });
+      await fireEvent.pointerUp(window, { clientX: 50, clientY: 90 });
+      expect(store.find("a")?.dueDate).toBeNull();
+      expect(api.calls.some((call) => call.startsWith("taskUpdate"))).toBe(
+        false,
+      );
+    } finally {
+      delete (document as { elementFromPoint?: unknown }).elementFromPoint;
+    }
+  });
 });

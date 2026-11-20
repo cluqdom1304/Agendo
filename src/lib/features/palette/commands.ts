@@ -21,10 +21,13 @@ export interface CommandDeps {
   newEvent?: () => void;
   /** Opens the habit dialog. */
   newHabit?: () => void;
+  /** Opens the «Planificar mi día» assistant. */
+  planDay?: () => void;
 }
 
 export function buildCommands(deps: CommandDeps): PaletteCommand[] {
-  const { view, notes, tasks, tags, newTask, newEvent, newHabit } = deps;
+  const { view, notes, tasks, tags, newTask, newEvent, newHabit, planDay } =
+    deps;
   const l = t.palette.commands;
 
   const inAgenda = (action: () => void) => () => {
@@ -61,6 +64,14 @@ export function buildCommands(deps: CommandDeps): PaletteCommand[] {
       id: "new-habit",
       label: l.newHabit,
       run: () => newHabit?.(),
+    },
+    {
+      id: "plan-day",
+      label: l.planDay,
+      run: () => {
+        view.setSection("today");
+        planDay?.();
+      },
     },
     {
       id: "go-habits",

@@ -26,11 +26,20 @@
     onNewEvent?: () => void;
     /** Opens the habit dialog. */
     onNewHabit?: () => void;
+    /** Opens the «Planificar mi día» assistant. */
+    onPlanDay?: () => void;
     onClose: () => void;
   }
 
-  let { mode, onTask, onNewTask, onNewEvent, onNewHabit, onClose }: Props =
-    $props();
+  let {
+    mode,
+    onTask,
+    onNewTask,
+    onNewEvent,
+    onNewHabit,
+    onPlanDay,
+    onClose,
+  }: Props = $props();
 
   const commands = buildCommands({
     view: viewStore,
@@ -40,6 +49,7 @@
     newTask: () => onNewTask?.(),
     newEvent: () => onNewEvent?.(),
     newHabit: () => onNewHabit?.(),
+    planDay: () => onPlanDay?.(),
   });
 
   // The recent notes are known by id: their titles are looked up when the palette opens.

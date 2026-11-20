@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** versión 3.0.0, Fase 23 (Fases 18 a 22 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
+**Fase activa:** versión 3.0.0, Fase 24 (Fases 18 a 23 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** Fase 23 terminada (`[A]` en verde); no tiene tarea `[H]` propia: sus comprobaciones están en `docs/manual-pruebas.md` § «Versión 3.0.0». Falta F21-05. La Fase 24 (F24-01) no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-20 (Fase 23 completada; F22-03 validada por el usuario; F21-05 pendiente)
+**Siguiente tarea:** Fase 24 terminada (`[A]` en verde); falta F24-03 `[H]` (lista «Fase 24» de `docs/manual-pruebas.md`) y F21-05. La Fase 25 (F25-01) no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-20 (Fase 24 completada; Fase 23 completada; F22-03 validada por el usuario; F21-05 pendiente)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -572,9 +572,14 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - Cierre de F23: sin cambios en Rust desde F21 (Rust 552 verde). `npm run lint`, `check` 0/0, TS 1001, `build` y `size` (inicial 102,7 KB de 120; total 302,8 KB de 340) en verde. Sin dependencias ni migraciones. Pendiente `[H]`: la lista «Fase 23» de `docs/manual-pruebas.md`. **Aviso:** la paleta no ofrece «Crear» en el modo «Ir a…» ni con `>`.
 
 ## Fase 24 — Planificar mi día y bloques de tiempo
-- [ ] F24-01 `[A]` Arrastrar una tarea de la Bandeja a una franja de Día/Semana (fija hora y duración).
-- [ ] F24-02 `[A]` Asistente «Planificar mi día»: vencidas, elegir las de hoy, suma de tiempo estimado y aviso de sobrecarga.
+- [x] F24-01 `[A]` Arrastrar una tarea de la Bandeja a una franja de Día/Semana (fija hora y duración).
+- [x] F24-02 `[A]` Asistente «Planificar mi día»: vencidas, elegir las de hoy, suma de tiempo estimado y aviso de sobrecarga.
 - [ ] F24-03 `[H]` Validación en Windows 11.
+
+**Verificaciones [A] de la Fase 24:**
+- F24-01: `slotDrag` (otra instancia de `TagDrag` con `data-slot-drop`; `onDrop` recibe ahora también el punto de suelta). Las columnas de Semana/Día llevan `data-slot-drop`; `slotAt` (`grid.ts`) lee la columna bajo el puntero y la hora a cuartos desde su borde superior (vale con scroll); `HOUR_PX` pasa a `grid.ts`. `TasksStore.schedule` fija fecha, hora y duración en una sola actualización (optimista, con vuelta atrás; duración propia o 30 min). La fila de la Bandeja inicia el arrastre. 2 tests de interfaz.
+- F24-02: `features/plan/plan.ts` (puro: candidatas vencidas, sin fecha y de hoy; suma de duraciones, sin estimar aparte y aviso por encima de 8 h) y `PlanDialog` (carga diferida desde `DialogHost`; vencidas marcadas por omisión, sin fecha no; «Pasar N tareas a hoy»). Entradas: botón en Hoy y comando «Planificar mi día» en la paleta. 6 tests. **Decisión menor:** el asistente solo trae tareas a hoy; no aplaza las que ya son de hoy. La capacidad (8 h) es una constante, sin ajuste.
+- Cierre de F24: Rust 552 verde (sin cambios), `cargo fmt/clippy`, `npm run lint`, `check` 0/0, TS 1009, `build` y `size` (inicial 103,4 KB de 120; total 305,3 KB de 340) en verde. Sin dependencias ni migraciones. Pendiente `[H]`: F24-03 (lista «Fase 24» de `docs/manual-pruebas.md`).
 
 ## Fase 25 — Enfoque (D-97)
 - [ ] F25-01 `[A]` Temporizador por tarea en la barra superior (`focus.svelte.ts`) y notificación al terminar.

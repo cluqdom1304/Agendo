@@ -56,7 +56,7 @@ describe("TagDrag", () => {
     expect(drag.active?.overKey).toBe("mat");
     expect(document.body.classList.contains("tag-dragging")).toBe(true);
     release();
-    expect(onDrop).toHaveBeenCalledWith("mat");
+    expect(onDrop).toHaveBeenCalledWith("mat", { x: 30, y: 30 });
     expect(drag.active).toBeNull();
     expect(document.body.classList.contains("tag-dragging")).toBe(false);
   });

@@ -464,6 +464,7 @@ export const t = {
       goEvents: "Ir a Eventos",
       newHabit: "Nuevo hábito",
       goHabits: "Ir a Hábitos",
+      planDay: "Planificar mi día",
       goAgenda: "Ir a Tareas",
       dailyNote: "Abrir la nota de hoy",
       goToday: "Ir a Hoy",
@@ -581,6 +582,27 @@ export const t = {
     emptyDescription: "No hay tareas pendientes con fecha.",
     allDay: "Todo el día",
   },
+  plan: {
+    title: "Planificar mi día",
+    open: "Planificar mi día",
+    close: "Cerrar",
+    cancel: "Cancelar",
+    alreadyToday: "Ya son de hoy",
+    overdue: "Vencidas",
+    undated: "Sin fecha",
+    noEstimate: "sin estimar",
+    nothingToAdd: "No hay tareas vencidas ni sin fecha que añadir.",
+    total: (tasks: number, time: string, unestimated: number) =>
+      `${tasks === 1 ? "1 tarea" : `${tasks} tareas`} · ${time}` +
+      (unestimated > 0 ? ` (${unestimated} sin estimar)` : ""),
+    overloaded: "Es más de lo que cabe en un día de 8 horas.",
+    apply: (count: number) =>
+      count === 0
+        ? "Listo"
+        : count === 1
+          ? "Pasar 1 tarea a hoy"
+          : `Pasar ${count} tareas a hoy`,
+  },
   inbox: {
     title: "Bandeja de entrada",
     toggle: "Mostrar u ocultar la bandeja de entrada",
@@ -588,6 +610,7 @@ export const t = {
     addPlaceholder: "Nueva tarea sin fecha",
     empty: "Bandeja vacía",
     emptyHint: "Las tareas sin fecha aparecen aquí.",
+    dragHint: "Suéltala en una franja del calendario",
   },
   capture: {
     label: "Se creará con",

@@ -6,15 +6,19 @@
   import type { EventOccurrence, Tag, Task } from "../../types";
   import { blockOf, isTimedBlock, timeRangeOf } from "../events/occurrences";
   import { columnDateAt, EventDrag } from "./eventDrag.svelte";
-  import { layoutBlocks, minutesToTime, spanOf, timeToMinutes } from "./grid";
+  import {
+    HOUR_PX,
+    layoutBlocks,
+    minutesToTime,
+    spanOf,
+    timeToMinutes,
+  } from "./grid";
   import { dayNumber, weekdayName } from "./labels";
   import { WeekCompose } from "./weekCompose.svelte";
   import type { Capture } from "../../naturalInput";
   import { captureOptions } from "../capture/capture.svelte";
   import CapturePreview from "../capture/CapturePreview.svelte";
 
-  /** Pixels per hour. The whole day is 24 of them; the grid scrolls. */
-  const HOUR_PX = 48;
   const FIRST_VISIBLE_HOUR = 7;
 
   interface Props {
@@ -233,6 +237,7 @@
           tabindex="0"
           aria-label={t.calendar.createAt(column.date)}
           data-date={column.date}
+          data-slot-drop={column.date}
           style:--hour-px="{HOUR_PX}px"
           onpointerdown={(event) => week.pointerDown(event, column.date)}
           onkeydown={(event) => week.columnKeydown(event, column.date)}

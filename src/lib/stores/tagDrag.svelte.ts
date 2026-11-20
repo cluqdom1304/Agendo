@@ -32,7 +32,7 @@ export class TagDrag {
   begin(
     event: PointerEvent,
     subject: DragSubject,
-    onDrop: (key: string) => void,
+    onDrop: (key: string, point: { x: number; y: number }) => void,
   ): void {
     if (event.button !== 0 || this.#stop) return;
     const startX = event.clientX;
@@ -66,6 +66,7 @@ export class TagDrag {
 
     const finish = (drop: boolean) => {
       const key = this.active?.overKey ?? null;
+      const point = { x: this.active?.x ?? 0, y: this.active?.y ?? 0 };
       cleanup();
       if (!dragging) return;
       // The click that follows the release must not open or toggle anything.
@@ -75,7 +76,7 @@ export class TagDrag {
       };
       window.addEventListener("click", swallow, { capture: true, once: true });
       setTimeout(() => window.removeEventListener("click", swallow, true), 0);
-      if (drop && key !== null) onDrop(key);
+      if (drop && key !== null) onDrop(key, point);
     };
 
     const onUp = () => finish(true);
@@ -105,5 +106,7 @@ export class TagDrag {
 }
 
 export const tagDrag = new TagDrag();
+/** Tasks of the inbox dragged onto a time slot of the calendar (F24-01). */
+export const slotDrag = new TagDrag("data-slot-drop");
 /** Notes and folders dragged onto a folder of the notes panel (V2 F8-02). */
 export const folderDrag = new TagDrag("data-folder-drop");

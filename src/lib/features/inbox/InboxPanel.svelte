@@ -2,6 +2,8 @@
   import { t } from "../../i18n";
   import { taskFieldsOf } from "../../naturalInput";
   import type { TasksStore } from "../../stores/tasks.svelte";
+  import { BLOCK_MINUTES, minutesToTime, slotAt } from "../calendar/grid";
+  import { slotDrag } from "../../stores/tagDrag.svelte";
   import Checkbox from "../todo/Checkbox.svelte";
   import ChecklistProgress from "../todo/ChecklistProgress.svelte";
   import { CaptureField, captureOptions } from "../capture/capture.svelte";
@@ -34,6 +36,22 @@
     );
     adding = false;
     if (created) field.reset();
+  }
+
+  // A press on a row becomes a drag after a few pixels; dropped on a column of the calendar it
+  // sets day, start and length (F24-01).
+  function drag(event: PointerEvent, id: string, title: string) {
+    slotDrag.begin(event, { id, title }, (_key, point) => {
+      const slot = slotAt(point.x, point.y);
+      if (slot) {
+        void store.schedule(
+          id,
+          slot.date,
+          minutesToTime(slot.minutes),
+          BLOCK_MINUTES,
+        );
+      }
+    });
   }
 
   function onkeydown(event: KeyboardEvent) {
@@ -71,7 +89,11 @@
   {:else}
     <ul class="list">
       {#each tasks as task (task.id)}
-        <li class="row" data-task-id={task.id}>
+        <li
+          class="row"
+          data-task-id={task.id}
+          onpointerdown={(event) => drag(event, task.id, task.title)}
+        >
           <Checkbox
             checked={false}
             label={t.tasks.markDone(task.title || t.reminders.untitled) +

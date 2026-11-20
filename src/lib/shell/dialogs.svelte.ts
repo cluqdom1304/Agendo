@@ -42,6 +42,9 @@ export class DialogState {
     this.habit = { habit };
   }
 
+  /** The «Planificar mi día» assistant (F24-02). */
+  planOpen = $state(false);
+
   openNewTask(date: string | null = null): void {
     this.newTaskDate = date;
     this.newTaskOpen = true;

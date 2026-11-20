@@ -505,6 +505,36 @@ export class TasksStore {
     }
   }
 
+  /**
+   * Puts a task on a time slot (F24-01): day, start and length in one update, so the backend
+   * recalculates its reminders once. A task without length takes `minutes`. Optimistic; a
+   * refusal puts it back.
+   */
+  async schedule(
+    id: string,
+    date: string,
+    time: string,
+    minutes: number,
+  ): Promise<void> {
+    const before = this.find(id);
+    if (!before || before.isCompleted) return;
+    const durationMinutes = before.durationMinutes ?? minutes;
+    this.#notes.suspend(id);
+    this.#replace({ ...before, dueDate: date, dueTime: time, durationMinutes });
+    try {
+      this.#replace(
+        await this.#api.taskUpdate(id, {
+          dueDate: date,
+          dueTime: time,
+          durationMinutes,
+        }),
+      );
+    } catch (error) {
+      this.#replace(before);
+      this.#notices.report(error);
+    }
+  }
+
   /** Optimistic: the ring and the order change at once; a refusal puts them back (F20-02). */
   async setPriority(id: string, priority: number): Promise<void> {
     const before = this.find(id);

@@ -471,7 +471,10 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Diálogo «Nueva tarea»: al salir del título los campos de fecha, hora, fin, etiquetas, prioridad y repetición se rellenan y el título queda limpio; Esc en el título no cierra el diálogo si había algo detectado. Al editar una tarea existente no se interpreta nada.
   - [ ] Bandeja de entrada: «Regar pasado mañana #casa» crea la tarea con fecha (sale de la Bandeja) y la etiqueta; una `#palabra` que no es etiqueta se queda en el título.
   - [ ] La vista previa se lee bien en claro, oscuro y Mica, y Narrador anuncia «Se creará con…».
-- **Fase 24 — planificar el día:** arrastrar de la Bandeja a una franja; asistente de «Planificar mi día».
+- **Fase 24 — planificar el día (F24-03):**
+  - [ ] Calendario Semana y Día con la Bandeja abierta: arrastrar una tarea a una franja la deja ese día a esa hora (a cuartos de hora) con 30 min (o su duración si ya la tenía) y desaparece de la Bandeja; el bloque aparece bajo el puntero; Esc cancela; soltar fuera de una columna no cambia nada; el aviso del puntero lee «Suéltala en una franja del calendario».
+  - [ ] Con el calendario desplazado (scroll) la hora que se fija es la de la franja sobre la que se suelta.
+  - [ ] Hoy → «Planificar mi día» (y desde Ctrl+K): vencidas marcadas, sin fecha sin marcar; la suma cambia al marcar; con más de 8 h sale el aviso en rojo; «Pasar N tareas a hoy» las mueve y Cancelar no cambia nada. Se lee bien en claro, oscuro y Mica y con teclado.
 - **Fase 25 — enfoque:** temporizador, notificación al terminar y cierre de la app con el temporizador activo.
 - **Fase 26 — resumen semanal:** cifras coherentes con la agenda y exportación a Markdown.
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.

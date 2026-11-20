@@ -99,6 +99,8 @@ export function systemFirstDay(
 // ---- time of day ----------------------------------------------------------------------
 
 export const MINUTES_PER_DAY = 24 * 60;
+/** Pixels per hour of the time grid. The whole day is 24 of them; the grid scrolls. */
+export const HOUR_PX = 48;
 /** Dragging snaps to this many minutes. */
 export const SNAP_MINUTES = 15;
 
@@ -216,4 +218,20 @@ export function tasksByDate(tasks: readonly Task[]): Map<string, Task[]> {
     else days.set(task.dueDate, [task]);
   }
   return days;
+}
+
+/** The day column of the time grid under a point and the quarter hour it falls on (F24-01). */
+export function slotAt(
+  x: number,
+  y: number,
+): { date: string; minutes: number } | null {
+  if (typeof document.elementFromPoint !== "function") return null;
+  const column = document
+    .elementFromPoint(x, y)
+    ?.closest<HTMLElement>("[data-slot-drop]");
+  const date = column?.dataset.slotDrop;
+  if (!column || !date) return null;
+  // The column's box moves with the scroll, so the distance from its top is the time.
+  const offset = y - column.getBoundingClientRect().top;
+  return { date, minutes: quarterOf((offset / HOUR_PX) * 60) };
 }

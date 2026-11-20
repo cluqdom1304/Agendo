@@ -33,6 +33,7 @@
     import("$lib/features/events/EventDialog.svelte");
   const loadHabitDialog = () =>
     import("$lib/features/habits/HabitDialog.svelte");
+  const loadPlanDialog = () => import("$lib/features/plan/PlanDialog.svelte");
   const loadTaskDetail = () =>
     import("$lib/features/todo/TaskDetailDialog.svelte");
   const loadSettings = () =>
@@ -56,6 +57,7 @@
       onNewTask={() => dialogs.openNewTask()}
       onNewEvent={() => dialogs.openNewEvent()}
       onNewHabit={() => dialogs.openNewHabit()}
+      onPlanDay={() => (dialogs.planOpen = true)}
       onClose={() => (dialogs.palette = null)}
     />
   {/await}
@@ -89,6 +91,12 @@
     }}
   />
 {/await}
+
+{#if dialogs.planOpen}
+  {#await loadPlanDialog() then { default: PlanDialog }}
+    <PlanDialog store={tasksStore} onClose={() => (dialogs.planOpen = false)} />
+  {/await}
+{/if}
 
 {#if dialogs.newTaskOpen}
   {#await loadTaskDialog() then { default: TaskDialog }}
