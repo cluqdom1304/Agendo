@@ -18,7 +18,7 @@
     display: flex;
     align-items: baseline;
     gap: 10px;
-    padding: 22px var(--space-3) 6px;
+    padding: 26px var(--space-3) 8px;
     border-top: 1px solid var(--separator);
   }
 

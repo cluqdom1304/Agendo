@@ -150,7 +150,7 @@
     background: var(--bg-control);
     color: var(--text-secondary);
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 
@@ -217,7 +217,7 @@
 
   .row {
     display: flex;
-    padding: 7px 10px;
+    padding: 9px 10px;
     border-radius: var(--radius-card);
     transition: background-color var(--motion-fast) var(--ease-out);
   }

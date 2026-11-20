@@ -115,6 +115,7 @@
     background: transparent;
     color: var(--text-primary);
     font: inherit;
+    font-weight: 500;
     outline: none;
     text-overflow: ellipsis;
     transition: background-color var(--motion-instant) linear;

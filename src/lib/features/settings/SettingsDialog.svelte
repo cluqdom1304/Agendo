@@ -378,8 +378,9 @@
     margin: 22px 0 6px;
     padding-left: 14px;
     color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
   }
 
   /* Settings read as an inset grouped list (F26.1): rows that follow each other share one rounded
@@ -391,9 +392,10 @@
     align-items: center;
     gap: var(--space-4);
     min-height: 44px;
-    padding: 6px 14px;
+    padding: 8px 14px;
     background: var(--bg-card);
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 500;
   }
 
   .row:first-child,
@@ -421,9 +423,11 @@
 
   .hint {
     display: block;
-    margin: 0;
+    margin: 2px 0 0;
     color: var(--text-secondary);
     font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
   }
 
   /* A note under a group is indented with the rows, as a footer of the list. */

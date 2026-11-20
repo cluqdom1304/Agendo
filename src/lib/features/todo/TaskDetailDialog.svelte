@@ -398,7 +398,7 @@
     grid-template-columns: 96px minmax(0, 1fr);
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-2) var(--space-3);
+    padding: 10px var(--space-3);
   }
 
   .facts div + div {
@@ -408,6 +408,7 @@
   dt {
     color: var(--text-secondary);
     font-size: 12px;
+    font-weight: 600;
   }
 
   .origin {
@@ -433,7 +434,8 @@
     min-width: 0;
     margin: 0;
     overflow-wrap: anywhere;
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
 

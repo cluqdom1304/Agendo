@@ -4,7 +4,7 @@
 
 <!-- Only the caption buttons live here. The page toolbar and the head of the sidebar are the
      drag regions, so the window reads as a single bar (D-39). -->
-<header class="titlebar">
+<header class="titlebar chrome-dark">
   <WindowControls />
 </header>
 

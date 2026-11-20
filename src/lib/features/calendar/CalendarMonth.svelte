@@ -187,7 +187,7 @@
   }
 
   .cell.outside {
-    opacity: 0.45;
+    opacity: 0.62;
   }
 
   .number {
@@ -257,7 +257,7 @@
   }
 
   .chip.done {
-    opacity: 0.55;
+    opacity: 0.72;
     text-decoration: line-through;
   }
 

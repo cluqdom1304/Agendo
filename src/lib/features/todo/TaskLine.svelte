@@ -86,7 +86,7 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
     padding: 0;
     border: 0;
@@ -106,7 +106,7 @@
 
   .title {
     overflow: hidden;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 20px;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -123,7 +123,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
+    gap: 4px 8px;
     min-width: 0;
     color: var(--text-secondary);
     font-size: var(--text-caption);
@@ -136,7 +136,7 @@
 
   .time {
     font-variant-numeric: tabular-nums;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .late {

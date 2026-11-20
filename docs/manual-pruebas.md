@@ -507,6 +507,8 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Menús, menú contextual, menú de etiquetas y paleta: resaltado gris suave (no de color), esquinas de 12 px y entrada con muelle; los elementos peligrosos se tiñen de rojo.
   - [ ] Detalle de tarea como tarjeta anclada a la derecha; el resto de diálogos centrados con esquinas de 16 px.
   - [ ] Ajustes como lista agrupada (filas unidas con separador fino) en claro, oscuro y Mica.
+  - [ ] Modo claro: los botones de minimizar, maximizar y cerrar se ven sobre la barra oscura; el texto principal y el secundario se leen bien en Hoy, Próximas, Tareas, Ajustes y el detalle de tarea; las tareas hechas siguen legibles.
+  - [ ] Jerarquía: títulos de fila y horas en negrita, etiquetas de grupo con contador en píldora, y más separación entre bloques, filas y tarjetas sin que nada se vea apretado.
   - [ ] Contraste y legibilidad del acento coral en claro y oscuro (texto, foco y número de hoy); con «Reducir movimiento» de Windows no hay animaciones.
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.
 

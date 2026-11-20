@@ -172,7 +172,7 @@
   /* Each day is a row of two columns, as in the reference: its name on the left and its items,
      one card each, on the right. Below 560 px the name goes on top. */
   .upcoming {
-    gap: 28px;
+    gap: 36px;
     container-type: inline-size;
   }
 
@@ -197,9 +197,9 @@
     margin: 0;
     padding-top: 6px;
     font-family: var(--font-display);
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.012em;
   }
 
   h3.current {
@@ -209,8 +209,8 @@
   .sub {
     color: var(--text-secondary);
     font-family: var(--font-ui);
-    font-size: 12px;
-    font-weight: 400;
+    font-size: 12.5px;
+    font-weight: 500;
     letter-spacing: 0;
     font-variant-numeric: tabular-nums;
   }
@@ -221,7 +221,7 @@
 
   .cards {
     display: grid;
-    gap: 6px;
+    gap: 8px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -241,6 +241,6 @@
 
   .row {
     display: flex;
-    padding: 8px 10px;
+    padding: 10px 12px;
   }
 </style>

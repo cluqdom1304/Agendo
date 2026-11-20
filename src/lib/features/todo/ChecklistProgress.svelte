@@ -46,7 +46,8 @@
     align-items: center;
     gap: 3px;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
 

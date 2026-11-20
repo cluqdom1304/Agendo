@@ -335,8 +335,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    min-height: 38px;
-    padding: 4px var(--space-3);
+    min-height: 42px;
+    padding: 5px var(--space-3);
     border-radius: var(--radius-card);
     outline: none;
     transition:
@@ -353,7 +353,7 @@
 
   /* Done tasks recede so the pending ones of the day stand out. */
   .row.done {
-    opacity: 0.6;
+    opacity: 0.78;
   }
 
   .row.done:hover,

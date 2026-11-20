@@ -282,7 +282,7 @@
   .inner {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: 22px;
     box-sizing: border-box;
     width: var(--sidebar-width);
     height: 100%;
@@ -315,14 +315,15 @@
     align-items: center;
     gap: 10px;
     width: 100%;
-    min-height: 32px;
+    min-height: 34px;
     padding: 5px 10px;
     border: 0;
     border-radius: var(--radius-card);
     background: transparent;
     color: var(--text-primary);
     font: inherit;
-    font-size: 13px;
+    font-size: 13.5px;
+    font-weight: 500;
     text-align: left;
     cursor: pointer;
     transition:
@@ -378,9 +379,9 @@
 
   h2 {
     margin: 0;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .group-toggle {

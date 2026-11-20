@@ -578,7 +578,7 @@
 
   .chip.done,
   .block.done {
-    opacity: 0.55;
+    opacity: 0.72;
     text-decoration: line-through;
   }
 

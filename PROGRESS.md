@@ -617,6 +617,7 @@ Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la inter
 - [x] F26.1-09 `[A]` Cabecera común en Tareas, Calendario, Eventos, Hábitos y Resumen; calendario con el control de escala a la derecha, «Hoy» en cápsula y «‹ ›» redondos; grupos de la lista con separador; filas de tarea de 38 px con contorno al enfocar (como la referencia) y selección múltiple en tinta.
 - [x] F26.1-10 `[A]` Menús, menú contextual, menú y editor de etiquetas, paleta, sugerencias del editor y barra de notas: resaltado neutro, radio 12, entrada con muelle; casillas de «hecho» de notas, paleta y tareas de etiqueta en tinta; modales con radio 16 y fondo con desenfoque leve; aviso (toast) con acción en tinta; detalle de tarea como tarjeta anclada a la derecha (`Modal side`).
 - [x] F26.1-11 `[A]` Ajustes como lista agrupada inset (filas unidas, separador desde el texto, notas al pie sangradas); notas con título de 32 px, sello de edición en chip y botón de etiquetas con borde discontinuo; lista de notas con selección neutra.
+- [x] F26.1-13 `[A]` Revisión del modo claro y de la legibilidad (a petición del usuario): los botones de ventana quedaban oscuros sobre la barra oscura (ahora `chrome-dark`); tokens claros con más contraste (`--text-primary #121214`, `--text-secondary #55555c`, separadores, bordes y controles más marcados, tarjetas algo más oscuras); texto atenuado (tareas hechas, archivados, días de otro mes, chevrones) sube de opacidad; cuerpo 14 px y leyenda 12 px; títulos de fila, hora y nombres de día en negrita; etiquetas de grupo en negrita con contador en píldora; más aire entre bloques, filas y tarjetas (Hoy, Próximas, Eventos, Bandeja, lista de Tareas, detalle y Ajustes); barra lateral con 13,5 px y grupos separados.
 - [ ] F26.1-12 `[H]` Revisión visual en Windows 11 (lista «Fase 26.1» de `docs/manual-pruebas.md`).
 
 **Verificaciones [A] de la Fase 26.1:**
@@ -625,6 +626,7 @@ Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la inter
 - Tests: sin tests desactivados; `EventRow` mantiene el texto exacto «Se repite» (el «·» va en CSS) y los encabezados `h2`/`h3` que comprueban los tests de Hoy y Próximas.
 - Batería completa en verde: `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test` (568 + integración), `npm run lint`, `npm run check` (0/0), `npm run test` (1046), `npm run build`, `npm run size` (JS inicial 107,6 KB de 120, total 315,8 KB de 340; CSS 35,0 KB). `npm run tokens`: sin tokens nuevos sin usar (`--priority-2` pasa a usarse).
 - Sin dependencias ni migraciones nuevas. `cargo check --target x86_64-pc-windows-msvc` no aplica: la fase no toca `window/` ni `notify/`.
+- F26.1-13: batería en verde (lint, check 0/0, 1046 tests, build y size). `tokens.test.ts` confirma AA de todos los textos sobre los paneles con los nuevos grises. No he podido ver la app: el aspecto real en claro es `[H]`.
 - **Discrepancia:** CLAUDE.md §2 pide un commit por tarea; las tareas de esta fase comparten tokens y clases y se entregan en un solo commit de diseño.
 
 ## Fase 27 — Cierre de 3.0.0

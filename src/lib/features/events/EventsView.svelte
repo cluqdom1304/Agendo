@@ -91,13 +91,13 @@
 <style>
   .block {
     display: grid;
-    gap: 6px;
+    gap: 10px;
   }
 
   /* One card per event, as «Próximas» draws its items. */
   .card {
     display: grid;
-    gap: 6px;
+    gap: 8px;
     margin: 0;
     padding: 0;
     list-style: none;

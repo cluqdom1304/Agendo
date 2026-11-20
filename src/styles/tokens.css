@@ -20,8 +20,8 @@
   /* Type scale (F26.1): one size per role, so every view reads the same. */
   --text-large-title: 30px;
   --text-title: 22px;
-  --text-body: 13px;
-  --text-caption: 11.5px;
+  --text-body: 14px;
+  --text-caption: 12px;
 
   --motion-instant: 90ms;
   --motion-fast: 150ms;
@@ -186,13 +186,13 @@
     --bg-window-solid: rgb(246, 246, 248);
     --bg-elevated: rgb(255, 255, 255);
     --bg-hover: rgba(0, 0, 0, 0.05);
-    --text-primary: #1d1d1f;
-    --text-secondary: #646469;
+    --text-primary: #121214;
+    --text-secondary: #55555c;
     --accent: #c8361a;
     --on-accent: #ffffff;
     --ink: #1d1d1f;
     --on-ink: #ffffff;
-    --border-subtle: rgba(0, 0, 0, 0.12);
+    --border-subtle: rgba(0, 0, 0, 0.16);
     --danger: #ca0014;
     --on-danger: #ffffff;
     --success: #1e7333;
@@ -200,11 +200,11 @@
     --bg-popover: rgb(255, 255, 255);
     --bg-menu-hover: rgba(0, 0, 0, 0.065);
     --bg-sidebar: rgba(0, 0, 0, 0.03);
-    --bg-control: rgba(0, 0, 0, 0.06);
-    --bg-control-hover: rgba(0, 0, 0, 0.09);
+    --bg-control: rgba(0, 0, 0, 0.07);
+    --bg-control-hover: rgba(0, 0, 0, 0.11);
     --bg-active: rgba(0, 0, 0, 0.09);
     --thumb: rgb(255, 255, 255);
-    --separator: rgba(0, 0, 0, 0.08);
+    --separator: rgba(0, 0, 0, 0.11);
     --backdrop: rgba(0, 0, 0, 0.22);
     --shadow-raised:
       0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
@@ -230,10 +230,10 @@
     --tag-7: #7a600d;
     --tag-8: #7c5a43;
     --bg-panel: rgb(252, 251, 249);
-    --bg-card: rgb(244, 243, 240);
-    --bg-card-hover: rgb(238, 237, 234);
-    --panel-border: rgba(0, 0, 0, 0.06);
-    --priority-0: #646469;
+    --bg-card: rgb(242, 241, 237);
+    --bg-card-hover: rgb(234, 233, 229);
+    --panel-border: rgba(0, 0, 0, 0.09);
+    --priority-0: #55555c;
     --priority-1: #1f63c4;
     --priority-2: #a84b00;
     --priority-3: #c8160c;
@@ -247,13 +247,13 @@
   --bg-window-solid: rgb(246, 246, 248);
   --bg-elevated: rgb(255, 255, 255);
   --bg-hover: rgba(0, 0, 0, 0.05);
-  --text-primary: #1d1d1f;
-  --text-secondary: #646469;
+  --text-primary: #121214;
+  --text-secondary: #55555c;
   --accent: #c8361a;
   --on-accent: #ffffff;
   --ink: #1d1d1f;
   --on-ink: #ffffff;
-  --border-subtle: rgba(0, 0, 0, 0.12);
+  --border-subtle: rgba(0, 0, 0, 0.16);
   --danger: #ca0014;
   --on-danger: #ffffff;
   --success: #1e7333;
@@ -261,11 +261,11 @@
   --bg-popover: rgb(255, 255, 255);
   --bg-menu-hover: rgba(0, 0, 0, 0.065);
   --bg-sidebar: rgba(0, 0, 0, 0.03);
-  --bg-control: rgba(0, 0, 0, 0.06);
-  --bg-control-hover: rgba(0, 0, 0, 0.09);
+  --bg-control: rgba(0, 0, 0, 0.07);
+  --bg-control-hover: rgba(0, 0, 0, 0.11);
   --bg-active: rgba(0, 0, 0, 0.09);
   --thumb: rgb(255, 255, 255);
-  --separator: rgba(0, 0, 0, 0.08);
+  --separator: rgba(0, 0, 0, 0.11);
   --backdrop: rgba(0, 0, 0, 0.22);
   --shadow-raised:
     0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
@@ -291,10 +291,10 @@
   --tag-7: #7a600d;
   --tag-8: #7c5a43;
   --bg-panel: rgb(252, 251, 249);
-  --bg-card: rgb(244, 243, 240);
-  --bg-card-hover: rgb(238, 237, 234);
-  --panel-border: rgba(0, 0, 0, 0.06);
-  --priority-0: #646469;
+  --bg-card: rgb(242, 241, 237);
+  --bg-card-hover: rgb(234, 233, 229);
+  --panel-border: rgba(0, 0, 0, 0.09);
+  --priority-0: #55555c;
   --priority-1: #1f63c4;
   --priority-2: #a84b00;
   --priority-3: #c8160c;

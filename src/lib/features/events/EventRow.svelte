@@ -60,7 +60,7 @@
     gap: 10px;
     min-width: 0;
     min-height: 36px;
-    padding: 7px 10px;
+    padding: 9px 12px;
     border: 0;
     border-radius: inherit;
     background: transparent;
@@ -101,13 +101,13 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 1px;
+    gap: 3px;
     min-width: 0;
   }
 
   .title {
     overflow: hidden;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 20px;
     text-overflow: ellipsis;
     white-space: nowrap;

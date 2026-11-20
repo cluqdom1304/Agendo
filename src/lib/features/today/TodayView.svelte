@@ -409,7 +409,7 @@
 
 <style>
   .today {
-    gap: 22px;
+    gap: 30px;
   }
 
   /* Fourteen equal columns that shrink with the panel; it scrolls only below their minimum. */
@@ -455,7 +455,8 @@
 
   .weekday {
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 11.5px;
+    font-weight: 500;
     text-transform: capitalize;
   }
 
@@ -501,7 +502,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 8px 10px;
-    padding: 12px 14px;
+    padding: 16px 18px;
     border-radius: var(--radius-panel);
     background: var(--bg-card);
     box-shadow: inset 0 0 0 1px var(--panel-border);
@@ -512,8 +513,8 @@
   }
 
   .headline {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 15px;
+    font-weight: 600;
   }
 
   .pills {
@@ -579,14 +580,14 @@
   .block {
     display: grid;
     align-content: start;
-    gap: 4px;
+    gap: 8px;
   }
 
   /* Flat rows, as in the reference: the hover lights a rounded tile, no hairlines. */
   .list,
   .card {
     display: grid;
-    gap: 1px;
+    gap: 2px;
     margin: 0 -10px;
     padding: 0;
     list-style: none;
@@ -605,8 +606,8 @@
 
   .row.task {
     align-items: flex-start;
-    padding-top: 7px;
-    padding-bottom: 7px;
+    padding-top: 10px;
+    padding-bottom: 10px;
   }
 
   .row:hover,
@@ -663,7 +664,7 @@
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font-weight: 500;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -703,7 +704,7 @@
   .chevron {
     flex: none;
     color: var(--text-secondary);
-    opacity: 0.6;
+    opacity: 0.8;
   }
 
   .none {
