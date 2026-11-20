@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** versión 3.0.0, Fase 19 (Fase 18 hecha; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** Fase 19 terminada (`[A]` en verde); falta la validación humana F19-06 en Windows 11. La Fase 20 (F20-01) no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-20 (Fase 18 completada: cimientos de datos, migraciones 015 a 018)
+**Fase activa:** versión 3.0.0, Fase 20 (Fases 18 y 19 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
+**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F20-02 (círculo de prioridad). Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-20 (Fase 19 validada por el usuario; F20-01 hecha)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -501,7 +501,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F19-03 `[A]` Barra superior: plegar, nuevo, atrás/adelante y buscador central que abre la paleta.
 - [x] F19-04 `[A]` `viewStore.section` ampliado (`today|upcoming|calendar|notes|tasks|events|habits`) y migración del ajuste `app_section`.
 - [x] F19-05 `[A]` Capas de tarjeta en `.page`, ancho mínimo y plegado automático del sidebar.
-- [ ] F19-06 `[H]` Revisión visual en Windows 11 (claro/oscuro, Mica, tamaños).
+- [x] F19-06 `[H]` Revisión visual en Windows 11 (claro/oscuro, Mica, tamaños).
 
 **Verificaciones [A] de la Fase 19:**
 - Inicio: el usuario ordenó empezar la Fase 19 el 2026-11-20 con capturas de referencia de la interfaz objetivo; D-92 pasa a `ACCEPTED`.
@@ -513,12 +513,16 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - Cierre de F19: batería completa en verde (`cargo fmt --check`, `clippy -D warnings`, Rust 552, lint, check 0/0, TS 790, build, size 273,0 KB de 300). Sin dependencias ni migraciones nuevas. Pendiente `[H]`: F19-06 (lista en `docs/manual-pruebas.md` § «Versión 3.0.0»). `cargo check --target x86_64-pc-windows-msvc` no aplica: la fase no toca `window/` ni `notify/`.
 
 ## Fase 20 — Hoy, Próximas, Bandeja y prioridades
-- [ ] F20-01 `[A]` Hoy: título grande, tira de 14 días y banner de resumen (todo `$derived`).
+- [x] F20-01 `[A]` Hoy: título grande, tira de 14 días y banner de resumen (todo `$derived`).
 - [ ] F20-02 `[A]` Círculo de prioridad en `Checkbox`/`TaskRow`, selector en el diálogo y el menú contextual, orden por prioridad dentro del día.
 - [ ] F20-03 `[A]` Progreso de checklist «2/5» en la fila.
 - [ ] F20-04 `[A]` Panel derecho «Bandeja de entrada» (carga diferida, plegable, oculto en ventanas estrechas).
 - [ ] F20-05 `[A]` Vista Próximas y vista Tareas con filtros.
 - [ ] F20-06 `[H]` Validación en Windows 11.
+
+**Verificaciones [A] de la Fase 20:**
+- Inicio: el usuario validó F19-06 en Windows 11 y ordenó empezar la Fase 20 el 2026-11-20.
+- F20-01: `features/today/summary.ts` (puro: `stripDates`, `pendingByDate`, `summarizeDay`) y `TodayView` con título de 34 px («Hoy», «Mañana» o el día de la semana), tira de 14 días desde hoy (día de la semana, número y marca si hay pendientes; elige el día mostrado; una sola parada de tabulación y flechas, Inicio y Fin) y banner de resumen (pendientes, vencidas de días anteriores solo en hoy, barra de progreso «N de M hechas» con `role=progressbar`). Tareas y nota del día siguen al día elegido; al volver a la ventana otro día, la selección pasa a hoy si se había quedado atrás. Todo `$derived`. Tests: 3 de `summary.test.ts` y 2 nuevos de `TodayView`. Batería en verde: Rust 552, TS 795, check 0/0, JS 274,3 KB de 300.
 
 ## Fase 21 — Eventos (D-94)
 - [ ] F21-01 `[A]` Diálogo y fila de evento; sección Eventos.

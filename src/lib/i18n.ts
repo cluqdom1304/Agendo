@@ -551,6 +551,38 @@ export const t = {
     openDaily: "Abrir la nota de hoy",
     pinned: "Notas fijadas",
     noPinned: "No tienes notas fijadas.",
+    tomorrow: "Mañana",
+    strip: "Próximos 14 días",
+    stripDay: (day: string, pending: number) =>
+      pending === 0
+        ? day
+        : `${day}, ${pending === 1 ? "1 pendiente" : `${pending} pendientes`}`,
+    dayTasks: "Tareas del día",
+    noDayTitle: "Nada para este día",
+    noDayTasks: "No hay tareas con fecha de este día.",
+    openDayNote: "Abrir la nota del día",
+    summary: "Resumen del día",
+    summaryToday: (pending: number, total: number) =>
+      total === 0
+        ? "Nada programado para hoy."
+        : pending === 0
+          ? "Todo hecho por hoy."
+          : pending === 1
+            ? "Te queda 1 tarea para hoy."
+            : `Te quedan ${pending} tareas para hoy.`,
+    summaryDay: (pending: number, total: number) =>
+      total === 0
+        ? "Nada programado para este día."
+        : pending === 0
+          ? "Todo hecho para este día."
+          : pending === 1
+            ? "1 tarea pendiente."
+            : `${pending} tareas pendientes.`,
+    overdue: (count: number) =>
+      count === 1
+        ? "1 tarea vencida de días anteriores."
+        : `${count} tareas vencidas de días anteriores.`,
+    progress: (done: number, total: number) => `${done} de ${total} hechas`,
   },
   calendar: {
     previous: "Anterior",

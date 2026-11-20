@@ -6,10 +6,12 @@
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ViewStore } from "../../stores/view.svelte";
   import type { NoteSummary } from "../../types";
+  import { addDays } from "../calendar/grid";
   import Checkbox from "../todo/Checkbox.svelte";
+  import { pendingByDate, stripDates, summarizeDay } from "./summary";
 
-  // «Hoy» (F13-07): what the day holds in one place: its tasks, its daily note and the notes
-  // pinned in the notes section.
+  // «Hoy» (F13-07, F20-01): what a day holds in one place: a summary, its tasks, its daily
+  // note and the notes pinned in the notes section. The strip picks the day, today by default.
   interface Props {
     store: TasksStore;
     notes: NotesStore;
@@ -26,21 +28,61 @@
   // A window left open overnight must not keep showing yesterday.
   // svelte-ignore state_referenced_locally
   let today = $state(view.today());
+  // svelte-ignore state_referenced_locally
+  let selected = $state(today);
   let pinned = $state.raw<NoteSummary[]>([]);
   let pinnedLoaded = $state(false);
+  let stripEl = $state<HTMLElement>();
 
-  const heading = $derived(
-    new Intl.DateTimeFormat("es-ES", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    }).format(new Date(`${today}T12:00:00`)),
+  const longDate = new Intl.DateTimeFormat("es-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const shortWeekday = new Intl.DateTimeFormat("es-ES", { weekday: "short" });
+  const longWeekday = new Intl.DateTimeFormat("es-ES", { weekday: "long" });
+  const asDate = (iso: string) => new Date(`${iso}T12:00:00`);
+  const capitalize = (text: string) =>
+    text.charAt(0).toUpperCase() + text.slice(1);
+
+  const isToday = $derived(selected === today);
+  const heading = $derived(longDate.format(asDate(selected)));
+  const title = $derived(
+    isToday
+      ? l.title
+      : selected === addDays(today, 1)
+        ? l.tomorrow
+        : capitalize(longWeekday.format(asDate(selected))),
+  );
+
+  const pendingCounts = $derived(pendingByDate(store.visibleTasks));
+  const strip = $derived(
+    stripDates(today).map((date) => {
+      const pending = pendingCounts.get(date) ?? 0;
+      return {
+        date,
+        weekday: shortWeekday.format(asDate(date)).replace(".", ""),
+        day: Number(date.slice(8)),
+        pending,
+        label: l.stripDay(longDate.format(asDate(date)), pending),
+      };
+    }),
+  );
+
+  const summary = $derived(summarizeDay(store.visibleTasks, selected, today));
+  const summaryText = $derived(
+    isToday
+      ? l.summaryToday(summary.pending, summary.total)
+      : l.summaryDay(summary.pending, summary.total),
+  );
+  const progress = $derived(
+    summary.total === 0 ? 0 : (summary.done / summary.total) * 100,
   );
 
   /** The tasks of the day: open ones first, by time (all-day ones before timed), then done. */
   const dayTasks = $derived(
     store.visibleTasks
-      .filter((task) => task.dueDate === today)
+      .filter((task) => task.dueDate === selected)
       .toSorted(
         (a, b) =>
           Number(a.isCompleted) - Number(b.isCompleted) ||
@@ -58,8 +100,30 @@
   onMount(() => void loadPinned());
 
   function refresh() {
-    today = view.today();
+    const next = view.today();
+    // A day that has gone by drops off the strip: the selection follows today.
+    if (selected === today || selected < next) selected = next;
+    today = next;
     void loadPinned();
+  }
+
+  /** Arrow keys move along the strip, which keeps a single tab stop (the chosen day). */
+  function onStripKey(event: KeyboardEvent) {
+    const index = strip.findIndex((day) => day.date === selected);
+    const target =
+      event.key === "ArrowRight"
+        ? index + 1
+        : event.key === "ArrowLeft"
+          ? index - 1
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? strip.length - 1
+              : null;
+    if (target === null || target < 0 || target >= strip.length) return;
+    event.preventDefault();
+    selected = strip[target].date;
+    stripEl?.querySelector<HTMLElement>(`[data-date="${selected}"]`)?.focus();
   }
 </script>
 
@@ -68,18 +132,60 @@
 <div class="today">
   <header class="head">
     <p class="date">{heading}</p>
-    <h2>{l.title}</h2>
+    <h2>{title}</h2>
   </header>
+
+  <div class="strip" role="group" aria-label={l.strip} bind:this={stripEl}>
+    {#each strip as day (day.date)}
+      <button
+        type="button"
+        class="day"
+        class:selected={day.date === selected}
+        data-date={day.date}
+        aria-pressed={day.date === selected}
+        aria-label={day.label}
+        tabindex={day.date === selected ? 0 : -1}
+        onclick={() => (selected = day.date)}
+        onkeydown={onStripKey}
+      >
+        <span class="weekday">{day.weekday}</span>
+        <span class="number">{day.day}</span>
+        <span class="mark" class:shown={day.pending > 0}></span>
+      </button>
+    {/each}
+  </div>
+
+  <section class="banner" aria-label={l.summary}>
+    <p class="headline">{summaryText}</p>
+    {#if summary.overdue > 0}
+      <p class="overdue">{l.overdue(summary.overdue)}</p>
+    {/if}
+    {#if summary.total > 0}
+      <div class="progress">
+        <div
+          class="track"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={summary.total}
+          aria-valuenow={summary.done}
+          aria-label={l.progress(summary.done, summary.total)}
+        >
+          <span class="fill" style:width="{progress}%"></span>
+        </div>
+        <span class="ratio">{l.progress(summary.done, summary.total)}</span>
+      </div>
+    {/if}
+  </section>
 
   <section class="block" aria-labelledby="today-tasks">
     <h3 id="today-tasks">
-      {l.tasks}
+      {isToday ? l.tasks : l.dayTasks}
       <span class="count">{l.pending(pending)}</span>
     </h3>
     {#if dayTasks.length === 0}
       <div class="card none">
-        <strong>{l.noTasksTitle}</strong>
-        <span>{l.noTasksDescription}</span>
+        <strong>{isToday ? l.noTasksTitle : l.noDayTitle}</strong>
+        <span>{isToday ? l.noTasksDescription : l.noDayTasks}</span>
       </div>
     {:else}
       <ul class="card">
@@ -113,7 +219,7 @@
       <button
         type="button"
         class="open solo"
-        onclick={() => onOpenDaily(today)}
+        onclick={() => onOpenDaily(selected)}
       >
         <svg
           class="lead"
@@ -131,7 +237,7 @@
             stroke-linejoin="round"
           />
         </svg>
-        <span class="title">{l.openDaily}</span>
+        <span class="title">{isToday ? l.openDaily : l.openDayNote}</span>
         {@render chevron()}
       </button>
     </div>
@@ -211,10 +317,130 @@
   h2 {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 28px;
+    font-size: 34px;
     font-weight: 700;
-    line-height: 1.2;
-    letter-spacing: -0.022em;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+  }
+
+  /* Fourteen equal columns that shrink with the panel; it scrolls only below their minimum. */
+  .strip {
+    display: grid;
+    grid-template-columns: repeat(14, minmax(30px, 1fr));
+    gap: 4px;
+    overflow-x: auto;
+    margin: calc(var(--space-2) * -1) 0 0;
+  }
+
+  .day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 0 5px;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+    transition: background-color var(--motion-instant) linear;
+  }
+
+  .day:hover {
+    background: var(--bg-hover);
+  }
+
+  .day:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .weekday {
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-transform: capitalize;
+  }
+
+  .number {
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mark {
+    width: 4px;
+    height: 4px;
+    border-radius: var(--radius-chip);
+  }
+
+  .mark.shown {
+    background: var(--accent);
+  }
+
+  .day.selected {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .day.selected .weekday {
+    color: inherit;
+  }
+
+  .day.selected .mark.shown {
+    background: var(--on-accent);
+  }
+
+  .banner {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border-radius: var(--radius-card);
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-panel));
+  }
+
+  .banner p {
+    margin: 0;
+  }
+
+  .headline {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .overdue {
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  .progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .track {
+    flex: 1;
+    height: 6px;
+    overflow: hidden;
+    border-radius: var(--radius-chip);
+    background: var(--bg-control);
+  }
+
+  .fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent);
+    transition: width var(--motion-base) var(--ease-out);
+  }
+
+  .ratio {
+    flex: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
   }
 
   .block {

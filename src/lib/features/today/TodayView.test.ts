@@ -110,4 +110,52 @@ describe("TodayView", () => {
       expect(screen.getByText("No tienes notas fijadas.")).toBeTruthy(),
     );
   });
+
+  it("summarizes the day with its progress and the overdue tasks", async () => {
+    await mount([
+      makeTask({ id: "a", dueDate: "2026-03-10", isCompleted: true }),
+      makeTask({ id: "b", dueDate: "2026-03-10" }),
+      makeTask({ id: "c", dueDate: "2026-03-08" }),
+    ]);
+    const banner = screen.getByRole("region", { name: "Resumen del día" });
+    expect(banner.textContent).toContain("Te queda 1 tarea para hoy.");
+    expect(banner.textContent).toContain("1 tarea vencida de días anteriores.");
+    const bar = screen.getByRole("progressbar", { name: "1 de 2 hechas" });
+    expect(bar.getAttribute("aria-valuenow")).toBe("1");
+  });
+
+  it("shows another day picked in the strip and moves with the arrows", async () => {
+    const { opened } = await mount([
+      makeTask({ id: "a", title: "Hoy mismo", dueDate: "2026-03-10" }),
+      makeTask({ id: "b", title: "Pasado", dueDate: "2026-03-11" }),
+    ]);
+    const strip = screen.getByRole("group", { name: "Próximos 14 días" });
+    const days = strip.querySelectorAll("button");
+    expect(days).toHaveLength(14);
+    expect(days[0].getAttribute("aria-pressed")).toBe("true");
+    expect(days[1].getAttribute("aria-label")).toBe(
+      "miércoles, 11 de marzo, 1 pendiente",
+    );
+
+    await fireEvent.click(days[1]);
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(
+      "Mañana",
+    );
+    expect(screen.getByText("Pasado")).toBeTruthy();
+    expect(screen.queryByText("Hoy mismo")).toBeNull();
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Abrir la nota del día" }),
+    );
+    expect(opened).toEqual(["daily:2026-03-11"]);
+
+    await fireEvent.keyDown(days[1], { key: "ArrowRight" });
+    expect(days[2].getAttribute("aria-pressed")).toBe("true");
+    expect(document.activeElement).toBe(days[2]);
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(
+      "Jueves",
+    );
+    expect(screen.getByText("Nada para este día")).toBeTruthy();
+    await fireEvent.keyDown(days[2], { key: "Home" });
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Hoy");
+  });
 });
