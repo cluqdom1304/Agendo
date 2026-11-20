@@ -162,6 +162,18 @@ fn current() -> Value {
             note_count: 2,
             pending_count: 3,
         },
+        "foundEvent": FoundItem::Event {
+            event_id: "event-1".into(),
+            title: "Seminario".into(),
+            start_date: "2026-03-12".into(),
+            start_time: Some("10:00".into()),
+            all_day: false,
+        },
+        "foundHabit": FoundItem::Habit {
+            habit_id: "habit-1".into(),
+            title: "Leer".into(),
+            is_archived: false,
+        },
         "attachment": AttachmentDto {
             id: "a".repeat(64),
             mime: "image/png".into(),

@@ -114,6 +114,11 @@ export function eventsList(
   return invoke<EventOccurrence[]>("events_list", { from, to });
 }
 
+/** Trashed events, most recently deleted first. */
+export function eventsTrashList(): Promise<CalendarEvent[]> {
+  return invoke<CalendarEvent[]>("events_trash_list");
+}
+
 export function eventGet(id: string): Promise<CalendarEvent> {
   return invoke<CalendarEvent>("event_get", { id });
 }
@@ -139,6 +144,11 @@ export function eventRestore(id: string): Promise<CalendarEvent> {
 
 export function habitsList(includeArchived = false): Promise<Habit[]> {
   return invoke<Habit[]>("habits_list", { includeArchived });
+}
+
+/** Trashed habits, most recently deleted first. */
+export function habitsTrashList(): Promise<Habit[]> {
+  return invoke<Habit[]>("habits_trash_list");
 }
 
 export function habitCreate(input: HabitInput): Promise<Habit> {

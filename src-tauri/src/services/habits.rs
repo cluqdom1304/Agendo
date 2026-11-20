@@ -222,6 +222,21 @@ pub fn restore_in<Tz: TimeZone>(state: &AppState, id: &str, zone: &Tz) -> AppRes
     })
 }
 
+/// Trashed habits, most recently deleted first.
+pub fn trash_list_in<Tz: TimeZone>(state: &AppState, zone: &Tz) -> AppResult<Vec<Habit>> {
+    let day = today(state, zone);
+    state.db.read(|conn| {
+        let marks = repo::all_marks(conn)?;
+        Ok(repo::list_trash(conn)?
+            .into_iter()
+            .map(|row| {
+                let own = marks.get(&row.id);
+                present(row, own, day)
+            })
+            .collect())
+    })
+}
+
 /// Marks or unmarks `date` (local `YYYY-MM-DD`, not later than today) for a habit and returns it
 /// with its streaks updated.
 pub fn set_done<Tz: TimeZone>(

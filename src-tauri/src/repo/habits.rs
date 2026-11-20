@@ -174,3 +174,23 @@ pub fn all_marks(conn: &Connection) -> rusqlite::Result<HashMap<String, BTreeSet
     }
     Ok(marks)
 }
+
+/// Trashed habits, most recently deleted first.
+pub fn list_trash(conn: &Connection) -> rusqlite::Result<Vec<HabitRow>> {
+    conn.prepare_cached(&format!(
+        "SELECT {COLUMNS} FROM habits WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC, id"
+    ))?
+    .query_map([], map_habit)?
+    .collect()
+}
+
+/// Permanently removes habits trashed more than `PURGE_AFTER_DAYS` days before `now`; their
+/// marks go with them. Returns how many were purged.
+pub fn purge_deleted(tx: &Transaction<'_>, now: &str) -> rusqlite::Result<usize> {
+    tx.prepare_cached(
+        "DELETE FROM habits
+         WHERE deleted_at IS NOT NULL
+           AND deleted_at < strftime('%Y-%m-%dT%H:%M:%SZ', ?1, '-' || ?2 || ' days')",
+    )?
+    .execute(params![now, super::tasks::PURGE_AFTER_DAYS])
+}

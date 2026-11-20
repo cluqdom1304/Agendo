@@ -21,6 +21,11 @@ pub async fn events_list(
 }
 
 #[tauri::command]
+pub async fn events_trash_list(state: State<'_, Arc<AppState>>) -> Result<Vec<Event>, String> {
+    run_blocking(state.inner().clone(), trash_list).await
+}
+
+#[tauri::command]
 pub async fn event_get(state: State<'_, Arc<AppState>>, id: String) -> Result<Event, String> {
     run_blocking(state.inner().clone(), move |state| get(state, &id)).await
 }

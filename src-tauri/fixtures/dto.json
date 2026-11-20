@@ -111,6 +111,20 @@
     "parentId": "folder-0",
     "position": 2
   },
+  "foundEvent": {
+    "allDay": false,
+    "eventId": "event-1",
+    "kind": "event",
+    "startDate": "2026-03-12",
+    "startTime": "10:00",
+    "title": "Seminario"
+  },
+  "foundHabit": {
+    "habitId": "habit-1",
+    "isArchived": false,
+    "kind": "habit",
+    "title": "Leer"
+  },
   "foundNote": {
     "folderId": "folder-1",
     "isPinned": true,

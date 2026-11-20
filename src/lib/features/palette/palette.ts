@@ -145,7 +145,7 @@ function foundRows(found: readonly FoundItem[]) {
         dueDate: item.dueDate,
         done: item.isCompleted,
       });
-    } else {
+    } else if (item.kind === "tag") {
       tags.push({
         kind: "tag",
         key: `tag:${item.tagId}`,

@@ -5,7 +5,7 @@
 //! - `in:carpeta`: notes in the folder or its subfolders.
 //! - `desde:AAAA-MM-DD` / `hasta:AAAA-MM-DD`: tasks whose day, or notes last changed (UTC day),
 //!   fall inside the range, both ends included (F17-08).
-//! - `is:tarea`, `is:nota`, `is:etiqueta`: only that kind. `is:hecha` / `is:pendiente` (tasks)
+//! - `is:tarea`, `is:nota`, `is:etiqueta`, `is:evento`, `is:habito`: only that kind. `is:hecha` / `is:pendiente` (tasks)
 //!   and `is:fijada` (notes) narrow by state.
 //!
 //! A value with spaces goes in quotes: `tag:"mi etiqueta"`.
@@ -37,6 +37,20 @@ pub enum FoundItem {
         is_pinned: bool,
     },
     #[serde(rename_all = "camelCase")]
+    Event {
+        event_id: String,
+        title: String,
+        start_date: String,
+        start_time: Option<String>,
+        all_day: bool,
+    },
+    #[serde(rename_all = "camelCase")]
+    Habit {
+        habit_id: String,
+        title: String,
+        is_archived: bool,
+    },
+    #[serde(rename_all = "camelCase")]
     Tag {
         tag_id: String,
         name: String,
@@ -55,6 +69,8 @@ pub struct ParsedQuery {
     pub tasks: bool,
     pub notes: bool,
     pub tag_items: bool,
+    pub events: bool,
+    pub habits: bool,
     pub completed: Option<bool>,
     pub pinned: bool,
     /// `desde:` and `hasta:` as `YYYY-MM-DD`.
@@ -108,6 +124,8 @@ pub fn parse(input: &str) -> ParsedQuery {
         tasks: true,
         notes: true,
         tag_items: true,
+        events: true,
+        habits: true,
         ..ParsedQuery::default()
     };
     let mut text = Vec::new();
@@ -141,32 +159,22 @@ pub fn parse(input: &str) -> ParsedQuery {
         } else if let Some(value) = lower.strip_prefix("is:") {
             match fold(value).as_str() {
                 "" => {}
-                "tarea" | "tareas" => {
-                    query.notes = false;
-                    query.tag_items = false;
-                }
-                "nota" | "notas" => {
-                    query.tasks = false;
-                    query.tag_items = false;
-                }
-                "etiqueta" | "etiquetas" => {
-                    query.tasks = false;
-                    query.notes = false;
-                }
+                "tarea" | "tareas" => query.only(|kinds| kinds.tasks = true),
+                "nota" | "notas" => query.only(|kinds| kinds.notes = true),
+                "etiqueta" | "etiquetas" => query.only(|kinds| kinds.tag_items = true),
+                "evento" | "eventos" => query.only(|kinds| kinds.events = true),
+                "habito" | "habitos" => query.only(|kinds| kinds.habits = true),
                 "hecha" | "hechas" | "completada" | "done" => {
                     query.completed = Some(true);
-                    query.notes = false;
-                    query.tag_items = false;
+                    query.only(|kinds| kinds.tasks = true);
                 }
                 "pendiente" | "pendientes" | "pending" => {
                     query.completed = Some(false);
-                    query.notes = false;
-                    query.tag_items = false;
+                    query.only(|kinds| kinds.tasks = true);
                 }
                 "fijada" | "fijadas" => {
                     query.pinned = true;
-                    query.tasks = false;
-                    query.tag_items = false;
+                    query.only(|kinds| kinds.notes = true);
                 }
                 _ => query.impossible = true,
             }
@@ -181,15 +189,44 @@ pub fn parse(input: &str) -> ParsedQuery {
     if query.folder.is_some() {
         query.tasks = false;
         query.tag_items = false;
+        query.events = false;
+        query.habits = false;
     }
     if query.from.is_some() || query.to.is_some() {
         query.tag_items = false;
+        query.habits = false;
     }
     query.text = text.join(" ");
     query
 }
 
+/// Which kinds of result a search may return.
+struct Kinds {
+    tasks: bool,
+    notes: bool,
+    tag_items: bool,
+    events: bool,
+    habits: bool,
+}
+
 impl ParsedQuery {
+    /// Keeps only the kind `pick` turns on, intersected with what earlier `is:` words left.
+    fn only(&mut self, pick: impl FnOnce(&mut Kinds)) {
+        let mut wanted = Kinds {
+            tasks: false,
+            notes: false,
+            tag_items: false,
+            events: false,
+            habits: false,
+        };
+        pick(&mut wanted);
+        self.tasks &= wanted.tasks;
+        self.notes &= wanted.notes;
+        self.tag_items &= wanted.tag_items;
+        self.events &= wanted.events;
+        self.habits &= wanted.habits;
+    }
+
     fn has_filters(&self) -> bool {
         !self.tags.is_empty()
             || self.folder.is_some()
@@ -197,7 +234,7 @@ impl ParsedQuery {
             || self.pinned
             || self.from.is_some()
             || self.to.is_some()
-            || !(self.tasks && self.notes && self.tag_items)
+            || !(self.tasks && self.notes && self.tag_items && self.events && self.habits)
     }
 }
 
@@ -352,6 +389,12 @@ pub fn find(conn: &Connection, input: &str, limit: u32) -> rusqlite::Result<Vec<
             &mut items,
         )?;
     }
+    if query.events {
+        events(conn, &query, &tag_groups, limit, &mut items)?;
+    }
+    if query.habits {
+        habits(conn, &query, &tag_groups, limit, &mut items)?;
+    }
     Ok(items)
 }
 
@@ -393,6 +436,113 @@ fn range_clause(
         values.push(Value::Text(format!("{to}{upper_suffix}")));
     }
     (sql, values)
+}
+
+/// Rows read before the text filter of events and habits, which have no search index: they are
+/// few and short, so the match is made here, folding case and accents like the tag names.
+const UNINDEXED_SCAN_LIMIT: u32 = 5_000;
+
+fn matches_text(wanted: &str, haystack: &str) -> bool {
+    let haystack = fold(haystack);
+    fold(wanted)
+        .split_whitespace()
+        .all(|word| haystack.contains(word))
+}
+
+fn events(
+    conn: &Connection,
+    query: &ParsedQuery,
+    groups: &[String],
+    limit: u32,
+    items: &mut Vec<FoundItem>,
+) -> rusqlite::Result<()> {
+    let mut values: Vec<Value> = vec![Value::Integer(i64::from(UNINDEXED_SCAN_LIMIT))];
+    values.extend(groups.iter().cloned().map(Value::Text));
+    let (range_sql, range_params) = range_clause(
+        "e.start_date",
+        2 + groups.len(),
+        (&query.from, &query.to),
+        "",
+    );
+    values.extend(range_params);
+    let sql = format!(
+        "SELECT e.id, e.title || ' ' || e.notes, e.title, e.start_date, e.start_time
+         FROM events e WHERE e.deleted_at IS NULL{}{}
+         ORDER BY e.start_date DESC, e.id LIMIT ?1",
+        tag_clauses("event_tags", "event_id", "e.id", groups.len(), 2),
+        range_sql
+    );
+    let mut statement = conn.prepare_cached(&sql)?;
+    let rows = statement.query_map(params_from_iter(values), |row| {
+        Ok((
+            row.get::<_, String>(1)?,
+            FoundItem::Event {
+                event_id: row.get(0)?,
+                title: row.get(2)?,
+                start_date: row.get(3)?,
+                all_day: row.get::<_, Option<String>>(4)?.is_none(),
+                start_time: row.get(4)?,
+            },
+        ))
+    })?;
+    let mut taken = 0;
+    for row in rows {
+        let (text, item) = row?;
+        if matches_text(&query.text, &text) {
+            items.push(item);
+            taken += 1;
+            if taken >= limit {
+                break;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn habits(
+    conn: &Connection,
+    query: &ParsedQuery,
+    groups: &[String],
+    limit: u32,
+    items: &mut Vec<FoundItem>,
+) -> rusqlite::Result<()> {
+    let mut values: Vec<Value> = vec![Value::Integer(i64::from(UNINDEXED_SCAN_LIMIT))];
+    values.extend(groups.iter().cloned().map(Value::Text));
+    let tag_sql: String = (0..groups.len())
+        .map(|offset| {
+            format!(
+                " AND h.tag_id IN (SELECT value FROM json_each(?{}))",
+                2 + offset
+            )
+        })
+        .collect();
+    let sql = format!(
+        "SELECT h.id, h.title, h.archived_at IS NOT NULL
+         FROM habits h WHERE h.deleted_at IS NULL{tag_sql}
+         ORDER BY h.archived_at IS NOT NULL, h.position, h.id LIMIT ?1"
+    );
+    let mut statement = conn.prepare_cached(&sql)?;
+    let rows = statement.query_map(params_from_iter(values), |row| {
+        Ok(FoundItem::Habit {
+            habit_id: row.get(0)?,
+            title: row.get(1)?,
+            is_archived: row.get(2)?,
+        })
+    })?;
+    let mut taken = 0;
+    for row in rows {
+        let item = row?;
+        if let FoundItem::Habit { title, .. } = &item
+            && matches_text(&query.text, title)
+        {
+            items.push(item);
+            taken += 1;
+            if taken >= limit {
+                break;
+            }
+        }
+    }
+    Ok(())
 }
 
 fn tasks(
@@ -619,6 +769,8 @@ mod tests {
                 FoundItem::Task { task_id, .. } => format!("t:{task_id}"),
                 FoundItem::Note { note_id, .. } => format!("n:{note_id}"),
                 FoundItem::Tag { tag_id, .. } => format!("g:{tag_id}"),
+                FoundItem::Event { event_id, .. } => format!("e:{event_id}"),
+                FoundItem::Habit { habit_id, .. } => format!("h:{habit_id}"),
             })
             .collect()
     }
@@ -719,6 +871,98 @@ mod tests {
         assert_eq!(sorted(found(&conn, "informe is:nota")), ["n:n1", "n:n2"]);
         assert!(found(&conn, "informe is:nota is:tarea").is_empty());
         assert!(found(&conn, "informe is:marciano").is_empty());
+    }
+
+    fn event(conn: &Connection, id: &str, title: &str, date: &str, tags: &[&str]) {
+        conn.execute(
+            "INSERT INTO events (id, title, notes, start_date, end_date, created_at, updated_at)
+             VALUES (?1, ?2, 'Sala de reuniones', ?3, ?3, ?4, ?4)",
+            params![id, title, date, NOW],
+        )
+        .expect("event");
+        for tag in tags {
+            conn.execute(
+                "INSERT INTO event_tags (event_id, tag_id) VALUES (?1, ?2)",
+                params![id, tag],
+            )
+            .expect("event tag");
+        }
+    }
+
+    fn habit(conn: &Connection, id: &str, title: &str, tag: Option<&str>) {
+        conn.execute(
+            "INSERT INTO habits (id, title, tag_id, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?4)",
+            params![id, title, tag, NOW],
+        )
+        .expect("habit");
+    }
+
+    #[test]
+    fn events_and_habits_are_found_by_text_without_regard_to_accents_or_case() {
+        let conn = database();
+        event(&conn, "e1", "Reunión de equipo", "2026-03-12", &[]);
+        event(&conn, "e2", "Dentista", "2026-03-20", &[]);
+        habit(&conn, "h1", "Leer reunión semanal", None);
+        habit(&conn, "h2", "Correr", None);
+        task(&conn, "t1", "Preparar reunion", false, &[]);
+
+        // Both events have "reuniones" in their notes, which count as text too.
+        assert_eq!(
+            sorted(found(&conn, "REUNION")),
+            ["e:e1", "e:e2", "h:h1", "t:t1"]
+        );
+        assert_eq!(found(&conn, "dentista sala is:evento"), ["e:e2"]);
+        assert_eq!(found(&conn, "correr is:habito"), ["h:h2"]);
+        assert_eq!(found(&conn, "correr is:hábito"), ["h:h2"]);
+        // Latest first when no text narrows them.
+        assert_eq!(found(&conn, "is:evento"), ["e:e2", "e:e1"]);
+        assert_eq!(found(&conn, "is:habito"), ["h:h1", "h:h2"]);
+    }
+
+    #[test]
+    fn kind_filters_leave_events_and_habits_out_when_they_do_not_apply() {
+        let conn = database();
+        event(&conn, "e1", "Informe final", "2026-03-12", &[]);
+        habit(&conn, "h1", "Informe diario", None);
+        task(&conn, "t1", "Informe uno", false, &[]);
+        note(&conn, "n1", "Informe notas", None, true, &[]);
+
+        assert_eq!(found(&conn, "informe is:tarea"), ["t:t1"]);
+        assert_eq!(found(&conn, "informe is:nota"), ["n:n1"]);
+        assert_eq!(found(&conn, "informe is:pendiente"), ["t:t1"]);
+        assert_eq!(found(&conn, "informe is:fijada"), ["n:n1"]);
+        assert!(found(&conn, "informe in:clase").is_empty());
+        assert!(found(&conn, "informe is:evento is:habito").is_empty());
+    }
+
+    #[test]
+    fn tag_and_date_filters_apply_to_events_and_habits() {
+        let conn = database();
+        event(&conn, "e1", "Clase", "2026-03-12", &["g1"]);
+        event(&conn, "e2", "Clase", "2026-04-12", &["g3"]);
+        habit(&conn, "h1", "Clase de yoga", Some("g1"));
+        habit(&conn, "h2", "Clase de piano", Some("g3"));
+
+        assert_eq!(sorted(found(&conn, "clase tag:trabajo")), ["e:e1", "h:h1"]);
+        assert_eq!(found(&conn, "is:evento tag:Casa"), ["e:e2"]);
+        assert_eq!(found(&conn, "clase is:evento desde:2026-04-01"), ["e:e2"]);
+        assert_eq!(found(&conn, "clase is:evento hasta:2026-03-31"), ["e:e1"]);
+        // Habits have no date.
+        assert!(found(&conn, "clase is:habito desde:2026-01-01").is_empty());
+    }
+
+    #[test]
+    fn trashed_events_and_habits_are_not_found() {
+        let conn = database();
+        event(&conn, "e1", "Cena", "2026-03-12", &[]);
+        habit(&conn, "h1", "Cenar pronto", None);
+        conn.execute("UPDATE events SET deleted_at = ?1", [NOW])
+            .expect("trash event");
+        conn.execute("UPDATE habits SET deleted_at = ?1", [NOW])
+            .expect("trash habit");
+        assert!(found(&conn, "cen").is_empty());
+        assert!(found(&conn, "is:evento").is_empty());
     }
 
     #[test]

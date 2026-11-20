@@ -304,6 +304,11 @@ pub fn restore_in<Tz: TimeZone>(state: &AppState, id: &str, zone: &Tz) -> AppRes
     Ok(event)
 }
 
+/// Trashed events, most recently deleted first.
+pub fn trash_list(state: &AppState) -> AppResult<Vec<Event>> {
+    state.db.read(|conn| Ok(events::list_trash(conn)?))
+}
+
 /// What shows on the calendar between `from` and `to` (inclusive): single events that overlap
 /// the window and every repetition of a series that starts or ends inside it.
 pub fn list(state: &AppState, from: &str, to: &str) -> AppResult<Vec<EventOccurrence>> {

@@ -285,3 +285,35 @@ fn deleting_a_tag_keeps_the_habit_without_it() {
     let found = &list(&state, false).expect("list")[0];
     assert_eq!(found.tag_id, None);
 }
+
+#[test]
+fn trashed_habits_are_listed_and_purged_with_their_marks_after_thirty_days() {
+    let (state, clock) = test_state();
+    let old = habit(&state, "Antiguo", None);
+    let recent = habit(&state, "Reciente", None);
+    mark(&state, &old.id, "2026-03-10", true);
+    delete(&state, &old.id).expect("trash old");
+    clock.advance(Duration::days(20));
+    delete(&state, &recent.id).expect("trash recent");
+
+    let ids: Vec<String> = trash_list_in(&state, &zone())
+        .expect("trash")
+        .into_iter()
+        .map(|h| h.id)
+        .collect();
+    assert_eq!(ids, [recent.id.clone(), old.id.clone()]);
+
+    clock.advance(Duration::days(11));
+    state.purge_trash().expect("purge");
+    let ids: Vec<String> = trash_list_in(&state, &zone())
+        .expect("trash")
+        .into_iter()
+        .map(|h| h.id)
+        .collect();
+    assert_eq!(ids, [recent.id]);
+    let marks: i64 = state
+        .db
+        .read(|conn| Ok(conn.query_row("SELECT COUNT(*) FROM habit_logs", [], |r| r.get(0))?))
+        .expect("count");
+    assert_eq!(marks, 0);
+}

@@ -419,3 +419,35 @@ fn tags_are_linked_and_replaced() {
     .expect("update");
     assert_eq!(updated.tag_ids, ["b"]);
 }
+
+#[test]
+fn trashed_events_are_listed_and_purged_after_thirty_days() {
+    let (state, clock) = test_state();
+    let kept = make(&state, input("2026-03-12", None));
+    let gone = make(&state, input("2026-03-13", None));
+    let old = make(&state, input("2026-03-14", Some("09:00")));
+    delete(&state, &old.id).expect("trash old");
+    clock.advance(Duration::days(20));
+    delete(&state, &gone.id).expect("trash recent");
+
+    let trash: Vec<String> = trash_list(&state)
+        .expect("trash")
+        .into_iter()
+        .map(|event| event.id)
+        .collect();
+    assert_eq!(trash, [gone.id.clone(), old.id.clone()], "latest first");
+
+    clock.advance(Duration::days(11));
+    state.purge_trash().expect("purge");
+    let left: Vec<String> = trash_list(&state)
+        .expect("trash")
+        .into_iter()
+        .map(|event| event.id)
+        .collect();
+    assert_eq!(
+        left,
+        [gone.id],
+        "only the one trashed 31 days ago is purged"
+    );
+    assert!(get(&state, &kept.id).is_ok());
+}

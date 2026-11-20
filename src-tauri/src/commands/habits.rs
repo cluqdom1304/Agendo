@@ -24,6 +24,11 @@ pub async fn habits_list(
 }
 
 #[tauri::command]
+pub async fn habits_trash_list(state: State<'_, Arc<AppState>>) -> Result<Vec<Habit>, String> {
+    run_blocking(state.inner().clone(), |state| trash_list_in(state, &Local)).await
+}
+
+#[tauri::command]
 pub async fn habit_create(
     state: State<'_, Arc<AppState>>,
     input: HabitInput,

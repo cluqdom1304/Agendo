@@ -399,6 +399,20 @@ export type FoundItem =
       isPinned: boolean;
     }
   | {
+      kind: "event";
+      eventId: string;
+      title: string;
+      startDate: string;
+      startTime: string | null;
+      allDay: boolean;
+    }
+  | {
+      kind: "habit";
+      habitId: string;
+      title: string;
+      isArchived: boolean;
+    }
+  | {
       kind: "tag";
       tagId: string;
       name: string;

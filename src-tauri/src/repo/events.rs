@@ -194,3 +194,23 @@ pub fn event_of_reminder(conn: &Connection, reminder_id: &str) -> rusqlite::Resu
         .query_row([reminder_id], |row| row.get(0))
         .optional()
 }
+
+/// Trashed events, most recently deleted first.
+pub fn list_trash(conn: &Connection) -> rusqlite::Result<Vec<Event>> {
+    conn.prepare_cached(event_sql!(
+        "WHERE e.deleted_at IS NOT NULL ORDER BY e.deleted_at DESC, e.id"
+    ))?
+    .query_map([], map_event)?
+    .collect()
+}
+
+/// Permanently removes events trashed more than `PURGE_AFTER_DAYS` days before `now`; their
+/// tag links and reminders go with them. Returns how many were purged.
+pub fn purge_deleted(tx: &Transaction<'_>, now: &str) -> rusqlite::Result<usize> {
+    tx.prepare_cached(
+        "DELETE FROM events
+         WHERE deleted_at IS NOT NULL
+           AND deleted_at < strftime('%Y-%m-%dT%H:%M:%SZ', ?1, '-' || ?2 || ' days')",
+    )?
+    .execute(params![now, super::tasks::PURGE_AFTER_DAYS])
+}

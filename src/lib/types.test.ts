@@ -62,6 +62,8 @@ interface Fixture {
   foundTask: FoundItem;
   foundNote: FoundItem;
   foundTag: FoundItem;
+  foundEvent: FoundItem;
+  foundHabit: FoundItem;
   attachment: Attachment;
 }
 
@@ -340,6 +342,14 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
     expect(keys(fixture.foundTag)).toEqual(
       ["colorHex", "kind", "name", "noteCount", "pendingCount", "tagId"].sort(),
     );
+    expect(keys(fixture.foundEvent)).toEqual(
+      ["allDay", "eventId", "kind", "startDate", "startTime", "title"].sort(),
+    );
+    expect(keys(fixture.foundHabit)).toEqual(
+      ["habitId", "isArchived", "kind", "title"].sort(),
+    );
+    expect(fixture.foundEvent.kind).toBe("event");
+    expect(fixture.foundHabit.kind).toBe("habit");
     expect(fixture.foundTask.kind).toBe("task");
     expect(fixture.foundNote.kind).toBe("note");
     expect(fixture.foundTag.kind).toBe("tag");
