@@ -2,7 +2,7 @@
 
 **Fase activa:** versión 3.0.0 (Fase 18 hecha; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** Fase 18 terminada (`[A]` en verde, sin ítems `[H]`); el usuario decide si empieza la Fase 19 (F19-01). No se inicia ninguna fase sin confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F17 y la primera ejecución de `npm run e2e`.
+**Siguiente tarea:** Fase 18 terminada (`[A]` en verde, sin ítems `[H]`; F17-10 validada por el usuario); el usuario decide si empieza la Fase 19 (F19-01). No se inicia ninguna fase sin confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-20 (Fase 18 completada: cimientos de datos, migraciones 015 a 018)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -462,7 +462,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F17-07 `[A]` Etiquetas: interfaz para la jerarquía de un nivel (`parentId` ya existe, D-06); filtrar por la etiqueta padre incluye las hijas.
 - [x] F17-08 `[A]` Búsqueda: vistas guardadas (p. ej. `is:pending tag:SMA`) y filtro por rango de fechas.
 - [x] F17-09 `[A]` Copia de seguridad automática programada con rotación de las últimas N copias (Ajustes), reutilizando `.agendo` (D-47).
-- [ ] F17-10 `[H]` Validación visual y de uso de F17-02 a F17-09 en Windows 11.
+- [x] F17-10 `[H]` Validación visual y de uso de F17-02 a F17-09 en Windows 11.
 
 **Verificaciones [A] de la Fase 17:**
 - F17-01 (D-57): `domain/recurrence.rs` gana `BYDAY` (solo semanal) y `COUNT` (1–999, excluyente con `UNTIL`) y `Rule::successor`; `spawn_next_occurrence` guarda la regla con una repetición menos. «Cada N» y «hasta fecha» ya existían desde F13-05. Interfaz: siete botones de día y «Número de veces» en `TaskDialog`; `describeRule` los explica. Tests nuevos: 3 de dominio, 1 de comando (serie con `COUNT=3` y `BYDAY`), 2 de `recurrence.test.ts` y 1 de `TaskDialog.test.ts`. Sin migración.
