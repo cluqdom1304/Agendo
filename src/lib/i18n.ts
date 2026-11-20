@@ -535,6 +535,14 @@ export const t = {
       "La repetición no puede terminar antes de la fecha de la tarea.",
     detail: "Se repite",
   },
+  inbox: {
+    title: "Bandeja de entrada",
+    toggle: "Mostrar u ocultar la bandeja de entrada",
+    addLabel: "Añadir a la bandeja de entrada",
+    addPlaceholder: "Nueva tarea sin fecha",
+    empty: "Bandeja vacía",
+    emptyHint: "Las tareas sin fecha aparecen aquí.",
+  },
   priority: {
     label: "Prioridad",
     /** Indexed by level: 0 none, 1 medium, 2 high, 3 urgent (D-93). */

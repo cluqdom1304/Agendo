@@ -2,8 +2,8 @@
 
 **Fase activa:** versión 3.0.0, Fase 20 (Fases 18 y 19 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F20-04 (panel «Bandeja de entrada»). Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-20 (Fase 19 validada por el usuario; F20-01 a F20-03 hechas)
+**Siguiente tarea:** F20-05 (vistas Próximas y Tareas con filtros). Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-20 (Fase 19 validada por el usuario; F20-01 a F20-04 hechas)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -516,7 +516,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F20-01 `[A]` Hoy: título grande, tira de 14 días y banner de resumen (todo `$derived`).
 - [x] F20-02 `[A]` Círculo de prioridad en `Checkbox`/`TaskRow`, selector en el diálogo y el menú contextual, orden por prioridad dentro del día.
 - [x] F20-03 `[A]` Progreso de checklist «2/5» en la fila.
-- [ ] F20-04 `[A]` Panel derecho «Bandeja de entrada» (carga diferida, plegable, oculto en ventanas estrechas).
+- [x] F20-04 `[A]` Panel derecho «Bandeja de entrada» (carga diferida, plegable, oculto en ventanas estrechas).
 - [ ] F20-05 `[A]` Vista Próximas y vista Tareas con filtros.
 - [ ] F20-06 `[H]` Validación en Windows 11.
 
@@ -525,6 +525,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - F20-01: `features/today/summary.ts` (puro: `stripDates`, `pendingByDate`, `summarizeDay`) y `TodayView` con título de 34 px («Hoy», «Mañana» o el día de la semana), tira de 14 días desde hoy (día de la semana, número y marca si hay pendientes; elige el día mostrado; una sola parada de tabulación y flechas, Inicio y Fin) y banner de resumen (pendientes, vencidas de días anteriores solo en hoy, barra de progreso «N de M hechas» con `role=progressbar`). Tareas y nota del día siguen al día elegido; al volver a la ventana otro día, la selección pasa a hoy si se había quedado atrás. Todo `$derived`. Tests: 3 de `summary.test.ts` y 2 nuevos de `TodayView`. Batería en verde: Rust 552, TS 795, check 0/0, JS 274,3 KB de 300.
 - F20-02: el anillo de `Checkbox` toma el color `--priority-N` (con un relleno tenue) y el nombre accesible añade «, prioridad alta» para no depender del color; lo usan `TaskRow` y Hoy. Selector de cuatro niveles en `TaskDialog` (crear y editar; `saveDetails` envía `priority` solo si cambia), submenú «Prioridad» (radio) en el menú contextual de tarea y `TasksStore.setPriority` optimista con vuelta atrás. Duplicar conserva la prioridad. **Orden (amplía D-05):** dentro de un día, las tareas con hora siguen por hora y, a igual hora, por prioridad descendente; las sin hora van por prioridad descendente y luego `position`; completadas sin cambios. Cambia a la vez en `domain/ordering.rs` (método `priority()` del trait `Sortable` con 0 por defecto) y `src/lib/ordering.ts`, con un vector nuevo en `fixtures/parity/ordering.json` que comprueban ambos lados. Hoy ordena igual (sus tareas de todo el día siguen antes que las de hora). Tests: 1 de paridad, 1 de store, 2 de diálogo, 1 de menú contextual. Rust 552, TS 800, JS 274,9 KB.
 - F20-03: `todo/ChecklistProgress.svelte` muestra «2/5» con un icono de casilla junto al título (en `TaskRow` y en Hoy) solo si la tarea tiene casillas; en color de acento al completarse; el lector de pantalla oye «2 de 5 subtareas hechas» en lugar de la fracción. Lee `checklistDone`/`checklistTotal` almacenados (D-93): la fila no analiza `content_json`, y guardar las notas en línea ya reemplaza la tarea con la respuesta del backend, así que el contador se actualiza solo. 1 test. TS 801, JS 275,4 KB.
+- F20-04: `features/inbox/InboxPanel.svelte`, tarjeta de 280 px a la derecha del panel en Hoy y Calendario con las tareas pendientes sin fecha (el mismo bloque que POR HACER, respetando el filtro de etiquetas), círculo de prioridad, progreso de checklist, campo «Nueva tarea sin fecha» y estado vacío; cada fila lleva `data-task-id`, así que el menú contextual de tarea funciona allí. Se carga con `import()` la primera vez que se muestra (D-98: chunk propio). `shell/inbox.svelte.ts` (`InboxState`) la oculta por debajo de 1100 px sin olvidar si el usuario la plegó; el botón de la barra superior (con `aria-pressed`) solo aparece donde puede abrirse. No aparece en Tareas (ya muestra POR HACER) ni en Notas. El estado plegado no se guarda entre sesiones. Tests: 3 de `InboxState`, 3 del panel, 2 de la barra. TS 809, JS 277,0 KB.
 
 ## Fase 21 — Eventos (D-94)
 - [ ] F21-01 `[A]` Diálogo y fila de evento; sección Eventos.

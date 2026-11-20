@@ -9,6 +9,10 @@
     canGoForward: boolean;
     /** What the «new» button creates where the user is. */
     newLabel: string;
+    /** The inbox toggle shows only where the panel can open (F20-04). */
+    inboxAvailable?: boolean;
+    inboxOpen?: boolean;
+    onToggleInbox?: () => void;
     onToggleSidebar: () => void;
     onNew: () => void;
     onBack: () => void;
@@ -23,6 +27,9 @@
     canGoBack,
     canGoForward,
     newLabel,
+    inboxAvailable = false,
+    inboxOpen = false,
+    onToggleInbox,
     onToggleSidebar,
     onNew,
     onBack,
@@ -150,6 +157,26 @@
   </button>
 
   <div class="trail" data-tauri-drag-region>
+    {#if inboxAvailable}
+      <button
+        type="button"
+        class="icon-btn"
+        aria-pressed={inboxOpen}
+        aria-label={t.inbox.toggle}
+        title={t.inbox.toggle}
+        onclick={() => onToggleInbox?.()}
+      >
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path
+            d="M2.5 9.5l1.6-5.2a1 1 0 011-.8h5.8a1 1 0 011 .8l1.6 5.2v3a1 1 0 01-1 1h-9a1 1 0 01-1-1zM2.5 9.5h3l.8 1.5h3.4l.8-1.5h3"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.4"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    {/if}
     <button
       type="button"
       class="icon-btn"

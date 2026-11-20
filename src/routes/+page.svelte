@@ -11,6 +11,7 @@
   import DialogHost from "$lib/shell/DialogHost.svelte";
   import { DialogState } from "$lib/shell/dialogs.svelte";
   import EmptyState from "$lib/shell/EmptyState.svelte";
+  import { InboxState } from "$lib/shell/inbox.svelte";
   import { dispatchShortcut } from "$lib/shell/shortcuts";
   import { SidebarState } from "$lib/shell/sidebar.svelte";
   import Toast from "$lib/shell/Toast.svelte";
@@ -28,6 +29,14 @@
   const sidebar = new SidebarState(
     typeof window === "undefined" ? Infinity : window.innerWidth,
   );
+  // The inbox sits beside Hoy and the calendar, where undated tasks wait to be planned (F20-04).
+  const inbox = new InboxState(
+    typeof window === "undefined" ? Infinity : window.innerWidth,
+  );
+  const inboxSection = $derived(
+    viewStore.section === "today" || viewStore.section === "calendar",
+  );
+  const inboxShown = $derived(inbox.open && inboxSection);
 
   // The tag filter only hides tasks: in the notes there is nothing to warn about.
   const filterShown = $derived(tagsStore.filtered && viewStore.inAgenda);
@@ -66,6 +75,23 @@
   $effect(() => {
     if (!viewStore.inAgenda) void preloadViews();
   });
+
+  // The panel is its own chunk (D-98), fetched the first time it has to show.
+  let InboxPanel = $state<
+    typeof import("$lib/features/inbox/InboxPanel.svelte").default | null
+  >(null);
+  $effect(() => {
+    if (inboxShown && !InboxPanel) {
+      void import("$lib/features/inbox/InboxPanel.svelte").then((module) => {
+        InboxPanel = module.default;
+      });
+    }
+  });
+
+  function onResize() {
+    sidebar.setWidth(window.innerWidth);
+    inbox.setWidth(window.innerWidth);
+  }
 
   // Tasks made from a note name it (F10-05): look the titles up as tasks come and go.
   // The key is a string so the effect only reruns when the set of origin notes changes, not on
@@ -161,10 +187,7 @@
   }
 </script>
 
-<svelte:window
-  onkeydown={onKeydown}
-  onresize={() => sidebar.setWidth(window.innerWidth)}
-/>
+<svelte:window onkeydown={onKeydown} onresize={onResize} />
 
 <div class="shell">
   <TopBar
@@ -175,6 +198,9 @@
     newLabel={viewStore.section === "notes"
       ? t.topBar.newNote
       : t.newTask.button}
+    inboxAvailable={inbox.available && inboxSection}
+    inboxOpen={inboxShown}
+    onToggleInbox={() => inbox.toggle()}
     onToggleSidebar={() => sidebar.toggle()}
     onNew={createNew}
     onBack={() => viewStore.goBack()}
@@ -242,6 +268,12 @@
         {/if}
       {/if}
     </div>
+    {#if inboxShown && InboxPanel}
+      <InboxPanel
+        store={tasksStore}
+        onOpenTask={(taskId) => (dialogs.detailId = taskId)}
+      />
+    {/if}
   </div>
 </div>
 

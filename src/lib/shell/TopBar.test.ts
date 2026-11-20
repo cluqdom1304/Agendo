@@ -60,4 +60,24 @@ describe("TopBar (F19-03)", () => {
       }),
     ).toBeTruthy();
   });
+
+  it("offers the inbox toggle only where the panel can open (F20-04)", async () => {
+    const onToggleInbox = vi.fn();
+    mount({ inboxAvailable: true, inboxOpen: true, onToggleInbox });
+    const toggle = screen.getByRole("button", {
+      name: "Mostrar u ocultar la bandeja de entrada",
+    });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    await fireEvent.click(toggle);
+    expect(onToggleInbox).toHaveBeenCalledOnce();
+  });
+
+  it("hides the inbox toggle elsewhere", () => {
+    mount();
+    expect(
+      screen.queryByRole("button", {
+        name: "Mostrar u ocultar la bandeja de entrada",
+      }),
+    ).toBeNull();
+  });
 });
