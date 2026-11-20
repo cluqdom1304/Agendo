@@ -513,6 +513,7 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Días de la semana en los diálogos de tarea, evento y hábito: los no marcados se ven (círculo gris) y los marcados en tinta.
   - [ ] Botones de minimizar, maximizar y cerrar centrados con la barra superior; cerrar se pone rojo de Windows al pasar el ratón.
   - [ ] Abrir y cerrar diálogos y la paleta sin tirones con Mica activado.
+  - [ ] «Planificar mi día» con tareas que ya son de hoy y otras sin fecha: cada grupo en su tarjeta, sin filas montadas, y las tarjetas visibles en modo oscuro.
   - [ ] Jerarquía: títulos de fila y horas en negrita, etiquetas de grupo con contador en píldora, y más separación entre bloques, filas y tarjetas sin que nada se vea apretado.
   - [ ] Contraste y legibilidad del acento coral en claro y oscuro (texto, foco y número de hoy); con «Reducir movimiento» de Windows no hay animaciones.
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.

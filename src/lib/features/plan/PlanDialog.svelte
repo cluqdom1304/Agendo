@@ -93,7 +93,7 @@
         </h3>
         <ul class="choice-list">
           {#each candidates.today as task (task.id)}
-            <li class="fixed">
+            <li class="in-today">
               <span class="pin" aria-hidden="true"></span>
               <span class="name">{task.title || t.reminders.untitled}</span>
               <span class="meta" class:none={task.durationMinutes === null}>
@@ -165,7 +165,7 @@
   }
 
   label,
-  .fixed {
+  .in-today {
     display: flex;
     align-items: center;
     gap: 12px;

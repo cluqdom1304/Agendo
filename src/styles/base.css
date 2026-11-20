@@ -486,6 +486,13 @@ body {
   outline-offset: 2px;
 }
 
+/* Dialogs and popovers sit on --bg-popover, which in dark is the card colour itself: inside
+   them a card is a translucent lift of the text colour, so it shows on any surface. */
+.ui-form {
+  --bg-card: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  --bg-card-hover: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
 /* A list of choices or rows inside a dialog: one rounded card, rows parted by a hairline. */
 .ui-form .choice-list {
   margin: 0;

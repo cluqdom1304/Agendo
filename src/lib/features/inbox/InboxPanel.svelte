@@ -68,7 +68,7 @@
   </header>
 
   <form class="add" onsubmit={add}>
-    <span class="ring" aria-hidden="true"></span>
+    <span class="new-ring" aria-hidden="true"></span>
     <input
       type="text"
       aria-label={l.addLabel}
@@ -171,7 +171,7 @@
     background: var(--bg-control);
   }
 
-  .ring {
+  .new-ring {
     flex: none;
     box-sizing: border-box;
     width: 18px;

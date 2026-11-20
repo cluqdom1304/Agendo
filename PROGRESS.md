@@ -627,6 +627,7 @@ Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la inter
   - **Componentes que no se habían revisado:** editor de recordatorios y su popover, vista previa de captura, selector de etiquetas, buscador dentro de la nota (en cápsula), fantasma de arrastre, estado vacío (título de 22 px y texto con ancho de lectura), barra de formato de notas (herramienta activa en tinta), etiquetas de campo de los cinco formularios (12,5 px, seminegrita), título de la lista de notas (22 px) y grupos de la paleta.
   - **Editor de notas:** títulos de nivel 2 en negrita y un poco de aire entre párrafos seguidos.
   - **Fluidez:** se quita el `backdrop-filter` de los fondos de modal y paleta (coste a pantalla completa en WebView2 con ventana transparente).
+- [x] F26.1-16 `[A]` «Planificar mi día» roto (captura del usuario): la fila de las tareas que ya son de hoy usaba la clase `fixed`, que Tailwind (cargado en `app.css`) convierte en `position: fixed`; la fila salía del flujo y se montaba sobre el grupo siguiente. Renombrada a `in-today`; el aro de «Nueva tarea» de la Bandeja (`ring`, que añadía una sombra de anillo de Tailwind) pasa a `new-ring`. Dentro de diálogos y popovers (`.ui-form`) las tarjetas usan un tinte translúcido del texto: en oscuro `--bg-card` era igual que `--bg-popover` y la lista y «Tu día» no se distinguían. Nuevo `tailwindClasses.test.ts`: ningún componente puede usar como clase propia una utilidad de Tailwind que cambie posición o dibujo.
 - [ ] F26.1-12 `[H]` Revisión visual en Windows 11 (lista «Fase 26.1» de `docs/manual-pruebas.md`).
 
 **Verificaciones [A] de la Fase 26.1:**
@@ -638,6 +639,7 @@ Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la inter
 - F26.1-13: batería en verde (lint, check 0/0, 1046 tests, build y size). `tokens.test.ts` confirma AA de todos los textos sobre los paneles con los nuevos grises. No he podido ver la app: el aspecto real en claro es `[H]`.
 - F26.1-14: batería de frontend en verde (lint, check 0/0, tests, build, size 107,6 KB iniciales). Tests nuevos: `cssVars.test.ts` (ninguna `var(--x)` sin definir) y la clase `chrome-dark` de la barra lateral. No he podido ver la app: la revisión visual sigue siendo `[H]`.
 - F26.1-15: batería completa en verde: `cargo fmt --check`, `clippy -D warnings`, `cargo test` (568 + integración), lint, check 0/0, 1048 tests, build y size. Contraste de los tintes calculado aparte (no lo cubre `tokens.test.ts`). Sigo sin poder ver la app: el aspecto real es `[H]`.
+- F26.1-16: batería completa en verde (568 tests Rust + integración, 1049 tests TS, lint, check 0/0, build, size 107.6/316.0 KB).
 - **Discrepancia:** CLAUDE.md §2 pide un commit por tarea; las tareas de esta fase comparten tokens y clases y se entregan en un solo commit de diseño.
 
 ## Fase 27 — Cierre de 3.0.0
