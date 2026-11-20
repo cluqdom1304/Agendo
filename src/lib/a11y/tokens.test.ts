@@ -36,6 +36,16 @@ const TEXT_TOKENS = [
   "--danger",
   "--success",
   ...Array.from({ length: 8 }, (_, i) => `--tag-${i + 1}`),
+  ...Array.from({ length: 4 }, (_, i) => `--priority-${i}`),
+];
+
+/** The sidebar block is shared by every theme (D-92). */
+const SHARED = block(":root {");
+
+/** Windows keeps its material near #202020 in the dark theme and #f3f3f3 in the light one. */
+const MATERIALS: [string, Rgba][] = [
+  ["dark material", { r: 32, g: 32, b: 32, a: 1 }],
+  ["light material", { r: 243, g: 243, b: 243, a: 1 }],
 ];
 
 /** AA for normal text. */
@@ -105,6 +115,19 @@ describe("design tokens", () => {
       ).toBeGreaterThanOrEqual(AA);
     });
 
+    it.each(TEXT_TOKENS)("%s reaches WCAG AA on the panels", (token) => {
+      expect(
+        contrastRatio(
+          parseColor(tokens[token]),
+          parseColor(tokens["--bg-panel"]),
+        ),
+      ).toBeGreaterThanOrEqual(AA);
+    });
+
+    it("panels are opaque, so contrast does not depend on what is behind", () => {
+      expect(parseColor(tokens["--bg-panel"]).a).toBe(1);
+    });
+
     it("primary and secondary text reach AA on elevated surfaces", () => {
       for (const [label, window] of surfaces) {
         const elevated = composite(parseColor(tokens["--bg-elevated"]), window);
@@ -116,5 +139,50 @@ describe("design tokens", () => {
         }
       }
     });
+  });
+
+  describe("sidebar (the same in every theme)", () => {
+    it("is not redefined by any theme", () => {
+      for (const [name, tokens] of Object.entries(THEMES)) {
+        expect(
+          Object.keys(tokens).filter((key) => key.startsWith("--sidebar-")),
+          name,
+        ).toEqual([]);
+      }
+    });
+
+    const backgrounds: [string, Rgba][] = [
+      [
+        "solid over black",
+        composite(parseColor(SHARED["--sidebar-bg"]), BLACK),
+      ],
+      [
+        "solid over white",
+        composite(parseColor(SHARED["--sidebar-bg"]), WHITE),
+      ],
+      ...MATERIALS.map(([label, material]): [string, Rgba] => [
+        `native over the ${label}`,
+        composite(parseColor(SHARED["--sidebar-bg-native"]), material),
+      ]),
+    ];
+
+    it.each(["--sidebar-text", "--sidebar-text-secondary", "--sidebar-accent"])(
+      "%s reaches AA on every backdrop, also under hover and selection",
+      (token) => {
+        for (const [label, background] of backgrounds) {
+          for (const layer of ["--sidebar-hover", "--sidebar-active"]) {
+            const surface = composite(parseColor(SHARED[layer]), background);
+            expect(
+              contrastRatio(parseColor(SHARED[token]), surface),
+              `${token} on ${layer}, ${label}`,
+            ).toBeGreaterThanOrEqual(AA);
+          }
+          expect(
+            contrastRatio(parseColor(SHARED[token]), background),
+            `${token}, ${label}`,
+          ).toBeGreaterThanOrEqual(AA);
+        }
+      },
+    );
   });
 });

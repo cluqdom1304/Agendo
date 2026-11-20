@@ -90,6 +90,20 @@
   --space-8: 32px;
 
   --scrollbar-width: 4px;
+
+  /* The sidebar and the bar above it stay dark in both themes (D-92): the same values here,
+     outside the theme blocks. Content sits on panels that do follow the theme. */
+  --sidebar-bg: rgba(14, 14, 16, 0.94);
+  --sidebar-bg-native: rgba(14, 14, 16, 0.9);
+  --sidebar-text: #f2f2f4;
+  --sidebar-text-secondary: #b4b4ba;
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active: rgba(255, 255, 255, 0.11);
+  --sidebar-control: rgba(255, 255, 255, 0.08);
+  --sidebar-separator: rgba(255, 255, 255, 0.08);
+  --sidebar-accent: #ff8a80;
+  --panel-gap: 8px;
+  --sidebar-width: 232px;
 }
 
 :root[data-theme="dark"],
@@ -139,6 +153,12 @@
   --tag-6: #76cfcb;
   --tag-7: #e6c86a;
   --tag-8: #c2a58f;
+  --bg-panel: rgb(30, 30, 34);
+  --panel-border: rgba(255, 255, 255, 0.06);
+  --priority-0: #a1a1a6;
+  --priority-1: #6aa8ff;
+  --priority-2: #ffa64d;
+  --priority-3: #ff6b5e;
 }
 
 @media (prefers-color-scheme: light) {
@@ -189,6 +209,12 @@
     --tag-6: #1a6f6c;
     --tag-7: #7a600d;
     --tag-8: #7c5a43;
+    --bg-panel: rgb(252, 252, 251);
+    --panel-border: rgba(0, 0, 0, 0.06);
+    --priority-0: #646469;
+    --priority-1: #1f63c4;
+    --priority-2: #a84b00;
+    --priority-3: #c8160c;
   }
 }
 
@@ -239,4 +265,10 @@
   --tag-6: #1a6f6c;
   --tag-7: #7a600d;
   --tag-8: #7c5a43;
+  --bg-panel: rgb(252, 252, 251);
+  --panel-border: rgba(0, 0, 0, 0.06);
+  --priority-0: #646469;
+  --priority-1: #1f63c4;
+  --priority-2: #a84b00;
+  --priority-3: #c8160c;
 }

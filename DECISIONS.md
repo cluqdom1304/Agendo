@@ -509,7 +509,7 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Alternativas descartadas:** publicar la 2.1.0 con lo ya hecho y la 3.0.0 después (más instaladores y dos migraciones de usuario).
 
 ## D-92 — Sistema visual v3: sidebar oscuro fijo y paneles tipo tarjeta
-- **Estado:** PROPOSED · **Fecha:** 2026-11-20 · **Validación visual:** `[H]`
+- **Estado:** ACCEPTED (2026-11-20, al ordenar el usuario la Fase 19) · **Fecha:** 2026-11-20 · **Validación visual:** `[H]`
 - **Contexto:** el usuario quiere parecerse a la captura de referencia (sidebar oscuro con el contenido en tarjetas redondeadas, barra superior con buscador central). Hoy `--bg-sidebar` es un velo casi transparente (D-39) y el tema claro es opaco (D-36).
 - **Decisión (amplía D-39 y D-55; solo CSS y marcado):** tokens nuevos `--sidebar-*` con **los mismos valores en ambos temas** (sidebar siempre oscuro), `--priority-*` (cuatro niveles con contraste AA, comprobado en `src/lib/a11y/tokens.test.ts`) y paneles tipo tarjeta (`--radius-panel`, hueco de 8 px) sobre el fondo de ventana. Un único `AppSidebar` sustituye a `TagSidebar`, `FolderSidebar` y al control de sección. Siguen prohibidos `backdrop-filter` y las animaciones de salida; cero colores fijos fuera de tokens.
 - **Alternativas descartadas:** que el sidebar siga el tema (el usuario eligió oscuro fijo).

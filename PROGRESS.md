@@ -1,7 +1,7 @@
 # PROGRESS.md
 
-**Fase activa:** versión 3.0.0 (Fase 18 hecha; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Fase activa:** versión 3.0.0, Fase 19 (Fase 18 hecha; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
+**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
 **Siguiente tarea:** Fase 18 terminada (`[A]` en verde, sin ítems `[H]`; F17-10 validada por el usuario); el usuario decide si empieza la Fase 19 (F19-01). No se inicia ninguna fase sin confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-20 (Fase 18 completada: cimientos de datos, migraciones 015 a 018)
 
@@ -496,12 +496,16 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - Cierre de F18: Rust 552, TS 699, JS 271,1 KB gzip (+0,4 KB: solo tipos y llamadas de `api.ts`), CSS 26,1 KB. Los tests de escala con 10 000 notas son sensibles a la carga de la máquina (fallan si se ejecutan junto a otra compilación y pasan solos). Sin ítems `[H]` en esta fase: no hay interfaz nueva. Ejecutable release: 11 423 744 B (10,9 MiB, +0,6 MiB sobre la línea base). Dependencias: ninguna nueva.
 
 ## Fase 19 — Sistema visual y shell (D-92)
-- [ ] F19-01 `[A]` Tokens `--sidebar-*`, `--priority-*` y paneles tipo tarjeta; test de contraste ampliado (`src/lib/a11y/tokens.test.ts`).
+- [x] F19-01 `[A]` Tokens `--sidebar-*`, `--priority-*` y paneles tipo tarjeta; test de contraste ampliado (`src/lib/a11y/tokens.test.ts`).
 - [ ] F19-02 `[A]` `AppSidebar.svelte` único (navegación, Favoritos = notas fijadas, Recientes, Carpetas, Etiquetas); se retiran `TagSidebar`, `FolderSidebar` y el control de sección.
 - [ ] F19-03 `[A]` Barra superior: plegar, nuevo, atrás/adelante y buscador central que abre la paleta.
 - [ ] F19-04 `[A]` `viewStore.section` ampliado (`today|upcoming|calendar|notes|tasks|events|habits`) y migración del ajuste `app_section`.
 - [ ] F19-05 `[A]` Capas de tarjeta en `.page`, ancho mínimo y plegado automático del sidebar.
 - [ ] F19-06 `[H]` Revisión visual en Windows 11 (claro/oscuro, Mica, tamaños).
+
+**Verificaciones [A] de la Fase 19:**
+- Inicio: el usuario ordenó empezar la Fase 19 el 2026-11-20 con capturas de referencia de la interfaz objetivo; D-92 pasa a `ACCEPTED`.
+- F19-01: tokens compartidos `--sidebar-*` (fuera de los bloques de tema: mismos valores en claro y oscuro), `--panel-gap`, `--sidebar-width`; por tema `--bg-panel` (opaco), `--panel-border` y `--priority-0` a `--priority-3`. `tokens.test.ts` comprueba que ningún tema redefine `--sidebar-*`, que el texto, el acento y las prioridades del sidebar pasan AA sobre fondo sólido, Mica claro y oscuro, también con hover y selección, y que todo el texto pasa AA sobre los paneles (120 tests).
 
 ## Fase 20 — Hoy, Próximas, Bandeja y prioridades
 - [ ] F20-01 `[A]` Hoy: título grande, tira de 14 días y banner de resumen (todo `$derived`).
