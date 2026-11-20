@@ -436,6 +436,13 @@ export const t = {
     resultCount: (count: number) =>
       count === 1 ? "1 resultado" : `${count} resultados`,
     groupViews: "Búsquedas guardadas",
+    groupCreate: "Crear",
+    create: {
+      task: (title: string) => `Crear tarea «${title}»`,
+      event: (title: string) => `Crear evento «${title}»`,
+      habit: (title: string) => `Crear hábito «${title}»`,
+      note: (title: string) => `Crear nota «${title}»`,
+    },
     saveView: "Guardar esta búsqueda",
     deleteView: (query: string) => `Quitar la búsqueda guardada «${query}»`,
     groupCommands: "Comandos",

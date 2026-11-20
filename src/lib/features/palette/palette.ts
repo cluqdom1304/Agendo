@@ -13,7 +13,17 @@ export interface PaletteCommand {
   run: () => void;
 }
 
+export type CreateKind = "task" | "event" | "habit" | "note";
+
+export const CREATE_KINDS: readonly CreateKind[] = [
+  "task",
+  "event",
+  "habit",
+  "note",
+];
+
 export type PaletteRow =
+  | { kind: "create"; key: string; what: CreateKind; text: string }
   | { kind: "command"; key: string; command: PaletteCommand }
   | { kind: "view"; key: string; query: string }
   | {
@@ -44,7 +54,7 @@ export type PaletteRow =
     };
 
 export type GroupId =
-  "views" | "commands" | "recent" | "notes" | "tasks" | "tags";
+  "create" | "views" | "commands" | "recent" | "notes" | "tasks" | "tags";
 
 export interface PaletteGroup {
   id: GroupId;
@@ -169,11 +179,13 @@ export interface BuildInput {
   found: readonly FoundItem[];
   /** Saved searches (F17-08), shown while nothing is typed. */
   views?: readonly string[];
+  /** Offers «Crear tarea/evento/hábito/nota» for the typed text (F23-03). */
+  create?: boolean;
 }
 
 /** The groups of rows to draw, in order, without empty ones. */
 export function buildGroups(input: BuildInput): PaletteGroup[] {
-  const { mode, plan, commands, recent, found, views = [] } = input;
+  const { mode, plan, commands, recent, found, views = [], create } = input;
   const groups: PaletteGroup[] = [];
   const add = (id: GroupId, rows: PaletteRow[]) => {
     if (rows.length > 0) groups.push({ id, rows });
@@ -211,6 +223,17 @@ export function buildGroups(input: BuildInput): PaletteGroup[] {
     add("recent", recentRows);
     add("commands", commandRows(commands));
     return groups;
+  }
+  if (create) {
+    add(
+      "create",
+      CREATE_KINDS.map((what) => ({
+        kind: "create",
+        key: `create:${what}`,
+        what,
+        text: plan.text,
+      })),
+    );
   }
   add(
     "commands",

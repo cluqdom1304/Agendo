@@ -3,9 +3,13 @@
 
   import { formatDisplayDate } from "../../dates";
   import { t } from "../../i18n";
+  import { parseNatural } from "../../naturalInput";
   import type { FoundItem } from "../../types";
+  import { captureChips, captureOptions } from "../capture/capture.svelte";
+  import { toLocalIsoDate } from "../../dates";
   import {
     buildGroups,
+    type CreateKind,
     planQuery,
     type PaletteCommand,
     type PaletteMode,
@@ -27,6 +31,8 @@
     onNote: (id: string) => void;
     onTask: (id: string) => void;
     onTag: (id: string) => void;
+    /** Creates what the text describes; without it the «Crear» rows are not offered. */
+    onCreate?: (what: CreateKind, text: string) => void;
     onClose: () => void;
   }
 
@@ -41,6 +47,7 @@
     onNote,
     onTask,
     onTag,
+    onCreate,
     onClose,
   }: Props = $props();
 
@@ -55,7 +62,15 @@
 
   const plan = $derived(planQuery(query, mode));
   const groups = $derived(
-    buildGroups({ mode, plan, commands, recent, found, views }),
+    buildGroups({
+      mode,
+      plan,
+      commands,
+      recent,
+      found,
+      views,
+      create: onCreate !== undefined && mode === "all",
+    }),
   );
   const canSave = $derived(
     mode === "all" &&
@@ -66,6 +81,7 @@
   );
   const rows = $derived(groups.flatMap((group) => group.rows));
   const groupTitles = $derived({
+    create: t.palette.groupCreate,
     views: t.palette.groupViews,
     commands: t.palette.groupCommands,
     recent: t.palette.groupRecent,
@@ -131,7 +147,8 @@
       return;
     }
     onClose();
-    if (row.kind === "command") row.command.run();
+    if (row.kind === "create") onCreate?.(row.what, row.text);
+    else if (row.kind === "command") row.command.run();
     else if (row.kind === "note") onNote(row.id);
     else if (row.kind === "task") onTask(row.id);
     else onTag(row.id);
@@ -166,14 +183,19 @@
       ?.scrollIntoView?.({ block: "nearest" });
   });
 
+  const today = () => toLocalIsoDate(new Date());
+  const readText = (text: string) =>
+    parseNatural(text, captureOptions(today()));
   const titleOf = (row: PaletteRow): string =>
-    row.kind === "command"
-      ? row.command.label
-      : row.kind === "view"
-        ? row.query
-        : row.kind === "tag"
-          ? row.name
-          : row.title || t.palette.untitled;
+    row.kind === "create"
+      ? t.palette.create[row.what](readText(row.text)?.title ?? row.text)
+      : row.kind === "command"
+        ? row.command.label
+        : row.kind === "view"
+          ? row.query
+          : row.kind === "tag"
+            ? row.name
+            : row.title || t.palette.untitled;
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -276,7 +298,12 @@
               {titleOf(row)}
             </span>
             <span class="detail">
-              {#if row.kind === "view"}
+              {#if row.kind === "create"}
+                {#if row.what !== "note"}
+                  {@const capture = readText(row.text)}
+                  {#if capture}{captureChips(capture, today()).join(" · ")}{/if}
+                {/if}
+              {:else if row.kind === "view"}
                 <button
                   type="button"
                   class="forget"

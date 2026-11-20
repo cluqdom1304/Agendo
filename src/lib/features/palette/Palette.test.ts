@@ -224,4 +224,37 @@ describe("Palette", () => {
     );
     expect(onDeleteView).toHaveBeenCalledWith("is:pendiente tag:SMA");
   });
+
+  it("offers to create what is typed and says what was read (F23-03)", async () => {
+    const onCreate = vi.fn();
+    render(Palette, {
+      mode: "all",
+      search: async () => [],
+      commands: [],
+      recent: [],
+      onNote: vi.fn(),
+      onTask: vi.fn(),
+      onTag: vi.fn(),
+      onCreate,
+      onClose: vi.fn(),
+    });
+    const input = screen.getByRole("combobox");
+    await type(input, "Dentista pasado mañana a las 5");
+    const row = await screen.findByRole("option", {
+      name: /Crear evento «Dentista»/,
+    });
+    expect(row.textContent).toContain("17:00");
+    expect(screen.getByText("Crear hábito «Dentista»")).toBeTruthy();
+    await fireEvent.click(row);
+    expect(onCreate).toHaveBeenCalledWith(
+      "event",
+      "Dentista pasado mañana a las 5",
+    );
+  });
+
+  it("does not offer creation in the notes mode", async () => {
+    const { input } = mount(async () => []);
+    expect(input).toBeTruthy();
+    expect(screen.queryByText(/^Crear /)).toBeNull();
+  });
 });

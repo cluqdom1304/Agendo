@@ -153,3 +153,41 @@ describe("buildGroups", () => {
     expect(ids(groups)).toEqual([["notes", ["x"]]]);
   });
 });
+
+describe("create rows (F23-03)", () => {
+  const plan = planQuery("Dentista mañana", "all");
+
+  it("come first when asked for, one per kind, for any non-empty text", () => {
+    const groups = buildGroups({
+      mode: "all",
+      plan,
+      commands,
+      recent: [],
+      found: [],
+      create: true,
+    });
+    expect(groups[0].id).toBe("create");
+    expect(groups[0].rows.map((row) => row.key)).toEqual([
+      "create:task",
+      "create:event",
+      "create:habit",
+      "create:note",
+    ]);
+  });
+
+  it("are absent by default, with `>` commands and with an empty box", () => {
+    const base = { mode: "all" as const, commands, recent: [], found: [] };
+    expect(
+      buildGroups({ ...base, plan }).some((group) => group.id === "create"),
+    ).toBe(false);
+    for (const raw of [">nueva", ""]) {
+      expect(
+        buildGroups({
+          ...base,
+          plan: planQuery(raw, "all"),
+          create: true,
+        }).some((group) => group.id === "create"),
+      ).toBe(false);
+    }
+  });
+});

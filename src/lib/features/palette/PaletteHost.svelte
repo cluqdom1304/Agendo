@@ -2,6 +2,8 @@
   import { onMount } from "svelte";
 
   import { searchAll } from "../../api";
+  import { eventsStore } from "../../stores/events.svelte";
+  import { habitsStore } from "../../stores/habits.svelte";
   import { notesStore } from "../../stores/notes.svelte";
   import { savedSearches } from "../../stores/savedSearches.svelte";
   import { tagsStore } from "../../stores/tags.svelte";
@@ -9,6 +11,7 @@
   import { viewStore } from "../../stores/view.svelte";
   import { showNote } from "../notes/navigation";
   import { buildCommands } from "./commands";
+  import { createFromText } from "./createFrom";
   import Palette from "./Palette.svelte";
   import type { PaletteMode } from "./palette";
 
@@ -67,5 +70,18 @@
   onNote={(id) => void showNote(id)}
   {onTask}
   onTag={openTag}
+  onCreate={(what, text) =>
+    void createFromText(
+      {
+        view: viewStore,
+        tasks: tasksStore,
+        events: eventsStore,
+        habits: habitsStore,
+        notes: notesStore,
+        tags: tagsStore,
+      },
+      what,
+      text,
+    )}
   {onClose}
 />

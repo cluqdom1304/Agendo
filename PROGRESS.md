@@ -1,9 +1,9 @@
 # PROGRESS.md
 
 **Fase activa:** versión 3.0.0, Fase 23 (Fases 18 a 22 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
-**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F23-03. Falta la validación humana F21-05 en Windows 11. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-20 (Fase 23 en curso; F22-03 validada por el usuario; F21-05 pendiente)
+**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** Fase 23 terminada (`[A]` en verde); no tiene tarea `[H]` propia: sus comprobaciones están en `docs/manual-pruebas.md` § «Versión 3.0.0». Falta F21-05. La Fase 24 (F24-01) no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-20 (Fase 23 completada; F22-03 validada por el usuario; F21-05 pendiente)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -560,13 +560,16 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 ## Fase 23 — Captura en lenguaje natural (D-96)
 - [x] F23-01 `[A]` `src/lib/naturalInput.ts` (fecha, hora, duración, etiqueta `#`, prioridad `!`, repetición) con tests de casos y `Clock` falso.
 - [x] F23-02 `[A]` Integración en borrador en línea, creación rápida del calendario, diálogo y Bandeja, con vista previa y Esc para ignorar.
-- [ ] F23-03 `[A]` «Crear cualquier cosa» en la paleta: tarea, evento, hábito y nota.
+- [x] F23-03 `[A]` «Crear cualquier cosa» en la paleta: tarea, evento, hábito y nota.
 
 **Verificaciones [A] de la Fase 23:**
 - Inicio: el usuario validó F22-03 en Windows 11 y ordenó la Fase 23 el 2026-11-20 (F21-05 sigue pendiente).
 - F23-01: `src/lib/naturalInput.ts`, puro y sin dependencias; recibe «hoy» del reloj del llamador (los tests fijan el viernes 20/11/2026). Reconoce: fecha (`hoy`, `mañana`, `pasado mañana`, días de la semana con `el`/`este`/`próximo`/`que viene`, `en`/`dentro de N días|semanas|meses`, `la semana que viene`, `15/12`, `15/12/27`, `15 de diciembre`, `2 dic`, `el 15`, `el día 15`), hora (`a las 5` —de 1 a 7 sin «de la mañana» es tarde—, `a las 17h`, `y media`/`y cuarto`, `de la mañana|tarde|noche`, `17:30`, `6pm`, `mediodía`), duración solo junto a una hora (`1h`, `1h30`, `2 horas`, `45 min`, `media hora`, `hora y media`, con `durante`/`por` opcional; se recorta para acabar el mismo día), `#etiqueta` solo si existe (sin distinguir mayúsculas; si no existe se queda en el título), `!1`–`!3` (media, alta, urgente, D-93) y repetición (`cada día`, `cada N semanas`, `diariamente`, `los lunes y jueves`, `entre semana`, `los fines de semana`) como `rrule` del subconjunto de D-57. Una hora o repetición sin día cae en el día de reserva (el del hueco del calendario o del grupo; si no, hoy) y una repetición por días empieza en el primero que toca. Cada clase se toma una vez y, si el título quedaría vacío, no se toma nada. 87 tests.
 - F23-02: `features/capture/` con `CaptureField` (texto, captura derivada, Esc para ignorarla hasta vaciar el campo y «asentar» lo ya copiado al formulario), `captureOptions` (hoy del reloj del llamador y etiquetas de `tagsStore`) y `CapturePreview` (título limpio, fecha relativa, hora–fin, repetición, `#etiquetas`, prioridad y «Esc: tal cual», con `aria-live`). Integrado en: borrador en línea (`InlineTitle`/`TaskRow`/`DayGroup` → `commitDraft` con captura; el día del grupo es el de reserva y el día escrito gana), creación rápida del calendario (`WeekCompose`: lo escrito gana al hueco; sin hora escrita mandan la hora y la duración del hueco), diálogo «Nueva tarea» (solo al crear: al salir del título o al guardar se copian los campos y el título queda limpio; Esc no cierra el diálogo si había captura) y Bandeja. `taskFieldsOf` reparte la captura en los campos de `taskCreate`. `TasksStore.today()` nuevo. 9 tests de interfaz más (TS 991).
+- F23-03: en el modo Ctrl+K (no en «Ir a…» ni tras `>`), con texto escrito la paleta ofrece primero el grupo «Crear» con «Crear tarea/evento/hábito/nota «título»», mostrando lo leído (fecha, hora, repetición, etiquetas). `features/palette/createFrom.ts`: tarea (campos de la captura; va a Tareas), evento (hoy si no hay día; con hora dura 1 h por omisión y se recorta a las 24:00; sin hora, todo el día), hábito (días de la repetición, hora y primera etiqueta) y nota (título = texto tal cual, sin interpretar). Cada una lleva a su sección. 10 tests (TS 1001).
 - **Presupuesto (D-98 `ACCEPTED` por el usuario):** F23-02 llevó el JS total a 301,8 KB (+5 KB) con la carga inicial en 102,4 KB. El usuario eligió «dos límites»: `npm run size` mide y falla por carga inicial ≤ 120 KB y total ≤ 340 KB (`scripts/size-check.mjs` lee el manifiesto de Vite como `bundle-audit.mjs`).
+
+- Cierre de F23: sin cambios en Rust desde F21 (Rust 552 verde). `npm run lint`, `check` 0/0, TS 1001, `build` y `size` (inicial 102,7 KB de 120; total 302,8 KB de 340) en verde. Sin dependencias ni migraciones. Pendiente `[H]`: la lista «Fase 23» de `docs/manual-pruebas.md`. **Aviso:** la paleta no ofrece «Crear» en el modo «Ir a…» ni con `>`.
 
 ## Fase 24 — Planificar mi día y bloques de tiempo
 - [ ] F24-01 `[A]` Arrastrar una tarea de la Bandeja a una franja de Día/Semana (fija hora y duración).
