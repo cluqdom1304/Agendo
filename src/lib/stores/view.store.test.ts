@@ -2,25 +2,27 @@ import { describe, expect, it } from "vitest";
 
 import { ViewStore, type ViewApi } from "./view.svelte";
 
+type Key = "view_mode" | "app_section";
+
 class FakeViewApi implements ViewApi {
-  saved: string | null;
+  saved: Record<Key, string | null>;
   writes: string[] = [];
   failReads = false;
   failWrites = false;
 
-  constructor(saved: string | null = null) {
-    this.saved = saved;
+  constructor(mode: string | null = null, section: string | null = null) {
+    this.saved = { view_mode: mode, app_section: section };
   }
 
-  async settingsGet() {
+  async settingsGet(key: Key) {
     if (this.failReads) throw "DB: fallo simulado";
-    return this.saved;
+    return this.saved[key];
   }
 
-  async settingsSet(_key: "view_mode", value: string) {
+  async settingsSet(key: Key, value: string) {
     if (this.failWrites) throw "DB: fallo simulado";
     this.writes.push(value);
-    this.saved = value;
+    this.saved[key] = value;
   }
 }
 
@@ -41,18 +43,18 @@ describe("ViewStore", () => {
     expect(store.ready).toBe(true);
   });
 
-  it("starts on the agenda and remembers the notes section", async () => {
+  it("starts on «Hoy» and remembers the notes section", async () => {
     const api = new FakeViewApi(null);
     const store = make(api);
     await store.load();
-    expect(store.section).toBe("agenda");
+    expect(store.section).toBe("today");
     store.setSection("notes");
     expect(store.section).toBe("notes");
     expect(api.writes).toEqual(["notes"]);
     store.setSection("notes");
     expect(api.writes).toHaveLength(1);
 
-    const reopened = make(new FakeViewApi("notes"));
+    const reopened = make(new FakeViewApi(null, "notes"));
     await reopened.load();
     expect(reopened.section).toBe("notes");
   });
@@ -82,7 +84,7 @@ describe("ViewStore", () => {
     store.setMode("month");
     store.setMode("month");
     store.setMode("day");
-    expect(api.writes).toEqual(["month", "day"]);
+    expect(api.writes).toEqual(["calendar", "month", "day"]);
 
     api.failWrites = true;
     store.setMode("week");
@@ -121,6 +123,7 @@ describe("ViewStore", () => {
   it("showDay centres on that day and switches to the day view", () => {
     const api = new FakeViewApi();
     const store = make(api);
+    store.section = "calendar";
     store.mode = "month";
     store.showDay("2026-03-18");
     expect(store.mode).toBe("day");
@@ -129,24 +132,68 @@ describe("ViewStore", () => {
   });
 });
 
-describe("section «Hoy» (F13-07)", () => {
-  it("restores the saved section when it is today, notes or agenda, and falls back to agenda", async () => {
+describe("sections of the sidebar (F19-04)", () => {
+  it("restores the saved section and falls back to «Hoy»", async () => {
     for (const [saved, expected] of [
       ["today", "today"],
       ["notes", "notes"],
-      ["agenda", "agenda"],
-      ["algo raro", "agenda"],
-      [null, "agenda"],
+      ["tasks", "tasks"],
+      ["calendar", "calendar"],
+      ["algo raro", "today"],
+      [null, "today"],
     ] as const) {
-      const store = new ViewStore({ api: new FakeViewApi(saved) });
+      const store = new ViewStore({ api: new FakeViewApi(null, saved) });
       await store.load();
       expect(store.section).toBe(expected);
     }
   });
 
+  it("migrates the 2.0.x `agenda` to «Tareas» or «Calendario» by the saved view and saves it", async () => {
+    const list = new FakeViewApi("list", "agenda");
+    const store = make(list);
+    await store.load();
+    expect(store.section).toBe("tasks");
+    expect(list.saved.app_section).toBe("tasks");
+
+    const week = new FakeViewApi("week", "agenda");
+    const calendar = make(week);
+    await calendar.load();
+    expect(calendar.section).toBe("calendar");
+    expect(calendar.mode).toBe("week");
+    expect(week.saved.app_section).toBe("calendar");
+  });
+
+  it("keeps the list in «Tareas» and the calendar views in «Calendario»", async () => {
+    const api = new FakeViewApi("month", "tasks");
+    const store = make(api);
+    await store.load();
+    expect(store.mode).toBe("list");
+    expect(store.calendarMode).toBe("month");
+
+    store.setSection("calendar");
+    expect(store.mode).toBe("month");
+    store.setMode("list");
+    expect(store.section).toBe("tasks");
+    store.setSection("notes");
+    store.setMode("day");
+    expect(store.section).toBe("calendar");
+    expect(store.inAgenda).toBe(true);
+  });
+
+  it("showAgenda goes to the list only from outside the agenda", () => {
+    const store = make(new FakeViewApi());
+    store.setSection("notes");
+    store.showAgenda();
+    expect(store.section).toBe("tasks");
+    store.setSection("calendar");
+    store.showAgenda();
+    expect(store.section).toBe("calendar");
+  });
+
   it("saves the change of section", () => {
     const api = new FakeViewApi();
     const store = new ViewStore({ api });
+    store.setSection("notes");
     store.setSection("today");
     expect(store.section).toBe("today");
     expect(api.writes).toContain("today");

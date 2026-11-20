@@ -499,13 +499,14 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F19-01 `[A]` Tokens `--sidebar-*`, `--priority-*` y paneles tipo tarjeta; test de contraste ampliado (`src/lib/a11y/tokens.test.ts`).
 - [ ] F19-02 `[A]` `AppSidebar.svelte` único (navegación, Favoritos = notas fijadas, Recientes, Carpetas, Etiquetas); se retiran `TagSidebar`, `FolderSidebar` y el control de sección.
 - [ ] F19-03 `[A]` Barra superior: plegar, nuevo, atrás/adelante y buscador central que abre la paleta.
-- [ ] F19-04 `[A]` `viewStore.section` ampliado (`today|upcoming|calendar|notes|tasks|events|habits`) y migración del ajuste `app_section`.
+- [x] F19-04 `[A]` `viewStore.section` ampliado (`today|upcoming|calendar|notes|tasks|events|habits`) y migración del ajuste `app_section`.
 - [ ] F19-05 `[A]` Capas de tarjeta en `.page`, ancho mínimo y plegado automático del sidebar.
 - [ ] F19-06 `[H]` Revisión visual en Windows 11 (claro/oscuro, Mica, tamaños).
 
 **Verificaciones [A] de la Fase 19:**
 - Inicio: el usuario ordenó empezar la Fase 19 el 2026-11-20 con capturas de referencia de la interfaz objetivo; D-92 pasa a `ACCEPTED`.
 - F19-01: tokens compartidos `--sidebar-*` (fuera de los bloques de tema: mismos valores en claro y oscuro), `--panel-gap`, `--sidebar-width`; por tema `--bg-panel` (opaco), `--panel-border` y `--priority-0` a `--priority-3`. `tokens.test.ts` comprueba que ningún tema redefine `--sidebar-*`, que el texto, el acento y las prioridades del sidebar pasan AA sobre fondo sólido, Mica claro y oscuro, también con hover y selección, y que todo el texto pasa AA sobre los paneles (120 tests).
+- F19-04 (hecha antes que F19-02 porque el sidebar depende de ella): `Section` = `today | tasks | calendar | notes`; **discrepancia con el enunciado:** `upcoming`, `events` y `habits` entran en el tipo cuando existan sus vistas (F20-05, F21, F22), para no dejar secciones vacías (CLAUDE.md §6). El backend ya acepta los siete valores más `agenda`. La lista vive en «Tareas» y los modos de calendario en «Calendario» (`setMode` y `setSection` se mantienen coherentes); `showAgenda()` va a la lista solo desde fuera de la agenda. Migración del ajuste: un `app_section = agenda` guardado por la 2.0.x se lee como `tasks` o `calendar` según `view_mode` y se reescribe. Sin nada guardado, la app abre en «Hoy». Ctrl+Mayús+1 lleva a «Tareas». Tests: 4 nuevos de store y los de paleta, atajos y ajustes de Rust adaptados. Rust 552, TS 772, JS 271,1 KB.
 
 ## Fase 20 — Hoy, Próximas, Bandeja y prioridades
 - [ ] F20-01 `[A]` Hoy: título grande, tira de 14 días y banner de resumen (todo `$derived`).

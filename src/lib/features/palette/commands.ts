@@ -24,7 +24,7 @@ export function buildCommands(deps: CommandDeps): PaletteCommand[] {
   const l = t.palette.commands;
 
   const inAgenda = (action: () => void) => () => {
-    view.setSection("agenda");
+    view.showAgenda();
     action();
   };
   const showView = (mode: ViewMode) => inAgenda(() => view.setMode(mode));
@@ -78,7 +78,7 @@ export function buildCommands(deps: CommandDeps): PaletteCommand[] {
       id: "go-agenda",
       label: l.goAgenda,
       shortcut: "Ctrl+Mayús+1",
-      run: () => view.setSection("agenda"),
+      run: () => view.setSection("tasks"),
     },
     {
       id: "go-today",

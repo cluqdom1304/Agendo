@@ -5,7 +5,7 @@ import type { Section } from "../stores/view.svelte";
 import type { ViewMode } from "../types";
 import { dispatchShortcut, type ShortcutDeps } from "./shortcuts";
 
-function setup(section: Section = "agenda", mode: ViewMode = "list") {
+function setup(section: Section = "tasks", mode: ViewMode = "list") {
   const deps = {
     section: () => section,
     mode: () => mode,
@@ -45,7 +45,7 @@ describe("dispatchShortcut", () => {
   });
 
   it("starts a new task with no date outside the list", () => {
-    const deps = setup("agenda", "week");
+    const deps = setup("calendar", "week");
     press("n", deps);
     expect(deps.openNewTask).toHaveBeenCalledWith(null);
   });

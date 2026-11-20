@@ -17,7 +17,8 @@ use crate::{
 pub const VIEW_MODE: &str = "view_mode";
 /// Colour theme: follow the system or force light or dark (F6-05).
 pub const THEME: &str = "theme";
-/// Which section is open: the agenda, the notes or «Hoy» (V2 F8-07, F13-07).
+/// Which view of the sidebar is open (F19-04). `agenda` is what 2.0.x saved; the app reads it
+/// as the list or the calendar and saves the new name.
 pub const APP_SECTION: &str = "app_section";
 /// What the notes list shows: `all`, `inbox`, `pinned` or `folder:<id>` (F8-07).
 pub const NOTES_SCOPE: &str = "notes_scope";
@@ -47,7 +48,12 @@ pub const DEFAULT_NOTIFY_TIME: &str = settings::NOTIFY_TIME_KEY;
 
 /// Whitelist: every setting with the values it accepts.
 const ALLOWED: [(&str, &[&str]); 5] = [
-    (APP_SECTION, &["agenda", "notes", "today"]),
+    (
+        APP_SECTION,
+        &[
+            "agenda", "today", "upcoming", "calendar", "notes", "tasks", "events", "habits",
+        ],
+    ),
     (VIEW_MODE, &["list", "day", "week", "month"]),
     (THEME, &["system", "light", "dark"]),
     (WINDOW_EFFECT, &["mica", "acrylic", "none"]),
@@ -241,7 +247,9 @@ mod tests {
             get(&state, NOTES_SCOPE).expect("get").as_deref(),
             Some("folder:abc-123")
         );
-        assert_eq!(code(set(&state, APP_SECTION, "tasks")), "VALIDATION");
+        set(&state, APP_SECTION, "tasks").expect("tasks");
+        set(&state, APP_SECTION, "habits").expect("habits");
+        assert_eq!(code(set(&state, APP_SECTION, "inbox")), "VALIDATION");
         assert_eq!(code(set(&state, NOTES_OPEN, &"x".repeat(65))), "VALIDATION");
         assert_eq!(
             code(set(

@@ -21,8 +21,6 @@
   import { viewStore, type Section } from "$lib/stores/view.svelte";
   import type { Task } from "$lib/types";
 
-  type ViewSection = "list" | "calendar";
-
   const dialogs = new DialogState();
 
   // Narrow windows start with the sidebar folded so the content keeps its room.
@@ -31,9 +29,7 @@
   );
 
   // The tag filter only hides tasks: in the notes there is nothing to warn about.
-  const filterShown = $derived(
-    tagsStore.filtered && viewStore.section === "agenda",
-  );
+  const filterShown = $derived(tagsStore.filtered && viewStore.inAgenda);
 
   const sidebarLabel = $derived(
     viewStore.section === "notes"
@@ -44,15 +40,11 @@
   // The list shows its own deletion notices; elsewhere they are shown here.
   const lastDeletion = $derived(tasksStore.undoStack.at(-1));
 
-  const VIEW_OPTIONS: { value: ViewSection; label: string }[] = [
-    { value: "list", label: t.views.list },
-    { value: "calendar", label: t.views.calendar },
-  ];
-
   const SECTION_OPTIONS: { value: Section; label: string }[] = [
-    { value: "agenda", label: t.notesApp.agenda },
-    { value: "notes", label: t.notesApp.notes },
     { value: "today", label: t.notesApp.today },
+    { value: "tasks", label: t.views.list },
+    { value: "calendar", label: t.views.calendar },
+    { value: "notes", label: t.notesApp.notes },
   ];
 
   // The calendar is a separate chunk: it is only requested when a calendar view is shown, so
@@ -89,7 +81,7 @@
     return () => clearTimeout(timer);
   });
   $effect(() => {
-    if (viewStore.section !== "agenda") void preloadViews();
+    if (!viewStore.inAgenda) void preloadViews();
   });
 
   // Tasks made from a note name it (F10-05): look the titles up as tasks come and go.
@@ -153,7 +145,7 @@
 
   /** Shows a task found by the palette in the agenda's list. */
   async function showTask(taskId: string) {
-    viewStore.setSection("agenda");
+    viewStore.showAgenda();
     await tick();
     const task = tasksStore.find(taskId);
     if (task) await openInList(task);
@@ -236,19 +228,7 @@
           onChange={(section) => viewStore.setSection(section)}
         />
       </div>
-      {#if viewStore.section === "agenda"}
-        <SegmentedControl
-          label={t.views.label}
-          options={VIEW_OPTIONS}
-          value={viewStore.mode === "list" ? "list" : "calendar"}
-          onChange={(section) =>
-            viewStore.setMode(
-              section === "list" ? "list" : viewStore.calendarMode,
-            )}
-        />
-      {:else}
-        <span></span>
-      {/if}
+      <span></span>
       <div class="trail" data-tauri-drag-region>
         <button
           type="button"
@@ -297,7 +277,6 @@
               tasks={tasksStore}
               onPreviewTask={(taskId) => (dialogs.detailId = taskId)}
               onOpenTask={(task) => {
-                viewStore.setSection("agenda");
                 void openInList(task);
               }}
             />
@@ -339,7 +318,7 @@
   </div>
 </div>
 
-{#if viewStore.section === "agenda"}
+{#if viewStore.inAgenda}
   <button
     type="button"
     class="fab"
@@ -363,7 +342,7 @@
 <TagDragGhost drag={tagDrag} />
 <TagDragGhost drag={folderDrag} hint={t.notesApp.dragHint} />
 
-{#if viewStore.section === "agenda" && viewStore.mode !== "list"}
+{#if viewStore.section === "calendar"}
   {#if lastDeletion}
     <Toast
       message={t.tasks.deleted}

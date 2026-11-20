@@ -2,7 +2,7 @@
 
 import type { PaletteMode } from "../features/palette/palette";
 import { findShortcut, focusContextOf } from "../keymap";
-import type { Section } from "../stores/view.svelte";
+import { isAgenda, type Section } from "../stores/view.svelte";
 import type { ViewMode } from "../types";
 
 const SHORTCUT_VIEWS: Record<string, ViewMode> = {
@@ -13,7 +13,7 @@ const SHORTCUT_VIEWS: Record<string, ViewMode> = {
 };
 
 const SHORTCUT_SECTIONS: Record<string, Section> = {
-  goAgenda: "agenda",
+  goAgenda: "tasks",
   goNotes: "notes",
   goToday: "today",
 };
@@ -49,14 +49,14 @@ export function dispatchShortcut(
     deps.setSection(section);
     return;
   }
-  if (shortcut === "newTask" && deps.section() === "agenda") {
+  if (shortcut === "newTask" && isAgenda(deps.section())) {
     if (deps.modalOpen()) return;
     event.preventDefault();
     deps.openNewTask(deps.mode() === "list" ? deps.newTaskDate() : null);
     return;
   }
   const mode = SHORTCUT_VIEWS[shortcut];
-  if (!mode || deps.section() !== "agenda") return;
+  if (!mode || !isAgenda(deps.section())) return;
   event.preventDefault();
   deps.setMode(mode);
 }

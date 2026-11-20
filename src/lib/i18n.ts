@@ -428,7 +428,7 @@ export const t = {
       newTask: "Nueva tarea",
       newTaskToday: "Nueva tarea para hoy",
       newNote: "Nueva nota",
-      goAgenda: "Ir a la agenda",
+      goAgenda: "Ir a Tareas",
       dailyNote: "Abrir la nota de hoy",
       goToday: "Ir a Hoy",
       templates: "Plantillas de nota…",

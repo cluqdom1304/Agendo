@@ -26,7 +26,21 @@ export interface ViewStoreOptions {
   firstDay?: () => WeekDay;
 }
 
-export type Section = "agenda" | "notes" | "today";
+/** The views of the sidebar. Upcoming, events and habits join when their views exist (F20–F22). */
+export type Section = "today" | "tasks" | "calendar" | "notes";
+
+const SECTIONS: readonly Section[] = ["today", "tasks", "calendar", "notes"];
+
+/** Reads the saved section; 2.0.x saved `agenda` for both the list and the calendar. */
+export function parseSection(value: string | null, mode: ViewMode): Section {
+  if (value === "agenda") return mode === "list" ? "tasks" : "calendar";
+  return SECTIONS.find((section) => section === value) ?? "today";
+}
+
+/** The sections that show the task list or the calendar. */
+export function isAgenda(section: Section): boolean {
+  return section === "tasks" || section === "calendar";
+}
 
 /** Which view is showing (persisted in `settings`) and which date the calendar is centred on. */
 export class ViewStore {
@@ -35,8 +49,8 @@ export class ViewStore {
   calendarMode = $state<Exclude<ViewMode, "list">>("week");
   /** `YYYY-MM-DD` the day, week or month view is showing. */
   anchor = $state("");
-  /** The section of the app: the agenda (tasks and calendar) or the notes. */
-  section = $state<Section>("agenda");
+  /** The view chosen in the sidebar. `tasks` shows the list and `calendar` the calendar mode. */
+  section = $state<Section>("today");
   /** Waits for the saved mode so the list does not flash before a saved calendar view. */
   ready = $state(false);
   readonly firstDay: WeekDay;
@@ -68,30 +82,56 @@ export class ViewStore {
       // The saved view is a convenience: without it the app starts on the list.
       this.mode = "list";
     }
+    let saved: string | null = null;
     try {
-      const saved = await this.#api.settingsGet("app_section");
-      this.section = saved === "notes" || saved === "today" ? saved : "agenda";
+      saved = await this.#api.settingsGet("app_section");
     } catch {
-      this.section = "agenda";
+      // Without the saved section the app opens on «Hoy».
     }
+    this.section = parseSection(saved, this.mode);
     if (this.mode !== "list") this.calendarMode = this.mode;
+    // The list belongs to «Tareas» and the calendar views to «Calendario».
+    if (this.section === "tasks") this.mode = "list";
+    else if (this.section === "calendar") this.mode = this.calendarMode;
+    if (saved === "agenda") this.#save("app_section", this.section);
     this.anchor = this.today();
     this.ready = true;
   }
 
-  /** Switches at once; saving is best effort, since the view itself already changed. */
+  get inAgenda(): boolean {
+    return isAgenda(this.section);
+  }
+
+  /** Switches at once; the list lives in «Tareas» and the calendar views in «Calendario». */
   setMode(mode: ViewMode): void {
+    this.#setSectionOnly(mode === "list" ? "tasks" : "calendar");
     if (mode === this.mode) return;
     this.mode = mode;
     if (mode !== "list") this.calendarMode = mode;
-    void this.#api.settingsSet("view_mode", mode).catch(() => undefined);
+    this.#save("view_mode", mode);
   }
 
   /** Switches the section at once; saving is best effort, like the view. */
   setSection(section: Section): void {
+    if (section === "tasks") this.setMode("list");
+    else if (section === "calendar") this.setMode(this.calendarMode);
+    else this.#setSectionOnly(section);
+  }
+
+  /** Goes to the task list unless the list or the calendar is already showing. */
+  showAgenda(): void {
+    if (!this.inAgenda) this.setSection("tasks");
+  }
+
+  #setSectionOnly(section: Section): void {
     if (section === this.section) return;
     this.section = section;
-    void this.#api.settingsSet("app_section", section).catch(() => undefined);
+    this.#save("app_section", section);
+  }
+
+  /** Saving is best effort: the view itself already changed. */
+  #save(key: "view_mode" | "app_section", value: string): void {
+    void this.#api.settingsSet(key, value).catch(() => undefined);
   }
 
   /** Moves a whole day, week or month, depending on the view. */

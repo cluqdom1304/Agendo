@@ -55,17 +55,17 @@ describe("palette commands", () => {
     run("go-notes");
     expect(view.section).toBe("notes");
     run("view-week");
-    expect(view.section).toBe("agenda");
+    expect(view.section).toBe("calendar");
     expect(view.mode).toBe("week");
     run("go-agenda");
-    expect(view.section).toBe("agenda");
+    expect(view.section).toBe("tasks");
   });
 
   it("starts a task draft in the agenda", () => {
     const { view, tasks, run } = setup();
     view.setSection("notes");
     run("new-task");
-    expect(view.section).toBe("agenda");
+    expect(view.section).toBe("tasks");
     expect(tasks.draft).not.toBeNull();
   });
 
