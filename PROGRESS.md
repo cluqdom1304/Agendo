@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** versión 3.0.0, Fase 22 (Fases 18 a 21 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** Fase 22 terminada (`[A]` en verde); faltan las validaciones humanas F21-05 y F22-03 en Windows 11. La Fase 23 (F23-01) no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-20 (Fase 21 a la espera de F21-05; Fase 22 completada a la espera de F22-03)
+**Fase activa:** versión 3.0.0, Fase 23 (Fases 18 a 22 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
+**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F23-02. Falta la validación humana F21-05 en Windows 11. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-20 (Fase 23 en curso; F22-03 validada por el usuario; F21-05 pendiente)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -548,7 +548,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 ## Fase 22 — Hábitos (D-95)
 - [x] F22-01 `[A]` Diálogo de hábito y vista Hábitos con racha y últimos 7 días.
 - [x] F22-02 `[A]` Hábitos del día en Hoy, marcar en un clic con deshacer y contador en el banner.
-- [ ] F22-03 `[H]` Validación en Windows 11.
+- [x] F22-03 `[H]` Validación en Windows 11.
 
 **Verificaciones [A] de la Fase 22:**
 - Inicio: el usuario ordenó empezar la Fase 22 el 2026-11-20 sin esperar a F21-05 (sigue pendiente).
@@ -558,9 +558,13 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - Cierre de F22: sin cambios en Rust desde F21 (Rust 552 verde en F21). `npm run lint`, `check` 0/0, TS 895, `build` y `size` (296,8 KB de 300) en verde. Sin dependencias ni migraciones nuevas. Pendiente `[H]`: F22-03 (lista en `docs/manual-pruebas.md` § «Versión 3.0.0»).
 
 ## Fase 23 — Captura en lenguaje natural (D-96)
-- [ ] F23-01 `[A]` `src/lib/naturalInput.ts` (fecha, hora, duración, etiqueta `#`, prioridad `!`, repetición) con tests de casos y `Clock` falso.
+- [x] F23-01 `[A]` `src/lib/naturalInput.ts` (fecha, hora, duración, etiqueta `#`, prioridad `!`, repetición) con tests de casos y `Clock` falso.
 - [ ] F23-02 `[A]` Integración en borrador en línea, creación rápida del calendario, diálogo y Bandeja, con vista previa y Esc para ignorar.
 - [ ] F23-03 `[A]` «Crear cualquier cosa» en la paleta: tarea, evento, hábito y nota.
+
+**Verificaciones [A] de la Fase 23:**
+- Inicio: el usuario validó F22-03 en Windows 11 y ordenó la Fase 23 el 2026-11-20 (F21-05 sigue pendiente).
+- F23-01: `src/lib/naturalInput.ts`, puro y sin dependencias; recibe «hoy» del reloj del llamador (los tests fijan el viernes 20/11/2026). Reconoce: fecha (`hoy`, `mañana`, `pasado mañana`, días de la semana con `el`/`este`/`próximo`/`que viene`, `en`/`dentro de N días|semanas|meses`, `la semana que viene`, `15/12`, `15/12/27`, `15 de diciembre`, `2 dic`, `el 15`, `el día 15`), hora (`a las 5` —de 1 a 7 sin «de la mañana» es tarde—, `a las 17h`, `y media`/`y cuarto`, `de la mañana|tarde|noche`, `17:30`, `6pm`, `mediodía`), duración solo junto a una hora (`1h`, `1h30`, `2 horas`, `45 min`, `media hora`, `hora y media`, con `durante`/`por` opcional; se recorta para acabar el mismo día), `#etiqueta` solo si existe (sin distinguir mayúsculas; si no existe se queda en el título), `!1`–`!3` (media, alta, urgente, D-93) y repetición (`cada día`, `cada N semanas`, `diariamente`, `los lunes y jueves`, `entre semana`, `los fines de semana`) como `rrule` del subconjunto de D-57. Una hora o repetición sin día cae en el día de reserva (el del hueco del calendario o del grupo; si no, hoy) y una repetición por días empieza en el primero que toca. Cada clase se toma una vez y, si el título quedaría vacío, no se toma nada. 87 tests.
 
 ## Fase 24 — Planificar mi día y bloques de tiempo
 - [ ] F24-01 `[A]` Arrastrar una tarea de la Bandeja a una franja de Día/Semana (fija hora y duración).
