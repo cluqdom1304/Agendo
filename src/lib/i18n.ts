@@ -33,6 +33,8 @@ export const t = {
     newTaskPlaceholder: "Nueva tarea",
     titleLabel: "Título de la tarea",
     newTaskLabel: "Título de la nueva tarea",
+    checklist: (done: number, total: number) =>
+      `${done} de ${total} ${total === 1 ? "subtarea hecha" : "subtareas hechas"}`,
     markDone: (title: string) => `Completar «${title}»`,
     markOpen: (title: string) => `Reabrir «${title}»`,
     deleted: "Tarea eliminada",

@@ -3,6 +3,7 @@
   import { t } from "../../i18n";
   import { timeRange } from "../../schedule";
   import Checkbox from "./Checkbox.svelte";
+  import ChecklistProgress from "./ChecklistProgress.svelte";
   import TagChip from "../tags/TagChip.svelte";
   import TagMenu from "../tags/TagMenu.svelte";
   import InlineTitle from "./InlineTitle.svelte";
@@ -18,6 +19,9 @@
     dueDate?: string | null;
     /** 0 none … 3 urgent (D-93), drawn on the checkbox. */
     priority?: number;
+    /** Checked and total checklist items of the notes (D-93); nothing shows without items. */
+    checklistDone?: number;
+    checklistTotal?: number;
     /** Tags of the task, in order; the row shows the first two and counts the rest. */
     tags?: { id: string; name: string; colorHex: string }[];
     onTagsChange?: (tagIds: string[]) => void;
@@ -58,6 +62,8 @@
     durationMinutes = null,
     dueDate = null,
     priority = 0,
+    checklistDone = 0,
+    checklistTotal = 0,
     tags = [],
     onTagsChange,
     sourceNote = null,
@@ -149,6 +155,9 @@
     {onCommit}
     {onCancel}
   />
+  {#if !draft && checklistTotal > 0}
+    <ChecklistProgress done={checklistDone} total={checklistTotal} />
+  {/if}
   {#if !draft && sourceNote}
     <button
       type="button"

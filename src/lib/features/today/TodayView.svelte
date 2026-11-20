@@ -8,6 +8,7 @@
   import type { NoteSummary } from "../../types";
   import { addDays } from "../calendar/grid";
   import Checkbox from "../todo/Checkbox.svelte";
+  import ChecklistProgress from "../todo/ChecklistProgress.svelte";
   import { pendingByDate, stripDates, summarizeDay } from "./summary";
 
   // «Hoy» (F13-07, F20-01): what a day holds in one place: a summary, its tasks, its daily
@@ -208,6 +209,12 @@
               onclick={() => onOpenTask(task.id)}
             >
               <span class="title">{task.title || t.reminders.untitled}</span>
+              {#if task.checklistTotal > 0}
+                <ChecklistProgress
+                  done={task.checklistDone}
+                  total={task.checklistTotal}
+                />
+              {/if}
               <span class="time">{task.dueTime ?? l.allDay}</span>
             </button>
           </li>

@@ -81,6 +81,22 @@ describe("document layout", () => {
     expect(screen.getByText("Completadas")).toBeTruthy();
   });
 
+  it("shows the checklist progress of a task that has one (F20-03)", async () => {
+    await mount([
+      makeTask({
+        id: "1",
+        title: "Mudanza",
+        dueDate: "2026-03-10",
+        checklistDone: 2,
+        checklistTotal: 5,
+      }),
+      makeTask({ id: "2", title: "Sin lista", dueDate: "2026-03-10" }),
+    ]);
+    expect(screen.getByText("2/5")).toBeTruthy();
+    expect(screen.getByText("2 de 5 subtareas hechas")).toBeTruthy();
+    expect(screen.getAllByTitle(/subtarea/)).toHaveLength(1);
+  });
+
   it("shows the empty state and starts a draft from its button", async () => {
     await mount([]);
     expect(screen.getByText("Todo en orden")).toBeTruthy();

@@ -64,6 +64,8 @@
     durationMinutes={task.durationMinutes}
     dueDate={task.dueDate}
     priority={task.priority}
+    checklistDone={task.checklistDone}
+    checklistTotal={task.checklistTotal}
     tags={tagsStore.tagsOf(task)}
     onTagsChange={(tagIds) => store.setTags(task.id, tagIds)}
     sourceNote={sourceOf(task)}
