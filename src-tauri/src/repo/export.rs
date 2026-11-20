@@ -171,7 +171,7 @@ pub fn everything(conn: &Connection, exported_at: &str) -> rusqlite::Result<Valu
     );
     let time_entries = rows(
         conn,
-        "SELECT id, task_id, started_at, ended_at, planned_minutes
+        "SELECT id, task_id, started_at, ended_at, planned_minutes, paused_seconds, paused_at
            FROM time_entries ORDER BY started_at, id",
     )?;
     let templates = rows(

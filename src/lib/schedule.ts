@@ -46,3 +46,29 @@ export function durationLabel(minutes: number): string {
 export function timeRange(start: string, duration: number | null): string {
   return duration === null ? start : `${start}–${endTimeOf(start, duration)}`;
 }
+
+/** Time spent, exact: «23 s», «5 min 20 s», «1 h 25 min». Seconds show under one hour only. */
+export function spentLabel(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  if (total < 60) return `${total} s`;
+  const minutes = Math.floor(total / 60);
+  if (total < 3600) {
+    const rest = total % 60;
+    return rest === 0 ? `${minutes} min` : `${minutes} min ${rest} s`;
+  }
+  return durationLabel(minutes);
+}
+
+const clock = (date: Date) =>
+  `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}:${String(date.getSeconds()).padStart(2, "0")}`;
+
+/** Local day and hours of a closed session: «20/11/2026 · 10:00:00–10:00:23». */
+export function sessionRange(startedAt: string, endedAt: string): string {
+  const start = new Date(startedAt);
+  const end = new Date(endedAt);
+  const day = [start.getDate(), start.getMonth() + 1]
+    .map((value) => String(value).padStart(2, "0"))
+    .concat(String(start.getFullYear()))
+    .join("/");
+  return `${day} · ${clock(start)}–${clock(end)}`;
+}

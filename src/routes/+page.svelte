@@ -239,7 +239,12 @@
     focusTitle={focusStore.current
       ? (tasksStore.find(focusStore.current.taskId)?.title ?? "")
       : ""}
-    onStopFocus={() => void focusStore.stop()}
+    focusPaused={focusStore.paused}
+    onFocusPause={() => void focusStore.pause()}
+    onFocusResume={() => void focusStore.resume()}
+    onFocusSwitch={() => (dialogs.focusSwitchOpen = true)}
+    onFocusFinish={() => void focusStore.stop()}
+    onFocusDiscard={() => void focusStore.discard()}
     onToggleSidebar={() => sidebar.toggle()}
     onNew={createNew}
     onBack={() => viewStore.goBack()}

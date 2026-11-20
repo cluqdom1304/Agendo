@@ -9,7 +9,12 @@
     pending,
     sent,
   } from "../../reminders";
-  import { durationLabel, timeRange } from "../../schedule";
+  import {
+    durationLabel,
+    sessionRange,
+    spentLabel,
+    timeRange,
+  } from "../../schedule";
   import Modal from "../../shell/Modal.svelte";
   import { focusStore } from "../../stores/focus.svelte";
   import { tagsStore } from "../../stores/tags.svelte";
@@ -90,7 +95,7 @@
 
   let entries = $state.raw<TimeEntry[]>([]);
   let manualMinutes = $state(15);
-  const spent = $derived(focusStore.minutesOf(taskId));
+  const spent = $derived(focusStore.secondsOf(taskId));
 
   async function loadEntries() {
     entries = await focusStore.entriesOf(taskId);
@@ -236,7 +241,7 @@
       <section class="section" aria-label={t.focus.spent}>
         <h3>{t.focus.spent}</h3>
         <p class:muted={spent === 0}>
-          {spent > 0 ? durationLabel(spent) : t.focus.none}
+          {spent > 0 ? spentLabel(spent) : t.focus.none}
         </p>
         {#if entries.length > 0}
           <ul class="entries">
@@ -244,8 +249,11 @@
               <li>
                 <span>
                   {t.focus.entry(
-                    formatDisplayDate(entry.startedAt.slice(0, 10)),
-                    durationLabel(entry.plannedMinutes),
+                    sessionRange(
+                      entry.startedAt,
+                      entry.endedAt ?? entry.startedAt,
+                    ),
+                    spentLabel(entry.spentSeconds),
                   )}
                 </span>
                 <button

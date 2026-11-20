@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from "../i18n";
+  import Menu, { type MenuItem } from "./Menu.svelte";
 
   interface Props {
     sidebarOpen: boolean;
@@ -16,7 +17,14 @@
     /** The countdown of the focus session in progress; `null` when there is none (F25-01). */
     focusLabel?: string | null;
     focusTitle?: string;
-    onStopFocus?: () => void;
+    focusPaused?: boolean;
+    onFocusPause?: () => void;
+    onFocusResume?: () => void;
+    onFocusSwitch?: () => void;
+    /** Ends the session and keeps the time spent. */
+    onFocusFinish?: () => void;
+    /** Deletes the session without keeping any time. */
+    onFocusDiscard?: () => void;
     onToggleSidebar: () => void;
     onNew: () => void;
     onBack: () => void;
@@ -36,7 +44,12 @@
     onToggleInbox,
     focusLabel = null,
     focusTitle = "",
-    onStopFocus,
+    focusPaused = false,
+    onFocusPause,
+    onFocusResume,
+    onFocusSwitch,
+    onFocusFinish,
+    onFocusDiscard,
     onToggleSidebar,
     onNew,
     onBack,
@@ -46,6 +59,24 @@
   }: Props = $props();
 
   const l = t.topBar;
+  let focusMenuOpen = $state(false);
+  const focusItems = $derived<MenuItem[]>([
+    focusPaused
+      ? { id: "resume", label: t.focus.resume }
+      : { id: "pause", label: t.focus.pause },
+    { id: "switch", label: t.focus.switchTask },
+    { id: "finish", label: t.focus.finish },
+    { id: "discard", label: t.focus.discard, danger: true, separated: true },
+  ]);
+
+  function selectFocus(id: string) {
+    focusMenuOpen = false;
+    if (id === "pause") onFocusPause?.();
+    else if (id === "resume") onFocusResume?.();
+    else if (id === "switch") onFocusSwitch?.();
+    else if (id === "finish") onFocusFinish?.();
+    else if (id === "discard") onFocusDiscard?.();
+  }
   const toggleLabel = $derived(
     filtered ? `${t.sidebar.toggle}. ${t.tags.filterActive}` : t.sidebar.toggle,
   );
@@ -165,16 +196,33 @@
 
   <div class="trail" data-tauri-drag-region>
     {#if focusLabel}
-      <button
-        type="button"
-        class="focus"
-        aria-label={`${t.focus.stop}: ${focusTitle}`}
-        title={`${t.focus.running}: ${focusTitle}`}
-        onclick={() => onStopFocus?.()}
-      >
-        <span class="dot" aria-hidden="true"></span>
-        <span class="time">{focusLabel}</span>
-      </button>
+      <div class="anchor">
+        <button
+          type="button"
+          class="focus"
+          class:paused={focusPaused}
+          data-menu-toggle
+          aria-haspopup="menu"
+          aria-expanded={focusMenuOpen}
+          aria-label={`${t.focus.menu}: ${focusTitle}${focusPaused ? `. ${t.focus.paused}` : ""}`}
+          title={`${focusPaused ? t.focus.paused : t.focus.running}: ${focusTitle}`}
+          onclick={() => (focusMenuOpen = !focusMenuOpen)}
+        >
+          <span class="dot" aria-hidden="true"></span>
+          <span class="time">{focusLabel}</span>
+          {#if focusTitle}
+            <span class="what">{focusTitle}</span>
+          {/if}
+        </button>
+        {#if focusMenuOpen}
+          <Menu
+            label={t.focus.menu}
+            items={focusItems}
+            onSelect={selectFocus}
+            onClose={() => (focusMenuOpen = false)}
+          />
+        {/if}
+      </div>
     {/if}
     {#if inboxAvailable}
       <button
@@ -306,6 +354,27 @@
 
   .time {
     font-variant-numeric: tabular-nums;
+  }
+
+  .anchor {
+    position: relative;
+  }
+
+  .what {
+    max-width: 160px;
+    overflow: hidden;
+    color: var(--text-secondary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* A paused session stops pulsing the accent: the dot goes grey and the time dims. */
+  .focus.paused .dot {
+    background: var(--text-secondary);
+  }
+
+  .focus.paused .time {
+    opacity: 0.7;
   }
 
   .search {

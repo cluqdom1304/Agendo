@@ -80,3 +80,29 @@ pub async fn focus_delete_entry(state: State<'_, Arc<AppState>>, id: String) -> 
     })
     .await
 }
+
+#[tauri::command]
+pub async fn focus_pause(state: State<'_, Arc<AppState>>) -> Result<TimeEntry, String> {
+    run_blocking(state.inner().clone(), focus::pause).await
+}
+
+#[tauri::command]
+pub async fn focus_resume(state: State<'_, Arc<AppState>>) -> Result<TimeEntry, String> {
+    run_blocking(state.inner().clone(), focus::resume).await
+}
+
+#[tauri::command]
+pub async fn focus_discard(state: State<'_, Arc<AppState>>) -> Result<(), String> {
+    run_blocking(state.inner().clone(), focus::discard).await
+}
+
+#[tauri::command]
+pub async fn focus_switch(
+    state: State<'_, Arc<AppState>>,
+    task_id: String,
+) -> Result<TimeEntry, String> {
+    run_blocking(state.inner().clone(), move |state| {
+        focus::switch_task(state, &task_id)
+    })
+    .await
+}

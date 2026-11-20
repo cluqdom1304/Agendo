@@ -224,6 +224,9 @@ const timeEntryKeys: Record<keyof TimeEntry, true> = {
   startedAt: true,
   endedAt: true,
   plannedMinutes: true,
+  pausedSeconds: true,
+  pausedAt: true,
+  spentSeconds: true,
 };
 
 const noteReminderKeys: Record<keyof NoteReminder, true> = {

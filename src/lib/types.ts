@@ -152,10 +152,10 @@ export interface HabitLog {
   date: string;
 }
 
-/** Minutes of focus a task has accumulated (D-97). */
+/** Seconds of focus a task has accumulated (D-97). */
 export interface TaskFocusTotal {
   taskId: string;
-  minutes: number;
+  seconds: number;
 }
 
 /** A focus session on a task; without `endedAt` it is still running (D-97). */
@@ -165,6 +165,12 @@ export interface TimeEntry {
   startedAt: string;
   endedAt: string | null;
   plannedMinutes: number;
+  /** Pauses already over, in seconds (D-99). */
+  pausedSeconds: number;
+  /** When the pause in progress began; `null` while the session runs. */
+  pausedAt: string | null;
+  /** Time really spent: end − start − pauses; `0` while it has not ended. */
+  spentSeconds: number;
 }
 
 export interface Task {

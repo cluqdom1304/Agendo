@@ -2,7 +2,7 @@
   import { isSettledDate } from "../../dates";
   import { t } from "../../i18n";
   import type { Capture, CaptureOptions } from "../../naturalInput";
-  import { durationLabel, timeRange } from "../../schedule";
+  import { spentLabel, timeRange } from "../../schedule";
   import Checkbox from "./Checkbox.svelte";
   import ChecklistProgress from "./ChecklistProgress.svelte";
   import TagChip from "../tags/TagChip.svelte";
@@ -23,8 +23,8 @@
     /** Checked and total checklist items of the notes (D-93); nothing shows without items. */
     checklistDone?: number;
     checklistTotal?: number;
-    /** Minutes of focus the task has accumulated (D-97); nothing shows at zero. */
-    focusMinutes?: number;
+    /** Seconds of focus the task has accumulated (D-97); nothing shows at zero. */
+    focusSeconds?: number;
     /** Tags of the task, in order; the row shows the first two and counts the rest. */
     tags?: { id: string; name: string; colorHex: string }[];
     onTagsChange?: (tagIds: string[]) => void;
@@ -73,7 +73,7 @@
     priority = 0,
     checklistDone = 0,
     checklistTotal = 0,
-    focusMinutes = 0,
+    focusSeconds = 0,
     tags = [],
     onTagsChange,
     sourceNote = null,
@@ -170,13 +170,13 @@
   {#if !draft && checklistTotal > 0}
     <ChecklistProgress done={checklistDone} total={checklistTotal} />
   {/if}
-  {#if !draft && focusMinutes > 0}
+  {#if !draft && focusSeconds > 0}
     <span
       class="spent"
-      title={t.focus.spentLabel(durationLabel(focusMinutes))}
-      aria-label={t.focus.spentLabel(durationLabel(focusMinutes))}
+      title={t.focus.spentLabel(spentLabel(focusSeconds))}
+      aria-label={t.focus.spentLabel(spentLabel(focusSeconds))}
     >
-      {durationLabel(focusMinutes)}
+      {spentLabel(focusSeconds)}
     </span>
   {/if}
   {#if !draft && sourceNote}

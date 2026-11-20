@@ -540,6 +540,12 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Decisión:** `time_entries(id, task_id, started_at, ended_at, planned_minutes)`. Inicio y fin los marca el backend con `Clock`. Al arrancar, una entrada sin `ended_at` se cierra con `planned_minutes` como tope. La notificación de fin usa el notificador existente.
 - **Alternativas descartadas:** guardar el tiempo solo en memoria del frontend (se pierde al cerrar).
 
+## D-99 — Pausas, cambio de tarea y tiempo exacto en el enfoque (migración 019)
+- **Estado:** ACCEPTED (petición del usuario, 2026-11-20) · **Fecha:** 2026-11-20
+- **Contexto:** D-97 registraba sesiones con duración prevista y las mostraba en minutos. El usuario pidió poder pausar, cambiar de tarea o eliminar desde el contador de la barra superior, y que el tiempo dedicado conste siempre con su fecha y rango de horas, con la precisión que haya (23 s son 23 s).
+- **Decisión:** la migración 019 añade a `time_entries` `paused_seconds INTEGER NOT NULL DEFAULT 0` (pausas ya cerradas) y `paused_at TEXT NULL` (pausa en curso); solo `ADD COLUMN`, sin tocar datos. Tiempo dedicado = `ended_at − started_at − paused_seconds`, en segundos (los totales por tarea pasan de minutos a segundos). El fin previsto es `started_at + planned_minutes + paused_seconds`; mientras hay pausa no hay fin que esperar (el scheduler no la cierra) y terminar en pausa cierra la sesión donde empezó la pausa. «Terminar» registra el tiempo; «Eliminar» borra la sesión sin registrar nada (acción explícita); «Cambiar de tarea» cierra la sesión actual (el tiempo queda en la tarea vieja) y abre otra sobre la nueva con el tiempo que quedaba (mínimo 1 min), en una sola transacción. Las sesiones de 0 s no se listan. Los comandos nuevos (`focus_pause`, `focus_resume`, `focus_discard`, `focus_switch`) devuelven los códigos de D-08.
+- **Alternativas descartadas:** guardar cada tramo de pausa en una tabla aparte (más esquema del que hace falta: solo se muestra el total); redondear a minutos (pierde sesiones cortas); que «Cambiar de tarea» deje la sesión en la tarea vieja sin cortar (mezcla dos tareas en un mismo registro).
+
 ## D-98 — Presupuestos de la 3.0.0
 - **Estado:** ACCEPTED (el usuario eligió «dos límites» el 2026-11-20, en F23-02) · **Fecha:** 2026-11-20
 - **Línea base (F18-00, 2026-11-20):** JS 88,5 KB gzip en la carga inicial y 270,7 KB en total (límite 300 KB: quedan 29,3 KB para toda la 3.0.0, así que las vistas nuevas van con `import()`), ejecutable 10,3 MiB de 18, escala de F16-05 muy por debajo de los límites.

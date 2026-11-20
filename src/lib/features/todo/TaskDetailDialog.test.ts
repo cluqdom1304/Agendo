@@ -111,12 +111,17 @@ describe("TaskDetailDialog", () => {
         startedAt: "2026-03-09T09:00:00Z",
         endedAt: "2026-03-09T09:25:00Z",
         plannedMinutes: 25,
+        pausedSeconds: 0,
+        pausedAt: null,
+        spentSeconds: 23,
       },
     ]);
     const add = vi.spyOn(focusStore, "addManual").mockResolvedValue(true);
     const remove = vi.spyOn(focusStore, "deleteEntry").mockResolvedValue(true);
     await mount();
-    expect(await screen.findByText("09/03/2026 · 25 min")).toBeTruthy();
+    expect(
+      await screen.findByText(/^\d\d\/\d\d\/2026 · .*–.* · 23 s$/),
+    ).toBeTruthy();
 
     await fireEvent.input(screen.getByLabelText("Minutos a añadir"), {
       target: { value: "30" },

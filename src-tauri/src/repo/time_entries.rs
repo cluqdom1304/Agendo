@@ -5,7 +5,11 @@ use rusqlite::{Connection, OptionalExtension, Row, Transaction, params};
 
 use super::model::{TaskFocusTotal, TimeEntry};
 
-const COLUMNS: &str = "id, task_id, started_at, ended_at, planned_minutes";
+// `spent_seconds` is what the session really lasted: end − start − pauses, `0` while it runs.
+const COLUMNS: &str = "id, task_id, started_at, ended_at, planned_minutes, paused_seconds, paused_at,
+    CASE WHEN ended_at IS NULL THEN 0 ELSE MAX(0,
+      CAST(ROUND((julianday(ended_at) - julianday(started_at)) * 86400) AS INTEGER) - paused_seconds)
+    END";
 
 fn map_entry(row: &Row<'_>) -> rusqlite::Result<TimeEntry> {
     Ok(TimeEntry {
@@ -14,6 +18,9 @@ fn map_entry(row: &Row<'_>) -> rusqlite::Result<TimeEntry> {
         started_at: row.get(2)?,
         ended_at: row.get(3)?,
         planned_minutes: row.get(4)?,
+        paused_seconds: row.get(5)?,
+        paused_at: row.get(6)?,
+        spent_seconds: row.get(7)?,
     })
 }
 
@@ -41,19 +48,52 @@ pub fn start(
         .query_row([id], map_entry)
 }
 
-/// Ends the running session at `ended_at`. Returns it, or `None` if none was running.
+/// Ends the running session at `ended_at`. A session in pause ends where the pause began, so the
+/// pause never counts as time spent. Returns it, or `None` if none was running.
 pub fn finish(tx: &Transaction<'_>, ended_at: &str) -> rusqlite::Result<Option<TimeEntry>> {
     let Some(entry) = running(tx)? else {
         return Ok(None);
     };
+    let end = entry.paused_at.as_deref().unwrap_or(ended_at);
     // A clock that went back must not end a session before it started.
-    let ended_at = ended_at.max(entry.started_at.as_str());
-    tx.prepare_cached("UPDATE time_entries SET ended_at = ?2 WHERE id = ?1")?
-        .execute(params![entry.id, ended_at])?;
-    Ok(Some(TimeEntry {
-        ended_at: Some(ended_at.to_string()),
-        ..entry
-    }))
+    let end = end.max(entry.started_at.as_str());
+    tx.prepare_cached("UPDATE time_entries SET ended_at = ?2, paused_at = NULL WHERE id = ?1")?
+        .execute(params![entry.id, end])?;
+    tx.prepare_cached(&format!("SELECT {COLUMNS} FROM time_entries WHERE id = ?1"))?
+        .query_row([&entry.id], map_entry)
+        .map(Some)
+}
+
+/// Puts the running session in pause at `now`. `false` if there is none or it is already paused.
+pub fn pause(tx: &Transaction<'_>, now: &str) -> rusqlite::Result<bool> {
+    let rows = tx
+        .prepare_cached(
+            "UPDATE time_entries SET paused_at = ?1 WHERE ended_at IS NULL AND paused_at IS NULL",
+        )?
+        .execute([now])?;
+    Ok(rows > 0)
+}
+
+/// Resumes the paused session: the pause so far (at least zero seconds) joins the total.
+pub fn resume(tx: &Transaction<'_>, now: &str) -> rusqlite::Result<bool> {
+    let rows = tx
+        .prepare_cached(
+            "UPDATE time_entries
+             SET paused_seconds = paused_seconds
+                   + MAX(0, CAST(ROUND((julianday(?1) - julianday(paused_at)) * 86400) AS INTEGER)),
+                 paused_at = NULL
+             WHERE ended_at IS NULL AND paused_at IS NOT NULL",
+        )?
+        .execute([now])?;
+    Ok(rows > 0)
+}
+
+/// Deletes the running session without keeping any of its time; `false` if none was running.
+pub fn discard_running(tx: &Transaction<'_>) -> rusqlite::Result<bool> {
+    let rows = tx
+        .prepare_cached("DELETE FROM time_entries WHERE ended_at IS NULL")?
+        .execute([])?;
+    Ok(rows > 0)
 }
 
 /// Sessions that started in `[from, to)` (UTC instants), oldest first.
@@ -73,19 +113,21 @@ pub fn task_title(conn: &Connection, task_id: &str) -> rusqlite::Result<Option<S
         .optional()
 }
 
-/// Minutes spent per task, counting only closed sessions and manual entries, rounded to the
-/// minute. Tasks without time do not appear.
+/// Seconds spent per task, counting only closed sessions and manual entries. Tasks without time
+/// do not appear.
 pub fn totals(conn: &Connection) -> rusqlite::Result<Vec<TaskFocusTotal>> {
     conn.prepare_cached(
-        "SELECT task_id,
-                CAST(SUM(ROUND((julianday(ended_at) - julianday(started_at)) * 1440)) AS INTEGER)
-         FROM time_entries WHERE ended_at IS NOT NULL GROUP BY task_id
-         HAVING SUM(ROUND((julianday(ended_at) - julianday(started_at)) * 1440)) > 0",
+        "SELECT task_id, SUM(spent) FROM (
+           SELECT task_id, MAX(0,
+             CAST(ROUND((julianday(ended_at) - julianday(started_at)) * 86400) AS INTEGER)
+               - paused_seconds) AS spent
+           FROM time_entries WHERE ended_at IS NOT NULL)
+         GROUP BY task_id HAVING SUM(spent) > 0",
     )?
     .query_map([], |row| {
         Ok(TaskFocusTotal {
             task_id: row.get(0)?,
-            minutes: row.get(1)?,
+            seconds: row.get(1)?,
         })
     })?
     .collect()

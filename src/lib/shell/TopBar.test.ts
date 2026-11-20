@@ -17,6 +17,11 @@ function mount(overrides: Partial<Record<string, unknown>> = {}) {
     onForward: vi.fn(),
     onSearch: vi.fn(),
     onSettings: vi.fn(),
+    onFocusPause: vi.fn(),
+    onFocusResume: vi.fn(),
+    onFocusSwitch: vi.fn(),
+    onFocusFinish: vi.fn(),
+    onFocusDiscard: vi.fn(),
     ...overrides,
   };
   render(TopBar, props);
@@ -81,15 +86,45 @@ describe("TopBar (F19-03)", () => {
     ).toBeNull();
   });
 
-  it("shows the focus countdown and stops the session from it (F25-01)", async () => {
-    const onStopFocus = vi.fn();
-    mount({ focusLabel: "12:34", focusTitle: "Informe", onStopFocus });
+  it("shows the focus countdown and offers pause, switch, finish and delete (F25-05)", async () => {
+    const props = mount({ focusLabel: "12:34", focusTitle: "Informe" });
     expect(screen.getByText("12:34")).toBeTruthy();
+    const open = () =>
+      fireEvent.click(
+        screen.getByRole("button", { name: /Sesión de enfoque: Informe/ }),
+      );
+
+    await open();
+    await fireEvent.click(screen.getByRole("menuitem", { name: "Pausar" }));
+    expect(props.onFocusPause).toHaveBeenCalledOnce();
+
+    await open();
     await fireEvent.click(
-      screen.getByRole("button", {
-        name: "Terminar la sesión de enfoque: Informe",
-      }),
+      screen.getByRole("menuitem", { name: "Cambiar de tarea…" }),
     );
-    expect(onStopFocus).toHaveBeenCalledOnce();
+    expect(props.onFocusSwitch).toHaveBeenCalledOnce();
+
+    await open();
+    await fireEvent.click(
+      screen.getByRole("menuitem", { name: "Terminar y registrar el tiempo" }),
+    );
+    expect(props.onFocusFinish).toHaveBeenCalledOnce();
+
+    await open();
+    await fireEvent.click(
+      screen.getByRole("menuitem", { name: "Eliminar sin registrar" }),
+    );
+    expect(props.onFocusDiscard).toHaveBeenCalledOnce();
+  });
+
+  it("offers «Reanudar» and says so when the session is paused", async () => {
+    const props = mount({
+      focusLabel: "20:00",
+      focusTitle: "Informe",
+      focusPaused: true,
+    });
+    await fireEvent.click(screen.getByRole("button", { name: /En pausa/ }));
+    await fireEvent.click(screen.getByRole("menuitem", { name: "Reanudar" }));
+    expect(props.onFocusResume).toHaveBeenCalledOnce();
   });
 });

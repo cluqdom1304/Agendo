@@ -10,6 +10,7 @@
   import { settingsStore } from "$lib/stores/settings.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
+  import { focusStore } from "$lib/stores/focus.svelte";
   import { tasksStore } from "$lib/stores/tasks.svelte";
   import { viewStore } from "$lib/stores/view.svelte";
   import type { Task } from "$lib/types";
@@ -33,6 +34,8 @@
     import("$lib/features/events/EventDialog.svelte");
   const loadHabitDialog = () =>
     import("$lib/features/habits/HabitDialog.svelte");
+  const loadFocusSwitch = () =>
+    import("$lib/features/focus/FocusSwitchDialog.svelte");
   const loadPlanDialog = () => import("$lib/features/plan/PlanDialog.svelte");
   const loadTaskDetail = () =>
     import("$lib/features/todo/TaskDetailDialog.svelte");
@@ -91,6 +94,16 @@
     }}
   />
 {/await}
+
+{#if dialogs.focusSwitchOpen}
+  {#await loadFocusSwitch() then { default: FocusSwitchDialog }}
+    <FocusSwitchDialog
+      focus={focusStore}
+      store={tasksStore}
+      onClose={() => (dialogs.focusSwitchOpen = false)}
+    />
+  {/await}
+{/if}
 
 {#if dialogs.planOpen}
   {#await loadPlanDialog() then { default: PlanDialog }}

@@ -204,7 +204,26 @@ export function focusList(from: string, to: string): Promise<TimeEntry[]> {
   return invoke<TimeEntry[]>("focus_list", { from, to });
 }
 
-/** Minutes of focus per task; tasks without time are missing. */
+/** Puts the session in progress in pause. */
+export function focusPause(): Promise<TimeEntry> {
+  return invoke<TimeEntry>("focus_pause");
+}
+
+export function focusResume(): Promise<TimeEntry> {
+  return invoke<TimeEntry>("focus_resume");
+}
+
+/** Deletes the session in progress without keeping its time. */
+export function focusDiscard(): Promise<void> {
+  return invoke<void>("focus_discard");
+}
+
+/** Keeps the time spent on the old task and goes on with the rest on another one. */
+export function focusSwitch(taskId: string): Promise<TimeEntry> {
+  return invoke<TimeEntry>("focus_switch", { taskId });
+}
+
+/** Seconds of focus per task; tasks without time are missing. */
 export function focusTotals(): Promise<TaskFocusTotal[]> {
   return invoke<TaskFocusTotal[]>("focus_totals");
 }

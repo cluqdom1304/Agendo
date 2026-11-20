@@ -221,6 +221,9 @@ fn current() -> Value {
             started_at: "2026-03-12T09:00:00Z".into(),
             ended_at: Some("2026-03-12T09:25:00Z".into()),
             planned_minutes: 25,
+            paused_seconds: 60,
+            paused_at: None,
+            spent_seconds: 1440,
         },
         "timeEntryRunning": TimeEntry {
             id: "entry-2".into(),
@@ -228,6 +231,9 @@ fn current() -> Value {
             started_at: "2026-03-12T10:00:00Z".into(),
             ended_at: None,
             planned_minutes: 50,
+            paused_seconds: 0,
+            paused_at: Some("2026-03-12T10:10:00Z".into()),
+            spent_seconds: 0,
         },
         "noteReminder": NoteReminder {
             id: "nreminder-1".into(),

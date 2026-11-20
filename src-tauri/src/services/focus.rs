@@ -21,8 +21,11 @@ pub const MAX_PLANNED_MINUTES: i64 = 600;
 /// Longest window `list` answers for, in days.
 pub const MAX_WINDOW_DAYS: i64 = 400;
 
+/// Planned end, moved later by the pauses already over (D-99).
 fn planned_end(entry: &TimeEntry) -> AppResult<DateTime<Utc>> {
-    Ok(dates::parse_instant(&entry.started_at)? + Duration::minutes(entry.planned_minutes))
+    Ok(dates::parse_instant(&entry.started_at)?
+        + Duration::minutes(entry.planned_minutes)
+        + Duration::seconds(entry.paused_seconds))
 }
 
 pub fn current(state: &AppState) -> AppResult<Option<TimeEntry>> {
@@ -98,8 +101,12 @@ pub fn list<Tz: TimeZone>(
 }
 
 /// When the session in progress is due to end, if one is running.
+/// A session in pause has no end to wait for.
 pub fn next_end(state: &AppState) -> AppResult<Option<DateTime<Utc>>> {
-    current(state)?.map(|entry| planned_end(&entry)).transpose()
+    match current(state)? {
+        Some(entry) if entry.paused_at.is_none() => Ok(Some(planned_end(&entry)?)),
+        _ => Ok(None),
+    }
 }
 
 /// Ends the session in progress if its planned time is over, at its planned end, and says so with
@@ -110,6 +117,9 @@ pub fn finish_due(state: &AppState, notifier: &dyn Notifier) -> AppResult<Option
     let Some(entry) = current(state)? else {
         return Ok(None);
     };
+    if entry.paused_at.is_some() {
+        return Ok(None);
+    }
     let end = planned_end(&entry)?;
     if end > now {
         return Ok(None);
@@ -153,14 +163,94 @@ pub fn recover_orphans(state: &AppState) -> AppResult<Option<TimeEntry>> {
         .write(|tx| Ok(repo::finish(tx, &dates::format_instant(end))?))
 }
 
-/// Minutes of focus per task, for the rows and the detail.
+/// Seconds of focus per task, for the rows and the detail.
 pub fn totals(state: &AppState) -> AppResult<Vec<TaskFocusTotal>> {
     state.db.read(|conn| Ok(repo::totals(conn)?))
 }
 
 /// The closed sessions and manual entries of one task, newest first.
 pub fn of_task(state: &AppState, task_id: &str) -> AppResult<Vec<TimeEntry>> {
-    state.db.read(|conn| Ok(repo::of_task(conn, task_id)?))
+    let all = state.db.read(|conn| Ok(repo::of_task(conn, task_id)?))?;
+    // A session cut short at once spent nothing: it is not worth a line.
+    Ok(all.into_iter().filter(|e| e.spent_seconds > 0).collect())
+}
+
+/// Puts the session in progress in pause.
+pub fn pause(state: &AppState) -> AppResult<TimeEntry> {
+    let now = state.clock.now_string();
+    state.db.write(|tx| {
+        let Some(entry) = repo::running(tx)? else {
+            return Err(AppError::NotFound("no hay una sesión de enfoque".into()));
+        };
+        if entry.paused_at.is_some() {
+            return Err(AppError::Conflict("la sesión ya está en pausa".into()));
+        }
+        repo::pause(tx, &now)?;
+        repo::running(tx)?.ok_or_else(|| AppError::Internal("la sesión desapareció".into()))
+    })
+}
+
+/// Resumes a paused session.
+pub fn resume(state: &AppState) -> AppResult<TimeEntry> {
+    let now = state.clock.now_string();
+    let entry = state.db.write(|tx| {
+        let Some(entry) = repo::running(tx)? else {
+            return Err(AppError::NotFound("no hay una sesión de enfoque".into()));
+        };
+        if entry.paused_at.is_none() {
+            return Err(AppError::Conflict("la sesión no está en pausa".into()));
+        }
+        repo::resume(tx, &now)?;
+        repo::running(tx)?.ok_or_else(|| AppError::Internal("la sesión desapareció".into()))
+    })?;
+    state.wake.notify_one();
+    Ok(entry)
+}
+
+/// Deletes the session in progress without keeping its time.
+pub fn discard(state: &AppState) -> AppResult<()> {
+    let deleted = state.db.write(|tx| Ok(repo::discard_running(tx)?))?;
+    state.wake.notify_one();
+    if deleted {
+        Ok(())
+    } else {
+        Err(AppError::NotFound("no hay una sesión de enfoque".into()))
+    }
+}
+
+/// Moves the session to another task: what has been spent so far stays on the old one, and a new
+/// session on `task_id` takes the time that was left (at least one minute), running.
+pub fn switch_task(state: &AppState, task_id: &str) -> AppResult<TimeEntry> {
+    let now = state.clock.now();
+    let entry = state.db.write(|tx| {
+        let Some(old) = repo::running(tx)? else {
+            return Err(AppError::NotFound("no hay una sesión de enfoque".into()));
+        };
+        if old.task_id == task_id {
+            return Err(AppError::Validation(
+                "la sesión ya está en esa tarea".into(),
+            ));
+        }
+        if repo::task_title(tx, task_id)?.is_none() {
+            return Err(AppError::not_found("tarea", task_id));
+        }
+        let reference = match &old.paused_at {
+            Some(at) => dates::parse_instant(at)?,
+            None => now,
+        };
+        let left = (planned_end(&old)? - reference).num_seconds();
+        let minutes = ((left + 59) / 60).clamp(1, old.planned_minutes);
+        repo::finish(tx, &dates::format_instant(now))?;
+        Ok(repo::start(
+            tx,
+            &state.ids.new_id(),
+            task_id,
+            minutes,
+            &dates::format_instant(now),
+        )?)
+    })?;
+    state.wake.notify_one();
+    Ok(entry)
 }
 
 /// Records `minutes` already spent on a task, ending now. It does not touch a session in

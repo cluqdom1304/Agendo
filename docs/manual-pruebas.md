@@ -483,6 +483,11 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Con una sesión corta (15 min o ajustada para probar), al llegar a cero sale la notificación nativa «Sesión de enfoque terminada», una sola vez, aunque la ventana esté minimizada; la barra superior vuelve a su estado normal.
   - [ ] Cerrar la app con el temporizador activo y abrirla de nuevo: si ya pasó el tiempo, la sesión consta cerrada a su hora prevista; si no, sigue la cuenta atrás desde donde toca.
   - [ ] Detalle de la tarea → «Tiempo dedicado»: total, lista de entradas (sesiones y manuales), «Añadir» minutos a mano y la «×» que quita una entrada; la fila refleja el total (formato «1 h 25 min») y no muestra nada con cero.
+  - [ ] Pulsar el contador de la barra superior abre un menú con Pausar, Cambiar de tarea…, Terminar y registrar el tiempo y Eliminar sin registrar; el contador muestra el título de la tarea.
+  - [ ] Pausar congela la cuenta atrás (punto gris) y el menú pasa a «Reanudar»; tras reanudar sigue desde donde estaba y el fin llega más tarde en la misma medida; la notificación de fin no sale durante la pausa.
+  - [ ] Cambiar de tarea: se elige otra tarea abierta (buscador); el tiempo hasta ahora queda en la anterior y la cuenta atrás sigue con el tiempo restante en la nueva.
+  - [ ] Terminar a los ~23 segundos: el detalle de la tarea muestra «23 s» y la entrada con su fecha y rango de horas («20/11/2026 · 10:00:00–10:00:23 · 23 s»); la fila muestra «23 s». Eliminar no deja ninguna entrada.
+  - [ ] Terminar estando en pausa no cuenta el tiempo de la pausa; cerrar la app en pausa y reabrirla deja la sesión cerrada donde empezó la pausa.
   - [ ] Lectura correcta en claro, oscuro y Mica, con teclado y Narrador.
 - **Fase 26 — resumen semanal:** cifras coherentes con la agenda y exportación a Markdown.
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.

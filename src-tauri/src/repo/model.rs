@@ -397,12 +397,12 @@ pub struct HabitLog {
     pub date: String,
 }
 
-/// Minutes of focus a task has accumulated (D-97, F25-02).
+/// Seconds of focus a task has accumulated (D-97, F25-02).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskFocusTotal {
     pub task_id: String,
-    pub minutes: i64,
+    pub seconds: i64,
 }
 
 /// A focus session on a task (D-97). Without `ended_at` it is still running.
@@ -414,4 +414,10 @@ pub struct TimeEntry {
     pub started_at: String,
     pub ended_at: Option<String>,
     pub planned_minutes: i64,
+    /// Pauses already over, in seconds (D-99).
+    pub paused_seconds: i64,
+    /// When the pause in progress began; `None` while the session runs.
+    pub paused_at: Option<String>,
+    /// Time really spent: end − start − pauses. `0` while the session has not ended.
+    pub spent_seconds: i64,
 }

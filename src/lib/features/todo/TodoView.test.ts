@@ -42,7 +42,7 @@ afterEach(() => vi.useRealTimers());
 
 describe("focus time in the row (F25-02)", () => {
   it("shows the minutes of focus only on the task that has them", async () => {
-    focusStore.totals = { a: 85 };
+    focusStore.totals = { a: 85 * 60 };
     await mount([
       makeTask({ id: "a", title: "Con tiempo" }),
       makeTask({ id: "b", title: "Sin tiempo" }),

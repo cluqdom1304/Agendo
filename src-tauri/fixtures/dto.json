@@ -448,14 +448,20 @@
   "timeEntry": {
     "endedAt": "2026-03-12T09:25:00Z",
     "id": "entry-1",
+    "pausedAt": null,
+    "pausedSeconds": 60,
     "plannedMinutes": 25,
+    "spentSeconds": 1440,
     "startedAt": "2026-03-12T09:00:00Z",
     "taskId": "task-1"
   },
   "timeEntryRunning": {
     "endedAt": null,
     "id": "entry-2",
+    "pausedAt": "2026-03-12T10:10:00Z",
+    "pausedSeconds": 0,
     "plannedMinutes": 50,
+    "spentSeconds": 0,
     "startedAt": "2026-03-12T10:00:00Z",
     "taskId": "task-1"
   }

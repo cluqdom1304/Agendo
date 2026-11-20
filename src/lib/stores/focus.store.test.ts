@@ -13,6 +13,9 @@ function entry(overrides: Partial<TimeEntry> = {}): TimeEntry {
     startedAt: "2026-11-20T10:00:00Z",
     endedAt: null,
     plannedMinutes: 25,
+    pausedSeconds: 0,
+    pausedAt: null,
+    spentSeconds: 0,
     ...overrides,
   };
 }
@@ -26,7 +29,7 @@ function setup(current: TimeEntry | null = null) {
       running = entry({ taskId, plannedMinutes });
       return running;
     }),
-    focusTotals: vi.fn(async () => [{ taskId: "t1", minutes: 40 }]),
+    focusTotals: vi.fn(async () => [{ taskId: "t1", seconds: 2400 }]),
     focusTaskEntries: vi.fn(async () => [
       entry({ endedAt: "2026-11-20T10:40:00Z" }),
     ]),
@@ -38,6 +41,21 @@ function setup(current: TimeEntry | null = null) {
       }),
     ),
     focusDeleteEntry: vi.fn(async () => undefined),
+    focusPause: vi.fn(async () => {
+      running = running && { ...running, pausedAt: "2026-11-20T10:05:00Z" };
+      return running as TimeEntry;
+    }),
+    focusResume: vi.fn(async () => {
+      running = running && { ...running, pausedAt: null, pausedSeconds: 600 };
+      return running as TimeEntry;
+    }),
+    focusDiscard: vi.fn(async () => {
+      running = null;
+    }),
+    focusSwitch: vi.fn(async (taskId: string) => {
+      running = entry({ taskId, plannedMinutes: 20 });
+      return running;
+    }),
     focusStop: vi.fn(async () => {
       const closed = running && { ...running, endedAt: "2026-11-20T10:05:00Z" };
       running = null;
@@ -106,15 +124,15 @@ describe("focus countdown (F25-01)", () => {
   it("keeps the minutes per task and refreshes them after a manual entry (F25-02)", async () => {
     const { store, api } = setup();
     await store.load();
-    expect(store.minutesOf("t1")).toBe(40);
-    expect(store.minutesOf("other")).toBe(0);
+    expect(store.secondsOf("t1")).toBe(2400);
+    expect(store.secondsOf("other")).toBe(0);
 
     vi.mocked(api.focusTotals).mockResolvedValueOnce([
-      { taskId: "t1", minutes: 55 },
+      { taskId: "t1", seconds: 3300 },
     ]);
     expect(await store.addManual("t1", 15)).toBe(true);
     expect(api.focusAddManual).toHaveBeenCalledWith("t1", 15);
-    expect(store.minutesOf("t1")).toBe(55);
+    expect(store.secondsOf("t1")).toBe(3300);
 
     expect(await store.deleteEntry("e1")).toBe(true);
     expect(api.focusDeleteEntry).toHaveBeenCalledWith("e1");
@@ -126,5 +144,37 @@ describe("focus countdown (F25-01)", () => {
     vi.mocked(api.focusAddManual).mockRejectedValueOnce("VALIDATION: mal");
     expect(await store.addManual("t1", 0)).toBe(false);
     expect(store.notice?.kind).toBe("error");
+  });
+
+  it("freezes the countdown while paused and counts only the active time (D-99)", () => {
+    const paused = entry({ pausedAt: "2026-11-20T10:05:00Z" });
+    expect(remainingMs(paused, START + 60 * 60_000)).toBe(20 * 60_000);
+    const resumed = entry({ pausedSeconds: 600 });
+    expect(remainingMs(resumed, START + 15 * 60_000)).toBe(20 * 60_000);
+    expect(remainingMs(entry(), START + 15 * 60_000)).toBe(10 * 60_000);
+  });
+
+  it("pauses, resumes, switches and discards through the backend", async () => {
+    const { store, api } = setup(entry());
+    await store.load();
+    expect(store.paused).toBe(false);
+
+    await store.pause();
+    expect(api.focusPause).toHaveBeenCalledOnce();
+    expect(store.paused).toBe(true);
+
+    await store.resume();
+    expect(store.paused).toBe(false);
+    expect(store.current?.pausedSeconds).toBe(600);
+
+    await store.switchTo("t2");
+    expect(api.focusSwitch).toHaveBeenCalledWith("t2");
+    expect(store.current?.taskId).toBe("t2");
+
+    await store.discard();
+    expect(store.current).toBeNull();
+    expect(store.notice?.message).toBe(
+      "Sesión eliminada; no se ha registrado tiempo",
+    );
   });
 });

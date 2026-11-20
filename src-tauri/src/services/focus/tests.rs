@@ -219,7 +219,7 @@ fn totals_add_closed_sessions_and_manual_entries_per_task() {
         totals(&state).expect("totals"),
         vec![TaskFocusTotal {
             task_id: a.clone(),
-            minutes: 40
+            seconds: 2400
         }]
     );
     stop(&state).expect("stop");
@@ -227,9 +227,9 @@ fn totals_add_closed_sessions_and_manual_entries_per_task() {
 
     let mut all = totals(&state).expect("totals");
     all.sort_by(|x, y| x.task_id.cmp(&y.task_id));
-    let minutes: i64 = all.iter().map(|t| t.minutes).sum();
+    let seconds: i64 = all.iter().map(|t| t.seconds).sum();
     assert_eq!(all.len(), 2);
-    assert_eq!(minutes, 45);
+    assert_eq!(seconds, 2700);
     assert_eq!(of_task(&state, &b).expect("of task").len(), 1);
 }
 
@@ -263,4 +263,113 @@ fn manual_entries_are_validated_and_can_be_deleted() {
 
     let running = start(&state, &id, 25).expect("start");
     assert!(delete_entry(&state, &running.id).is_err());
+}
+
+#[test]
+fn a_session_of_seconds_is_recorded_with_its_exact_range() {
+    let (state, clock) = test_state();
+    let id = task(&state, "A");
+    start(&state, &id, 25).expect("start");
+    clock.advance(Duration::seconds(23));
+    let closed = stop(&state).expect("stop").expect("closed");
+    assert_eq!(closed.started_at, "2026-03-10T10:00:00Z");
+    assert_eq!(closed.ended_at.as_deref(), Some("2026-03-10T10:00:23Z"));
+    assert_eq!(closed.spent_seconds, 23);
+    assert_eq!(totals(&state).expect("totals")[0].seconds, 23);
+    assert_eq!(of_task(&state, &id).expect("of task").len(), 1);
+}
+
+#[test]
+fn a_pause_does_not_count_and_delays_the_end() {
+    let (state, clock) = test_state();
+    let id = task(&state, "A");
+    let notifier = FakeNotifier::default();
+    start(&state, &id, 10).expect("start");
+    clock.advance(Duration::minutes(4));
+    let paused = pause(&state).expect("pause");
+    assert_eq!(paused.paused_at.as_deref(), Some("2026-03-10T10:04:00Z"));
+    assert!(pause(&state).is_err());
+    assert_eq!(next_end(&state).expect("next"), None);
+
+    // Nothing ends while it is paused, however long it lasts.
+    clock.advance(Duration::minutes(30));
+    assert!(finish_due(&state, &notifier).expect("due").is_none());
+
+    let resumed = resume(&state).expect("resume");
+    assert_eq!((resumed.paused_seconds, resumed.paused_at), (1800, None));
+    assert!(resume(&state).is_err());
+    // 6 minutes were left; the end is 6 minutes after resuming.
+    clock.advance(Duration::minutes(5));
+    assert!(finish_due(&state, &notifier).expect("due").is_none());
+    clock.advance(Duration::minutes(1));
+    let closed = finish_due(&state, &notifier).expect("due").expect("closed");
+    assert_eq!(closed.spent_seconds, 600);
+    assert_eq!(closed.ended_at.as_deref(), Some("2026-03-10T10:40:00Z"));
+}
+
+#[test]
+fn stopping_while_paused_ends_where_the_pause_began() {
+    let (state, clock) = test_state();
+    let id = task(&state, "A");
+    start(&state, &id, 25).expect("start");
+    clock.advance(Duration::seconds(90));
+    pause(&state).expect("pause");
+    clock.advance(Duration::minutes(10));
+    let closed = stop(&state).expect("stop").expect("closed");
+    assert_eq!(closed.ended_at.as_deref(), Some("2026-03-10T10:01:30Z"));
+    assert_eq!(closed.spent_seconds, 90);
+}
+
+#[test]
+fn discarding_removes_the_session_without_keeping_time() {
+    let (state, clock) = test_state();
+    let id = task(&state, "A");
+    start(&state, &id, 25).expect("start");
+    clock.advance(Duration::minutes(3));
+    discard(&state).expect("discard");
+    assert!(current(&state).expect("current").is_none());
+    assert!(totals(&state).expect("totals").is_empty());
+    assert!(discard(&state).is_err());
+}
+
+#[test]
+fn switching_keeps_the_time_on_the_old_task_and_carries_the_rest() {
+    let (state, clock) = test_state();
+    let a = task(&state, "A");
+    let b = task(&state, "B");
+    start(&state, &a, 25).expect("start");
+    clock.advance(Duration::minutes(10));
+    let next = switch_task(&state, &b).expect("switch");
+    assert_eq!(
+        (next.task_id.as_str(), next.planned_minutes),
+        (b.as_str(), 15)
+    );
+    assert_eq!(next.started_at, "2026-03-10T10:10:00Z");
+    assert_eq!(
+        totals(&state).expect("totals"),
+        vec![TaskFocusTotal {
+            task_id: a.clone(),
+            seconds: 600
+        }]
+    );
+
+    assert!(switch_task(&state, &b).is_err());
+    assert!(
+        switch_task(&state, "nope")
+            .expect_err("task")
+            .to_string()
+            .starts_with("NOT_FOUND:")
+    );
+}
+
+#[test]
+fn an_orphan_session_in_pause_is_closed_where_it_was_paused() {
+    let (state, clock) = test_state();
+    let id = task(&state, "A");
+    start(&state, &id, 25).expect("start");
+    clock.advance(Duration::minutes(2));
+    pause(&state).expect("pause");
+    clock.advance(Duration::hours(5));
+    let closed = recover_orphans(&state).expect("recover").expect("closed");
+    assert_eq!(closed.spent_seconds, 120);
 }

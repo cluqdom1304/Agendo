@@ -6,6 +6,8 @@ import type { Habit, Task } from "../types";
 
 export class DialogState {
   settingsOpen = $state(false);
+  /** The task picker of the running focus session (F25-05). */
+  focusSwitchOpen = $state(false);
   newTaskOpen = $state(false);
   /** The day the creation dialog starts on, when it was opened from a day of the calendar. */
   newTaskDate = $state<string | null>(null);

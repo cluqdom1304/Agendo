@@ -11,6 +11,10 @@ export interface FocusApi {
   focusCurrent(): Promise<TimeEntry | null>;
   focusStart(taskId: string, plannedMinutes: number): Promise<TimeEntry>;
   focusStop(): Promise<TimeEntry | null>;
+  focusPause(): Promise<TimeEntry>;
+  focusResume(): Promise<TimeEntry>;
+  focusDiscard(): Promise<void>;
+  focusSwitch(taskId: string): Promise<TimeEntry>;
   focusTotals(): Promise<TaskFocusTotal[]>;
   focusTaskEntries(taskId: string): Promise<TimeEntry[]>;
   focusAddManual(taskId: string, minutes: number): Promise<TimeEntry>;
@@ -25,10 +29,15 @@ export interface FocusStoreOptions {
   noticeMs?: number;
 }
 
-/** Milliseconds left of a session, never below zero. */
+/**
+ * Milliseconds left of a session, never below zero. Pauses already over do not count and, while
+ * paused, the time stands still at the moment the pause began (D-99).
+ */
 export function remainingMs(entry: TimeEntry, now: number): number {
-  const end = Date.parse(entry.startedAt) + entry.plannedMinutes * 60_000;
-  return Math.max(0, end - now);
+  const reference = entry.pausedAt ? Date.parse(entry.pausedAt) : now;
+  const active =
+    reference - Date.parse(entry.startedAt) - entry.pausedSeconds * 1000;
+  return Math.max(0, entry.plannedMinutes * 60_000 - active);
 }
 
 /** `mm:ss`, or `h:mm:ss` from one hour. */
@@ -45,7 +54,7 @@ export function formatCountdown(ms: number): string {
 
 export class FocusStore {
   current = $state.raw<TimeEntry | null>(null);
-  /** Minutes of focus per task. */
+  /** Seconds of focus per task. */
   totals = $state.raw<Readonly<Record<string, number>>>({});
   #now = $state(0);
 
@@ -53,6 +62,7 @@ export class FocusStore {
     this.current ? remainingMs(this.current, this.#now) : 0,
   );
   readonly label = $derived(formatCountdown(this.remaining));
+  readonly paused = $derived(this.current?.pausedAt != null);
 
   readonly #api: FocusApi;
   readonly #clock: () => number;
@@ -87,8 +97,8 @@ export class FocusStore {
     }
   }
 
-  /** Minutes of focus of a task; `0` when it has none. */
-  minutesOf(taskId: string): number {
+  /** Seconds of focus of a task; `0` when it has none. */
+  secondsOf(taskId: string): number {
     return this.totals[taskId] ?? 0;
   }
 
@@ -96,7 +106,7 @@ export class FocusStore {
     try {
       const rows = await this.#api.focusTotals();
       this.totals = Object.fromEntries(
-        rows.map((row) => [row.taskId, row.minutes]),
+        rows.map((row) => [row.taskId, row.seconds]),
       );
     } catch (error) {
       this.#notices.report(error);
@@ -149,6 +159,39 @@ export class FocusStore {
       this.#set(null);
       if (closed) this.#notices.inform(t.focus.stopped);
       await this.loadTotals();
+    } catch (error) {
+      this.#notices.report(error);
+    }
+  }
+
+  async pause(): Promise<void> {
+    await this.#change(() => this.#api.focusPause());
+  }
+
+  async resume(): Promise<void> {
+    await this.#change(() => this.#api.focusResume());
+  }
+
+  /** Moves the session to another task; the time so far stays on the old one. */
+  async switchTo(taskId: string): Promise<void> {
+    await this.#change(() => this.#api.focusSwitch(taskId));
+    await this.loadTotals();
+  }
+
+  /** Deletes the session without keeping its time. */
+  async discard(): Promise<void> {
+    try {
+      await this.#api.focusDiscard();
+      this.#set(null);
+      this.#notices.inform(t.focus.discarded);
+    } catch (error) {
+      this.#notices.report(error);
+    }
+  }
+
+  async #change(action: () => Promise<TimeEntry>): Promise<void> {
+    try {
+      this.#set(await action());
     } catch (error) {
       this.#notices.report(error);
     }
