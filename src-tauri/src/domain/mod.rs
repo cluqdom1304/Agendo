@@ -4,6 +4,7 @@ pub mod codec;
 pub mod content;
 pub mod dates;
 pub mod enex;
+pub mod habits;
 pub mod html;
 pub mod markdown;
 pub mod ordering;

@@ -311,7 +311,7 @@ fn upgrading_a_v1_database_keeps_every_row() {
     conn.execute("INSERT INTO settings VALUES ('theme', 'dark')", [])
         .expect("setting");
 
-    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v16"), 16);
+    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v17"), 17);
 
     assert_eq!(count(&conn, "SELECT COUNT(*) FROM tasks"), 3);
     assert_eq!(
@@ -418,4 +418,33 @@ fn events_check_their_dates_and_cascade_to_tags_and_reminders() {
     conn.execute("DELETE FROM events WHERE id = 'e1'", [])
         .expect("delete event");
     assert_eq!(count(&conn, "SELECT COUNT(*) FROM event_reminders"), 0);
+}
+
+#[test]
+fn habits_check_their_days_and_logs_cascade() {
+    let conn = database();
+    conn.execute(
+        "INSERT INTO habits (id, title, created_at, updated_at) VALUES ('h1', 'Leer', ?1, ?1)",
+        [NOW],
+    )
+    .expect("habit");
+    assert_eq!(count(&conn, "SELECT days FROM habits WHERE id = 'h1'"), 127);
+    for date in ["2026-03-10", "2026-03-11"] {
+        conn.execute("INSERT INTO habit_logs VALUES ('h1', ?1)", [date])
+            .expect("log");
+    }
+
+    for bad in [
+        "INSERT INTO habits (id, title, days, created_at, updated_at) VALUES ('b1', 'x', 0, 'x', 'x')",
+        "INSERT INTO habits (id, title, days, created_at, updated_at) VALUES ('b2', 'x', 128, 'x', 'x')",
+        "INSERT INTO habits (id, title, created_at, updated_at) VALUES ('b3', '   ', 'x', 'x')",
+        "INSERT INTO habit_logs VALUES ('h1', '2026-03-10')",
+        "INSERT INTO habit_logs VALUES ('missing', '2026-03-10')",
+    ] {
+        assert!(conn.execute(bad, []).is_err(), "{bad} should be rejected");
+    }
+
+    conn.execute("DELETE FROM habits WHERE id = 'h1'", [])
+        .expect("delete");
+    assert_eq!(count(&conn, "SELECT COUNT(*) FROM habit_logs"), 0);
 }

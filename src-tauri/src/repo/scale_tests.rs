@@ -384,7 +384,7 @@ fn a_1_0_7_database_migrates_to_the_current_schema_keeping_its_data() {
     }
 
     let conn = db::open(&path, &MIGRATIONS).expect("migrated");
-    assert_eq!(migrate::current_version(&conn).expect("version"), 16);
+    assert_eq!(migrate::current_version(&conn).expect("version"), 17);
 
     let count = |sql: &str| -> i64 { conn.query_row(sql, [], |r| r.get(0)).expect(sql) };
     assert_eq!(count("SELECT COUNT(*) FROM tasks"), 3);

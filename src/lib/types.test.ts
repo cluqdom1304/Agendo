@@ -6,6 +6,8 @@ import type {
   Attachment,
   CalendarEvent,
   EventOccurrence,
+  Habit,
+  HabitLog,
   DayGroup,
   EffectApplied,
   Folder,
@@ -47,6 +49,8 @@ interface Fixture {
   noteTitle: NoteTitle;
   noteTemplate: NoteTemplate;
   event: CalendarEvent;
+  habit: Habit;
+  habitLog: HabitLog;
   eventAllDay: CalendarEvent;
   eventOccurrence: EventOccurrence;
   noteReminder: NoteReminder;
@@ -188,6 +192,27 @@ const eventOccurrenceKeys: Record<keyof EventOccurrence, true> = {
   tagIds: true,
 };
 
+const habitKeys: Record<keyof Habit, true> = {
+  id: true,
+  title: true,
+  days: true,
+  time: true,
+  tagId: true,
+  position: true,
+  isArchived: true,
+  scheduledToday: true,
+  doneToday: true,
+  currentStreak: true,
+  bestStreak: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
+const habitLogKeys: Record<keyof HabitLog, true> = {
+  habitId: true,
+  date: true,
+};
+
 const noteReminderKeys: Record<keyof NoteReminder, true> = {
   id: true,
   noteId: true,
@@ -274,6 +299,9 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
     expect(keys(fixture.noteTemplate)).toEqual(keys(noteTemplateKeys));
     expect(keys(fixture.noteReminder)).toEqual(keys(noteReminderKeys));
     expect(keys(fixture.event)).toEqual(keys(eventKeys));
+    expect(keys(fixture.habit)).toEqual(keys(habitKeys));
+    expect(keys(fixture.habitLog)).toEqual(keys(habitLogKeys));
+    expect(fixture.habit.days).toBe(31);
     expect(keys(fixture.eventAllDay)).toEqual(keys(eventKeys));
     expect(keys(fixture.eventOccurrence)).toEqual(keys(eventOccurrenceKeys));
     expect(fixture.event.allDay).toBe(false);

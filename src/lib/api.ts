@@ -18,6 +18,10 @@ import type {
   Folder,
   FolderUpsertInput,
   FolderWithCount,
+  Habit,
+  HabitInput,
+  HabitLog,
+  HabitPatch,
   Note,
   NoteCreateInput,
   NotePatch,
@@ -130,6 +134,40 @@ export function eventDelete(id: string): Promise<void> {
 
 export function eventRestore(id: string): Promise<CalendarEvent> {
   return invoke<CalendarEvent>("event_restore", { id });
+}
+
+export function habitsList(includeArchived = false): Promise<Habit[]> {
+  return invoke<Habit[]>("habits_list", { includeArchived });
+}
+
+export function habitCreate(input: HabitInput): Promise<Habit> {
+  return invoke<Habit>("habit_create", { input });
+}
+
+export function habitUpdate(id: string, patch: HabitPatch): Promise<Habit> {
+  return invoke<Habit>("habit_update", { id, patch });
+}
+
+export function habitDelete(id: string): Promise<void> {
+  return invoke<void>("habit_delete", { id });
+}
+
+export function habitRestore(id: string): Promise<Habit> {
+  return invoke<Habit>("habit_restore", { id });
+}
+
+/** Marks or unmarks a local day (`YYYY-MM-DD`, not later than today). */
+export function habitSetDone(
+  id: string,
+  date: string,
+  done: boolean,
+): Promise<Habit> {
+  return invoke<Habit>("habit_set_done", { id, date, done });
+}
+
+/** The days marked between two local days, inclusive, for every live habit. */
+export function habitLogs(from: string, to: string): Promise<HabitLog[]> {
+  return invoke<HabitLog[]>("habit_logs", { from, to });
 }
 
 export function taskCreate(input: TaskCreateInput = {}): Promise<Task> {

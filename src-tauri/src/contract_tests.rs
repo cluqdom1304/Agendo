@@ -16,9 +16,9 @@ use crate::{
     repo::{
         find::FoundItem,
         model::{
-            Event, EventOccurrence, Folder, FolderWithCount, Note, NoteReminder, NoteSummary,
-            NoteTemplate, NoteTitle, NoteVersion, NoteVersionSummary, Reminder, Tag, TagWithCount,
-            Task,
+            Event, EventOccurrence, Folder, FolderWithCount, Habit, HabitLog, Note, NoteReminder,
+            NoteSummary, NoteTemplate, NoteTitle, NoteVersion, NoteVersionSummary, Reminder, Tag,
+            TagWithCount, Task,
         },
         search::SearchHit,
     },
@@ -183,6 +183,25 @@ fn current() -> Value {
             all_day: false,
             recurring: true,
             tag_ids: vec!["tag-1".into()],
+        },
+        "habit": Habit {
+            id: "habit-1".into(),
+            title: "Leer".into(),
+            days: 31,
+            time: Some("21:30".into()),
+            tag_id: Some("tag-1".into()),
+            position: 0,
+            is_archived: false,
+            scheduled_today: true,
+            done_today: true,
+            current_streak: 4,
+            best_streak: 9,
+            created_at: "2026-03-10T10:00:00Z".into(),
+            updated_at: "2026-03-10T11:00:00Z".into(),
+        },
+        "habitLog": HabitLog {
+            habit_id: "habit-1".into(),
+            date: "2026-03-12".into(),
         },
         "noteReminder": NoteReminder {
             id: "nreminder-1".into(),

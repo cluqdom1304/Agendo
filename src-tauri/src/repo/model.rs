@@ -340,3 +340,56 @@ pub struct EventData {
     pub reminder_offsets: Vec<i64>,
     pub now: String,
 }
+
+/// A habit as stored (D-95). `services::habits` adds the streaks to make a `Habit`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HabitRow {
+    pub id: String,
+    pub title: String,
+    /// Scheduled weekdays, bit 0 = Monday ... bit 6 = Sunday.
+    pub days: u8,
+    pub time: Option<String>,
+    pub tag_id: Option<String>,
+    pub position: i64,
+    pub created_at: String,
+    pub updated_at: String,
+    pub archived_at: Option<String>,
+}
+
+/// Editable fields of a habit, to create it or replace what it has.
+#[derive(Debug, Clone, Default)]
+pub struct HabitData {
+    pub id: String,
+    pub title: String,
+    pub days: u8,
+    pub time: Option<String>,
+    pub tag_id: Option<String>,
+    pub now: String,
+}
+
+/// A habit as exposed over IPC, with what depends on the day (D-95).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Habit {
+    pub id: String,
+    pub title: String,
+    pub days: u8,
+    pub time: Option<String>,
+    pub tag_id: Option<String>,
+    pub position: i64,
+    pub is_archived: bool,
+    pub scheduled_today: bool,
+    pub done_today: bool,
+    pub current_streak: u32,
+    pub best_streak: u32,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// A day on which a habit was marked as done.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitLog {
+    pub habit_id: String,
+    pub date: String,
+}

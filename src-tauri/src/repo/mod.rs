@@ -10,6 +10,7 @@ pub mod export;
 pub mod find;
 pub mod folders;
 pub mod fts;
+pub mod habits;
 pub mod model;
 pub mod note_reminders;
 pub mod note_tags;

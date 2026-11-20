@@ -135,6 +135,25 @@
     "taskId": "task-1",
     "title": "Entregar práctica"
   },
+  "habit": {
+    "bestStreak": 9,
+    "createdAt": "2026-03-10T10:00:00Z",
+    "currentStreak": 4,
+    "days": 31,
+    "doneToday": true,
+    "id": "habit-1",
+    "isArchived": false,
+    "position": 0,
+    "scheduledToday": true,
+    "tagId": "tag-1",
+    "time": "21:30",
+    "title": "Leer",
+    "updatedAt": "2026-03-10T11:00:00Z"
+  },
+  "habitLog": {
+    "date": "2026-03-12",
+    "habitId": "habit-1"
+  },
   "note": {
     "contentJson": "{\"type\":\"doc\",\"content\":[]}",
     "createdAt": "2026-03-10T10:00:00Z",

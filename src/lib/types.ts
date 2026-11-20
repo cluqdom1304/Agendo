@@ -110,6 +110,46 @@ export interface EventPatch {
   reminderOffsets?: number[];
 }
 
+/** A habit with what depends on today: its streaks come from the days that were marked (D-95). */
+export interface Habit {
+  id: string;
+  title: string;
+  /** Scheduled weekdays as a bit mask, bit 0 = Monday ... bit 6 = Sunday (127 = every day). */
+  days: number;
+  time: string | null;
+  tagId: string | null;
+  position: number;
+  isArchived: boolean;
+  scheduledToday: boolean;
+  doneToday: boolean;
+  currentStreak: number;
+  bestStreak: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HabitInput {
+  title: string;
+  days?: number;
+  time?: string;
+  tagId?: string;
+}
+
+/** Absent = leave as is; `null` = clear. */
+export interface HabitPatch {
+  title?: string;
+  days?: number;
+  time?: string | null;
+  tagId?: string | null;
+  archived?: boolean;
+}
+
+/** A day on which a habit was marked as done. */
+export interface HabitLog {
+  habitId: string;
+  date: string;
+}
+
 export interface Task {
   id: string;
   title: string;
