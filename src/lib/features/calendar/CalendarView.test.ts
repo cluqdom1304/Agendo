@@ -577,3 +577,59 @@ describe("events in the calendar (F21-02)", () => {
     expect(onNewEvent).toHaveBeenCalledWith("2026-03-10", null);
   });
 });
+
+describe("timed tasks in the grid (F24)", () => {
+  const timed = () =>
+    makeTask({
+      id: "t",
+      title: "Estudiar",
+      dueDate: "2026-03-10",
+      dueTime: "09:00",
+      durationMinutes: 60,
+    });
+
+  it("dragging the block moves it in steps of 15 minutes and shows the time", async () => {
+    const { store, onOpenTask } = await mount("week", [timed()]);
+    const block = await screen.findByTitle("Ver los detalles de «Estudiar»");
+    await pointer("pointerdown", block, 0);
+    // 1 h 20 min down: snaps to 10:15.
+    await pointer("pointermove", window, HOUR_PX * (80 / 60));
+    expect(
+      document.querySelector("[data-drag-preview]")?.textContent,
+    ).toContain("10:15 – 11:15");
+    await pointer("pointerup", window, HOUR_PX * (80 / 60));
+    await fireEvent.click(block);
+    await waitFor(() =>
+      expect(store.find("t")).toMatchObject({
+        dueTime: "10:15",
+        durationMinutes: 60,
+      }),
+    );
+    expect(onOpenTask).not.toHaveBeenCalled();
+  });
+
+  it("dragging the lower edge changes the duration", async () => {
+    const { store } = await mount("week", [timed()]);
+    await screen.findByTitle("Ver los detalles de «Estudiar»");
+    const handle = document.querySelector<HTMLElement>("[data-resize]");
+    if (!handle) throw new Error("no handle");
+    await pointer("pointerdown", handle, 0);
+    await pointer("pointermove", window, HOUR_PX / 2);
+    await pointer("pointerup", window, HOUR_PX / 2);
+    await waitFor(() =>
+      expect(store.find("t")).toMatchObject({
+        dueTime: "09:00",
+        durationMinutes: 90,
+      }),
+    );
+  });
+
+  it("a click without dragging still opens the task", async () => {
+    const { onOpenTask } = await mount("week", [timed()]);
+    const block = await screen.findByTitle("Ver los detalles de «Estudiar»");
+    await pointer("pointerdown", block, 0);
+    await pointer("pointerup", window, 0);
+    await fireEvent.click(block);
+    expect(onOpenTask).toHaveBeenCalled();
+  });
+});

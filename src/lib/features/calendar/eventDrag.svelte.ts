@@ -1,8 +1,7 @@
-// Dragging an event of the time grid (F21-02): the body moves it to another time or day, the
+// Dragging a block of the time grid (events F21-02, tasks F24): the body moves it to another time or day, the
 // lower edge changes when it ends. The component owns the markup; this owns the pointer state.
 // Nothing is saved until the pointer is released, and Escape drops the drag.
 
-import type { EventOccurrence } from "../../types";
 import { MINUTES_PER_DAY, SNAP_MINUTES } from "./grid";
 
 export type DragMode = "move" | "resize";
@@ -10,24 +9,24 @@ export type DragMode = "move" | "resize";
 /** Pixels the pointer must travel before a press is a drag and not a click. */
 const THRESHOLD_PX = 4;
 
-export interface EventDragPreview {
-  occurrence: EventOccurrence;
+export interface EventDragPreview<T> {
+  subject: T;
   mode: DragMode;
   date: string;
   start: number;
   end: number;
 }
 
-export interface EventDragDeps {
+export interface EventDragDeps<T> {
   hourPx: number;
   /** The date of the day column under a point of the screen, if any. */
   dateAt: (x: number, y: number) => string | null;
-  onMove: (occurrence: EventOccurrence, date: string, start: number) => void;
-  onResize: (occurrence: EventOccurrence, end: number) => void;
+  onMove: (subject: T, date: string, start: number) => void;
+  onResize: (subject: T, end: number) => void;
 }
 
-interface Press {
-  occurrence: EventOccurrence;
+interface Press<T> {
+  subject: T;
   mode: DragMode;
   x: number;
   y: number;
@@ -48,21 +47,21 @@ export function columnDateAt(x: number, y: number): string | null {
 const snap = (minutes: number) =>
   Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
 
-export class EventDrag {
+export class EventDrag<T = unknown> {
   /** What the grid draws while a drag is under way; `null` before the pointer has moved. */
-  preview = $state.raw<EventDragPreview | null>(null);
+  preview = $state.raw<EventDragPreview<T> | null>(null);
 
-  readonly #deps: EventDragDeps;
-  #press: Press | null = null;
+  readonly #deps: EventDragDeps<T>;
+  #press: Press<T> | null = null;
   #suppressClick = false;
 
-  constructor(deps: EventDragDeps) {
+  constructor(deps: EventDragDeps<T>) {
     this.#deps = deps;
   }
 
   begin(
     event: PointerEvent,
-    occurrence: EventOccurrence,
+    subject: T,
     mode: DragMode,
     date: string,
     start: number,
@@ -70,7 +69,7 @@ export class EventDrag {
   ): void {
     if (event.button !== 0) return;
     this.#press = {
-      occurrence,
+      subject,
       mode,
       x: event.clientX,
       y: event.clientY,
@@ -81,7 +80,7 @@ export class EventDrag {
     this.preview = null;
   }
 
-  #previewAt(event: PointerEvent, press: Press): EventDragPreview {
+  #previewAt(event: PointerEvent, press: Press<T>): EventDragPreview<T> {
     const delta = ((event.clientY - press.y) / this.#deps.hourPx) * 60;
     if (press.mode === "resize") {
       const end = Math.min(
@@ -89,7 +88,7 @@ export class EventDrag {
         MINUTES_PER_DAY,
       );
       return {
-        occurrence: press.occurrence,
+        subject: press.subject,
         mode: "resize",
         date: press.date,
         start: press.start,
@@ -102,7 +101,7 @@ export class EventDrag {
       MINUTES_PER_DAY - span,
     );
     return {
-      occurrence: press.occurrence,
+      subject: press.subject,
       mode: "move",
       date: this.#deps.dateAt(event.clientX, event.clientY) ?? press.date,
       start,
@@ -128,6 +127,7 @@ export class EventDrag {
     const result = moved ? this.#previewAt(event, press) : null;
     this.cancel();
     if (!result) return;
+
     // The click that follows the release must not open the event.
     this.#suppressClick = true;
     setTimeout(() => (this.#suppressClick = false), 0);
@@ -137,9 +137,9 @@ export class EventDrag {
       result.end === press.end;
     if (unchanged) return;
     if (result.mode === "resize") {
-      this.#deps.onResize(result.occurrence, result.end);
+      this.#deps.onResize(result.subject, result.end);
     } else {
-      this.#deps.onMove(result.occurrence, result.date, result.start);
+      this.#deps.onMove(result.subject, result.date, result.start);
     }
   }
 

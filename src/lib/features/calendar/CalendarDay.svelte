@@ -25,6 +25,8 @@
       start: number,
     ) => void;
     onResizeEvent?: (occurrence: EventOccurrence, end: number) => void;
+    onMoveTask?: (task: Task, date: string, start: number) => void;
+    onResizeTask?: (task: Task, end: number) => void;
     tagOf?: (item: Pick<Task, "tagIds">) => Tag | undefined;
     moreTags?: (task: Task) => number;
     /** Pressed on an event: the parent starts dragging it towards a sidebar tag. */

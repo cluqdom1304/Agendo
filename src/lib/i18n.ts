@@ -779,6 +779,7 @@ export const t = {
     span: (start: string, end: string) => `${start} – ${end}`,
     more: (count: number) => `+${count} más`,
     openTask: (title: string) => `Ver los detalles de «${title}»`,
+    resizeTask: (title: string) => `Cambiar la duración de «${title}»`,
     untitled: "Sin título",
     goToDay: (date: string) => `Ver el día ${date}`,
     dailyNote: "Nota del día",

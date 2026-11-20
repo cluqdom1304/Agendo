@@ -49,6 +49,10 @@
     ) => void;
     /** The lower edge of an event was dragged to `end`. */
     onResizeEvent?: (occurrence: EventOccurrence, end: number) => void;
+    /** A timed task was dragged to `date` at `start` (minutes since midnight). */
+    onMoveTask?: (task: Task, date: string, start: number) => void;
+    /** The lower edge of a timed task was dragged to `end`. */
+    onResizeTask?: (task: Task, end: number) => void;
     /** The tag of the task or event, which gives its colour and the small name on it. */
     tagOf?: (item: Pick<Task, "tagIds">) => Tag | undefined;
     /** How many more tags the task has besides the one shown. */
@@ -72,6 +76,8 @@
     onOpenEvent,
     onMoveEvent,
     onResizeEvent,
+    onMoveTask,
+    onResizeTask,
   }: Props = $props();
 
   type Item =
@@ -96,12 +102,33 @@
     onCreate: (...args) => onCreate(...args),
   });
 
-  const eventDrag = new EventDrag({
+  const eventDrag = new EventDrag<EventOccurrence>({
     hourPx: HOUR_PX,
     dateAt: columnDateAt,
     onMove: (...args) => onMoveEvent?.(...args),
     onResize: (...args) => onResizeEvent?.(...args),
   });
+
+  const taskDrag = new EventDrag<Task>({
+    hourPx: HOUR_PX,
+    dateAt: columnDateAt,
+    onMove: (...args) => onMoveTask?.(...args),
+    onResize: (...args) => onResizeTask?.(...args),
+  });
+
+  // A press on a task block may become a move in the grid or, once the pointer reaches the
+  // sidebar, a drag towards a tag; the tag drag only starts there so the two never overlap.
+  let tagPress: { event: PointerEvent; task: Task } | null = null;
+
+  function followPointer(event: PointerEvent) {
+    if (!tagPress) return;
+    const target = document.elementFromPoint?.(event.clientX, event.clientY);
+    if (!target?.closest("[data-tag-drop]")) return;
+    const { event: press, task } = tagPress;
+    tagPress = null;
+    taskDrag.cancel();
+    dragTask?.(press, task);
+  }
 
   const showNow = $derived(dates.includes(today));
   const columns = $derived(
@@ -153,13 +180,20 @@
   onpointermove={(event) => {
     week.pointerMove(event);
     eventDrag.pointerMove(event);
+    taskDrag.pointerMove(event);
+    followPointer(event);
   }}
   onpointerup={(event) => {
     week.pointerUp(event);
     eventDrag.pointerUp(event);
+    taskDrag.pointerUp(event);
+    tagPress = null;
   }}
   onkeydown={(event) => {
-    if (event.key === "Escape") eventDrag.cancel();
+    if (event.key === "Escape") {
+      eventDrag.cancel();
+      taskDrag.cancel();
+    }
   }}
   onresize={measureScrollbar}
 />
@@ -250,8 +284,19 @@
                 type="button"
                 class="block"
                 class:done={item.task.isCompleted}
+                class:dragging={taskDrag.preview?.subject === item.task}
                 style:--tag={tag?.colorHex}
-                onpointerdown={(event) => dragTask?.(event, item.task)}
+                onpointerdown={(event) => {
+                  tagPress = { event, task: item.task };
+                  taskDrag.begin(
+                    event,
+                    item.task,
+                    "move",
+                    column.date,
+                    item.start,
+                    item.span,
+                  );
+                }}
                 data-block
                 data-task-id={item.task.id}
                 style:top="{top(item.start)}px"
@@ -261,7 +306,9 @@
                 title={t.calendar.openTask(
                   item.task.title || t.calendar.untitled,
                 )}
-                onclick={() => onOpenTask(item.task)}
+                onclick={() => {
+                  if (!taskDrag.consumeClick()) onOpenTask(item.task);
+                }}
               >
                 <span class="time">
                   {timeRange(
@@ -274,6 +321,25 @@
                     >{tag.name}{#if moreTags?.(item.task)}
                       +{moreTags(item.task)}{/if}</span
                   >{/if}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <span
+                  class="handle"
+                  data-resize
+                  title={t.calendar.resizeTask(
+                    item.task.title || t.calendar.untitled,
+                  )}
+                  onpointerdown={(event) => {
+                    event.stopPropagation();
+                    taskDrag.begin(
+                      event,
+                      item.task,
+                      "resize",
+                      column.date,
+                      item.start,
+                      item.span,
+                    );
+                  }}
+                ></span>
               </button>
             {:else}
               {@const occurrence = block.item.occurrence}
@@ -282,7 +348,7 @@
               <button
                 type="button"
                 class="block event"
-                class:dragging={eventDrag.preview?.occurrence === occurrence}
+                class:dragging={eventDrag.preview?.subject === occurrence}
                 style:--tag={tag?.colorHex}
                 data-block
                 data-event-id={occurrence.eventId}
@@ -342,7 +408,25 @@
                   minutesToTime(preview.end),
                 )}
               </span>
-              {preview.occurrence.title || t.calendar.untitled}
+              {preview.subject.title || t.calendar.untitled}
+            </div>
+          {/if}
+
+          {#if taskDrag.preview && taskDrag.preview.date === column.date}
+            {@const preview = taskDrag.preview}
+            <div
+              class="block ghost"
+              data-drag-preview
+              style:top="{top(preview.start)}px"
+              style:height="{top(preview.end - preview.start) - 2}px"
+            >
+              <span class="time">
+                {t.calendar.span(
+                  minutesToTime(preview.start),
+                  minutesToTime(preview.end),
+                )}
+              </span>
+              {preview.subject.title || t.calendar.untitled}
             </div>
           {/if}
 
@@ -567,11 +651,13 @@
     font-weight: 500;
   }
 
+  .block[data-task-id],
   .block.event {
     touch-action: none;
     cursor: grab;
   }
 
+  .block.dragging,
   .block.event.dragging {
     opacity: 0.35;
   }

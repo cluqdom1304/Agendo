@@ -22,7 +22,12 @@ const pointer = (clientX: number, clientY: number, button = 0) =>
 function setup(dateAt: (x: number, y: number) => string | null = () => null) {
   const onMove = vi.fn();
   const onResize = vi.fn();
-  const drag = new EventDrag({ hourPx: HOUR_PX, dateAt, onMove, onResize });
+  const drag = new EventDrag<EventOccurrence>({
+    hourPx: HOUR_PX,
+    dateAt,
+    onMove,
+    onResize,
+  });
   return { drag, onMove, onResize };
 }
 

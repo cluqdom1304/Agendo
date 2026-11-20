@@ -473,6 +473,8 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] La vista previa se lee bien en claro, oscuro y Mica, y Narrador anuncia «Se creará con…».
 - **Fase 24 — planificar el día (F24-03):**
   - [ ] Calendario Semana y Día con la Bandeja abierta: arrastrar una tarea a una franja la deja ese día a esa hora (a cuartos de hora) con 30 min (o su duración si ya la tenía) y desaparece de la Bandeja; el bloque aparece bajo el puntero; Esc cancela; soltar fuera de una columna no cambia nada; el aviso del puntero lee «Suéltala en una franja del calendario».
+  - [ ] Al arrastrar desde la Bandeja sale una etiqueta con la hora (17:00, 17:15, 17:30… al bajar) y la tarea queda a esa hora.
+  - [ ] Arrastrar una tarea con hora ya puesta en Semana/Día cambia su día y su hora de 15 en 15 min con vista previa; arrastrar su borde inferior cambia la duración; un clic sin arrastrar sigue abriendo la tarea; arrastrarla hasta una etiqueta del sidebar sigue asignándola.
   - [ ] Con el calendario desplazado (scroll) la hora que se fija es la de la franja sobre la que se suelta.
   - [ ] Hoy → «Planificar mi día» (y desde Ctrl+K): vencidas marcadas, sin fecha sin marcar; la suma cambia al marcar; con más de 8 h sale el aviso en rojo; «Pasar N tareas a hoy» las mueve y Cancelar no cambia nada. Se lee bien en claro, oscuro y Mica y con teclado.
 - **Fase 25 — enfoque:** temporizador, notificación al terminar y cierre de la app con el temporizador activo.

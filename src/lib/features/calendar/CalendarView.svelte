@@ -15,7 +15,15 @@
   import CalendarDay from "./CalendarDay.svelte";
   import CalendarMonth from "./CalendarMonth.svelte";
   import CalendarWeek from "./CalendarWeek.svelte";
-  import { addDays, monthGrid, tasksByDate, weekDates } from "./grid";
+  import {
+    addDays,
+    BLOCK_MINUTES,
+    minutesToTime,
+    monthGrid,
+    tasksByDate,
+    timeToMinutes,
+    weekDates,
+  } from "./grid";
   import { periodLabel } from "./labels";
 
   interface Props {
@@ -78,6 +86,19 @@
   ) => void eventStore.move(occurrence, date, start);
   const resizeEvent = (occurrence: EventOccurrence, end: number) =>
     void eventStore.resize(occurrence, end);
+
+  const moveTask = (task: Task, date: string, start: number) =>
+    void store.schedule(
+      task.id,
+      date,
+      minutesToTime(start),
+      task.durationMinutes ?? BLOCK_MINUTES,
+    );
+  const resizeTask = (task: Task, end: number) =>
+    void store.setDuration(
+      task.id,
+      end - timeToMinutes(task.dueTime ?? "00:00"),
+    );
 
   const tagOf = (item: Pick<Task, "tagIds">) => tagsStore.tagOf(item);
   const moreTags = (task: Task) =>
@@ -171,6 +192,8 @@
         {onOpenEvent}
         onMoveEvent={moveEvent}
         onResizeEvent={resizeEvent}
+        onMoveTask={moveTask}
+        onResizeTask={resizeTask}
         {tagOf}
         {moreTags}
         {dragTask}
@@ -188,6 +211,8 @@
         {onOpenEvent}
         onMoveEvent={moveEvent}
         onResizeEvent={resizeEvent}
+        onMoveTask={moveTask}
+        onResizeTask={resizeTask}
         {tagOf}
         {moreTags}
         {dragTask}

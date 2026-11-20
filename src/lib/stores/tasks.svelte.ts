@@ -535,6 +535,22 @@ export class TasksStore {
     }
   }
 
+  /** Optimistic: a scheduled task takes this length at once; a refusal puts it back (F24). */
+  async setDuration(id: string, minutes: number): Promise<void> {
+    const before = this.find(id);
+    if (!before || before.dueTime === null) return;
+    if (before.durationMinutes === minutes) return;
+    this.#replace({ ...before, durationMinutes: minutes });
+    try {
+      this.#replace(
+        await this.#api.taskUpdate(id, { durationMinutes: minutes }),
+      );
+    } catch (error) {
+      this.#replace(before);
+      this.#notices.report(error);
+    }
+  }
+
   /** Optimistic: the ring and the order change at once; a refusal puts them back (F20-02). */
   async setPriority(id: string, priority: number): Promise<void> {
     const before = this.find(id);

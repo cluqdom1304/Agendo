@@ -19,6 +19,7 @@
   import { eventsStore } from "$lib/stores/events.svelte";
   import { habitsStore } from "$lib/stores/habits.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
+  import SlotTip from "$lib/features/calendar/SlotTip.svelte";
   import { folderDrag, slotDrag, tagDrag } from "$lib/stores/tagDrag.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
   import { tasksStore } from "$lib/stores/tasks.svelte";
@@ -352,6 +353,7 @@
 
 <TagDragGhost drag={tagDrag} />
 <TagDragGhost drag={slotDrag} hint={t.inbox.dragHint} />
+<SlotTip drag={slotDrag} />
 <TagDragGhost drag={folderDrag} hint={t.notesApp.dragHint} />
 
 {#if viewStore.section === "calendar"}
