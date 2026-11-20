@@ -1,5 +1,6 @@
 // Pure helpers of the weekly summary (F26-02).
 
+import { spentLabel } from "../../schedule";
 import { addDays } from "../calendar/grid";
 import type { HabitWeek, TagTally, WeekSummary } from "../../types";
 
@@ -29,17 +30,9 @@ export function percent(done: number, total: number): number {
   return total <= 0 ? 0 : Math.round((done * 100) / total);
 }
 
-/** Minutes as «1 h 25 min» (focus and events are only shown to the minute here). */
-export function minutesLabel(minutes: number): string {
-  const total = Math.max(0, Math.round(minutes));
-  const hours = Math.floor(total / 60);
-  const rest = total % 60;
-  if (hours === 0) return `${rest} min`;
-  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
-}
-
+/** «23 s», «5 min 20 s» or «1 h 25 min»: the unit that fits the time, as in the task rows. */
 export function focusLabel(seconds: number): string {
-  return minutesLabel(Math.round(seconds / 60));
+  return spentLabel(seconds);
 }
 
 /** Whether nothing at all happened in the week. */

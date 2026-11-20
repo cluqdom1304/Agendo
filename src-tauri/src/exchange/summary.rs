@@ -15,10 +15,20 @@ fn spoken(date: &str) -> String {
     }
 }
 
-fn duration(seconds: i64) -> String {
-    let minutes = (seconds + 30) / 60;
+/// «23 s», «5 min 20 s» or «1 h 25 min», as the task rows show time.
+pub(super) fn duration(seconds: i64) -> String {
+    let total = seconds.max(0);
+    if total < 60 {
+        return format!("{total} s");
+    }
+    if total < 3600 {
+        return match total % 60 {
+            0 => format!("{} min", total / 60),
+            rest => format!("{} min {rest} s", total / 60),
+        };
+    }
+    let minutes = (total + 30) / 60;
     match (minutes / 60, minutes % 60) {
-        (0, minutes) => format!("{minutes} min"),
         (hours, 0) => format!("{hours} h"),
         (hours, minutes) => format!("{hours} h {minutes} min"),
     }

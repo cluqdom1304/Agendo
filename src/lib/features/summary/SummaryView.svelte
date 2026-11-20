@@ -12,7 +12,6 @@
     focusLabel,
     habitRows,
     isQuiet,
-    minutesLabel,
     tagRows,
     weekLabel,
   } from "./summary";
@@ -189,7 +188,9 @@
       <h3 id="sum-events">{l.events}</h3>
       <p class="line">{l.eventCount(summary.events)}</p>
       {#if summary.eventMinutes > 0}
-        <p class="muted">{l.eventTime(minutesLabel(summary.eventMinutes))}</p>
+        <p class="muted">
+          {l.eventTime(focusLabel(summary.eventMinutes * 60))}
+        </p>
       {/if}
     </section>
 

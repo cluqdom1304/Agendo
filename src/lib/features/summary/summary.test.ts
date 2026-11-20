@@ -5,7 +5,6 @@ import {
   focusLabel,
   habitRows,
   isQuiet,
-  minutesLabel,
   percent,
   shiftWeek,
   tagRows,
@@ -44,9 +43,8 @@ describe("summary helpers (F26-02)", () => {
   });
 
   it("writes minutes and focus seconds as hours and minutes", () => {
-    expect(minutesLabel(45)).toBe("45 min");
-    expect(minutesLabel(60)).toBe("1 h");
-    expect(minutesLabel(85)).toBe("1 h 25 min");
+    expect(focusLabel(23)).toBe("23 s");
+    expect(focusLabel(320)).toBe("5 min 20 s");
     expect(focusLabel(1800)).toBe("30 min");
     expect(focusLabel(5100)).toBe("1 h 25 min");
   });

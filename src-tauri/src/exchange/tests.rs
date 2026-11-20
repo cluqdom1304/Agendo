@@ -413,3 +413,12 @@ fn the_weekly_summary_is_written_as_markdown() {
     let bad = summary::export_summary_in(&state, "2026-03-10", 9, &target, &zone).expect_err("bad");
     assert!(bad.to_string().starts_with("VALIDATION:"), "{bad}");
 }
+
+#[test]
+fn summary_times_use_seconds_minutes_or_hours_by_size() {
+    assert_eq!(summary::duration(23), "23 s");
+    assert_eq!(summary::duration(320), "5 min 20 s");
+    assert_eq!(summary::duration(1800), "30 min");
+    assert_eq!(summary::duration(5100), "1 h 25 min");
+    assert_eq!(summary::duration(7200), "2 h");
+}
