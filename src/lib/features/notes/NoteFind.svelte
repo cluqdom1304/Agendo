@@ -105,8 +105,8 @@
     align-items: center;
     gap: var(--space-1);
     margin: 0 0 var(--space-3);
-    padding: 3px 4px 3px var(--space-3);
-    border-radius: var(--radius-control);
+    padding: 3px 4px 3px 14px;
+    border-radius: var(--radius-chip);
     background: var(--bg-control);
     box-shadow: inset 0 0 0 0.5px var(--border-subtle);
     animation: rise-in var(--motion-fast) var(--ease-out);
@@ -149,7 +149,7 @@
     height: 22px;
     padding: 0;
     border: 0;
-    border-radius: var(--radius-small);
+    border-radius: var(--radius-chip);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;

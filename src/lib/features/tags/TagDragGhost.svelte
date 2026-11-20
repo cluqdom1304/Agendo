@@ -36,7 +36,7 @@
     gap: 2px;
     max-width: 220px;
     padding: 5px 10px;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-card);
     background: var(--bg-popover);
     box-shadow:
       inset 0 0 0 1px var(--accent),
@@ -54,6 +54,6 @@
 
   .hint {
     color: var(--text-secondary);
-    font-size: 10px;
+    font-size: 11px;
   }
 </style>

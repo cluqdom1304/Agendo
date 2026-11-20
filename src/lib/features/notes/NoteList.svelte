@@ -352,9 +352,9 @@
     margin: 0;
     overflow: hidden;
     font-family: var(--font-display);
-    font-size: 17px;
+    font-size: var(--text-title);
     font-weight: 700;
-    letter-spacing: -0.012em;
+    letter-spacing: -0.015em;
     line-height: 1.3;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -362,7 +362,8 @@
 
   .count {
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 500;
     line-height: 1.3;
   }
 
@@ -438,7 +439,7 @@
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     line-height: 18px;
     text-overflow: ellipsis;

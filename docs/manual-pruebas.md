@@ -510,6 +510,9 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Modo claro: los botones de minimizar, maximizar y cerrar se ven sobre la barra oscura; el texto principal y el secundario se leen bien en Hoy, Próximas, Tareas, Ajustes y el detalle de tarea; las tareas hechas siguen legibles.
   - [ ] Barra lateral en modo claro: letras claras sobre fondo oscuro en navegación, Favoritos, Carpetas, Etiquetas y sus menús.
   - [ ] «Planificar mi día», cambio de tarea del enfoque, historial y plantillas de notas, barra de selección múltiple, Acerca de, Hábitos y Resumen: mismo estilo (títulos grandes, listas en tarjeta, casillas de tinta) en claro y oscuro.
+  - [ ] Días de la semana en los diálogos de tarea, evento y hábito: los no marcados se ven (círculo gris) y los marcados en tinta.
+  - [ ] Botones de minimizar, maximizar y cerrar centrados con la barra superior; cerrar se pone rojo de Windows al pasar el ratón.
+  - [ ] Abrir y cerrar diálogos y la paleta sin tirones con Mica activado.
   - [ ] Jerarquía: títulos de fila y horas en negrita, etiquetas de grupo con contador en píldora, y más separación entre bloques, filas y tarjetas sin que nada se vea apretado.
   - [ ] Contraste y legibilidad del acento coral en claro y oscuro (texto, foco y número de hoy); con «Reducir movimiento» de Windows no hay animaciones.
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.

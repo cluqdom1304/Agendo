@@ -450,8 +450,8 @@
 
   .label {
     color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 12.5px;
+    font-weight: 600;
   }
 
   .text {
@@ -490,17 +490,16 @@
     width: 32px;
     height: 32px;
     border: 0;
-    background: var(--bg-control);
     border-radius: 50%;
-    background: transparent;
-    color: var(--text-secondary);
+    background: var(--bg-control);
+    color: var(--text-primary);
     font: inherit;
     font-size: 12px;
     cursor: pointer;
   }
 
   .day:hover {
-    background: var(--bg-hover);
+    background: var(--bg-control-hover);
   }
 
   .day[aria-pressed="true"] {

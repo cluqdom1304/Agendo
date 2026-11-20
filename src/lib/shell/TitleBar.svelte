@@ -15,6 +15,6 @@
     right: 0;
     /* Above the dialog backdrops: the window can always be minimised or closed. */
     z-index: 30;
-    height: 32px;
+    height: var(--top-bar-height);
   }
 </style>

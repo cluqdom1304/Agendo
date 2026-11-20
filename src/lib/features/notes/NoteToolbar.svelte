@@ -322,9 +322,8 @@
   }
 
   .tool.active {
-    background: var(--thumb);
-    box-shadow: var(--shadow-raised);
-    color: var(--text-primary);
+    background: var(--ink);
+    color: var(--on-ink);
   }
 
   .tool:disabled {

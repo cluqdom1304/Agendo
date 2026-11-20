@@ -110,7 +110,6 @@
     align-items: flex-start;
     padding-top: 8vh;
     background: var(--backdrop);
-    backdrop-filter: blur(2px);
     animation: fade-in var(--motion-base) var(--ease-out);
   }
 
@@ -137,9 +136,8 @@
   .backdrop.side {
     justify-content: flex-end;
     align-items: stretch;
-    padding: 52px var(--panel-gap) var(--panel-gap);
+    padding: var(--top-bar-height) var(--panel-gap) var(--panel-gap);
     background: color-mix(in srgb, var(--backdrop) 45%, transparent);
-    backdrop-filter: none;
   }
 
   .dialog.side {

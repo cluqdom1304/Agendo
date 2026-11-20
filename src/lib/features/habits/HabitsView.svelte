@@ -132,7 +132,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: 0 16px;
+    padding: 0 14px;
   }
 
   .legend {
@@ -148,7 +148,7 @@
     position: absolute;
     top: 0;
     right: 0;
-    left: 16px;
+    left: 14px;
     height: 1px;
     background: var(--separator);
   }

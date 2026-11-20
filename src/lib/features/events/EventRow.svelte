@@ -60,7 +60,7 @@
     gap: 10px;
     min-width: 0;
     min-height: 36px;
-    padding: 9px 12px;
+    padding: 10px 12px;
     border: 0;
     border-radius: inherit;
     background: transparent;

@@ -44,18 +44,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-1);
-    padding: 96px var(--space-6);
+    gap: 6px;
+    padding: 88px var(--space-6);
     text-align: center;
-    animation: rise-in var(--motion-base) var(--ease-out);
+    animation: view-in var(--motion-spring) var(--ease-spring);
   }
 
   h2 {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 20px;
+    font-size: var(--text-title);
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
   }
 
   .error h2 {
@@ -63,8 +63,10 @@
   }
 
   p {
+    max-width: 36ch;
     margin: 0;
     color: var(--text-secondary);
+    line-height: 1.45;
   }
 
   button {
@@ -73,7 +75,7 @@
 
   kbd {
     padding: 2px 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-chip);
     background: color-mix(in srgb, currentColor 22%, transparent);
     font: inherit;
     font-size: 11px;

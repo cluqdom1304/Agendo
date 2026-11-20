@@ -357,7 +357,6 @@
     align-items: flex-start;
     padding-top: 12vh;
     background: var(--backdrop);
-    backdrop-filter: blur(2px);
     animation: fade-in var(--motion-base) var(--ease-out);
   }
 
@@ -405,9 +404,9 @@
   .group {
     padding: 8px 10px 3px;
     color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
   }
 
   .hit {

@@ -38,7 +38,7 @@
     align-items: center;
     gap: 4px;
     margin-top: 4px;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-secondary);
   }
 
@@ -50,7 +50,7 @@
     max-width: 100%;
     margin: 0;
     padding: 4px 6px;
-    border-radius: var(--radius-small);
+    border-radius: var(--radius-card);
     background: var(--bg-popover);
     box-shadow: var(--shadow-popover);
   }
@@ -66,8 +66,9 @@
   .chip {
     padding: 1px 6px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--accent) 16%, transparent);
-    color: var(--text-primary);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: color-mix(in srgb, var(--accent) 78%, var(--text-primary));
+    font-weight: 600;
     white-space: nowrap;
   }
 

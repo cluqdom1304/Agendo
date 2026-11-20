@@ -533,8 +533,8 @@
   }
 
   .pill.event {
-    background: color-mix(in srgb, var(--danger) 13%, transparent);
-    color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    color: color-mix(in srgb, var(--danger) 78%, var(--text-primary));
   }
 
   .pill.habit {
@@ -543,8 +543,8 @@
   }
 
   .pill.overdue {
-    background: color-mix(in srgb, var(--priority-2) 15%, transparent);
-    color: var(--priority-2);
+    background: color-mix(in srgb, var(--priority-2) 12%, transparent);
+    color: color-mix(in srgb, var(--priority-2) 78%, var(--text-primary));
   }
 
   .progress {
@@ -588,7 +588,7 @@
   .card {
     display: grid;
     gap: 2px;
-    margin: 0 -10px;
+    margin: 0 -12px;
     padding: 0;
     list-style: none;
   }
@@ -599,7 +599,7 @@
     align-items: center;
     gap: 10px;
     min-height: 36px;
-    padding: 0 10px;
+    padding: 0 12px;
     border-radius: var(--radius-card);
     transition: background-color var(--motion-fast) var(--ease-out);
   }
@@ -634,7 +634,7 @@
 
   .open.solo {
     width: 100%;
-    padding: 0 10px;
+    padding: 0 12px;
     border-radius: var(--radius-card);
     transition: background-color var(--motion-fast) var(--ease-out);
   }
@@ -711,7 +711,7 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: var(--space-2) 10px;
+    padding: var(--space-2) 12px;
     color: var(--text-secondary);
     font-size: 13px;
   }

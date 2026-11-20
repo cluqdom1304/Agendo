@@ -71,7 +71,7 @@
     margin: var(--space-1) var(--space-3) var(--space-2) 40px;
     padding: var(--space-3);
     border-radius: var(--radius-card);
-    background: var(--bg-control);
+    background: var(--bg-card);
     outline: none;
     animation: rise-in var(--motion-base) var(--ease-out);
   }
@@ -79,7 +79,7 @@
   h5 {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 700;
   }
 </style>

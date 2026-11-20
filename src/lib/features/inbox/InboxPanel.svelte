@@ -162,7 +162,7 @@
     align-items: center;
     gap: 10px;
     margin: 0 8px 6px;
-    padding: 4px 10px;
+    padding: 4px 12px;
     border-radius: var(--radius-card);
     transition: background-color var(--motion-fast) var(--ease-out);
   }
@@ -217,7 +217,7 @@
 
   .row {
     display: flex;
-    padding: 9px 10px;
+    padding: 10px 12px;
     border-radius: var(--radius-card);
     transition: background-color var(--motion-fast) var(--ease-out);
   }

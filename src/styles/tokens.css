@@ -115,6 +115,9 @@
   --sidebar-on-fill: #0a0a0c;
   --sidebar-popover: rgb(40, 40, 45);
   --panel-gap: 8px;
+  --top-bar-height: 52px;
+  /* The close red of every Windows window, so the caption buttons behave as usual. */
+  --caption-close: #c42b1c;
   --sidebar-width: 236px;
 }
 

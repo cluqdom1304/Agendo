@@ -184,7 +184,8 @@
 
   .item.danger:hover,
   .item.danger:focus-visible {
-    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    color: color-mix(in srgb, var(--danger) 78%, var(--text-primary));
   }
 
   /* The hairline sits in the gap above the item, clear of its hover background. */

@@ -84,9 +84,14 @@
     background: var(--bg-hover);
   }
 
-  .control.close:hover {
-    background: var(--danger);
-    color: var(--on-danger);
+  .control:active {
+    background: var(--bg-active);
+  }
+
+  .control.close:hover,
+  .control.close:active {
+    background: var(--caption-close);
+    color: #fff;
   }
 
   .control:focus-visible {

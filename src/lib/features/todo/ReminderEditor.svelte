@@ -302,8 +302,8 @@
   h6 {
     margin: var(--space-1) 0 0;
     color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 700;
   }
 
   .field {
@@ -338,7 +338,7 @@
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .list li {
@@ -346,7 +346,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
-    min-height: 24px;
+    min-height: 28px;
   }
 
   /* Already sounded: same rows, visibly set apart from the ones still to come. */
@@ -358,7 +358,8 @@
     padding: 0 var(--space-2);
     border-radius: var(--radius-chip);
     background: var(--bg-control);
-    font-size: 11px;
+    font-size: 11.5px;
+    font-weight: 600;
   }
 
   .remove {

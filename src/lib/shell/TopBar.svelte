@@ -288,7 +288,7 @@
     align-items: center;
     gap: var(--space-3);
     flex: none;
-    height: 52px;
+    height: var(--top-bar-height);
     padding-left: var(--space-4);
   }
 

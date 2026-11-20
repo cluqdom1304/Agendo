@@ -617,7 +617,7 @@
 
   .surface :global(.tiptap h2) {
     font-size: 1.35em;
-    font-weight: 650;
+    font-weight: 700;
   }
 
   .surface :global(.tiptap h3) {
@@ -741,6 +741,11 @@
     padding-bottom: var(--space-6);
     font-size: 15px;
     line-height: 1.6;
+  }
+
+  /* A note is read, not scanned: consecutive paragraphs keep a little air between them. */
+  .as-page .surface :global(.tiptap > p + p) {
+    margin-top: 0.4em;
   }
 
   .as-page .surface :global(.tiptap[contenteditable="false"]) {

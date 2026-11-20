@@ -377,7 +377,8 @@
 
   .item.danger:hover:not(:disabled),
   .item.danger:focus-visible {
-    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    color: color-mix(in srgb, var(--danger) 78%, var(--text-primary));
   }
 
   .item:disabled {
