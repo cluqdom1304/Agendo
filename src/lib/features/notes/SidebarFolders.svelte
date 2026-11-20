@@ -11,10 +11,13 @@
     tags: TagsStore;
     /** Pending tasks per tag, to show next to the number of notes. */
     pendingOf?: (tagId: string) => number;
-    open: boolean;
+    /** In the notes section: smart folders, tags of the notes and the trash too. */
+    full: boolean;
+    /** Called when a folder or a smart folder is chosen, before the list changes. */
+    onNavigate?: () => void;
   }
 
-  let { notes, tags, pendingOf, open }: Props = $props();
+  let { notes, tags, pendingOf, full, onNavigate }: Props = $props();
 
   /** `"new"` (top level), `"new:<parent>"`, `"rename:<id>"` or nothing. */
   let editing = $state<string | null>(null);
@@ -46,6 +49,7 @@
   });
 
   function select(scope: ScopeKey) {
+    onNavigate?.();
     void notes.selectScope(scope);
   }
 
@@ -102,15 +106,16 @@
   }
 </script>
 
-<aside
-  class="sidebar"
-  class:open
-  aria-label={t.notesApp.foldersHeading}
-  inert={!open}
->
+<section class="group" aria-labelledby="sidebar-folders">
   <div class="inner">
-    <header class="head" data-tauri-drag-region>
-      <h2 data-tauri-drag-region>{t.notesApp.foldersHeading}</h2>
+    <header class="head">
+      <h2
+        id="sidebar-folders"
+        data-folder-drop="root"
+        class:drop-target={drop === "root"}
+      >
+        {t.notesApp.folders}
+      </h2>
       <button
         type="button"
         class="icon"
@@ -136,40 +141,32 @@
       </button>
     </header>
 
-    <nav class="smart" aria-label={t.notesApp.smartFolders}>
-      {@render smart("all", t.notesApp.all, "M3 4h10M3 8h10M3 12h6")}
-      <div
-        class="row-wrap"
-        class:drop-target={drop === "inbox"}
-        data-folder-drop="inbox"
-      >
+    {#if full}
+      <nav class="smart" aria-label={t.notesApp.smartFolders}>
+        {@render smart("all", t.notesApp.all, "M3 4h10M3 8h10M3 12h6")}
+        <div
+          class="row-wrap"
+          class:drop-target={drop === "inbox"}
+          data-folder-drop="inbox"
+        >
+          {@render smart(
+            "inbox",
+            t.notesApp.inbox,
+            "M2.5 9.5l1.7-5.2c.2-.5.6-.8 1.2-.8h5.2c.6 0 1 .3 1.2.8l1.7 5.2v2.3c0 .6-.5 1.2-1.2 1.2H3.7c-.7 0-1.2-.6-1.2-1.2zM2.5 9.5h3.2l.8 1.5h3l.8-1.5h3.2",
+          )}
+        </div>
         {@render smart(
-          "inbox",
-          t.notesApp.inbox,
-          "M2.5 9.5l1.7-5.2c.2-.5.6-.8 1.2-.8h5.2c.6 0 1 .3 1.2.8l1.7 5.2v2.3c0 .6-.5 1.2-1.2 1.2H3.7c-.7 0-1.2-.6-1.2-1.2zM2.5 9.5h3.2l.8 1.5h3l.8-1.5h3.2",
+          "pinned",
+          t.notesApp.pinned,
+          "M9.8 2.5l3.7 3.7-1.6.5-2.3 2.3.2 3-.9.9-2.7-2.7-3.5 3.5M6.4 5.2l.9-.9 3 .2",
         )}
-      </div>
-      {@render smart(
-        "pinned",
-        t.notesApp.pinned,
-        "M9.8 2.5l3.7 3.7-1.6.5-2.3 2.3.2 3-.9.9-2.7-2.7-3.5 3.5M6.4 5.2l.9-.9 3 .2",
-      )}
-      {@render smart(
-        "orphans",
-        t.notesApp.orphans,
-        "M6.5 9.5l3-3M5 8L3.5 9.5a2.1 2.1 0 003 3L8 11M11 8l1.5-1.5a2.1 2.1 0 00-3-3L8 5",
-      )}
-    </nav>
-
-    <div class="section">
-      <span
-        class="section-title"
-        data-folder-drop="root"
-        class:drop-target={drop === "root"}
-      >
-        {t.notesApp.folders}
-      </span>
-    </div>
+        {@render smart(
+          "orphans",
+          t.notesApp.orphans,
+          "M6.5 9.5l3-3M5 8L3.5 9.5a2.1 2.1 0 003 3L8 11M11 8l1.5-1.5a2.1 2.1 0 00-3-3L8 5",
+        )}
+      </nav>
+    {/if}
 
     {#if editing === "new"}
       <div class="edit" style:padding-left="12px">
@@ -358,7 +355,7 @@
       {/each}
     </ul>
 
-    {#if tags.tags.length > 0}
+    {#if full && tags.tags.length > 0}
       <div class="section">
         <span class="section-title">{t.notesApp.tags}</span>
       </div>
@@ -389,15 +386,17 @@
       </ul>
     {/if}
 
-    <div class="bottom">
-      {@render smart(
-        "trash",
-        t.notesApp.trash,
-        "M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8h5.8l.6-8",
-      )}
-    </div>
+    {#if full}
+      <div class="bottom">
+        {@render smart(
+          "trash",
+          t.notesApp.trash,
+          "M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8h5.8l.6-8",
+        )}
+      </div>
+    {/if}
   </div>
-</aside>
+</section>
 
 {#snippet input()}
   <input
@@ -435,52 +434,28 @@
 {/snippet}
 
 <style>
-  .sidebar {
-    flex: none;
-    width: 0;
-    overflow: hidden;
-    background: var(--bg-sidebar);
-    box-shadow: inset -1px 0 0 var(--separator);
-    transition: width var(--motion-base) var(--ease-out);
-  }
-
-  .sidebar.open {
-    width: 224px;
-  }
-
   .inner {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    width: 224px;
-    height: 100%;
-    padding: 0 var(--space-2) var(--space-3);
-    overflow-y: auto;
-    opacity: 0;
-    transform: translateX(-16px);
-    transition:
-      opacity var(--motion-base) var(--ease-out),
-      transform var(--motion-base) var(--ease-out);
-  }
-
-  .open .inner {
-    opacity: 1;
-    transform: none;
   }
 
   .head {
     display: flex;
-    flex: none;
     align-items: center;
     justify-content: space-between;
-    height: 48px;
-    padding: 0 2px 0 var(--space-2);
+    height: 28px;
+    padding: 0 2px 0 0;
   }
 
+  /* The heading is also where a folder is dropped to take it to the top level. */
   h2 {
+    flex: 1;
     margin: 0;
+    padding: 3px var(--space-2);
+    border-radius: var(--radius-small);
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
   }
 
@@ -753,8 +728,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .sidebar,
-    .inner,
     .chevron svg {
       transition: none;
     }

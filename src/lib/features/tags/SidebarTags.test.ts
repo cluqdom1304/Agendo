@@ -8,7 +8,7 @@ import { FakeApi, makeTask } from "../../testing";
 import type { Tag, TagUpsertInput } from "../../types";
 import { contextMenu } from "../context/context.svelte";
 import TagPicker from "./TagPicker.svelte";
-import TagSidebar from "./TagSidebar.svelte";
+import SidebarTags from "./SidebarTags.svelte";
 
 function tag(id: string, name: string, position: number): Tag {
   return { id, name, colorHex: "#4C8DFF", parentId: null, position };
@@ -37,7 +37,7 @@ class FakeTagsApi implements TagsApi {
   }
 }
 
-async function mount(open = true) {
+async function mount() {
   const tags = new TagsStore(new FakeTagsApi());
   await tags.load();
   const tasks = new TasksStore({
@@ -51,14 +51,14 @@ async function mount(open = true) {
   });
   tasks.filter = (task) => tags.isVisible(task);
   await tasks.load();
-  render(TagSidebar, { tags, tasks, open });
+  render(SidebarTags, { tags, tasks });
   return { tags, tasks };
 }
 
 const box = (name: string) =>
   screen.getByRole("checkbox", { name: `Mostrar tareas de ${name}` });
 
-describe("TagSidebar", () => {
+describe("SidebarTags", () => {
   it("opens the editor of a tag when the context menu asks for it", async () => {
     await mount();
     contextMenu.request({ kind: "tag-edit", id: "fis" });
@@ -103,7 +103,7 @@ describe("TagSidebar", () => {
     });
     tasks.filter = (task) => tags.isVisible(task);
     await tasks.load();
-    render(TagSidebar, { tags, tasks, open: true });
+    render(SidebarTags, { tags, tasks });
 
     const counts = Array.from(document.querySelectorAll(".count")).map(
       (node) => node.textContent,
@@ -191,13 +191,6 @@ describe("TagSidebar", () => {
     );
   });
 
-  it("is hidden from assistive technology while folded", async () => {
-    await mount(false);
-    expect(document.querySelector<HTMLElement>("aside")?.inert).toBe(true);
-  });
-});
-
-describe("TagPicker", () => {
   it("toggles tags independently, and clears them with none", async () => {
     const changes: string[][] = [];
     render(TagPicker, {

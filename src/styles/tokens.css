@@ -102,6 +102,10 @@
   --sidebar-control: rgba(255, 255, 255, 0.08);
   --sidebar-separator: rgba(255, 255, 255, 0.08);
   --sidebar-accent: #ff8a80;
+  --sidebar-focus: #66b2ff;
+  --sidebar-danger: #ff8f86;
+  --sidebar-on-fill: #0a0a0c;
+  --sidebar-popover: rgb(40, 40, 45);
   --panel-gap: 8px;
   --sidebar-width: 232px;
 }

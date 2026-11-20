@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { NotesStore } from "../../stores/notes.svelte";
 import { TagsStore } from "../../stores/tags.svelte";
 import { contextMenu } from "../context/context.svelte";
-import FolderSidebar from "./FolderSidebar.svelte";
+import SidebarFolders from "./SidebarFolders.svelte";
 import NoteList from "./NoteList.svelte";
 import { FakeNotesApi, folder, note } from "./testing";
 
@@ -33,15 +33,15 @@ async function mount(setup: (api: FakeNotesApi) => void = () => undefined) {
   return { api, notes };
 }
 
-describe("FolderSidebar", () => {
+describe("SidebarFolders", () => {
   it("lists the smart folders and the tree with counts", async () => {
     const { notes } = await mount((api) => {
       api.folders = [folder("Grado", null, 3), folder("Mates", "Grado", 1)];
     });
-    render(FolderSidebar, {
+    render(SidebarFolders, {
       notes,
       tags: new TagsStore(emptyTags),
-      open: true,
+      full: true,
     });
     expect(screen.getByText("Todas las notas")).toBeTruthy();
     expect(screen.getByText("Bandeja de entrada")).toBeTruthy();
@@ -59,10 +59,10 @@ describe("FolderSidebar", () => {
     const { notes } = await mount((api) => {
       api.folders = [folder("Grado")];
     });
-    render(FolderSidebar, {
+    render(SidebarFolders, {
       notes,
       tags: new TagsStore(emptyTags),
-      open: true,
+      full: true,
     });
     await fireEvent.click(screen.getByText("Grado"));
     await waitFor(() => expect(notes.scope).toBe("folder:Grado"));
@@ -72,10 +72,10 @@ describe("FolderSidebar", () => {
 
   it("creates a folder from the header with Enter", async () => {
     const { notes } = await mount();
-    render(FolderSidebar, {
+    render(SidebarFolders, {
       notes,
       tags: new TagsStore(emptyTags),
-      open: true,
+      full: true,
     });
     await fireEvent.click(
       screen.getByRole("button", { name: "Nueva carpeta" }),
@@ -92,10 +92,10 @@ describe("FolderSidebar", () => {
     const { notes } = await mount((api) => {
       api.folders = [folder("Grado")];
     });
-    render(FolderSidebar, {
+    render(SidebarFolders, {
       notes,
       tags: new TagsStore(emptyTags),
-      open: true,
+      full: true,
     });
     contextMenu.request({ kind: "folder", mode: "rename", id: "Grado" });
     const rename = await screen.findByRole("textbox", {
@@ -121,10 +121,10 @@ describe("FolderSidebar", () => {
     const { notes } = await mount((api) => {
       api.folders = [folder("Grado")];
     });
-    render(FolderSidebar, {
+    render(SidebarFolders, {
       notes,
       tags: new TagsStore(emptyTags),
-      open: true,
+      full: true,
     });
     await fireEvent.click(
       screen.getByRole("button", { name: "Eliminar «Grado»" }),

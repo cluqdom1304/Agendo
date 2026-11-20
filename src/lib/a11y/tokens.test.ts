@@ -166,7 +166,13 @@ describe("design tokens", () => {
       ]),
     ];
 
-    it.each(["--sidebar-text", "--sidebar-text-secondary", "--sidebar-accent"])(
+    it.each([
+      "--sidebar-text",
+      "--sidebar-text-secondary",
+      "--sidebar-accent",
+      "--sidebar-focus",
+      "--sidebar-danger",
+    ])(
       "%s reaches AA on every backdrop, also under hover and selection",
       (token) => {
         for (const [label, background] of backgrounds) {
@@ -182,6 +188,18 @@ describe("design tokens", () => {
             `${token}, ${label}`,
           ).toBeGreaterThanOrEqual(AA);
         }
+      },
+    );
+
+    it.each(["--sidebar-focus", "--sidebar-danger"])(
+      "--sidebar-on-fill reaches AA on %s",
+      (fill) => {
+        expect(
+          contrastRatio(
+            parseColor(SHARED["--sidebar-on-fill"]),
+            parseColor(SHARED[fill]),
+          ),
+        ).toBeGreaterThanOrEqual(AA);
       },
     );
   });

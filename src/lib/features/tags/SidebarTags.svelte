@@ -11,10 +11,9 @@
   interface Props {
     tags: TagsStore;
     tasks: TasksStore;
-    open: boolean;
   }
 
-  let { tags, tasks, open }: Props = $props();
+  let { tags, tasks }: Props = $props();
 
   /** `"new"`, the id of the tag being edited, or nothing. */
   let editing = $state<string | null>(null);
@@ -86,10 +85,10 @@
   }
 </script>
 
-<aside class="sidebar" class:open aria-label={t.tags.sidebar} inert={!open}>
+<section class="group" aria-labelledby="sidebar-tags">
   <div class="inner">
-    <header class="head" data-tauri-drag-region>
-      <h2 data-tauri-drag-region>{t.tags.sidebar}</h2>
+    <header class="head">
+      <h2 id="sidebar-tags">{t.tags.sidebar}</h2>
       <button
         type="button"
         class="add"
@@ -160,7 +159,7 @@
       </li>
     </ul>
   </div>
-</aside>
+</section>
 
 {#snippet row(
   key: string,
@@ -221,54 +220,24 @@
 {/snippet}
 
 <style>
-  .sidebar {
-    flex: none;
-    width: 0;
-    overflow: hidden;
-    background: var(--bg-sidebar);
-    box-shadow: inset -1px 0 0 var(--separator);
-    transition: width var(--motion-base) var(--ease-out);
-  }
-
-  .sidebar.open {
-    width: 224px;
-  }
-
-  /* Fixed width: the list never reflows while the panel slides, only fades and shifts. */
   .inner {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    width: 224px;
-    height: 100%;
-    padding: 0 var(--space-2) var(--space-3);
-    overflow-y: auto;
-    opacity: 0;
-    transform: translateX(-16px);
-    transition:
-      opacity var(--motion-base) var(--ease-out),
-      transform var(--motion-base) var(--ease-out);
+    gap: var(--space-1);
   }
 
-  .open .inner {
-    opacity: 1;
-    transform: none;
-  }
-
-  /* As tall as the toolbar next to it, and part of the same drag region. */
   .head {
     display: flex;
-    flex: none;
     align-items: center;
     justify-content: space-between;
-    height: 48px;
+    height: 28px;
     padding: 0 2px 0 var(--space-2);
   }
 
   h2 {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
   }
 
@@ -449,12 +418,5 @@
   input:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .sidebar,
-    .inner {
-      transition: none;
-    }
   }
 </style>

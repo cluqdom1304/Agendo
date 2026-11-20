@@ -3,22 +3,21 @@
 
   import { showDailyNote, showNote } from "$lib/features/notes/navigation";
   import TagDragGhost from "$lib/features/tags/TagDragGhost.svelte";
-  import TagSidebar from "$lib/features/tags/TagSidebar.svelte";
   import TodoView from "$lib/features/todo/TodoView.svelte";
   import { t } from "$lib/i18n";
   import { ROW_ATTRIBUTE } from "$lib/keymap";
+  import AppSidebar from "$lib/shell/AppSidebar.svelte";
   import { listenBackendEvents } from "$lib/shell/backendEvents";
   import DialogHost from "$lib/shell/DialogHost.svelte";
   import { DialogState } from "$lib/shell/dialogs.svelte";
   import EmptyState from "$lib/shell/EmptyState.svelte";
-  import SegmentedControl from "$lib/shell/SegmentedControl.svelte";
   import { dispatchShortcut } from "$lib/shell/shortcuts";
   import Toast from "$lib/shell/Toast.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
   import { folderDrag, tagDrag } from "$lib/stores/tagDrag.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
   import { tasksStore } from "$lib/stores/tasks.svelte";
-  import { viewStore, type Section } from "$lib/stores/view.svelte";
+  import { viewStore } from "$lib/stores/view.svelte";
   import type { Task } from "$lib/types";
 
   const dialogs = new DialogState();
@@ -31,21 +30,10 @@
   // The tag filter only hides tasks: in the notes there is nothing to warn about.
   const filterShown = $derived(tagsStore.filtered && viewStore.inAgenda);
 
-  const sidebarLabel = $derived(
-    viewStore.section === "notes"
-      ? t.notesApp.toggleSidebar
-      : t.tags.toggleSidebar,
-  );
+  const sidebarLabel = t.sidebar.toggle;
 
   // The list shows its own deletion notices; elsewhere they are shown here.
   const lastDeletion = $derived(tasksStore.undoStack.at(-1));
-
-  const SECTION_OPTIONS: { value: Section; label: string }[] = [
-    { value: "today", label: t.notesApp.today },
-    { value: "tasks", label: t.views.list },
-    { value: "calendar", label: t.views.calendar },
-    { value: "notes", label: t.notesApp.notes },
-  ];
 
   // The calendar is a separate chunk: it is only requested when a calendar view is shown, so
   // it does not weigh on startup (N-01).
@@ -56,9 +44,6 @@
   // They are fetched once the shell is idle and then rendered synchronously: awaiting a promise
   // inside the template leaves a frame without sidebar, which made the toolbar jump when
   // switching section.
-  let FolderSidebar = $state<
-    typeof import("$lib/features/notes/FolderSidebar.svelte").default | null
-  >(null);
   let NotesView = $state<
     typeof import("$lib/features/notes/NotesView.svelte").default | null
   >(null);
@@ -67,12 +52,10 @@
   >(null);
 
   async function preloadViews() {
-    const [folders, notes, today] = await Promise.all([
-      import("$lib/features/notes/FolderSidebar.svelte"),
+    const [notes, today] = await Promise.all([
       import("$lib/features/notes/NotesView.svelte"),
       import("$lib/features/today/TodayView.svelte"),
     ]);
-    FolderSidebar = folders.default;
     NotesView = notes.default;
     TodayView = today.default;
   }
@@ -172,27 +155,15 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div class="shell">
-  {#if viewStore.section === "notes"}
-    {#if FolderSidebar}
-      <FolderSidebar
-        notes={notesStore}
-        tags={tagsStore}
-        pendingOf={(id) =>
-          tasksStore.tasks.filter(
-            (task) => !task.isCompleted && task.tagIds.includes(id),
-          ).length}
-        open={sidebarOpen}
-      />
-    {:else}
-      <div
-        class="sidebar-placeholder"
-        style:width={sidebarOpen ? "224px" : "0"}
-        aria-hidden="true"
-      ></div>
-    {/if}
-  {:else}
-    <TagSidebar tags={tagsStore} tasks={tasksStore} open={sidebarOpen} />
-  {/if}
+  <AppSidebar
+    open={sidebarOpen}
+    section={viewStore.section}
+    notes={notesStore}
+    tags={tagsStore}
+    tasks={tasksStore}
+    onSection={(section) => viewStore.setSection(section)}
+    onOpenNote={(id) => void showNote(id)}
+  />
   <div class="page">
     <div class="toolbar" data-tauri-drag-region>
       <div class="lead" data-tauri-drag-region>
@@ -221,12 +192,6 @@
             <path d="M6 3v10" stroke="currentColor" stroke-width="1.5" />
           </svg>
         </button>
-        <SegmentedControl
-          label={t.notesApp.sections}
-          options={SECTION_OPTIONS}
-          value={viewStore.section}
-          onChange={(section) => viewStore.setSection(section)}
-        />
       </div>
       <span></span>
       <div class="trail" data-tauri-drag-region>
