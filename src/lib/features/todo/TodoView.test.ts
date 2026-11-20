@@ -8,6 +8,7 @@ import {
 } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { focusStore } from "../../stores/focus.svelte";
 import { TasksStore } from "../../stores/tasks.svelte";
 import { FakeApi, installLayoutStubs, makeTask } from "../../testing";
 import type { Task } from "../../types";
@@ -38,6 +39,23 @@ const key = (init: KeyboardEventInit, target: Element = document.body) =>
 
 installLayoutStubs();
 afterEach(() => vi.useRealTimers());
+
+describe("focus time in the row (F25-02)", () => {
+  it("shows the minutes of focus only on the task that has them", async () => {
+    focusStore.totals = { a: 85 };
+    await mount([
+      makeTask({ id: "a", title: "Con tiempo" }),
+      makeTask({ id: "b", title: "Sin tiempo" }),
+    ]);
+    expect(
+      within(rowFor("Con tiempo")).getByLabelText(
+        "Tiempo de enfoque: 1 h 25 min",
+      ),
+    ).toBeTruthy();
+    expect(within(rowFor("Sin tiempo")).queryByText(/min|h/)).toBeNull();
+    focusStore.totals = {};
+  });
+});
 
 describe("document layout", () => {
   it("shows POR HACER and AGENDA with dates as DD/MM/YYYY, latest first", async () => {

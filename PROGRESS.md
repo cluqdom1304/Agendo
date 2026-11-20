@@ -1,8 +1,8 @@
 # PROGRESS.md
 
 **Fase activa:** versión 3.0.0, Fase 24 (Fases 18 a 23 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
-**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** Fase 24 terminada (`[A]` en verde); falta F24-03 `[H]` (lista «Fase 24» de `docs/manual-pruebas.md`) y F21-05. Fase 25 en curso: F25-01 hecha, sigue F25-02. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** Fase 24 terminada (`[A]` en verde); falta F24-03 `[H]` (lista «Fase 24» de `docs/manual-pruebas.md`) y F21-05. Fase 25 terminada (`[A]` en verde); falta F25-03 `[H]` (lista «Fase 25» de `docs/manual-pruebas.md`). La Fase 26 no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-20 (Fase 24 completada; Fase 23 completada; F22-03 validada por el usuario; F21-05 pendiente)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -584,11 +584,13 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 
 ## Fase 25 — Enfoque (D-97)
 - [x] F25-01 `[A]` Temporizador por tarea en la barra superior (`focus.svelte.ts`) y notificación al terminar.
-- [ ] F25-02 `[A]` Tiempo dedicado en la fila y el detalle; entradas manuales.
+- [x] F25-02 `[A]` Tiempo dedicado en la fila y el detalle; entradas manuales.
 - [ ] F25-03 `[H]` Validación en Windows 11.
 
 **Verificaciones [A] de la Fase 25:**
 - F25-01: el backend (migración 018, `services::focus`, comandos, cierre en el scheduler y recuperación de huérfanas) ya existía desde F18-05. Nuevo `stores/focus.svelte.ts` (`FocusStore`: sesión en curso, cuenta atrás `$derived` con reloj inyectable, `tick` que vuelve a preguntar al backend al acabar el tiempo y deja que el scheduler cierre y notifique; `start`/`stop` con avisos de error). `TopBar` muestra `mm:ss` con punto de acento y lo detiene al pulsar (props `focusLabel`, `focusTitle`, `onStopFocus`). `TaskDetailDialog`: selector de minutos (15/25/45/60) y botón «Enfocar» (desactivado si ya hay sesión). La página carga la sesión al montar y muestra el aviso. 7 tests nuevos (TS 1020). `lint`, `check` 0/0, `build` y `size` (inicial 104,6 KB de 120; total 307,1 KB de 340) en verde. Sin cambios en Rust ni dependencias, así que `cargo` no se ha vuelto a ejecutar. **Decisión menor:** la duración se elige entre 15/25/45/60 min; la notificación de fin la envía el backend (D-97), no el frontend.
+- F25-02: Rust 554. `repo::time_entries` suma `totals` (minutos por tarea con sesiones cerradas y entradas manuales; la que está en marcha no cuenta), `of_task`, `insert_closed` y `delete_closed`; `services::focus` añade `totals`, `of_task`, `add_manual` (1–600 min, termina ahora y empieza esos minutos antes, no toca una sesión en marcha; `VALIDATION:`/`NOT_FOUND:`) y `delete_entry`; 4 comandos IPC nuevos (`focus_totals`, `focus_task_entries`, `focus_add_manual`, `focus_delete_entry`). Sin migración (la 018 ya servía) ni dependencias. `FocusStore` guarda `totals` y los recarga al terminar una sesión o cambiar entradas; `TaskRow` muestra `focusMinutes` y `TaskDetailDialog` una sección «Tiempo dedicado» con total, entradas, «Añadir» y «×». 2 tests de Rust y 4 de interfaz.
+- Cierre de F25: `cargo fmt/clippy`, `cargo test` 554, `npm run lint`, `check` 0/0, TS 1024, `build` y `size` (inicial 105,1 KB de 120; total 308,1 KB de 340) en verde. **Decisión menor:** la entrada manual se registra «hasta ahora» (sin elegir fecha) y el tiempo solo se muestra en la lista de la Agenda, no en Hoy/Próximas/Bandeja. Pendiente `[H]`: F25-03.
 
 ## Fase 26 — Resumen semanal
 - [ ] F26-01 `[A]` Consulta y dominio: completadas, pendientes y vencidas por etiqueta, eventos, cumplimiento de hábitos y tiempo de enfoque; inicio de semana configurable vía `domain/dates.rs` y `Clock`.

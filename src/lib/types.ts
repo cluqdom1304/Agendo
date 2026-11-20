@@ -152,6 +152,12 @@ export interface HabitLog {
   date: string;
 }
 
+/** Minutes of focus a task has accumulated (D-97). */
+export interface TaskFocusTotal {
+  taskId: string;
+  minutes: number;
+}
+
 /** A focus session on a task; without `endedAt` it is still running (D-97). */
 export interface TimeEntry {
   id: string;

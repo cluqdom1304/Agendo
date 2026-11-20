@@ -14,7 +14,7 @@
   import { focusStore } from "../../stores/focus.svelte";
   import { tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
-  import type { Reminder, Task } from "../../types";
+  import type { Reminder, Task, TimeEntry } from "../../types";
   import NoteEditor from "../notes/NoteEditor.svelte";
   import {
     convertTaskToNote,
@@ -86,6 +86,24 @@
   async function toggleDone() {
     if (!task || busy) return;
     await store.setCompleted(task.id, !task.isCompleted);
+  }
+
+  let entries = $state.raw<TimeEntry[]>([]);
+  let manualMinutes = $state(15);
+  const spent = $derived(focusStore.minutesOf(taskId));
+
+  async function loadEntries() {
+    entries = await focusStore.entriesOf(taskId);
+  }
+
+  $effect(() => {
+    // Totals change when a session ends or an entry is added or removed.
+    void focusStore.totals;
+    void loadEntries();
+  });
+
+  async function addManual() {
+    if (await focusStore.addManual(taskId, manualMinutes)) manualMinutes = 15;
   }
 
   let focusMinutes = $state(25);
@@ -213,6 +231,52 @@
           contentJson={task.contentJson}
           save={(json) => store.saveNotes(task.id, json)}
         />
+      </section>
+
+      <section class="section" aria-label={t.focus.spent}>
+        <h3>{t.focus.spent}</h3>
+        <p class:muted={spent === 0}>
+          {spent > 0 ? durationLabel(spent) : t.focus.none}
+        </p>
+        {#if entries.length > 0}
+          <ul class="entries">
+            {#each entries as entry (entry.id)}
+              <li>
+                <span>
+                  {t.focus.entry(
+                    formatDisplayDate(entry.startedAt.slice(0, 10)),
+                    durationLabel(entry.plannedMinutes),
+                  )}
+                </span>
+                <button
+                  type="button"
+                  class="btn quiet"
+                  aria-label={t.focus.removeEntry}
+                  title={t.focus.removeEntry}
+                  onclick={() => void focusStore.deleteEntry(entry.id)}
+                >
+                  ×
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+        <form
+          class="manual"
+          onsubmit={(event) => {
+            event.preventDefault();
+            void addManual();
+          }}
+        >
+          <input
+            type="number"
+            min="1"
+            max="600"
+            aria-label={t.focus.manualMinutes}
+            bind:value={manualMinutes}
+          />
+          <button type="submit" class="btn quiet">{t.focus.manualAdd}</button>
+        </form>
       </section>
 
       <div class="actions">
@@ -383,6 +447,29 @@
 
   ul {
     padding-left: var(--space-4);
+  }
+
+  .entries {
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .entries li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .manual {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+  }
+
+  .manual input {
+    width: 72px;
   }
 
   .history {

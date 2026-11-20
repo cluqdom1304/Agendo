@@ -202,3 +202,65 @@ fn deleting_the_task_for_good_removes_its_sessions() {
         .expect("count");
     assert_eq!(rows, 0);
 }
+
+#[test]
+fn totals_add_closed_sessions_and_manual_entries_per_task() {
+    let (state, _) = test_state();
+    let a = task(&state, "A");
+    let b = task(&state, "B");
+
+    let manual = add_manual(&state, &a, 40).expect("manual");
+    assert_eq!(manual.started_at, "2026-03-10T09:20:00Z");
+    assert_eq!(manual.ended_at.as_deref(), Some("2026-03-10T10:00:00Z"));
+
+    start(&state, &a, 25).expect("start");
+    // A running session does not count yet.
+    assert_eq!(
+        totals(&state).expect("totals"),
+        vec![TaskFocusTotal {
+            task_id: a.clone(),
+            minutes: 40
+        }]
+    );
+    stop(&state).expect("stop");
+    add_manual(&state, &b, 5).expect("manual b");
+
+    let mut all = totals(&state).expect("totals");
+    all.sort_by(|x, y| x.task_id.cmp(&y.task_id));
+    let minutes: i64 = all.iter().map(|t| t.minutes).sum();
+    assert_eq!(all.len(), 2);
+    assert_eq!(minutes, 45);
+    assert_eq!(of_task(&state, &b).expect("of task").len(), 1);
+}
+
+#[test]
+fn manual_entries_are_validated_and_can_be_deleted() {
+    let (state, _) = test_state();
+    let id = task(&state, "A");
+    assert!(
+        add_manual(&state, &id, 0)
+            .expect_err("zero")
+            .to_string()
+            .starts_with("VALIDATION:")
+    );
+    assert!(add_manual(&state, &id, 601).is_err());
+    assert!(
+        add_manual(&state, "nope", 10)
+            .expect_err("task")
+            .to_string()
+            .starts_with("NOT_FOUND:")
+    );
+
+    let entry = add_manual(&state, &id, 10).expect("manual");
+    delete_entry(&state, &entry.id).expect("delete");
+    assert!(totals(&state).expect("totals").is_empty());
+    assert!(
+        delete_entry(&state, &entry.id)
+            .expect_err("twice")
+            .to_string()
+            .starts_with("NOT_FOUND:")
+    );
+
+    let running = start(&state, &id, 25).expect("start");
+    assert!(delete_entry(&state, &running.id).is_err());
+}

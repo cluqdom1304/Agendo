@@ -4,13 +4,17 @@ import * as backend from "../api";
 import { t } from "../i18n";
 import { TaskNotices } from "./taskNotices.svelte";
 import type { Notice } from "./tasksTypes";
-import type { TimeEntry } from "../types";
+import type { TaskFocusTotal, TimeEntry } from "../types";
 
 /** The slice of `api.ts` the store uses; tests pass a fake. */
 export interface FocusApi {
   focusCurrent(): Promise<TimeEntry | null>;
   focusStart(taskId: string, plannedMinutes: number): Promise<TimeEntry>;
   focusStop(): Promise<TimeEntry | null>;
+  focusTotals(): Promise<TaskFocusTotal[]>;
+  focusTaskEntries(taskId: string): Promise<TimeEntry[]>;
+  focusAddManual(taskId: string, minutes: number): Promise<TimeEntry>;
+  focusDeleteEntry(id: string): Promise<void>;
 }
 
 export interface FocusStoreOptions {
@@ -41,6 +45,8 @@ export function formatCountdown(ms: number): string {
 
 export class FocusStore {
   current = $state.raw<TimeEntry | null>(null);
+  /** Minutes of focus per task. */
+  totals = $state.raw<Readonly<Record<string, number>>>({});
   #now = $state(0);
 
   readonly remaining = $derived(
@@ -73,9 +79,59 @@ export class FocusStore {
 
   async load(): Promise<void> {
     try {
+      const wasRunning = this.current !== null;
       this.#set(await this.#api.focusCurrent());
+      if (!wasRunning || this.current === null) await this.loadTotals();
     } catch (error) {
       this.#notices.report(error);
+    }
+  }
+
+  /** Minutes of focus of a task; `0` when it has none. */
+  minutesOf(taskId: string): number {
+    return this.totals[taskId] ?? 0;
+  }
+
+  async loadTotals(): Promise<void> {
+    try {
+      const rows = await this.#api.focusTotals();
+      this.totals = Object.fromEntries(
+        rows.map((row) => [row.taskId, row.minutes]),
+      );
+    } catch (error) {
+      this.#notices.report(error);
+    }
+  }
+
+  /** The closed sessions and manual entries of a task, newest first. */
+  async entriesOf(taskId: string): Promise<TimeEntry[]> {
+    try {
+      return await this.#api.focusTaskEntries(taskId);
+    } catch (error) {
+      this.#notices.report(error);
+      return [];
+    }
+  }
+
+  async addManual(taskId: string, minutes: number): Promise<boolean> {
+    try {
+      await this.#api.focusAddManual(taskId, minutes);
+      await this.loadTotals();
+      return true;
+    } catch (error) {
+      this.#notices.report(error);
+      return false;
+    }
+  }
+
+  async deleteEntry(id: string): Promise<boolean> {
+    try {
+      await this.#api.focusDeleteEntry(id);
+      await this.loadTotals();
+      return true;
+    } catch (error) {
+      this.#notices.report(error);
+      return false;
     }
   }
 
@@ -92,6 +148,7 @@ export class FocusStore {
       const closed = await this.#api.focusStop();
       this.#set(null);
       if (closed) this.#notices.inform(t.focus.stopped);
+      await this.loadTotals();
     } catch (error) {
       this.#notices.report(error);
     }

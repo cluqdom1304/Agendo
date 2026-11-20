@@ -477,7 +477,13 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Arrastrar una tarea con hora ya puesta en Semana/Día cambia su día y su hora de 15 en 15 min con vista previa; arrastrar su borde inferior cambia la duración; un clic sin arrastrar sigue abriendo la tarea; arrastrarla hasta una etiqueta del sidebar sigue asignándola.
   - [ ] Con el calendario desplazado (scroll) la hora que se fija es la de la franja sobre la que se suelta.
   - [ ] Hoy → «Planificar mi día» (y desde Ctrl+K): vencidas marcadas, sin fecha sin marcar; la suma cambia al marcar; con más de 8 h sale el aviso en rojo; «Pasar N tareas a hoy» las mueve y Cancelar no cambia nada. Se lee bien en claro, oscuro y Mica y con teclado.
-- **Fase 25 — enfoque:** temporizador, notificación al terminar y cierre de la app con el temporizador activo.
+- **Fase 25 — enfoque (F25-03):**
+  - [ ] Detalle de una tarea → elegir minutos y «Enfocar»: el diálogo se cierra y la barra superior muestra la cuenta atrás (mm:ss) con un punto de acento; el botón «Enfocar» queda desactivado mientras haya una sesión.
+  - [ ] Pulsar la cuenta atrás de la barra superior termina la sesión: aviso «Sesión de enfoque terminada» y el tiempo aparece en la fila (p. ej. «5 min»).
+  - [ ] Con una sesión corta (15 min o ajustada para probar), al llegar a cero sale la notificación nativa «Sesión de enfoque terminada», una sola vez, aunque la ventana esté minimizada; la barra superior vuelve a su estado normal.
+  - [ ] Cerrar la app con el temporizador activo y abrirla de nuevo: si ya pasó el tiempo, la sesión consta cerrada a su hora prevista; si no, sigue la cuenta atrás desde donde toca.
+  - [ ] Detalle de la tarea → «Tiempo dedicado»: total, lista de entradas (sesiones y manuales), «Añadir» minutos a mano y la «×» que quita una entrada; la fila refleja el total (formato «1 h 25 min») y no muestra nada con cero.
+  - [ ] Lectura correcta en claro, oscuro y Mica, con teclado y Narrador.
 - **Fase 26 — resumen semanal:** cifras coherentes con la agenda y exportación a Markdown.
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.
 

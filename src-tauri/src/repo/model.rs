@@ -397,6 +397,14 @@ pub struct HabitLog {
     pub date: String,
 }
 
+/// Minutes of focus a task has accumulated (D-97, F25-02).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskFocusTotal {
+    pub task_id: String,
+    pub minutes: i64,
+}
+
 /// A focus session on a task (D-97). Without `ended_at` it is still running.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

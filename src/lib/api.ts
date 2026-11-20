@@ -47,6 +47,7 @@ import type {
   TasksListQuery,
   TasksSections,
   ThemeMode,
+  TaskFocusTotal,
   TimeEntry,
 } from "./types";
 
@@ -201,6 +202,28 @@ export function focusStop(): Promise<TimeEntry | null> {
 /** Sessions that started between two local days, inclusive. */
 export function focusList(from: string, to: string): Promise<TimeEntry[]> {
   return invoke<TimeEntry[]>("focus_list", { from, to });
+}
+
+/** Minutes of focus per task; tasks without time are missing. */
+export function focusTotals(): Promise<TaskFocusTotal[]> {
+  return invoke<TaskFocusTotal[]>("focus_totals");
+}
+
+/** The closed sessions and manual entries of a task, newest first. */
+export function focusTaskEntries(taskId: string): Promise<TimeEntry[]> {
+  return invoke<TimeEntry[]>("focus_task_entries", { taskId });
+}
+
+/** Records minutes already spent on a task, ending now. */
+export function focusAddManual(
+  taskId: string,
+  minutes: number,
+): Promise<TimeEntry> {
+  return invoke<TimeEntry>("focus_add_manual", { taskId, minutes });
+}
+
+export function focusDeleteEntry(id: string): Promise<void> {
+  return invoke<void>("focus_delete_entry", { id });
 }
 
 export function taskCreate(input: TaskCreateInput = {}): Promise<Task> {

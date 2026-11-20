@@ -26,6 +26,18 @@ function setup(current: TimeEntry | null = null) {
       running = entry({ taskId, plannedMinutes });
       return running;
     }),
+    focusTotals: vi.fn(async () => [{ taskId: "t1", minutes: 40 }]),
+    focusTaskEntries: vi.fn(async () => [
+      entry({ endedAt: "2026-11-20T10:40:00Z" }),
+    ]),
+    focusAddManual: vi.fn(async (taskId: string, minutes: number) =>
+      entry({
+        taskId,
+        plannedMinutes: minutes,
+        endedAt: "2026-11-20T10:00:00Z",
+      }),
+    ),
+    focusDeleteEntry: vi.fn(async () => undefined),
     focusStop: vi.fn(async () => {
       const closed = running && { ...running, endedAt: "2026-11-20T10:05:00Z" };
       running = null;
@@ -88,6 +100,31 @@ describe("focus countdown (F25-01)", () => {
     );
     await store.start("t1", 25);
     expect(store.current).toBeNull();
+    expect(store.notice?.kind).toBe("error");
+  });
+
+  it("keeps the minutes per task and refreshes them after a manual entry (F25-02)", async () => {
+    const { store, api } = setup();
+    await store.load();
+    expect(store.minutesOf("t1")).toBe(40);
+    expect(store.minutesOf("other")).toBe(0);
+
+    vi.mocked(api.focusTotals).mockResolvedValueOnce([
+      { taskId: "t1", minutes: 55 },
+    ]);
+    expect(await store.addManual("t1", 15)).toBe(true);
+    expect(api.focusAddManual).toHaveBeenCalledWith("t1", 15);
+    expect(store.minutesOf("t1")).toBe(55);
+
+    expect(await store.deleteEntry("e1")).toBe(true);
+    expect(api.focusDeleteEntry).toHaveBeenCalledWith("e1");
+    expect(await store.entriesOf("t1")).toHaveLength(1);
+  });
+
+  it("reports a refused manual entry", async () => {
+    const { store, api } = setup();
+    vi.mocked(api.focusAddManual).mockRejectedValueOnce("VALIDATION: mal");
+    expect(await store.addManual("t1", 0)).toBe(false);
     expect(store.notice?.kind).toBe("error");
   });
 });

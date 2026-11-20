@@ -7,6 +7,7 @@
   import NoteEditor from "../notes/NoteEditor.svelte";
   import { hasNotes } from "../notes/content";
   import { showNote } from "../notes/navigation";
+  import { focusStore } from "../../stores/focus.svelte";
   import { notesStore } from "../../stores/notes.svelte";
   import type { Task } from "../../types";
   import ReminderPopover from "./ReminderPopover.svelte";
@@ -67,6 +68,7 @@
     priority={task.priority}
     checklistDone={task.checklistDone}
     checklistTotal={task.checklistTotal}
+    focusMinutes={focusStore.minutesOf(task.id)}
     tags={tagsStore.tagsOf(task)}
     onTagsChange={(tagIds) => store.setTags(task.id, tagIds)}
     sourceNote={sourceOf(task)}

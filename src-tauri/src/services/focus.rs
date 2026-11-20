@@ -8,7 +8,10 @@ use crate::{
     domain::dates,
     error::{AppError, AppResult},
     notify::{Notification, Notifier},
-    repo::{model::TimeEntry, time_entries as repo},
+    repo::{
+        model::{TaskFocusTotal, TimeEntry},
+        time_entries as repo,
+    },
     state::AppState,
 };
 
@@ -148,6 +151,51 @@ pub fn recover_orphans(state: &AppState) -> AppResult<Option<TimeEntry>> {
     state
         .db
         .write(|tx| Ok(repo::finish(tx, &dates::format_instant(end))?))
+}
+
+/// Minutes of focus per task, for the rows and the detail.
+pub fn totals(state: &AppState) -> AppResult<Vec<TaskFocusTotal>> {
+    state.db.read(|conn| Ok(repo::totals(conn)?))
+}
+
+/// The closed sessions and manual entries of one task, newest first.
+pub fn of_task(state: &AppState, task_id: &str) -> AppResult<Vec<TimeEntry>> {
+    state.db.read(|conn| Ok(repo::of_task(conn, task_id)?))
+}
+
+/// Records `minutes` already spent on a task, ending now. It does not touch a session in
+/// progress.
+pub fn add_manual(state: &AppState, task_id: &str, minutes: i64) -> AppResult<TimeEntry> {
+    if !(1..=MAX_PLANNED_MINUTES).contains(&minutes) {
+        return Err(AppError::Validation(format!(
+            "el tiempo debe estar entre 1 y {MAX_PLANNED_MINUTES} minutos"
+        )));
+    }
+    let now = state.clock.now();
+    let started = dates::format_instant(now - Duration::minutes(minutes));
+    let ended = dates::format_instant(now);
+    state.db.write(|tx| {
+        if repo::task_title(tx, task_id)?.is_none() {
+            return Err(AppError::not_found("tarea", task_id));
+        }
+        Ok(repo::insert_closed(
+            tx,
+            &state.ids.new_id(),
+            task_id,
+            minutes,
+            &started,
+            &ended,
+        )?)
+    })
+}
+
+pub fn delete_entry(state: &AppState, id: &str) -> AppResult<()> {
+    let deleted = state.db.write(|tx| Ok(repo::delete_closed(tx, id)?))?;
+    if deleted {
+        Ok(())
+    } else {
+        Err(AppError::not_found("entrada de tiempo", id))
+    }
 }
 
 pub fn list_local(state: &AppState, from: &str, to: &str) -> AppResult<Vec<TimeEntry>> {

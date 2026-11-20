@@ -102,4 +102,32 @@ describe("TaskDetailDialog", () => {
     expect(onClose).toHaveBeenCalled();
     start.mockRestore();
   });
+
+  it("shows the time spent and adds a manual entry (F25-02)", async () => {
+    vi.spyOn(focusStore, "entriesOf").mockResolvedValue([
+      {
+        id: "e1",
+        taskId: "t1",
+        startedAt: "2026-03-09T09:00:00Z",
+        endedAt: "2026-03-09T09:25:00Z",
+        plannedMinutes: 25,
+      },
+    ]);
+    const add = vi.spyOn(focusStore, "addManual").mockResolvedValue(true);
+    const remove = vi.spyOn(focusStore, "deleteEntry").mockResolvedValue(true);
+    await mount();
+    expect(await screen.findByText("09/03/2026 · 25 min")).toBeTruthy();
+
+    await fireEvent.input(screen.getByLabelText("Minutos a añadir"), {
+      target: { value: "30" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Añadir" }));
+    expect(add).toHaveBeenCalledWith("t1", 30);
+
+    await fireEvent.click(
+      screen.getByRole("button", { name: "Quitar esta entrada" }),
+    );
+    expect(remove).toHaveBeenCalledWith("e1");
+    vi.restoreAllMocks();
+  });
 });
