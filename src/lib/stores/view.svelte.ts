@@ -31,6 +31,9 @@ export type Section = "today" | "tasks" | "calendar" | "notes";
 
 const SECTIONS: readonly Section[] = ["today", "tasks", "calendar", "notes"];
 
+/** How many steps back and forward are remembered. */
+const HISTORY_LIMIT = 50;
+
 /** Reads the saved section; 2.0.x saved `agenda` for both the list and the calendar. */
 export function parseSection(value: string | null, mode: ViewMode): Section {
   if (value === "agenda") return mode === "list" ? "tasks" : "calendar";
@@ -54,6 +57,11 @@ export class ViewStore {
   /** Waits for the saved mode so the list does not flash before a saved calendar view. */
   ready = $state(false);
   readonly firstDay: WeekDay;
+
+  /** Sections left behind and the ones to return to, for back and forward (F19-03). */
+  #back = $state<Section[]>([]);
+  #forward = $state<Section[]>([]);
+  #travelling = false;
 
   readonly #api: ViewApi;
   readonly #now: () => Date;
@@ -123,8 +131,45 @@ export class ViewStore {
     if (!this.inAgenda) this.setSection("tasks");
   }
 
+  get canGoBack(): boolean {
+    return this.#back.length > 0;
+  }
+
+  get canGoForward(): boolean {
+    return this.#forward.length > 0;
+  }
+
+  goBack(): void {
+    const target = this.#back.at(-1);
+    if (!target) return;
+    this.#back = this.#back.slice(0, -1);
+    this.#forward = [...this.#forward, this.section];
+    this.#travel(target);
+  }
+
+  goForward(): void {
+    const target = this.#forward.at(-1);
+    if (!target) return;
+    this.#forward = this.#forward.slice(0, -1);
+    this.#back = [...this.#back, this.section];
+    this.#travel(target);
+  }
+
+  #travel(section: Section): void {
+    this.#travelling = true;
+    try {
+      this.setSection(section);
+    } finally {
+      this.#travelling = false;
+    }
+  }
+
   #setSectionOnly(section: Section): void {
     if (section === this.section) return;
+    if (!this.#travelling) {
+      this.#back = [...this.#back, this.section].slice(-HISTORY_LIMIT);
+      this.#forward = [];
+    }
     this.section = section;
     this.#save("app_section", section);
   }

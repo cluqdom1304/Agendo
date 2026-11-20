@@ -15,6 +15,12 @@ export const t = {
     collapseGroup: (name: string) => `Plegar ${name}`,
     expandGroup: (name: string) => `Desplegar ${name}`,
   },
+  topBar: {
+    back: "Atrás",
+    forward: "Adelante",
+    search: "Buscar o crear…",
+    newNote: "Nueva nota",
+  },
   window: {
     minimize: "Minimizar",
     toggleMaximize: "Maximizar o restaurar",

@@ -13,6 +13,7 @@
   import EmptyState from "$lib/shell/EmptyState.svelte";
   import { dispatchShortcut } from "$lib/shell/shortcuts";
   import Toast from "$lib/shell/Toast.svelte";
+  import TopBar from "$lib/shell/TopBar.svelte";
   import { notesStore } from "$lib/stores/notes.svelte";
   import { folderDrag, tagDrag } from "$lib/stores/tagDrag.svelte";
   import { tagsStore } from "$lib/stores/tags.svelte";
@@ -29,8 +30,6 @@
 
   // The tag filter only hides tasks: in the notes there is nothing to warn about.
   const filterShown = $derived(tagsStore.filtered && viewStore.inAgenda);
-
-  const sidebarLabel = t.sidebar.toggle;
 
   // The list shows its own deletion notices; elsewhere they are shown here.
   const lastDeletion = $derived(tasksStore.undoStack.at(-1));
@@ -135,6 +134,15 @@
     else dialogs.detailId = taskId;
   }
 
+  /** The «new» button of the top bar: a note in the notes, a task everywhere else. */
+  function createNew() {
+    if (viewStore.section === "notes") {
+      void notesStore.ensureLoaded().then(() => notesStore.createNote());
+    } else {
+      dialogs.openNewTask();
+    }
+  }
+
   function onKeydown(event: KeyboardEvent) {
     dispatchShortcut(event, {
       section: () => viewStore.section,
@@ -155,154 +163,83 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div class="shell">
-  <AppSidebar
-    open={sidebarOpen}
-    section={viewStore.section}
-    notes={notesStore}
-    tags={tagsStore}
-    tasks={tasksStore}
-    onSection={(section) => viewStore.setSection(section)}
-    onOpenNote={(id) => void showNote(id)}
+  <TopBar
+    {sidebarOpen}
+    filtered={filterShown}
+    canGoBack={viewStore.canGoBack}
+    canGoForward={viewStore.canGoForward}
+    newLabel={viewStore.section === "notes"
+      ? t.topBar.newNote
+      : t.newTask.button}
+    onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
+    onNew={createNew}
+    onBack={() => viewStore.goBack()}
+    onForward={() => viewStore.goForward()}
+    onSearch={() => (dialogs.palette = "all")}
+    onSettings={() => (dialogs.settingsOpen = true)}
   />
-  <div class="page">
-    <div class="toolbar" data-tauri-drag-region>
-      <div class="lead" data-tauri-drag-region>
-        <button
-          type="button"
-          class="icon-btn sidebar-toggle"
-          class:filtered={filterShown}
-          aria-pressed={sidebarOpen}
-          aria-label={filterShown
-            ? `${sidebarLabel}. ${t.tags.filterActive}`
-            : sidebarLabel}
-          title={filterShown ? t.tags.filterActive : sidebarLabel}
-          onclick={() => (sidebarOpen = !sidebarOpen)}
-        >
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-            <rect
-              x="2"
-              y="3"
-              width="12"
-              height="10"
-              rx="2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-            <path d="M6 3v10" stroke="currentColor" stroke-width="1.5" />
-          </svg>
-        </button>
-      </div>
-      <span></span>
-      <div class="trail" data-tauri-drag-region>
-        <button
-          type="button"
-          class="icon-btn"
-          aria-label={t.settings.open}
-          title={t.settings.open}
-          aria-haspopup="dialog"
-          onclick={() => (dialogs.settingsOpen = true)}
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-            <path
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              d="M4 7h10M18 7h2M4 17h2M10 17h10"
-            />
-            <circle
-              cx="16"
-              cy="7"
-              r="2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-            />
-            <circle
-              cx="8"
-              cy="17"
-              r="2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-            />
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    {#if viewStore.ready}
-      {#if viewStore.section === "notes"}
-        <div class="content" data-menu-area="notes">
-          {#if NotesView}
-            <NotesView
-              notes={notesStore}
-              tags={tagsStore}
-              tasks={tasksStore}
-              onPreviewTask={(taskId) => (dialogs.detailId = taskId)}
-              onOpenTask={(task) => {
-                void openInList(task);
-              }}
-            />
-          {/if}
-        </div>
-      {:else if viewStore.section === "today"}
-        <div class="content scrolls" data-menu-area="agenda">
-          {#if TodayView}
-            <TodayView
-              store={tasksStore}
-              notes={notesStore}
-              view={viewStore}
-              onOpenTask={(taskId) => (dialogs.detailId = taskId)}
-              onOpenNote={(noteId) => void showNote(noteId)}
-              onOpenDaily={(date) => void showDailyNote(date)}
-            />
-          {/if}
-        </div>
-      {:else if viewStore.mode === "list"}
-        <div class="content scrolls" data-menu-area="agenda">
-          <TodoView store={tasksStore} />
-        </div>
-      {:else}
-        <div class="content" data-menu-area="agenda">
-          {#await loadCalendar()}
-            <EmptyState variant="loading" title={t.calendar.loading} />
-          {:then module}
-            <module.default
-              store={tasksStore}
-              view={viewStore}
-              onOpenTask={(task: Task) => (dialogs.detailId = task.id)}
-            />
-          {:catch}
-            <EmptyState variant="error" title={t.calendar.loadFailed} />
-          {/await}
-        </div>
+  <div class="body">
+    <AppSidebar
+      open={sidebarOpen}
+      section={viewStore.section}
+      notes={notesStore}
+      tags={tagsStore}
+      tasks={tasksStore}
+      onSection={(section) => viewStore.setSection(section)}
+      onOpenNote={(id) => void showNote(id)}
+    />
+    <div class="page">
+      {#if viewStore.ready}
+        {#if viewStore.section === "notes"}
+          <div class="content" data-menu-area="notes">
+            {#if NotesView}
+              <NotesView
+                notes={notesStore}
+                tags={tagsStore}
+                tasks={tasksStore}
+                onPreviewTask={(taskId) => (dialogs.detailId = taskId)}
+                onOpenTask={(task) => {
+                  void openInList(task);
+                }}
+              />
+            {/if}
+          </div>
+        {:else if viewStore.section === "today"}
+          <div class="content scrolls" data-menu-area="agenda">
+            {#if TodayView}
+              <TodayView
+                store={tasksStore}
+                notes={notesStore}
+                view={viewStore}
+                onOpenTask={(taskId) => (dialogs.detailId = taskId)}
+                onOpenNote={(noteId) => void showNote(noteId)}
+                onOpenDaily={(date) => void showDailyNote(date)}
+              />
+            {/if}
+          </div>
+        {:else if viewStore.mode === "list"}
+          <div class="content scrolls" data-menu-area="agenda">
+            <TodoView store={tasksStore} />
+          </div>
+        {:else}
+          <div class="content" data-menu-area="agenda">
+            {#await loadCalendar()}
+              <EmptyState variant="loading" title={t.calendar.loading} />
+            {:then module}
+              <module.default
+                store={tasksStore}
+                view={viewStore}
+                onOpenTask={(task: Task) => (dialogs.detailId = task.id)}
+              />
+            {:catch}
+              <EmptyState variant="error" title={t.calendar.loadFailed} />
+            {/await}
+          </div>
+        {/if}
       {/if}
-    {/if}
+    </div>
   </div>
 </div>
-
-{#if viewStore.inAgenda}
-  <button
-    type="button"
-    class="fab"
-    title={t.newTask.buttonHint}
-    aria-label={t.newTask.button}
-    aria-haspopup="dialog"
-    onclick={() => dialogs.openNewTask()}
-  >
-    <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
-      <path
-        d="M8 3v10M3 8h10"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-      />
-    </svg>
-  </button>
-{/if}
 
 <TagDragGhost drag={tagDrag} />
 <TagDragGhost drag={folderDrag} hint={t.notesApp.dragHint} />
@@ -335,7 +272,19 @@
 <style>
   .shell {
     display: flex;
+    flex-direction: column;
     height: 100%;
+    background: var(--sidebar-bg);
+  }
+
+  :global(.native-effect) .shell {
+    background: var(--sidebar-bg-native);
+  }
+
+  .body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
   }
 
   .page {
@@ -344,92 +293,13 @@
     flex-direction: column;
     min-width: 0;
     height: 100%;
-  }
-
-  .toolbar {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    flex: none;
-    height: 48px;
-    padding-left: var(--space-3);
-  }
-
-  .lead,
-  .trail {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    height: 100%;
-  }
-
-  .trail {
-    justify-content: flex-end;
-    /* Room for the three 46 px caption buttons that float over this bar. */
-    padding-right: 146px;
-  }
-
-  .sidebar-toggle {
-    position: relative;
-  }
-
-  .sidebar-toggle.filtered::after {
-    content: "";
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 7px;
-    height: 7px;
-    border-radius: var(--radius-chip);
-    background: var(--accent);
+    background: var(--bg-window-solid);
   }
 
   .content {
     flex: 1;
     min-height: 0;
     animation: rise-in var(--motion-base) var(--ease-out);
-  }
-
-  /* The round button of the agenda: bottom right, above the content but below the dialogs and
-     the undo notice. */
-  .fab {
-    position: fixed;
-    right: var(--space-6);
-    bottom: var(--space-6);
-    z-index: 15;
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: var(--accent);
-    color: var(--on-accent);
-    box-shadow: var(--shadow-popover);
-    cursor: pointer;
-    transition:
-      transform var(--motion-fast) var(--ease-out),
-      filter var(--motion-fast) linear;
-  }
-
-  .fab:hover {
-    filter: brightness(1.08);
-  }
-
-  .fab:active {
-    transform: scale(0.94);
-  }
-
-  .fab:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .fab {
-      transition: none;
-    }
   }
 
   .scrolls {

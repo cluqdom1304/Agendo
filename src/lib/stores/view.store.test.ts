@@ -199,3 +199,34 @@ describe("sections of the sidebar (F19-04)", () => {
     expect(api.writes).toContain("today");
   });
 });
+
+describe("back and forward (F19-03)", () => {
+  it("walks the visited sections both ways and a new visit drops what was ahead", () => {
+    const store = make(new FakeViewApi());
+    expect(store.canGoBack).toBe(false);
+    store.setSection("notes");
+    store.setSection("calendar");
+    store.goBack();
+    expect(store.section).toBe("notes");
+    expect(store.canGoForward).toBe(true);
+    store.goBack();
+    expect(store.section).toBe("today");
+    expect(store.canGoBack).toBe(false);
+    store.goForward();
+    expect(store.section).toBe("notes");
+
+    store.setSection("tasks");
+    expect(store.canGoForward).toBe(false);
+    store.goForward();
+    expect(store.section).toBe("tasks");
+  });
+
+  it("does not record a change of calendar view inside the calendar", () => {
+    const store = make(new FakeViewApi());
+    store.setSection("calendar");
+    store.setMode("month");
+    store.setMode("day");
+    store.goBack();
+    expect(store.section).toBe("today");
+  });
+});

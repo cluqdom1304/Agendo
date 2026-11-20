@@ -245,33 +245,12 @@
 {/snippet}
 
 <style>
-  /* Always dark (D-92): the shared tokens are pointed at the sidebar ones, so the folders and
-     tags inside keep using the usual names and read well in both themes. */
   .app-sidebar {
-    --text-primary: var(--sidebar-text);
-    --text-secondary: var(--sidebar-text-secondary);
-    --bg-hover: var(--sidebar-hover);
-    --bg-active: var(--sidebar-active);
-    --bg-control: var(--sidebar-control);
-    --bg-control-hover: var(--sidebar-active);
-    --separator: var(--sidebar-separator);
-    --border-subtle: var(--sidebar-separator);
-    --accent: var(--sidebar-focus);
-    --danger: var(--sidebar-danger);
-    --bg-popover: var(--sidebar-popover);
-    --on-accent: var(--sidebar-on-fill);
-    --on-danger: var(--sidebar-on-fill);
-    color-scheme: dark;
     flex: none;
     width: 0;
     overflow: hidden;
-    background: var(--sidebar-bg);
     color: var(--text-primary);
     transition: width var(--motion-base) var(--ease-out);
-  }
-
-  :global(.native-effect) .app-sidebar {
-    background: var(--sidebar-bg-native);
   }
 
   .app-sidebar.open {

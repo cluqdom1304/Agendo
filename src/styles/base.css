@@ -24,6 +24,26 @@ body {
   background: var(--bg-window-native);
 }
 
+/* The sidebar and the top bar are dark in both themes (D-92): the usual token names are pointed
+   at the sidebar ones, so whatever sits inside reads well without knowing where it is. */
+.chrome-dark {
+  --text-primary: var(--sidebar-text);
+  --text-secondary: var(--sidebar-text-secondary);
+  --bg-hover: var(--sidebar-hover);
+  --bg-active: var(--sidebar-active);
+  --bg-control: var(--sidebar-control);
+  --bg-control-hover: var(--sidebar-active);
+  --separator: var(--sidebar-separator);
+  --border-subtle: var(--sidebar-separator);
+  --accent: var(--sidebar-focus);
+  --danger: var(--sidebar-danger);
+  --bg-popover: var(--sidebar-popover);
+  --on-accent: var(--sidebar-on-fill);
+  --on-danger: var(--sidebar-on-fill);
+  color-scheme: dark;
+  color: var(--text-primary);
+}
+
 /* Components refine their own focus ring; this one guarantees that nothing is left without. */
 :focus-visible {
   outline: 2px solid var(--accent);
