@@ -440,7 +440,15 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Por debajo de 900 px el sidebar se pliega solo y vuelve al ensanchar; arrastrar una etiqueta o una nota lo abre.
   - [ ] Favoritos (notas fijadas) y Recientes aparecen poco después de abrir, se pliegan y abren la nota; elegir una carpeta desde Hoy, Tareas o Calendario lleva a Notas.
   - [ ] Una instalación que venía de la 2.0.3 con la agenda abierta en el calendario vuelve a abrir en «Calendario»; con la lista, en «Tareas».
-- **Fase 20 — Hoy, Bandeja y prioridades:** tira de días, banner de resumen, círculos de prioridad legibles, progreso de checklist, panel Bandeja plegable y arrastre desde él.
+- **Fase 20 — Hoy, Próximas, Bandeja y prioridades (F20-06):**
+  - [ ] Hoy: el título grande, la tira de 14 días (marca bajo los días con pendientes) y el banner se ven bien en claro, oscuro y Mica; elegir un día cambia título, tareas y nota del día; las flechas, Inicio y Fin recorren la tira.
+  - [ ] Con la app abierta de un día para otro, al volver a la ventana la tira empieza en el día nuevo.
+  - [ ] Los cuatro niveles de prioridad se distinguen en el círculo en ambos temas; Narrador lee «…, prioridad alta».
+  - [ ] Prioridad desde el diálogo de tarea y desde el menú contextual; dentro de un día, la tarea sin hora sube al ponerle prioridad.
+  - [ ] Marcar casillas en las notas de una tarea actualiza el «2/5» de su fila al guardarse.
+  - [ ] Bandeja de entrada en Hoy, Próximas y Calendario: añadir con Intro, completar, abrir y menú contextual; se pliega desde la barra superior y desaparece por debajo de 1100 px. (El arrastre desde la Bandeja a una franja queda para la Fase 24.)
+  - [ ] Próximas: Vencidas, Hoy, Mañana, los días con nombre y «Más adelante».
+  - [ ] Tareas: los filtros de fecha, prioridad mínima y «Mostrar completadas» se combinan con el filtro de etiquetas; «Quitar filtros» devuelve la lista entera.
 - **Fase 21 — eventos:** crear, editar y arrastrar eventos en el calendario; notificación nativa de un recordatorio de evento; evento repetido.
 - **Fase 22 — hábitos:** marcar y desmarcar, rachas tras varios días y al cambiar de día a medianoche.
 - **Fase 24 — planificar el día:** arrastrar de la Bandeja a una franja; asistente de «Planificar mi día».

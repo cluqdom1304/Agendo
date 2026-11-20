@@ -137,6 +137,7 @@ describe("sections of the sidebar (F19-04)", () => {
     for (const [saved, expected] of [
       ["today", "today"],
       ["notes", "notes"],
+      ["upcoming", "upcoming"],
       ["tasks", "tasks"],
       ["calendar", "calendar"],
       ["algo raro", "today"],

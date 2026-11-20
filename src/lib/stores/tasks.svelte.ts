@@ -20,6 +20,12 @@ import type {
   UndoEntry,
 } from "./tasksTypes";
 import { groupByDay, sortTodo, splitCompleted } from "../ordering";
+import {
+  isFiltering,
+  matchesFilter,
+  NO_FILTER,
+  type ListFilter,
+} from "./listFilter";
 import type {
   ReminderInput,
   SearchHit,
@@ -134,9 +140,31 @@ export class TasksStore {
     return blocks;
   });
 
+  /** Filters of the «Tareas» view (F20-05); the other views ignore them. */
+  listFilter = $state.raw<ListFilter>(NO_FILTER);
+  listFiltering = $derived(isFiltering(this.listFilter));
+
+  /** POR HACER as the list draws it, after its filters. */
+  listTodoBlock = $derived.by<TaskBlock>(() =>
+    this.listFiltering ? this.#narrow(this.todoBlock) : this.todoBlock,
+  );
+
+  /** The days as the list draws them: a day left empty by the filters is dropped. */
+  listAgendaBlocks = $derived.by<TaskBlock[]>(() => {
+    if (!this.listFiltering) return this.agendaBlocks;
+    const target = this.draft?.target;
+    return this.agendaBlocks
+      .map((block) => this.#narrow(block))
+      .filter(
+        (block) =>
+          block.open.length + block.completed.length > 0 ||
+          (target?.section === "agenda" && target.date === block.date),
+      );
+  });
+
   /** Ids in the order the list draws them (POR HACER first, then each day). */
   visibleOrder = $derived.by<string[]>(() =>
-    [this.todoBlock, ...this.agendaBlocks].flatMap((block) =>
+    [this.listTodoBlock, ...this.listAgendaBlocks].flatMap((block) =>
       [...block.open, ...block.completed].map((task) => task.id),
     ),
   );
@@ -145,7 +173,6 @@ export class TasksStore {
   readonly batch: TaskBatch;
 
   isEmpty = $derived(this.tasks.length === 0);
-  todoPendingCount = $derived(this.todoBlock.open.length);
 
   /** Rows playing their exit animation; per-key reactivity re-renders only the row concerned. */
   readonly settling: TaskCompletion["settling"];
@@ -295,6 +322,17 @@ export class TasksStore {
     })();
     this.#refreshing = run;
     return run;
+  }
+
+  /** A block with only the tasks the list filters let through. */
+  #narrow(block: TaskBlock): TaskBlock {
+    const today = toLocalIsoDate(this.#now());
+    const keep = (task: Task) => matchesFilter(task, this.listFilter, today);
+    return {
+      date: block.date,
+      open: block.open.filter(keep),
+      completed: block.completed.filter(keep),
+    };
   }
 
   find(id: string): Task | undefined {

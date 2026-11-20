@@ -34,7 +34,9 @@
     typeof window === "undefined" ? Infinity : window.innerWidth,
   );
   const inboxSection = $derived(
-    viewStore.section === "today" || viewStore.section === "calendar",
+    viewStore.section === "today" ||
+      viewStore.section === "upcoming" ||
+      viewStore.section === "calendar",
   );
   const inboxShown = $derived(inbox.open && inboxSection);
 
@@ -59,14 +61,19 @@
   let TodayView = $state<
     typeof import("$lib/features/today/TodayView.svelte").default | null
   >(null);
+  let UpcomingView = $state<
+    typeof import("$lib/features/upcoming/UpcomingView.svelte").default | null
+  >(null);
 
   async function preloadViews() {
-    const [notes, today] = await Promise.all([
+    const [notes, today, upcoming] = await Promise.all([
       import("$lib/features/notes/NotesView.svelte"),
       import("$lib/features/today/TodayView.svelte"),
+      import("$lib/features/upcoming/UpcomingView.svelte"),
     ]);
     NotesView = notes.default;
     TodayView = today.default;
+    UpcomingView = upcoming.default;
   }
   $effect(() => {
     const timer = setTimeout(() => void preloadViews(), 400);
@@ -244,6 +251,16 @@
                 onOpenTask={(taskId) => (dialogs.detailId = taskId)}
                 onOpenNote={(noteId) => void showNote(noteId)}
                 onOpenDaily={(date) => void showDailyNote(date)}
+              />
+            {/if}
+          </div>
+        {:else if viewStore.section === "upcoming"}
+          <div class="content scrolls padded" data-menu-area="agenda">
+            {#if UpcomingView}
+              <UpcomingView
+                store={tasksStore}
+                view={viewStore}
+                onOpenTask={(taskId) => (dialogs.detailId = taskId)}
               />
             {/if}
           </div>

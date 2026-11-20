@@ -6,8 +6,10 @@
   import EmptyState from "../../shell/EmptyState.svelte";
   import Toast from "../../shell/Toast.svelte";
   import { tagsStore } from "../../stores/tags.svelte";
+  import { NO_FILTER } from "../../stores/listFilter";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import DayGroup from "./DayGroup.svelte";
+  import ListFilters from "./ListFilters.svelte";
   import SectionHeader from "./SectionHeader.svelte";
   import SelectionBar from "./SelectionBar.svelte";
 
@@ -18,6 +20,19 @@
   let { store }: Props = $props();
 
   const lastDeletion = $derived(store.undoStack.at(-1));
+
+  // A date filter that only matches dated tasks leaves POR HACER out, and «Sin fecha» the days.
+  const showTodo = $derived(
+    store.listFilter.date === "all" || store.listFilter.date === "undated",
+  );
+  const showAgenda = $derived(store.listFilter.date !== "undated");
+  const nothingMatches = $derived(
+    store.listFiltering &&
+      !store.draft &&
+      store.listTodoBlock.open.length + store.listTodoBlock.completed.length ===
+        0 &&
+      store.listAgendaBlocks.length === 0,
+  );
 
   function rows(): HTMLElement[] {
     return [...document.querySelectorAll<HTMLElement>(`[${ROW_ATTRIBUTE}]`)];
@@ -123,16 +138,33 @@
       onAction={() => store.startDraft({ section: "todo" })}
     />
   {:else}
-    <SectionHeader
-      title={t.tasks.sectionTodo}
-      detail={t.tasks.pendingCount(store.todoPendingCount)}
+    <ListFilters
+      filter={store.listFilter}
+      onChange={(filter) => (store.listFilter = filter)}
     />
-    <DayGroup block={store.todoBlock} {store} />
+    {#if nothingMatches}
+      <EmptyState
+        title={t.listFilter.noneTitle}
+        description={t.listFilter.noneDescription}
+        actionLabel={t.listFilter.clear}
+        onAction={() => (store.listFilter = NO_FILTER)}
+      />
+    {:else}
+      {#if showTodo}
+        <SectionHeader
+          title={t.tasks.sectionTodo}
+          detail={t.tasks.pendingCount(store.listTodoBlock.open.length)}
+        />
+        <DayGroup block={store.listTodoBlock} {store} />
+      {/if}
 
-    <SectionHeader title={t.tasks.sectionAgenda} />
-    {#each store.agendaBlocks as block (block.date)}
-      <DayGroup {block} {store} />
-    {/each}
+      {#if showAgenda}
+        <SectionHeader title={t.tasks.sectionAgenda} />
+        {#each store.listAgendaBlocks as block (block.date)}
+          <DayGroup {block} {store} />
+        {/each}
+      {/if}
+    {/if}
   {/if}
 </div>
 

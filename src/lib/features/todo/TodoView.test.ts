@@ -97,6 +97,45 @@ describe("document layout", () => {
     expect(screen.getAllByTitle(/subtarea/)).toHaveLength(1);
   });
 
+  it("filters the list and says when nothing matches (F20-05)", async () => {
+    await mount([
+      makeTask({ id: "1", title: "Sin fecha" }),
+      makeTask({
+        id: "2",
+        title: "Hoy urgente",
+        dueDate: "2026-03-10",
+        priority: 3,
+      }),
+      makeTask({ id: "3", title: "Pasado", dueDate: "2026-03-05" }),
+    ]);
+    const filters = screen.getByRole("group", {
+      name: "Filtros de la lista",
+    });
+    await fireEvent.click(
+      within(filters).getByRole("button", { name: "Vencidas" }),
+    );
+    expect(rowTitles()).toEqual(["Pasado"]);
+    expect(screen.queryByText("POR HACER")).toBeNull();
+
+    await fireEvent.click(
+      within(filters).getByRole("button", { name: "Todas" }),
+    );
+    await fireEvent.change(
+      within(filters).getByRole("combobox", { name: "Prioridad mínima" }),
+      { target: { value: "3" } },
+    );
+    expect(rowTitles()).toEqual(["Hoy urgente"]);
+
+    await fireEvent.click(
+      within(filters).getByRole("button", { name: "Sin fecha" }),
+    );
+    expect(screen.getByText("Nada coincide con los filtros")).toBeTruthy();
+    await fireEvent.click(
+      screen.getAllByRole("button", { name: "Quitar filtros" }).at(-1)!,
+    );
+    expect(rowTitles()).toHaveLength(3);
+  });
+
   it("shows the empty state and starts a draft from its button", async () => {
     await mount([]);
     expect(screen.getByText("Todo en orden")).toBeTruthy();
