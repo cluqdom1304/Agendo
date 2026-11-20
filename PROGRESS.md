@@ -2,7 +2,7 @@
 
 **Fase activa:** versión 3.0.0, Fase 24 (Fases 18 a 23 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** Fase 24 terminada (`[A]` en verde); falta F24-03 `[H]` (lista «Fase 24» de `docs/manual-pruebas.md`) y F21-05. Fase 25 terminada (`[A]` en verde); falta F25-03 `[H]` (lista «Fase 25» de `docs/manual-pruebas.md`). La Fase 26 no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Siguiente tarea:** Fase 24 terminada (`[A]` en verde); falta F24-03 `[H]` (lista «Fase 24» de `docs/manual-pruebas.md`) y F21-05. Fase 25 terminada (`[A]` en verde, F25-03 validada); falta F25-06 `[H]`, la ampliación de pausa, cambio de tarea y registro exacto (últimos ítems de la lista «Fase 25» de `docs/manual-pruebas.md`). La Fase 26 no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-20 (Fase 24 completada; Fase 23 completada; F22-03 validada por el usuario; F21-05 pendiente)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
