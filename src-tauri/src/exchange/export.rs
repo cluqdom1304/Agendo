@@ -279,6 +279,16 @@ pub fn export_json(state: &AppState, target: &Path) -> AppResult<ExportReport> {
     let count = data["notes"].as_array().map_or(0, Vec::len);
     let text = serde_json::to_string_pretty(&data)
         .map_err(|e| AppError::Internal(format!("no se pudo generar el JSON: {e}")))?;
+    write_whole(target, &text)?;
+    Ok(ExportReport {
+        notes: count,
+        files: 0,
+    })
+}
+
+/// Writes `text` to `target` through a `.part` file beside it, so an older file there is replaced
+/// only by a whole one.
+pub(super) fn write_whole(target: &Path, text: &str) -> AppResult<()> {
     let mut partial = target.as_os_str().to_os_string();
     partial.push(".part");
     let partial = PathBuf::from(partial);
@@ -286,9 +296,5 @@ pub fn export_json(state: &AppState, target: &Path) -> AppResult<ExportReport> {
     fs::rename(&partial, target).map_err(|e| {
         let _ = fs::remove_file(&partial);
         io("no se pudo guardar el archivo", e)
-    })?;
-    Ok(ExportReport {
-        notes: count,
-        files: 0,
     })
 }

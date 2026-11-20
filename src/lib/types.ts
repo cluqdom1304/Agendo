@@ -173,6 +173,42 @@ export interface TimeEntry {
   spentSeconds: number;
 }
 
+/** Tasks of one tag (`null` groups the untagged ones) in a weekly summary (D-100). */
+export interface TagTally {
+  tagId: string | null;
+  completed: number;
+  pending: number;
+  overdue: number;
+}
+
+/** Scheduled days of a habit in a week, up to today, against the days marked. */
+export interface HabitWeek {
+  habitId: string;
+  title: string;
+  scheduled: number;
+  done: number;
+}
+
+/** What happened in one week (D-100). Dates are local `YYYY-MM-DD`. */
+export interface WeekSummary {
+  start: string;
+  end: string;
+  /** Completed during the week, whatever their due date. */
+  completed: number;
+  /** Open, due in the week and not late yet. */
+  pending: number;
+  /** Open, due in the week on a day before today. */
+  overdue: number;
+  byTag: TagTally[];
+  events: number;
+  eventMinutes: number;
+  habits: HabitWeek[];
+  focusSeconds: number;
+  focusSessions: number;
+  /** Seconds of focus for each of the seven days of the week, in order. */
+  focusByDay: number[];
+}
+
 export interface Task {
   id: string;
   title: string;

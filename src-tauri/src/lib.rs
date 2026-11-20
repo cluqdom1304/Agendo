@@ -143,6 +143,8 @@ pub fn run() {
             commands::habits::habit_restore,
             commands::habits::habit_set_done,
             commands::habits::habit_logs,
+            commands::summary::summary_week,
+            commands::summary::summary_export_markdown,
             commands::focus::focus_current,
             commands::focus::focus_start,
             commands::focus::focus_stop,

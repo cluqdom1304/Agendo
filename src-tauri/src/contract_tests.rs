@@ -16,9 +16,9 @@ use crate::{
     repo::{
         find::FoundItem,
         model::{
-            Event, EventOccurrence, Folder, FolderWithCount, Habit, HabitLog, Note, NoteReminder,
-            NoteSummary, NoteTemplate, NoteTitle, NoteVersion, NoteVersionSummary, Reminder, Tag,
-            TagWithCount, Task, TimeEntry,
+            Event, EventOccurrence, Folder, FolderWithCount, Habit, HabitLog, HabitWeek, Note,
+            NoteReminder, NoteSummary, NoteTemplate, NoteTitle, NoteVersion, NoteVersionSummary,
+            Reminder, Tag, TagTally, TagWithCount, Task, TimeEntry, WeekSummary,
         },
         search::SearchHit,
     },
@@ -234,6 +234,38 @@ fn current() -> Value {
             paused_seconds: 0,
             paused_at: Some("2026-03-12T10:10:00Z".into()),
             spent_seconds: 0,
+        },
+        "weekSummary": WeekSummary {
+            start: "2026-03-09".into(),
+            end: "2026-03-15".into(),
+            completed: 5,
+            pending: 3,
+            overdue: 1,
+            by_tag: vec![
+                TagTally {
+                    tag_id: Some("tag-1".into()),
+                    completed: 4,
+                    pending: 2,
+                    overdue: 1,
+                },
+                TagTally {
+                    tag_id: None,
+                    completed: 1,
+                    pending: 1,
+                    overdue: 0,
+                },
+            ],
+            events: 2,
+            event_minutes: 90,
+            habits: vec![HabitWeek {
+                habit_id: "habit-1".into(),
+                title: "Leer".into(),
+                scheduled: 5,
+                done: 4,
+            }],
+            focus_seconds: 3600,
+            focus_sessions: 2,
+            focus_by_day: vec![0, 1800, 1800, 0, 0, 0, 0],
         },
         "noteReminder": NoteReminder {
             id: "nreminder-1".into(),

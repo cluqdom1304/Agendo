@@ -2,6 +2,7 @@
 import { groupByDay, sortTodo } from "./ordering";
 import type { EventsApi } from "./stores/events.svelte";
 import type { HabitsApi } from "./stores/habits.svelte";
+import type { SummaryApi } from "./stores/summary.svelte";
 import type { TasksApi } from "./stores/tasks.svelte";
 import type {
   CalendarEvent,
@@ -19,6 +20,7 @@ import type {
   Task,
   TaskPatch,
   TasksSections,
+  WeekSummary,
 } from "./types";
 
 export function makeTask(overrides: Partial<Task> & { id: string }): Task {
@@ -486,5 +488,41 @@ export class FakeHabitsApi implements HabitsApi {
     if (date === this.today) habit.doneToday = done;
     habit.currentStreak = this.logs.filter((log) => log.habitId === id).length;
     return habit;
+  }
+}
+
+/** In-memory weekly summary API for tests: answers what the test sets, and records the calls. */
+export class FakeSummaryApi implements SummaryApi {
+  calls: { date: string; firstDay: number }[] = [];
+  exported: { date: string; firstDay: number; path: string }[] = [];
+  failWith: string | null = null;
+  summary: WeekSummary = {
+    start: "2026-03-09",
+    end: "2026-03-15",
+    completed: 0,
+    pending: 0,
+    overdue: 0,
+    byTag: [],
+    events: 0,
+    eventMinutes: 0,
+    habits: [],
+    focusSeconds: 0,
+    focusSessions: 0,
+    focusByDay: [0, 0, 0, 0, 0, 0, 0],
+  };
+
+  async summaryWeek(date: string, firstDay: number): Promise<WeekSummary> {
+    this.calls.push({ date, firstDay });
+    if (this.failWith) throw this.failWith;
+    return this.summary;
+  }
+
+  async summaryExportMarkdown(
+    date: string,
+    firstDay: number,
+    path: string,
+  ): Promise<void> {
+    if (this.failWith) throw this.failWith;
+    this.exported.push({ date, firstDay, path });
   }
 }

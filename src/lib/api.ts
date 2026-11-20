@@ -49,6 +49,7 @@ import type {
   ThemeMode,
   TaskFocusTotal,
   TimeEntry,
+  WeekSummary,
 } from "./types";
 
 export type * from "./types";
@@ -541,4 +542,21 @@ export function autostartSet(enabled: boolean): Promise<void> {
 
 export function appInfo(): Promise<AppInfo> {
   return invoke<AppInfo>("app_info");
+}
+
+/** The summary of the week that contains `date`; `firstDay` is 0 (Sunday) to 6 (Saturday). */
+export function summaryWeek(
+  date: string,
+  firstDay: number,
+): Promise<WeekSummary> {
+  return invoke<WeekSummary>("summary_week", { date, firstDay });
+}
+
+/** Writes the summary of that week as a Markdown file. */
+export function summaryExportMarkdown(
+  date: string,
+  firstDay: number,
+  path: string,
+): Promise<void> {
+  return invoke<void>("summary_export_markdown", { date, firstDay, path });
 }

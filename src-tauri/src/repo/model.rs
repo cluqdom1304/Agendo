@@ -421,3 +421,46 @@ pub struct TimeEntry {
     /// Time really spent: end − start − pauses. `0` while the session has not ended.
     pub spent_seconds: i64,
 }
+
+/// Tasks of one tag (or of none) in a weekly summary (D-100).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TagTally {
+    /// `None` groups the tasks without tags.
+    pub tag_id: Option<String>,
+    pub completed: i64,
+    pub pending: i64,
+    pub overdue: i64,
+}
+
+/// How well one habit was kept during a week: scheduled days up to today against days marked.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HabitWeek {
+    pub habit_id: String,
+    pub title: String,
+    pub scheduled: i64,
+    pub done: i64,
+}
+
+/// What happened during one week (D-100). Dates are local `YYYY-MM-DD`.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WeekSummary {
+    pub start: String,
+    pub end: String,
+    /// Tasks completed during the week, whatever their due date.
+    pub completed: i64,
+    /// Open tasks due in the week that are not late yet.
+    pub pending: i64,
+    /// Open tasks due in the week on a day before today.
+    pub overdue: i64,
+    pub by_tag: Vec<TagTally>,
+    pub events: i64,
+    pub event_minutes: i64,
+    pub habits: Vec<HabitWeek>,
+    pub focus_seconds: i64,
+    pub focus_sessions: i64,
+    /// Seconds of focus for each of the seven days of the week, in order.
+    pub focus_by_day: Vec<i64>,
+}

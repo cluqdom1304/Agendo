@@ -103,8 +103,10 @@ mod catalog;
 mod export;
 mod import;
 mod paths;
+mod summary;
 #[cfg(test)]
 mod tests;
 
 pub use export::{export_json, export_notes};
 pub use import::{import_enex_files, import_text_files};
+pub use summary::export_summary;

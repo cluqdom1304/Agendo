@@ -18,6 +18,7 @@ pub mod notes;
 pub mod reminders;
 pub mod search;
 pub mod settings;
+pub mod summary;
 pub mod tags;
 pub mod tasks;
 pub mod templates;

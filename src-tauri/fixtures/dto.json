@@ -464,5 +464,47 @@
     "spentSeconds": 0,
     "startedAt": "2026-03-12T10:00:00Z",
     "taskId": "task-1"
+  },
+  "weekSummary": {
+    "byTag": [
+      {
+        "completed": 4,
+        "overdue": 1,
+        "pending": 2,
+        "tagId": "tag-1"
+      },
+      {
+        "completed": 1,
+        "overdue": 0,
+        "pending": 1,
+        "tagId": null
+      }
+    ],
+    "completed": 5,
+    "end": "2026-03-15",
+    "eventMinutes": 90,
+    "events": 2,
+    "focusByDay": [
+      0,
+      1800,
+      1800,
+      0,
+      0,
+      0,
+      0
+    ],
+    "focusSeconds": 3600,
+    "focusSessions": 2,
+    "habits": [
+      {
+        "done": 4,
+        "habitId": "habit-1",
+        "scheduled": 5,
+        "title": "Leer"
+      }
+    ],
+    "overdue": 1,
+    "pending": 3,
+    "start": "2026-03-09"
   }
 }

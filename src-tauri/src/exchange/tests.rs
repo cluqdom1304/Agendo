@@ -374,3 +374,42 @@ fn dates_of_a_front_matter_accept_instants_and_plain_days() {
 fn percent_encoding_in_image_paths_is_decoded() {
     assert_eq!(percent_decode("a%20b%2Fc%zz"), "a b/c%zz");
 }
+
+#[test]
+fn the_weekly_summary_is_written_as_markdown() {
+    use crate::services::tasks::{TaskCreateInput, create, set_completed};
+
+    let (state, _) = test_state();
+    let dir = TempDir::new();
+    let base = dir.database().parent().expect("parent").to_path_buf();
+    fs::create_dir_all(&base).expect("dir");
+    let done = create(
+        &state,
+        TaskCreateInput {
+            title: Some("Hecha".into()),
+            ..Default::default()
+        },
+    )
+    .expect("task");
+    set_completed(&state, &done.id, true).expect("complete");
+    let target = base.join("resumen.md");
+    let zone = chrono::FixedOffset::east_opt(3600).expect("zone");
+
+    summary::export_summary_in(&state, "2026-03-10", 1, &target, &zone).expect("export");
+
+    let text = fs::read_to_string(&target).expect("file");
+    assert!(
+        text.starts_with("# Resumen de la semana del 09/03/2026 al 15/03/2026"),
+        "{text}"
+    );
+    assert!(
+        text.contains("- Completadas: 1\n- Pendientes: 0\n- Vencidas: 0"),
+        "{text}"
+    );
+    assert!(text.contains("| Sin etiqueta | 1 | 0 | 0 |"), "{text}");
+    assert!(text.contains("Sin tiempo de enfoque registrado."), "{text}");
+    assert!(!target.with_extension("md.part").exists());
+
+    let bad = summary::export_summary_in(&state, "2026-03-10", 9, &target, &zone).expect_err("bad");
+    assert!(bad.to_string().starts_with("VALIDATION:"), "{bad}");
+}

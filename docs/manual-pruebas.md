@@ -489,6 +489,12 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Terminar a los ~23 segundos: el detalle de la tarea muestra «23 s» y la entrada con su fecha y rango de horas («20/11/2026 · 10:00:00–10:00:23 · 23 s»); la fila muestra «23 s». Eliminar no deja ninguna entrada.
   - [ ] Terminar estando en pausa no cuenta el tiempo de la pausa; cerrar la app en pausa y reabrirla deja la sesión cerrada donde empezó la pausa.
   - [ ] Lectura correcta en claro, oscuro y Mica, con teclado y Narrador.
-- **Fase 26 — resumen semanal:** cifras coherentes con la agenda y exportación a Markdown.
+- **Fase 26 — resumen semanal:**
+  - [ ] «Resumen» en la barra lateral y «Ir al Resumen semanal» en Ctrl+K abren la vista; cargan sin parpadeo.
+  - [ ] Las cifras (completadas, pendientes, vencidas) coinciden con lo que muestran Hoy, Próximas y el calendario; la tabla por etiqueta suma bien y usa los colores de las etiquetas.
+  - [ ] Semana anterior/siguiente y «Esta semana» funcionan; la semana empieza el día que usa el calendario.
+  - [ ] Eventos (incluidos repetidos), hábitos (porcentaje) y enfoque (barras por día) son coherentes con sus vistas.
+  - [ ] «Exportar a Markdown…» abre el diálogo de guardado, escribe el archivo, se lee bien en un editor y avisa «Resumen exportado.»; cancelar no hace nada.
+  - [ ] Lectura correcta en claro, oscuro y Mica, con teclado y Narrador.
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.
 

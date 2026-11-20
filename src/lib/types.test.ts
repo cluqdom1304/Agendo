@@ -28,6 +28,9 @@ import type {
   Task,
   TasksSections,
   TimeEntry,
+  WeekSummary,
+  TagTally,
+  HabitWeek,
 } from "./types";
 
 // Written by `cargo test contract` from the real Rust DTOs (src-tauri/src/contract_tests.rs).
@@ -52,6 +55,7 @@ interface Fixture {
   event: CalendarEvent;
   timeEntry: TimeEntry;
   timeEntryRunning: TimeEntry;
+  weekSummary: WeekSummary;
   habit: Habit;
   habitLog: HabitLog;
   eventAllDay: CalendarEvent;
@@ -229,6 +233,35 @@ const timeEntryKeys: Record<keyof TimeEntry, true> = {
   spentSeconds: true,
 };
 
+const weekSummaryKeys: Record<keyof WeekSummary, true> = {
+  start: true,
+  end: true,
+  completed: true,
+  pending: true,
+  overdue: true,
+  byTag: true,
+  events: true,
+  eventMinutes: true,
+  habits: true,
+  focusSeconds: true,
+  focusSessions: true,
+  focusByDay: true,
+};
+
+const tagTallyKeys: Record<keyof TagTally, true> = {
+  tagId: true,
+  completed: true,
+  pending: true,
+  overdue: true,
+};
+
+const habitWeekKeys: Record<keyof HabitWeek, true> = {
+  habitId: true,
+  title: true,
+  scheduled: true,
+  done: true,
+};
+
 const noteReminderKeys: Record<keyof NoteReminder, true> = {
   id: true,
   noteId: true,
@@ -317,6 +350,9 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
     expect(keys(fixture.event)).toEqual(keys(eventKeys));
     expect(keys(fixture.timeEntry)).toEqual(keys(timeEntryKeys));
     expect(fixture.timeEntryRunning.endedAt).toBeNull();
+    expect(keys(fixture.weekSummary)).toEqual(keys(weekSummaryKeys));
+    expect(keys(fixture.weekSummary.byTag[0])).toEqual(keys(tagTallyKeys));
+    expect(keys(fixture.weekSummary.habits[0])).toEqual(keys(habitWeekKeys));
     expect(keys(fixture.habit)).toEqual(keys(habitKeys));
     expect(keys(fixture.habitLog)).toEqual(keys(habitLogKeys));
     expect(fixture.habit.days).toBe(31);

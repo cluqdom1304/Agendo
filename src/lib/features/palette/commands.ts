@@ -79,6 +79,11 @@ export function buildCommands(deps: CommandDeps): PaletteCommand[] {
       run: () => view.setSection("habits"),
     },
     {
+      id: "go-summary",
+      label: l.goSummary,
+      run: () => view.setSection("summary"),
+    },
+    {
       id: "go-events",
       label: l.goEvents,
       run: () => view.setSection("events"),

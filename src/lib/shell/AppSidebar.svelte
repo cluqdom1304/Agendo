@@ -64,6 +64,11 @@
       icon: "M2.5 8.5l3 3 5-6M10 11.5h3.5",
     },
     {
+      value: "summary",
+      label: t.sidebar.summary,
+      icon: "M3 13V8.5M7 13V3.5M11 13V6.5M2 13.5h12",
+    },
+    {
       value: "notes",
       label: t.sidebar.notes,
       icon: "M3 4h10M3 8h10M3 12h6",

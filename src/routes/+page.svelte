@@ -71,23 +71,30 @@
   let HabitsView = $state<
     typeof import("$lib/features/habits/HabitsView.svelte").default | null
   >(null);
+  let SummaryView = $state<
+    typeof import("$lib/features/summary/SummaryView.svelte").default | null
+  >(null);
   let EventsView = $state<
     typeof import("$lib/features/events/EventsView.svelte").default | null
   >(null);
 
   async function preloadViews() {
-    const [notes, today, upcoming, events, habits] = await Promise.all([
-      import("$lib/features/notes/NotesView.svelte"),
-      import("$lib/features/today/TodayView.svelte"),
-      import("$lib/features/upcoming/UpcomingView.svelte"),
-      import("$lib/features/events/EventsView.svelte"),
-      import("$lib/features/habits/HabitsView.svelte"),
-    ]);
+    const [notes, today, upcoming, events, habits, summary] = await Promise.all(
+      [
+        import("$lib/features/notes/NotesView.svelte"),
+        import("$lib/features/today/TodayView.svelte"),
+        import("$lib/features/upcoming/UpcomingView.svelte"),
+        import("$lib/features/events/EventsView.svelte"),
+        import("$lib/features/habits/HabitsView.svelte"),
+        import("$lib/features/summary/SummaryView.svelte"),
+      ],
+    );
     NotesView = notes.default;
     TodayView = today.default;
     UpcomingView = upcoming.default;
     EventsView = events.default;
     HabitsView = habits.default;
+    SummaryView = summary.default;
   }
   $effect(() => {
     const timer = setTimeout(() => void preloadViews(), 400);
@@ -327,6 +334,12 @@
                 onOpenHabit={(habit) => dialogs.openHabit(habit)}
                 onNewHabit={() => dialogs.openNewHabit()}
               />
+            {/if}
+          </div>
+        {:else if viewStore.section === "summary"}
+          <div class="content scrolls padded" data-menu-area="summary">
+            {#if SummaryView}
+              <SummaryView view={viewStore} tags={tagsStore} />
             {/if}
           </div>
         {:else if viewStore.mode === "list"}

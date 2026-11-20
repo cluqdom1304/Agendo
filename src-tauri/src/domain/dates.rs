@@ -155,6 +155,13 @@ pub fn utc_to_local<Tz: TimeZone>(zone: &Tz, instant: DateTime<Utc>) -> NaiveDat
     instant.with_timezone(zone).naive_local()
 }
 
+/// First day of the week that contains `date`; `first_day` counts from Sunday (0) to Saturday
+/// (6), as the calendar's setting does.
+pub fn start_of_week(date: NaiveDate, first_day: u8) -> NaiveDate {
+    let back = (date.weekday().num_days_from_sunday() + 7 - u32::from(first_day % 7)) % 7;
+    date - Duration::days(i64::from(back))
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::{FixedOffset, Weekday};
@@ -453,5 +460,15 @@ mod tests {
             DateError::OutOfRange.to_string(),
             "la fecha queda fuera del rango admitido"
         );
+    }
+
+    #[test]
+    fn the_week_starts_on_the_configured_day() {
+        let thursday = NaiveDate::from_ymd_opt(2026, 11, 19).expect("date");
+        let day = |d| NaiveDate::from_ymd_opt(2026, 11, d).expect("date");
+        assert_eq!(start_of_week(thursday, 1), day(16));
+        assert_eq!(start_of_week(thursday, 0), day(15));
+        assert_eq!(start_of_week(thursday, 4), day(19));
+        assert_eq!(start_of_week(day(15), 1), day(9));
     }
 }

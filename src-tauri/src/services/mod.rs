@@ -5,5 +5,6 @@ pub mod focus;
 pub mod habits;
 pub mod notes;
 pub mod reminders;
+pub mod summary;
 pub mod tags;
 pub mod tasks;
