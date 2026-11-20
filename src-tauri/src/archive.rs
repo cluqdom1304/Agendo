@@ -355,6 +355,56 @@ mod tests {
     }
 
     #[test]
+    fn an_archive_carries_events_habits_and_focus_sessions() {
+        let (state, _) = test_state();
+        let from = paths();
+        state
+            .db
+            .write(|tx| {
+                tx.execute_batch(
+                    "INSERT INTO tasks (id, title, priority, created_at, updated_at)
+                       VALUES ('t', 'Tarea', 3, 'x', 'x');
+                     INSERT INTO events (id, title, start_date, end_date, created_at, updated_at)
+                       VALUES ('e', 'Cita', '2026-03-12', '2026-03-12', 'x', 'x');
+                     INSERT INTO habits (id, title, created_at, updated_at)
+                       VALUES ('h', 'Leer', 'x', 'x');
+                     INSERT INTO habit_logs VALUES ('h', '2026-03-10');
+                     INSERT INTO time_entries (id, task_id, started_at, ended_at, planned_minutes)
+                       VALUES ('te', 't', '2026-03-10T10:00:00Z', '2026-03-10T10:25:00Z', 25);",
+                )?;
+                Ok(())
+            })
+            .expect("seed");
+        let archive = sibling(&from.database, "copia.agendo");
+        create(&state, &from.database, &from.attachments, &archive).expect("create");
+
+        let (other, _) = test_state();
+        let to = paths();
+        restore(&other, &to.database, &to.safety, &to.attachments, &archive).expect("restore");
+        let counts: Vec<i64> = other
+            .db
+            .read(|conn| {
+                ["events", "habits", "habit_logs", "time_entries"]
+                    .iter()
+                    .map(|table| {
+                        Ok(
+                            conn.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |r| {
+                                r.get(0)
+                            })?,
+                        )
+                    })
+                    .collect()
+            })
+            .expect("counts");
+        assert_eq!(counts, [1, 1, 1, 1]);
+        let priority: i64 = other
+            .db
+            .read(|conn| Ok(conn.query_row("SELECT priority FROM tasks", [], |r| r.get(0))?))
+            .expect("priority");
+        assert_eq!(priority, 3);
+    }
+
+    #[test]
     fn restoring_over_existing_files_keeps_them() {
         let (state, _) = test_state();
         let from = paths();

@@ -31,7 +31,7 @@ fn cell(name: &str, value: ValueRef<'_>) -> Value {
         ValueRef::Real(number) => json!(number),
         ValueRef::Text(bytes) => {
             let text = String::from_utf8_lossy(bytes);
-            if name == "content_json" {
+            if name == "content_json" || name == "reminder_offsets" {
                 serde_json::from_str(&text).unwrap_or_else(|_| json!(text))
             } else {
                 json!(text)
@@ -115,7 +115,8 @@ pub fn everything(conn: &Connection, exported_at: &str) -> rusqlite::Result<Valu
     let mut tasks = rows(
         conn,
         "SELECT id, title, content_json, due_date, due_time, duration_minutes,
-                is_completed, completed_at, rrule, priority, source_note_id, position,
+                is_completed, completed_at, rrule, priority, checklist_done, checklist_total,
+                source_note_id, position,
                 created_at, updated_at, deleted_at
            FROM tasks ORDER BY created_at, id",
     )?;
@@ -143,6 +144,36 @@ pub fn everything(conn: &Connection, exported_at: &str) -> rusqlite::Result<Valu
     })
     .collect();
     attach(&mut tasks, "reminders", &reminders);
+    let mut events = rows(
+        conn,
+        "SELECT id, title, notes, start_date, start_time, end_date, end_time, rrule,
+                reminder_offsets, created_at, updated_at, deleted_at
+           FROM events ORDER BY start_date, id",
+    )?;
+    attach(
+        &mut events,
+        "tagIds",
+        &pairs(
+            conn,
+            "SELECT event_id, tag_id FROM event_tags ORDER BY tag_id",
+        )?,
+    );
+    let mut habits = rows(
+        conn,
+        "SELECT id, title, days, time, tag_id, position, created_at, updated_at,
+                archived_at, deleted_at
+           FROM habits ORDER BY position, id",
+    )?;
+    attach(
+        &mut habits,
+        "doneDates",
+        &pairs(conn, "SELECT habit_id, date FROM habit_logs ORDER BY date")?,
+    );
+    let time_entries = rows(
+        conn,
+        "SELECT id, task_id, started_at, ended_at, planned_minutes
+           FROM time_entries ORDER BY started_at, id",
+    )?;
     let templates = rows(
         conn,
         "SELECT id, name, content_json, created_at, updated_at
@@ -160,6 +191,9 @@ pub fn everything(conn: &Connection, exported_at: &str) -> rusqlite::Result<Valu
         "tags": tags,
         "notes": notes,
         "tasks": tasks,
+        "events": events,
+        "habits": habits,
+        "timeEntries": time_entries,
         "noteTemplates": templates,
         "attachments": attachments,
     }))
@@ -257,5 +291,43 @@ mod tests {
         assert_eq!(data["tags"][0]["colorHex"], "#4C8DFF");
         assert!(data["notes"][0].get("contentText").is_none());
         assert_eq!(task_titles(&conn).expect("titles")["task"], "Tarea");
+    }
+
+    #[test]
+    fn the_export_holds_priority_events_habits_and_focus_sessions() {
+        let conn = open_in_memory(&MIGRATIONS).expect("db");
+        conn.execute_batch(
+            "INSERT INTO tags (id, name, color_hex, position, created_at)
+               VALUES ('tag', 'Etiqueta', '#4C8DFF', 0, 'x');
+             INSERT INTO tasks (id, title, priority, checklist_done, checklist_total, created_at, updated_at)
+               VALUES ('task', 'Tarea', 2, 1, 3, 'x', 'x');
+             INSERT INTO events (id, title, start_date, start_time, end_date, end_time, rrule,
+                                 reminder_offsets, created_at, updated_at)
+               VALUES ('ev', 'Seminario', '2026-03-12', '10:00', '2026-03-12', '11:00',
+                       'FREQ=WEEKLY;INTERVAL=1', '[15,60]', 'x', 'x');
+             INSERT INTO event_tags VALUES ('ev', 'tag');
+             INSERT INTO habits (id, title, days, tag_id, created_at, updated_at)
+               VALUES ('hab', 'Leer', 31, 'tag', 'x', 'x');
+             INSERT INTO habit_logs VALUES ('hab', '2026-03-09'), ('hab', '2026-03-10');
+             INSERT INTO time_entries (id, task_id, started_at, ended_at, planned_minutes)
+               VALUES ('te', 'task', '2026-03-10T10:00:00Z', '2026-03-10T10:25:00Z', 25);",
+        )
+        .expect("seed");
+
+        let data = everything(&conn, "2026-03-11T00:00:00Z").expect("export");
+
+        assert_eq!(data["tasks"][0]["priority"], 2);
+        assert_eq!(data["tasks"][0]["checklistTotal"], 3);
+        assert_eq!(data["events"][0]["title"], "Seminario");
+        assert_eq!(data["events"][0]["reminderOffsets"], json!([15, 60]));
+        assert_eq!(data["events"][0]["tagIds"], json!(["tag"]));
+        assert_eq!(data["events"][0]["rrule"], "FREQ=WEEKLY;INTERVAL=1");
+        assert_eq!(data["habits"][0]["days"], 31);
+        assert_eq!(
+            data["habits"][0]["doneDates"],
+            json!(["2026-03-09", "2026-03-10"])
+        );
+        assert_eq!(data["timeEntries"][0]["plannedMinutes"], 25);
+        assert_eq!(data["timeEntries"][0]["endedAt"], "2026-03-10T10:25:00Z");
     }
 }

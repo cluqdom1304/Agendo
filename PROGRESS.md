@@ -1,9 +1,9 @@
 # PROGRESS.md
 
-**Fase activa:** versión 3.0.0 planificada (la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
-**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F18-03 (eventos, migración 016). El usuario ordenó la Fase 18 el 2026-11-20. No se inicia ninguna fase sin confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F17 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-20 (plan de la 3.0.0 aprobado y documentado; código sin tocar)
+**Fase activa:** versión 3.0.0 (Fase 18 hecha; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
+**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** Fase 18 terminada (`[A]` en verde, sin ítems `[H]`); el usuario decide si empieza la Fase 19 (F19-01). No se inicia ninguna fase sin confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F17 y la primera ejecución de `npm run e2e`.
+**Última actualización:** 2026-11-20 (Fase 18 completada: cimientos de datos, migraciones 015 a 018)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -483,11 +483,17 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - [x] F18-04 `[A]` Migración 017 (`habits`, `habit_logs`), `repo/habits.rs`, `domain/habits.rs` (racha con `Clock`), comandos y tests.
 - [x] F18-05 `[A]` Migración 018 (`time_entries`), comandos de enfoque y recuperación de entradas huérfanas.
 - [x] F18-06 `[A]` Búsqueda unificada y papelera incluyen eventos y hábitos.
-- [ ] F18-07 `[A]` Copia `.agendo` y exportación JSON/Markdown incluyen las tablas nuevas.
+- [x] F18-07 `[A]` Copia `.agendo` y exportación JSON/Markdown incluyen las tablas nuevas.
 
 **Verificaciones [A] de la Fase 18:**
 - F18-00: línea base en `docs/metricas.md` y D-98 (JS 88,5 KB inicial / 270,7 KB total, exe 10,3 MiB).
 - F18-01/02 (D-93): migración 015 (`tasks.priority` 0–3 con `CHECK`, `checklist_done`/`checklist_total`); `domain::content::checklist_progress` cuenta las casillas y `repo::tasks` guarda los contadores al crear y al cambiar el contenido. `priority` entra en `TaskCreateInput`/`TaskPatchInput`/`task_create` (validada 0–3), la siguiente ocurrencia de una tarea periódica la hereda, `export.rs` la incluye y `types.ts`, `testing.ts` y el fixture `dto.json` ganan los tres campos. Tests nuevos: 1 de migración con datos desde el esquema 14, 1 de dominio y 3 de servicio. Rust 503, TS 699, JS 270,7 KB. Nota: `scale_tests::ten_thousand_notes_list_and_search_fast` falla si coincide con una compilación en paralelo (CPU compartida); aislado y en reposo pasa.
+- F18-03 (D-94): migración 016 (`events`, `event_tags`, `event_reminders`; fechas y horas locales, `reminder_offsets` JSON, `CHECK` de fechas); `domain::recurrence` gana `Rule::occurrences`, `occurrences_in` y `first_on_or_after` (tope de 20 000 pasos); `services::events` valida (todo el día sin horas, fin no anterior al inicio, avisos de días enteros si no hay hora, ≤ 10), expande las repeticiones por consulta (incluye las que empezaron antes de la ventana y duran dentro) y deja un aviso por antelación en la siguiente ocurrencia; el scheduler lo cierra y programa el siguiente sin tocar los avisos que esperan. Comandos `events_list`, `event_get`, `event_create`, `event_update`, `event_delete`, `event_restore`. `Fired` y `Notification` llevan `eventId`. Pulsar la notificación de un evento aún no abre nada (UI de la F21). 12 tests de servicio, 1 de scheduler, 2 de dominio, 1 de esquema.
+- F18-04 (D-95): migración 017 (`habits` con máscara de días `days` 1–127 en lugar de BYDAY, equivalente y más simple; `habit_logs` con clave compuesta); `domain::habits::streak` (días no programados ni cuentan ni rompen, hoy sin marcar no rompe, tope de 10 años) con `today` que el servicio saca del `Clock`; comandos `habits_list`, `habit_create/update/delete/restore`, `habit_set_done` (no admite días futuros) y `habit_logs`. 7 tests de dominio, 9 de servicio, 1 de esquema.
+- F18-05 (D-97): migración 018 (`time_entries`, un índice único parcial permite una sesión en marcha); `services::focus` (`focus_start/stop/current/list`), fin de sesión y aviso desde el scheduler (se cierra aunque el aviso falle; un tick tardío cierra en la hora planificada) y `recover_orphans` al arrancar (cierra en `min(ahora, inicio + previsto)`). 8 tests de servicio, 1 de esquema.
+- F18-06: `find` gana `FoundItem::Event`/`Habit` (texto sin índice FTS, comparado plegando mayúsculas y acentos sobre ≤ 5 000 filas; filtros `is:evento`, `is:habito`, `tag:` y `desde:`/`hasta:` en eventos), `events_trash_list`, `habits_trash_list` y purga a los 30 días en `AppState::purge_trash`. La paleta ignora de momento esos resultados (UI en F20–F21). 4 tests de búsqueda y 2 de papelera.
+- F18-07: la copia `.agendo` ya llevaba todo (instantánea de SQLite); test nuevo de ida y vuelta con las tablas nuevas. La exportación JSON añade `events` (con `tagIds` y `reminderOffsets`), `habits` (con `doneDates`), `timeEntries` y los campos de la tarea (`priority`, contadores de checklist). La exportación Markdown exporta solo notas (no incluía tareas) y no cambia.
+- Cierre de F18: Rust 552, TS 699, JS 271,1 KB gzip (+0,4 KB: solo tipos y llamadas de `api.ts`), CSS 26,1 KB. Los tests de escala con 10 000 notas son sensibles a la carga de la máquina (fallan si se ejecutan junto a otra compilación y pasan solos). Sin ítems `[H]` en esta fase: no hay interfaz nueva. Ejecutable release: 11 423 744 B (10,9 MiB, +0,6 MiB sobre la línea base). Dependencias: ninguna nueva.
 
 ## Fase 19 — Sistema visual y shell (D-92)
 - [ ] F19-01 `[A]` Tokens `--sidebar-*`, `--priority-*` y paneles tipo tarjeta; test de contraste ampliado (`src/lib/a11y/tokens.test.ts`).
