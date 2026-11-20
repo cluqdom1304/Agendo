@@ -311,7 +311,7 @@ fn upgrading_a_v1_database_keeps_every_row() {
     conn.execute("INSERT INTO settings VALUES ('theme', 'dark')", [])
         .expect("setting");
 
-    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v14"), 14);
+    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v15"), 15);
 
     assert_eq!(count(&conn, "SELECT COUNT(*) FROM tasks"), 3);
     assert_eq!(
@@ -332,4 +332,38 @@ fn upgrading_a_v1_database_keeps_every_row() {
         .expect("query")
         .count();
     assert_eq!(violations, 0);
+}
+
+#[test]
+fn migration_15_keeps_tasks_and_adds_priority_and_checklist_counters() {
+    let mut conn = Connection::open_in_memory().expect("connection");
+    conn.execute_batch("PRAGMA foreign_keys = ON;")
+        .expect("pragma");
+    assert_eq!(
+        migrate::migrate(&mut conn, &MIGRATIONS[..14]).expect("v14"),
+        14
+    );
+    for id in ["t1", "t2"] {
+        task(&conn, id);
+    }
+
+    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v15"), 15);
+
+    assert_eq!(count(&conn, "SELECT COUNT(*) FROM tasks"), 2);
+    assert_eq!(
+        count(
+            &conn,
+            "SELECT COUNT(*) FROM tasks
+             WHERE priority = 0 AND checklist_done = 0 AND checklist_total = 0"
+        ),
+        2
+    );
+    for bad in [
+        "UPDATE tasks SET priority = 4 WHERE id = 't1'",
+        "UPDATE tasks SET priority = -1 WHERE id = 't1'",
+        "UPDATE tasks SET checklist_done = -1 WHERE id = 't1'",
+        "UPDATE tasks SET checklist_total = -1 WHERE id = 't1'",
+    ] {
+        assert!(conn.execute(bad, []).is_err(), "{bad} should be rejected");
+    }
 }

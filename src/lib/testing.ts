@@ -20,6 +20,9 @@ export function makeTask(overrides: Partial<Task> & { id: string }): Task {
     durationMinutes: null,
     sourceNoteId: null,
     rrule: null,
+    priority: 0,
+    checklistDone: 0,
+    checklistTotal: 0,
     isCompleted: false,
     completedAt: null,
     position: 0,
@@ -150,6 +153,7 @@ export class FakeApi implements TasksApi {
     contentJson?: string;
     sourceNoteId?: string;
     rrule?: string;
+    priority?: number;
   }): Promise<Task> {
     await this.#enter(
       "taskCreate",
@@ -167,6 +171,7 @@ export class FakeApi implements TasksApi {
       contentJson: input.contentJson ?? "",
       sourceNoteId: input.sourceNoteId ?? null,
       rrule: input.rrule ?? null,
+      priority: input.priority ?? 0,
       position: 1000 + this.#created,
     });
     this.tasks = [...this.tasks, task];

@@ -65,6 +65,11 @@ export interface Task {
   sourceNoteId: string | null;
   /** How the task repeats (F13-05): `FREQ=WEEKLY;INTERVAL=1`, with anchors added by the backend. */
   rrule: string | null;
+  /** 0 none, 1 medium, 2 high, 3 urgent (D-93). */
+  priority: number;
+  /** Checked and total checklist items, stored by the backend on save (D-93). */
+  checklistDone: number;
+  checklistTotal: number;
   isCompleted: boolean;
   completedAt: string | null;
   position: number;
@@ -117,6 +122,7 @@ export interface TaskCreateInput {
   contentJson?: string;
   sourceNoteId?: string;
   rrule?: string;
+  priority?: number;
 }
 
 /** Absent = leave as is; `null` = clear. */
@@ -127,6 +133,7 @@ export interface TaskPatch {
   dueTime?: string | null;
   durationMinutes?: number | null;
   rrule?: string | null;
+  priority?: number;
 }
 
 export interface TagUpsertInput {

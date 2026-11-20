@@ -20,6 +20,11 @@ pub struct Task {
     pub source_note_id: Option<String>,
     /// How the task repeats, as a rule of `domain::recurrence` (F13-05).
     pub rrule: Option<String>,
+    /// 0 none, 1 medium, 2 high, 3 urgent (D-93).
+    pub priority: i64,
+    /// Checked and total checklist items of `content_json`, stored on save (D-93).
+    pub checklist_done: i64,
+    pub checklist_total: i64,
     pub is_completed: bool,
     pub completed_at: Option<String>,
     pub position: i64,
@@ -96,6 +101,7 @@ pub struct NewTask {
     pub duration_minutes: Option<i64>,
     pub source_note_id: Option<String>,
     pub rrule: Option<String>,
+    pub priority: i64,
     pub tag_ids: Vec<String>,
     pub now: String,
 }
@@ -109,6 +115,7 @@ pub struct TaskPatch {
     pub due_date: Option<Option<String>>,
     pub due_time: Option<Option<String>>,
     pub duration_minutes: Option<Option<i64>>,
+    pub priority: Option<i64>,
 }
 
 /// Data to create or update a tag. `now` is used only when the tag is created.

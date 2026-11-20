@@ -115,7 +115,7 @@ pub fn everything(conn: &Connection, exported_at: &str) -> rusqlite::Result<Valu
     let mut tasks = rows(
         conn,
         "SELECT id, title, content_json, due_date, due_time, duration_minutes,
-                is_completed, completed_at, rrule, source_note_id, position,
+                is_completed, completed_at, rrule, priority, source_note_id, position,
                 created_at, updated_at, deleted_at
            FROM tasks ORDER BY created_at, id",
     )?;

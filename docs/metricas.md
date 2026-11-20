@@ -120,9 +120,9 @@ La 2.1.0 no se publica; los límites de D-56 siguen vigentes para la 3.0.0. La l
 
 | Métrica | Límite vigente | Línea base (F18-00) | Objetivo de cierre 3.0.0 | Resultado |
 |---------|----------------|---------------------|--------------------------|-----------|
-| JS gzip, carga inicial (N-04) | < 300 KB | _pendiente_ | dentro del límite, vistas nuevas con `import()` | _pendiente_ |
-| Ejecutable release (N-03) | < 18 MB | _pendiente_ | dentro del límite | _pendiente_ |
-| Arranque (N-01) `[H]` | < 200 ms | _pendiente_ | sin empeorar | _pendiente_ |
-| Memoria en reposo (N-02) `[H]` | < 40 MB | _pendiente_ | sin empeorar | _pendiente_ |
-| 10 000 tareas, 10 000 notas y eventos/hábitos en release | lista < 250 ms, búsqueda < 50 ms, mes < 30 ms | _pendiente_ | dentro del límite | _pendiente_ |
+| JS gzip, carga inicial (N-04) | < 300 KB | 88,5 KB inicial; 270,7 KB total (182,2 KB diferidos) | dentro del límite, vistas nuevas con `import()` | _pendiente_ |
+| Ejecutable release (N-03) | < 18 MB | 10 823 680 B (10,3 MiB) | dentro del límite | _pendiente_ |
+| Arranque (N-01) `[H]` | < 200 ms | sin medir (`[H]`) | sin empeorar | _pendiente_ |
+| Memoria en reposo (N-02) `[H]` | < 40 MB | sin medir (`[H]`) | sin empeorar | _pendiente_ |
+| 10 000 tareas, 10 000 notas y eventos/hábitos en release | lista < 250 ms, búsqueda < 50 ms, mes < 30 ms | tareas 12,6 ms, búsqueda 12,1 ms, mes 1,5 ms (F16-05) | dentro del límite | _pendiente_ |
 

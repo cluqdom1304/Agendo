@@ -1,6 +1,8 @@
 use rusqlite::{Connection, OptionalExtension, Row, Transaction, params, types::Type};
 use serde::de::DeserializeOwned;
 
+use crate::domain::content;
+
 use super::{
     fts,
     model::{EMPTY_DOC, NewTask, Page, Task, TaskPatch},
@@ -32,7 +34,8 @@ macro_rules! task_sql {
                                                             'occurrence', r.occurrence) END))
                                 ORDER BY r.notify_at, r.id)
                        FROM reminders r WHERE r.task_id = t.id),
-                    t.duration_minutes, t.source_note_id, t.rrule
+                    t.duration_minutes, t.source_note_id, t.rrule,
+                    t.priority, t.checklist_done, t.checklist_total
              FROM tasks t ",
             $suffix
         )
@@ -74,6 +77,9 @@ fn map_task(row: &Row<'_>) -> rusqlite::Result<Task> {
         duration_minutes: row.get(12)?,
         source_note_id: row.get(13)?,
         rrule: row.get(14)?,
+        priority: row.get(15)?,
+        checklist_done: row.get(16)?,
+        checklist_total: row.get(17)?,
     })
 }
 
@@ -131,15 +137,18 @@ fn next_position(conn: &Connection, due_date: Option<&str>) -> rusqlite::Result<
 
 pub fn create(tx: &Transaction<'_>, new: &NewTask) -> rusqlite::Result<Task> {
     let position = next_position(tx, new.due_date.as_deref())?;
+    let content_json = new.content_json.as_deref().unwrap_or(EMPTY_DOC);
+    let (done, total) = content::checklist_progress(content_json);
     tx.prepare_cached(
         "INSERT INTO tasks (id, title, content_json, content_text, due_date, due_time,
-                            duration_minutes, source_note_id, position, created_at, updated_at, rrule)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10, ?11)",
+                            duration_minutes, source_note_id, position, created_at, updated_at, rrule,
+                            priority, checklist_done, checklist_total)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10, ?11, ?12, ?13, ?14)",
     )?
     .execute(params![
         new.id,
         new.title,
-        new.content_json.as_deref().unwrap_or(EMPTY_DOC),
+        content_json,
         new.content_text,
         new.due_date,
         new.due_time,
@@ -147,7 +156,10 @@ pub fn create(tx: &Transaction<'_>, new: &NewTask) -> rusqlite::Result<Task> {
         new.source_note_id,
         position,
         new.now,
-        new.rrule
+        new.rrule,
+        new.priority,
+        done,
+        total
     ])?;
     tags::replace_links(tx, &new.id, &new.tag_ids)?;
     fts::insert(tx, &new.id)?;
@@ -171,6 +183,10 @@ pub fn update(
         _ => None,
     };
 
+    let progress = patch
+        .content_json
+        .as_deref()
+        .map(content::checklist_progress);
     tx.prepare_cached(
         "UPDATE tasks SET
              title = COALESCE(?2, title),
@@ -180,6 +196,9 @@ pub fn update(
              due_time = CASE WHEN ?7 THEN ?8 ELSE due_time END,
              position = COALESCE(?9, position),
              duration_minutes = CASE WHEN ?11 THEN ?12 ELSE duration_minutes END,
+             priority = COALESCE(?13, priority),
+             checklist_done = COALESCE(?14, checklist_done),
+             checklist_total = COALESCE(?15, checklist_total),
              updated_at = ?10
          WHERE id = ?1",
     )?
@@ -195,7 +214,10 @@ pub fn update(
         new_position,
         now,
         patch.duration_minutes.is_some(),
-        patch.duration_minutes.flatten()
+        patch.duration_minutes.flatten(),
+        patch.priority,
+        progress.map(|(done, _)| done),
+        progress.map(|(_, total)| total)
     ])?;
 
     if patch.title.is_some() || patch.content_text.is_some() {
@@ -1042,6 +1064,8 @@ mod tests {
         assert_eq!(
             keys,
             [
+                "checklistDone",
+                "checklistTotal",
                 "completedAt",
                 "contentJson",
                 "createdAt",
@@ -1051,6 +1075,7 @@ mod tests {
                 "id",
                 "isCompleted",
                 "position",
+                "priority",
                 "reminders",
                 "rrule",
                 "sourceNoteId",

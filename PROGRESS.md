@@ -1,8 +1,8 @@
 # PROGRESS.md
 
 **Fase activa:** versión 3.0.0 planificada (la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
-**Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** el usuario valida F17-10 y da la orden de empezar la Fase 18 (F18-00: medir la línea base). No se inicia ninguna fase sin confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F17 y la primera ejecución de `npm run e2e`.
+**Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
+**Siguiente tarea:** F18-03 (eventos, migración 016). El usuario ordenó la Fase 18 el 2026-11-20. No se inicia ninguna fase sin confirmación. Pendiente de validación humana en Windows 11: los ítems `[H]` de F8 a F17 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-20 (plan de la 3.0.0 aprobado y documentado; código sin tocar)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -476,14 +476,18 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 - F17-09 (D-61): `autobackup.rs` (bucle de fondo, `run_if_due`, rotación) y ajustes `auto_backup` / `auto_backup_keep` / `auto_backup_last`; sección «Copia automática» en Ajustes. 5 tests de Rust (apagada, diaria con rotación y reloj manual, semanal con margen, no toca archivos ajenos, valores por defecto), 1 de validación de ajustes, 1 de store y 1 de diálogo.
 
 ## Fase 18 — Cimientos de datos (`[A]`; migraciones 015 a 018, D-93 a D-97)
-- [ ] F18-00 `[A]` Medir la línea base (`npm run build && npm run size`, tamaño del exe, escala) en `docs/metricas.md` y fijar D-98.
-- [ ] F18-01 `[A]` Migración 015 (`tasks.priority`, `checklist_done`, `checklist_total`) con test de migración desde el esquema 14 con datos; actualizar `MIGRATIONS` y los tests que esperan 14.
-- [ ] F18-02 `[A]` Cableado de prioridad y checklist: `repo/model.rs`, `task_sql!`/`map_task`, `services/tasks.rs`, `commands/tasks.rs`, `types.ts`, `api.ts`, tests de contrato y paridad, `repo/export.rs`.
+- [x] F18-00 `[A]` Medir la línea base (`npm run build && npm run size`, tamaño del exe, escala) en `docs/metricas.md` y fijar D-98.
+- [x] F18-01 `[A]` Migración 015 (`tasks.priority`, `checklist_done`, `checklist_total`) con test de migración desde el esquema 14 con datos; actualizar `MIGRATIONS` y los tests que esperan 14.
+- [x] F18-02 `[A]` Cableado de prioridad y checklist: `repo/model.rs`, `task_sql!`/`map_task`, `services/tasks.rs`, `commands/tasks.rs`, `types.ts`, `api.ts`, tests de contrato y paridad, `repo/export.rs`.
 - [ ] F18-03 `[A]` Migración 016 (`events`, `event_tags`, `event_reminders`), `repo/events.rs`, servicio, comandos, `domain/recurrence::occurrences_in` y recordatorios de evento en el scheduler.
 - [ ] F18-04 `[A]` Migración 017 (`habits`, `habit_logs`), `repo/habits.rs`, `domain/habits.rs` (racha con `Clock`), comandos y tests.
 - [ ] F18-05 `[A]` Migración 018 (`time_entries`), comandos de enfoque y recuperación de entradas huérfanas.
 - [ ] F18-06 `[A]` Búsqueda unificada y papelera incluyen eventos y hábitos.
 - [ ] F18-07 `[A]` Copia `.agendo` y exportación JSON/Markdown incluyen las tablas nuevas.
+
+**Verificaciones [A] de la Fase 18:**
+- F18-00: línea base en `docs/metricas.md` y D-98 (JS 88,5 KB inicial / 270,7 KB total, exe 10,3 MiB).
+- F18-01/02 (D-93): migración 015 (`tasks.priority` 0–3 con `CHECK`, `checklist_done`/`checklist_total`); `domain::content::checklist_progress` cuenta las casillas y `repo::tasks` guarda los contadores al crear y al cambiar el contenido. `priority` entra en `TaskCreateInput`/`TaskPatchInput`/`task_create` (validada 0–3), la siguiente ocurrencia de una tarea periódica la hereda, `export.rs` la incluye y `types.ts`, `testing.ts` y el fixture `dto.json` ganan los tres campos. Tests nuevos: 1 de migración con datos desde el esquema 14, 1 de dominio y 3 de servicio. Rust 503, TS 699, JS 270,7 KB. Nota: `scale_tests::ten_thousand_notes_list_and_search_fast` falla si coincide con una compilación en paralelo (CPU compartida); aislado y en reposo pasa.
 
 ## Fase 19 — Sistema visual y shell (D-92)
 - [ ] F19-01 `[A]` Tokens `--sidebar-*`, `--priority-*` y paneles tipo tarjeta; test de contraste ampliado (`src/lib/a11y/tokens.test.ts`).

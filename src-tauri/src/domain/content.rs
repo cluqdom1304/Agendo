@@ -17,6 +17,36 @@ pub fn text_of(content_json: &str) -> Result<String, ValidationError> {
     Ok(text)
 }
 
+/// Checked and total checklist items (`taskItem` nodes) of a document (D-93). An unparsable
+/// document counts as 0/0: the counters are derived data and never block a save.
+pub fn checklist_progress(content_json: &str) -> (i64, i64) {
+    let Ok(document) = serde_json::from_str::<Value>(content_json) else {
+        return (0, 0);
+    };
+    let mut progress = (0, 0);
+    count_items(&document, &mut progress);
+    progress
+}
+
+fn count_items(node: &Value, progress: &mut (i64, i64)) {
+    if node.get("type").and_then(Value::as_str) == Some("taskItem") {
+        progress.1 += 1;
+        let checked = node
+            .get("attrs")
+            .and_then(|attrs| attrs.get("checked"))
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        if checked {
+            progress.0 += 1;
+        }
+    }
+    if let Some(children) = node.get("content").and_then(Value::as_array) {
+        for child in children {
+            count_items(child, progress);
+        }
+    }
+}
+
 /// Tasks and notes a document points to (D-45, D-46), in order of first appearance and without
 /// repeats. They come from `taskRef` (`attrs.taskId`) and `noteLink` (`attrs.noteId`) nodes.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -222,6 +252,20 @@ mod tests {
                 {"type":"paragraph","content":[{"type":"text","text":"dos"}]}]}
         ]}]}"#;
         assert_eq!(text(json), "uno\ndos");
+    }
+
+    #[test]
+    fn checklist_progress_counts_checked_and_total_items() {
+        let json = r#"{"type":"doc","content":[{"type":"taskList","content":[
+            {"type":"taskItem","attrs":{"checked":true},"content":[
+                {"type":"paragraph","content":[{"type":"text","text":"uno"}]}]},
+            {"type":"taskItem","attrs":{"checked":false},"content":[
+                {"type":"paragraph","content":[{"type":"text","text":"dos"}]}]},
+            {"type":"taskItem","content":[{"type":"paragraph"}]}
+        ]}]}"#;
+        assert_eq!(checklist_progress(json), (1, 3));
+        assert_eq!(checklist_progress(r#"{"type":"doc","content":[]}"#), (0, 0));
+        assert_eq!(checklist_progress("no json"), (0, 0));
     }
 
     #[test]

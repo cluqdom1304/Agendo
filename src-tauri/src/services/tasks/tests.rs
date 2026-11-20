@@ -1038,3 +1038,133 @@ fn dragging_a_repeating_task_re_anchors_it_and_the_to_do_list_ends_it() {
     let parked = move_task(&state, &task.id, Section::Todo, None, None).expect("parked");
     assert_eq!(parked.rrule, None);
 }
+
+const CHECKLIST: &str = r#"{"type":"doc","content":[{"type":"taskList","content":[
+    {"type":"taskItem","attrs":{"checked":true},"content":[{"type":"paragraph"}]},
+    {"type":"taskItem","attrs":{"checked":false},"content":[{"type":"paragraph"}]},
+    {"type":"taskItem","attrs":{"checked":false},"content":[{"type":"paragraph"}]}
+]}]}"#;
+
+#[test]
+fn priority_is_stored_validated_and_kept_when_other_fields_change() {
+    let state = state();
+    let task = create(
+        &state,
+        TaskCreateInput {
+            title: Some("Urgente".into()),
+            priority: Some(3),
+            ..TaskCreateInput::default()
+        },
+    )
+    .expect("create");
+    assert_eq!(task.priority, 3);
+    assert_eq!(create_titled(&state, "Normal", None).priority, 0);
+
+    let renamed = update(
+        &state,
+        &task.id,
+        TaskPatchInput {
+            title: Some("Otro".into()),
+            ..TaskPatchInput::default()
+        },
+    )
+    .expect("rename");
+    assert_eq!(renamed.priority, 3);
+
+    let changed = update(
+        &state,
+        &task.id,
+        TaskPatchInput {
+            priority: Some(1),
+            ..TaskPatchInput::default()
+        },
+    )
+    .expect("priority");
+    assert_eq!(changed.priority, 1);
+
+    for bad in [4, -1] {
+        let error = update(
+            &state,
+            &task.id,
+            TaskPatchInput {
+                priority: Some(bad),
+                ..TaskPatchInput::default()
+            },
+        )
+        .expect_err("out of range");
+        assert!(error.to_string().starts_with("VALIDATION:"), "{error}");
+    }
+    assert!(
+        create(
+            &state,
+            TaskCreateInput {
+                priority: Some(9),
+                ..TaskCreateInput::default()
+            }
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn checklist_counters_follow_the_content_and_survive_other_edits() {
+    let state = state();
+    let task = create(
+        &state,
+        TaskCreateInput {
+            title: Some("Lista".into()),
+            content_json: Some(CHECKLIST.into()),
+            ..TaskCreateInput::default()
+        },
+    )
+    .expect("create");
+    assert_eq!((task.checklist_done, task.checklist_total), (1, 3));
+
+    let renamed = update(
+        &state,
+        &task.id,
+        TaskPatchInput {
+            title: Some("Lista 2".into()),
+            ..TaskPatchInput::default()
+        },
+    )
+    .expect("rename");
+    assert_eq!((renamed.checklist_done, renamed.checklist_total), (1, 3));
+
+    let emptied = update(
+        &state,
+        &task.id,
+        TaskPatchInput {
+            content_json: Some(EMPTY_DOC.into()),
+            ..TaskPatchInput::default()
+        },
+    )
+    .expect("clear content");
+    assert_eq!((emptied.checklist_done, emptied.checklist_total), (0, 0));
+}
+
+#[test]
+fn the_next_occurrence_keeps_the_priority() {
+    let state = state();
+    let task = create(
+        &state,
+        TaskCreateInput {
+            title: Some("Semanal".into()),
+            due_date: Some("2026-03-12".into()),
+            rrule: Some("FREQ=WEEKLY;INTERVAL=1".into()),
+            priority: Some(2),
+            ..TaskCreateInput::default()
+        },
+    )
+    .expect("create");
+    complete(&state, &task.id, true, Some("2026-03-12")).expect("complete");
+
+    let all = list_all(&state, None).expect("list");
+    let next = all
+        .agenda
+        .iter()
+        .flat_map(|day| &day.tasks)
+        .find(|candidate| candidate.id != task.id && candidate.title == "Semanal")
+        .expect("next occurrence");
+    assert_eq!(next.priority, 2);
+}

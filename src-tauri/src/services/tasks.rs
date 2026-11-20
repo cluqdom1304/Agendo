@@ -74,6 +74,8 @@ pub struct TaskCreateInput {
     pub source_note_id: Option<String>,
     /// Repeat rule (F13-05); needs a date.
     pub rrule: Option<String>,
+    /// 0 to 3 (D-93); `None` means none.
+    pub priority: Option<i64>,
 }
 
 /// Distinguishes an absent field (leave as is) from `null` (clear it).
@@ -103,6 +105,17 @@ pub struct TaskPatchInput {
     pub duration_minutes: Option<Option<i64>>,
     #[serde(default, deserialize_with = "present_or_null")]
     pub rrule: Option<Option<String>>,
+    pub priority: Option<i64>,
+}
+
+fn validate_priority(priority: i64) -> AppResult<()> {
+    if (0..=3).contains(&priority) {
+        Ok(())
+    } else {
+        Err(AppError::Validation(
+            "la prioridad debe estar entre 0 y 3".into(),
+        ))
+    }
 }
 
 /// Validates a repeat rule and anchors it to the task's date (F13-05).
@@ -172,6 +185,8 @@ pub fn create(state: &AppState, input: TaskCreateInput) -> AppResult<Task> {
     validation::validate_title(&title)?;
     validation::validate_schedule(input.due_date.as_deref(), input.due_time.as_deref())?;
     validation::validate_duration(input.due_time.as_deref(), input.duration_minutes)?;
+    let priority = input.priority.unwrap_or(0);
+    validate_priority(priority)?;
     let rrule = input
         .rrule
         .as_deref()
@@ -191,6 +206,7 @@ pub fn create(state: &AppState, input: TaskCreateInput) -> AppResult<Task> {
         duration_minutes: input.duration_minutes,
         source_note_id: input.source_note_id,
         rrule,
+        priority,
         tag_ids: input.tag_ids.unwrap_or_default(),
         now: state.clock.now_string(),
     };
@@ -202,6 +218,9 @@ pub fn create(state: &AppState, input: TaskCreateInput) -> AppResult<Task> {
 pub fn update(state: &AppState, id: &str, patch: TaskPatchInput) -> AppResult<Task> {
     if let Some(title) = &patch.title {
         validation::validate_title(title)?;
+    }
+    if let Some(priority) = patch.priority {
+        validate_priority(priority)?;
     }
     let content_text = patch
         .content_json
@@ -237,6 +256,9 @@ pub fn update(state: &AppState, id: &str, patch: TaskPatchInput) -> AppResult<Ta
             due_date: patch.due_date.clone(),
             due_time: due_time_patch,
             duration_minutes: duration_patch,
+            priority: patch
+                .priority
+                .filter(|&priority| priority != current.priority),
         };
         // The rule follows the date: without one the task stops repeating, and a new date
         // re-anchors it (the 31st of a month, the day of a year).
@@ -261,7 +283,8 @@ pub fn update(state: &AppState, id: &str, patch: TaskPatchInput) -> AppResult<Ta
             && repo_patch.content_json.is_none()
             && repo_patch.due_date.is_none()
             && repo_patch.due_time.is_none()
-            && repo_patch.duration_minutes.is_none();
+            && repo_patch.duration_minutes.is_none()
+            && repo_patch.priority.is_none();
         if untouched {
             return Ok(current);
         }
@@ -344,6 +367,7 @@ fn spawn_next_occurrence(
             duration_minutes: before.duration_minutes,
             source_note_id: before.source_note_id.clone(),
             rrule: Some(rule.successor().format()),
+            priority: before.priority,
             tag_ids: before.tag_ids.clone(),
             now: now.to_string(),
         },

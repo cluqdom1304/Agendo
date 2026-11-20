@@ -53,6 +53,7 @@ pub async fn task_create(
     content_json: Option<String>,
     source_note_id: Option<String>,
     rrule: Option<String>,
+    priority: Option<i64>,
 ) -> Result<Task, String> {
     let input = TaskCreateInput {
         title,
@@ -63,6 +64,7 @@ pub async fn task_create(
         content_json,
         source_note_id,
         rrule,
+        priority,
     };
     run_blocking(state.inner().clone(), move |state| create(state, input)).await
 }
