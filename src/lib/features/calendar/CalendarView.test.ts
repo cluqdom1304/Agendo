@@ -406,6 +406,41 @@ describe("keyboard creation (N-08)", () => {
     );
   });
 
+  it("lets the typed day, time and length win over the slot (F23-02)", async () => {
+    const { api } = await mount("week");
+    await fireEvent.keyDown(column("2026-03-11"), { key: "Enter" });
+    const input = screen.getByLabelText("Título de la nueva tarea");
+    await fireEvent.input(input, {
+      target: { value: "Revisión a las 16:00 durante 45 min !3" },
+    });
+    expect(
+      document.querySelector("[data-capture-preview]")?.textContent,
+    ).toContain("16:00–16:45");
+    await fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() =>
+      expect(api.calls).toContain("taskCreate:Revisión@16:00"),
+    );
+    expect(api.tasks.at(-1)).toMatchObject({
+      dueDate: "2026-03-11",
+      durationMinutes: 45,
+      priority: 3,
+    });
+  });
+
+  it("Esc on a detected title keeps it; a second Esc closes the quick title", async () => {
+    const { api } = await mount("week");
+    await fireEvent.keyDown(column("2026-03-11"), { key: "Enter" });
+    const input = screen.getByLabelText("Título de la nueva tarea");
+    await fireEvent.input(input, { target: { value: "Cine mañana" } });
+    await fireEvent.keyDown(input, { key: "Escape" });
+    expect(screen.getByLabelText("Título de la nueva tarea")).toBe(input);
+    await fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() =>
+      expect(api.calls).toContain("taskCreate:Cine mañana@09:00"),
+    );
+    expect(api.tasks.at(-1)?.dueDate).toBe("2026-03-11");
+  });
+
   it("starts at the next free block on today's column", async () => {
     const { api } = await mount("week");
     const target = column("2026-03-10");

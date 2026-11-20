@@ -1,6 +1,11 @@
 // Dragging out a span on a day column and typing the title of the task it creates. The
 // component owns the markup and styles; this owns the pointer and keyboard state.
 
+import {
+  parseNatural,
+  type Capture,
+  type CaptureOptions,
+} from "../../naturalInput";
 import { BLOCK_MINUTES, SNAP_MINUTES, minutesToTime, snapSpan } from "./grid";
 
 /** Where a task made from the keyboard on a day other than today starts. */
@@ -25,12 +30,15 @@ export interface WeekComposeDeps {
   today: () => string;
   /** Minutes since midnight of the current time. */
   nowMinutes: () => number;
-  /** `duration` is only given when the span was dragged out (D-33). */
+  /** Reads dates, tags… from the title (F23-02); the slot's day is the fallback. */
+  capture?: (date: string) => CaptureOptions;
+  /** `duration` is only given when the span was dragged out (D-33) or typed. */
   onCreate: (
     title: string,
     date: string,
     time: string,
     duration?: number,
+    capture?: Capture,
   ) => Promise<boolean>;
 }
 
@@ -38,6 +46,8 @@ export class WeekCompose {
   drag = $state.raw<Drag | null>(null);
   compose = $state.raw<Compose | null>(null);
   title = $state("");
+  /** Esc on a title with something detected keeps it as typed. */
+  ignored = $state(false);
 
   readonly dragSpan = $derived(
     this.drag
@@ -47,6 +57,12 @@ export class WeekCompose {
         }
       : null,
   );
+  readonly capture = $derived.by(() => {
+    const options = this.#deps.capture;
+    return this.compose && options && !this.ignored && this.title.trim()
+      ? parseNatural(this.title, options(this.compose.date))
+      : null;
+  });
   /** What the grid highlights: the span being dragged, else the one waiting for a title. */
   readonly selection = $derived(this.dragSpan ?? this.compose);
 
@@ -104,6 +120,7 @@ export class WeekCompose {
       sized: span.end - span.start > SNAP_MINUTES,
     };
     this.title = "";
+    this.ignored = false;
   }
 
   /** Keyboard route to what a drag does: Enter on a day column opens the quick title. */
@@ -121,11 +138,13 @@ export class WeekCompose {
     this.drag = null;
     this.compose = { date, start, end: start + BLOCK_MINUTES, sized: false };
     this.title = "";
+    this.ignored = false;
   }
 
   cancel(): void {
     this.compose = null;
     this.title = "";
+    this.ignored = false;
   }
 
   async commit(): Promise<void> {
@@ -136,15 +155,21 @@ export class WeekCompose {
       this.cancel();
       return;
     }
+    const capture = this.capture ?? undefined;
     this.#committing = true;
     try {
       // A dragged span becomes the duration; a plain click only picks the start (B-04, D-33).
+      // What is typed in the title wins over the slot.
+      const slotDuration = pending.sized
+        ? pending.end - pending.start
+        : undefined;
       if (
         await this.#deps.onCreate(
-          text,
-          pending.date,
-          minutesToTime(pending.start),
-          pending.sized ? pending.end - pending.start : undefined,
+          capture?.title ?? text,
+          capture?.date ?? pending.date,
+          capture?.time ?? minutesToTime(pending.start),
+          capture?.time ? (capture.duration ?? undefined) : slotDuration,
+          capture,
         )
       ) {
         this.cancel();
@@ -161,7 +186,8 @@ export class WeekCompose {
     } else if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
-      this.cancel();
+      if (this.capture) this.ignored = true;
+      else this.cancel();
     }
   }
 }

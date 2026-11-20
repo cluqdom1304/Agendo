@@ -484,3 +484,16 @@ export function parseNatural(
     days,
   };
 }
+
+/** The task fields a capture fills in (the shape `TasksStore.create` takes). */
+export function taskFieldsOf(capture: Capture) {
+  const { date, time, duration, tags, rrule, priority } = capture;
+  return {
+    ...(date ? { dueDate: date } : {}),
+    ...(date && time ? { dueTime: time } : {}),
+    ...(date && time && duration ? { durationMinutes: duration } : {}),
+    ...(tags.length > 0 ? { tagIds: tags.map((tag) => tag.id) } : {}),
+    ...(date && rrule ? { rrule } : {}),
+    ...(priority > 0 ? { priority } : {}),
+  };
+}

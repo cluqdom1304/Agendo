@@ -27,6 +27,47 @@ describe("TaskDialog", () => {
     expect(document.activeElement).toBe(title());
   });
 
+  it("fills the fields from a title in natural language on leaving it (F23-02)", async () => {
+    const { api, onClose } = await mount();
+    await fireEvent.input(title(), {
+      target: { value: "Gimnasio los lunes a las 18:30 1h !1" },
+    });
+    expect(
+      document.querySelector("[data-capture-preview]")?.textContent,
+    ).toContain("Cada semana los lunes");
+    await fireEvent.blur(title());
+    expect((title() as HTMLInputElement).value).toBe("Gimnasio");
+    expect((screen.getByLabelText("Fecha") as HTMLInputElement).value).toBe(
+      "2026-03-16",
+    );
+    expect((screen.getByLabelText("Hora") as HTMLInputElement).value).toBe(
+      "18:30",
+    );
+    await fireEvent.click(screen.getByRole("button", { name: "Crear tarea" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(api.tasks.at(-1)).toMatchObject({
+      title: "Gimnasio",
+      dueDate: "2026-03-16",
+      dueTime: "18:30",
+      durationMinutes: 60,
+      priority: 1,
+      rrule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
+    });
+  });
+
+  it("Esc in the title keeps it as typed without closing the dialog", async () => {
+    const { api, onClose } = await mount();
+    await fireEvent.input(title(), { target: { value: "Leer hoy" } });
+    await fireEvent.keyDown(title(), { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    await fireEvent.keyDown(title(), { key: "Enter" });
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(api.tasks.at(-1)).toMatchObject({
+      title: "Leer hoy",
+      dueDate: null,
+    });
+  });
+
   it("asks for a title and creates nothing without one", async () => {
     const { api, onClose } = await mount();
     await fireEvent.click(screen.getByRole("button", { name: "Crear tarea" }));

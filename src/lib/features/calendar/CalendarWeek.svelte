@@ -9,6 +9,9 @@
   import { layoutBlocks, minutesToTime, spanOf, timeToMinutes } from "./grid";
   import { dayNumber, weekdayName } from "./labels";
   import { WeekCompose } from "./weekCompose.svelte";
+  import type { Capture } from "../../naturalInput";
+  import { captureOptions } from "../capture/capture.svelte";
+  import CapturePreview from "../capture/CapturePreview.svelte";
 
   /** Pixels per hour. The whole day is 24 of them; the grid scrolls. */
   const HOUR_PX = 48;
@@ -30,6 +33,7 @@
       date: string,
       time: string,
       duration?: number,
+      capture?: Capture,
     ) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
     onOpenEvent?: (eventId: string) => void;
@@ -84,6 +88,7 @@
     hourPx: HOUR_PX,
     today: () => today,
     nowMinutes: () => nowMinutes,
+    capture: (date) => captureOptions(today, date),
     onCreate: (...args) => onCreate(...args),
   });
 
@@ -370,6 +375,7 @@
                   onkeydown={(event) => week.quickKeydown(event)}
                   onblur={() => void week.commit()}
                 />
+                <CapturePreview capture={week.capture} {today} floating />
               {/if}
             </div>
           {/if}

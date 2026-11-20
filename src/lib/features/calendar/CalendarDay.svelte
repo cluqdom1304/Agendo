@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Capture } from "../../naturalInput";
   import type { EventOccurrence, Tag, Task } from "../../types";
   import CalendarWeek from "./CalendarWeek.svelte";
 
@@ -14,6 +15,7 @@
       date: string,
       time: string,
       duration?: number,
+      capture?: Capture,
     ) => Promise<boolean>;
     onOpenTask: (task: Task) => void;
     onOpenEvent?: (eventId: string) => void;

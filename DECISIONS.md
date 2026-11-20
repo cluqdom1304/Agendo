@@ -541,9 +541,11 @@ Fijadas en F0-01 (2026-10-31). No actualizar sin tarea dedicada.
 - **Alternativas descartadas:** guardar el tiempo solo en memoria del frontend (se pierde al cerrar).
 
 ## D-98 — Presupuestos de la 3.0.0
-- **Estado:** PROPOSED · **Fecha:** 2026-11-20
+- **Estado:** ACCEPTED (el usuario eligió «dos límites» el 2026-11-20, en F23-02) · **Fecha:** 2026-11-20
 - **Línea base (F18-00, 2026-11-20):** JS 88,5 KB gzip en la carga inicial y 270,7 KB en total (límite 300 KB: quedan 29,3 KB para toda la 3.0.0, así que las vistas nuevas van con `import()`), ejecutable 10,3 MiB de 18, escala de F16-05 muy por debajo de los límites.
 - **Decisión:** se parte de la medida real de F18-00. N-04 (JS gzip, D-56) se mantiene en 300 KB **para la carga inicial**; Eventos, Hábitos, Resumen, Planificar, Enfoque y el panel de Bandeja se cargan con `import()`. Si no caben, un ADR posterior propone un valor explícito con las cifras delante. N-03 18 MB, N-01 y N-02 sin cambios.
+- **Cifras aceptadas (F23-02, 2026-11-20):** con el lenguaje natural el total llegó a 301,8 KB (carga inicial 102,4 KB). `npm run size` (`scripts/size-check.mjs`) mide y hace fallar **dos** límites: **carga inicial ≤ 120 KB gzip** (lo que llega por importaciones estáticas desde la entrada, el layout raíz y la página, según el manifiesto de Vite, igual que `bundle-audit.mjs`) y **JS total ≤ 340 KB gzip**. Se pueden ajustar con `--initial-budget-kb` y `--budget-kb`. El límite de la carga inicial es el que protege N-01; el total acota el crecimiento de las vistas diferidas.
+- **Alternativas descartadas:** subir solo el total a 320 KB (poco margen para F24–F26); recortar código existente para caber en 300 KB totales (coste en funciones sin beneficio en el arranque).
 
 ---
 

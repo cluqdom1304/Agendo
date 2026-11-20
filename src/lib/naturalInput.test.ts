@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { addDays, firstOn, parseNatural, type Capture } from "./naturalInput";
+import {
+  addDays,
+  firstOn,
+  parseNatural,
+  taskFieldsOf,
+  type Capture,
+} from "./naturalInput";
 import type { DayCode } from "./recurrence";
 
 // Fixed clock: Friday 20 November 2026.
@@ -267,5 +273,26 @@ describe("date helpers", () => {
   it("firstOn finds the next matching weekday", () => {
     expect(firstOn(["MO"], TODAY)).toBe("2026-11-23");
     expect(firstOn(["FR"], TODAY)).toBe(TODAY);
+  });
+});
+
+describe("taskFieldsOf", () => {
+  it("maps a capture to the fields of a new task", () => {
+    expect(
+      taskFieldsOf(parse("Dentista mañana a las 5 durante 1h #salud !2")!),
+    ).toEqual({
+      dueDate: "2026-11-21",
+      dueTime: "17:00",
+      durationMinutes: 60,
+      tagIds: ["t2"],
+      priority: 2,
+    });
+    expect(taskFieldsOf(parse("Informe #trabajo")!)).toEqual({
+      tagIds: ["t1"],
+    });
+    expect(taskFieldsOf(parse("Regar cada día")!)).toEqual({
+      dueDate: TODAY,
+      rrule: "FREQ=DAILY;INTERVAL=1",
+    });
   });
 });

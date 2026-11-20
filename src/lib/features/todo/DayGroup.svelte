@@ -1,5 +1,6 @@
 <script lang="ts">
   import { formatDisplayDate } from "../../dates";
+  import { captureOptions } from "../capture/capture.svelte";
   import { t } from "../../i18n";
   import type { TaskBlock, TasksStore } from "../../stores/tasks.svelte";
   import { pending } from "../../reminders";
@@ -162,8 +163,13 @@
       isCompleted={false}
       dueTime={null}
       draft
-      onCommit={(text, trigger) =>
-        void store.commitDraft(current.key, text, trigger === "enter")}
+      capture={() =>
+        captureOptions(
+          store.today(),
+          current.target.section === "agenda" ? current.target.date : undefined,
+        )}
+      onCommit={(text, trigger, capture) =>
+        void store.commitDraft(current.key, text, trigger === "enter", capture)}
       onCancel={() => store.cancelDraft(current.key)}
     />
   {/each}

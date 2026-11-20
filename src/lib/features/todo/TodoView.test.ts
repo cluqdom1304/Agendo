@@ -257,6 +257,47 @@ describe("creating and editing", () => {
     expect(api.calls.some((call) => call.startsWith("taskCreate"))).toBe(false);
   });
 
+  it("reads a draft in natural language and previews it (F23-02)", async () => {
+    const { api } = await mount([]);
+    await key({ key: "n", ctrlKey: true, shiftKey: true });
+    const input = screen.getByPlaceholderText("Nueva tarea");
+    await fireEvent.input(input, {
+      target: { value: "Dentista mañana a las 5 durante 1h !2" },
+    });
+    const preview = document.querySelector("[data-capture-preview]")!;
+    expect(preview.textContent).toContain("Dentista");
+    expect(preview.textContent).toContain("Mañana");
+    expect(preview.textContent).toContain("17:00–18:00");
+    expect(preview.textContent).toContain("Alta");
+    await key({ key: "Enter" }, input);
+    await vi.waitFor(() =>
+      expect(api.calls).toContain("taskCreate:Dentista@17:00"),
+    );
+    expect(api.tasks.at(-1)).toMatchObject({
+      title: "Dentista",
+      dueDate: "2026-03-11",
+      durationMinutes: 60,
+      priority: 2,
+    });
+  });
+
+  it("the first Esc keeps a draft's text as typed, the second discards it", async () => {
+    const { api } = await mount([]);
+    await key({ key: "n", ctrlKey: true, shiftKey: true });
+    const input = screen.getByPlaceholderText("Nueva tarea");
+    await fireEvent.input(input, { target: { value: "Ver Mañana" } });
+    await key({ key: "Escape" }, input);
+    expect(screen.getByPlaceholderText("Nueva tarea")).toBe(input);
+    expect(document.querySelector("[data-capture-preview]")?.textContent).toBe(
+      "",
+    );
+    await key({ key: "Enter" }, input);
+    await vi.waitFor(() =>
+      expect(api.calls).toContain("taskCreate:Ver Mañana"),
+    );
+    expect(api.tasks.at(-1)?.dueDate).toBe("2026-03-10");
+  });
+
   it("saves a renamed title on Enter and on losing focus", async () => {
     const { api } = await mount([
       makeTask({ id: "a", title: "Una", position: 1 }),

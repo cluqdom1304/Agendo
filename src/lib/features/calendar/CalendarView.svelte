@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
 
   import { toLocalIsoDate } from "../../dates";
+  import { taskFieldsOf, type Capture } from "../../naturalInput";
   import { showDailyNote } from "../notes/navigation";
   import { t } from "../../i18n";
   import SegmentedControl from "../../shell/SegmentedControl.svelte";
@@ -90,7 +91,17 @@
     date: string,
     time: string,
     duration?: number,
-  ) => store.createScheduled(title, date, time, duration);
+    capture?: Capture,
+  ) =>
+    capture
+      ? store.createDetailed({
+          title,
+          ...taskFieldsOf(capture),
+          dueDate: date,
+          dueTime: time,
+          ...(duration ? { durationMinutes: duration } : {}),
+        })
+      : store.createScheduled(title, date, time, duration);
 </script>
 
 <section class="calendar">

@@ -2,7 +2,7 @@
 
 **Fase activa:** versión 3.0.0, Fase 23 (Fases 18 a 22 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** IN_PROGRESS   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
-**Siguiente tarea:** F23-02. Falta la validación humana F21-05 en Windows 11. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
+**Siguiente tarea:** F23-03. Falta la validación humana F21-05 en Windows 11. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-20 (Fase 23 en curso; F22-03 validada por el usuario; F21-05 pendiente)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
@@ -439,7 +439,7 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 > **Objetivo:** que Agendo se parezca en diseño y funcionalidad a la captura de referencia (sidebar oscuro con Hoy/Próximas/Calendario/Notas/Tareas/Eventos, Favoritos, Recientes, Carpetas y Etiquetas; vista Hoy con tira de días, banner de resumen y prioridades; panel «Bandeja de entrada»; barra superior «Buscar o crear»; eventos y hábitos distintos de las tareas), con lenguaje natural, bloques de tiempo, «Planificar mi día», enfoque, progreso de checklist y resumen semanal.
 > **Alcance elegido:** eventos **y** hábitos; sidebar oscuro fijo también con tema claro.
 > **Principio:** aplicación ligera, rápida y eficiente. Cada función nueva se paga con presupuesto medido; las vistas nuevas se cargan con `import()` y la F18-00 fija la línea base antes de empezar.
-> **Presupuestos vigentes (D-56):** JS gzip 300 KB, ejecutable 18 MB, N-01 < 200 ms y N-02 < 40 MB; D-98 (`PROPOSED`) los revisa con la medida real.
+> **Presupuestos vigentes (D-56, D-98 `ACCEPTED` desde F23-02):** JS gzip de la carga inicial ≤ 120 KB y JS total ≤ 340 KB (ambos en `npm run size`), ejecutable 18 MB, N-01 < 200 ms y N-02 < 40 MB.
 
 ## Fase 16 — Rendimiento y base
 - [x] F16-01 `[A]` Auditoría del bundle (análisis de tamaños de `vite build`): módulos por peso y qué entra en la carga inicial.
@@ -559,12 +559,14 @@ A petición del usuario, sin tarea nueva de la hoja de ruta: corregir fallos de 
 
 ## Fase 23 — Captura en lenguaje natural (D-96)
 - [x] F23-01 `[A]` `src/lib/naturalInput.ts` (fecha, hora, duración, etiqueta `#`, prioridad `!`, repetición) con tests de casos y `Clock` falso.
-- [ ] F23-02 `[A]` Integración en borrador en línea, creación rápida del calendario, diálogo y Bandeja, con vista previa y Esc para ignorar.
+- [x] F23-02 `[A]` Integración en borrador en línea, creación rápida del calendario, diálogo y Bandeja, con vista previa y Esc para ignorar.
 - [ ] F23-03 `[A]` «Crear cualquier cosa» en la paleta: tarea, evento, hábito y nota.
 
 **Verificaciones [A] de la Fase 23:**
 - Inicio: el usuario validó F22-03 en Windows 11 y ordenó la Fase 23 el 2026-11-20 (F21-05 sigue pendiente).
 - F23-01: `src/lib/naturalInput.ts`, puro y sin dependencias; recibe «hoy» del reloj del llamador (los tests fijan el viernes 20/11/2026). Reconoce: fecha (`hoy`, `mañana`, `pasado mañana`, días de la semana con `el`/`este`/`próximo`/`que viene`, `en`/`dentro de N días|semanas|meses`, `la semana que viene`, `15/12`, `15/12/27`, `15 de diciembre`, `2 dic`, `el 15`, `el día 15`), hora (`a las 5` —de 1 a 7 sin «de la mañana» es tarde—, `a las 17h`, `y media`/`y cuarto`, `de la mañana|tarde|noche`, `17:30`, `6pm`, `mediodía`), duración solo junto a una hora (`1h`, `1h30`, `2 horas`, `45 min`, `media hora`, `hora y media`, con `durante`/`por` opcional; se recorta para acabar el mismo día), `#etiqueta` solo si existe (sin distinguir mayúsculas; si no existe se queda en el título), `!1`–`!3` (media, alta, urgente, D-93) y repetición (`cada día`, `cada N semanas`, `diariamente`, `los lunes y jueves`, `entre semana`, `los fines de semana`) como `rrule` del subconjunto de D-57. Una hora o repetición sin día cae en el día de reserva (el del hueco del calendario o del grupo; si no, hoy) y una repetición por días empieza en el primero que toca. Cada clase se toma una vez y, si el título quedaría vacío, no se toma nada. 87 tests.
+- F23-02: `features/capture/` con `CaptureField` (texto, captura derivada, Esc para ignorarla hasta vaciar el campo y «asentar» lo ya copiado al formulario), `captureOptions` (hoy del reloj del llamador y etiquetas de `tagsStore`) y `CapturePreview` (título limpio, fecha relativa, hora–fin, repetición, `#etiquetas`, prioridad y «Esc: tal cual», con `aria-live`). Integrado en: borrador en línea (`InlineTitle`/`TaskRow`/`DayGroup` → `commitDraft` con captura; el día del grupo es el de reserva y el día escrito gana), creación rápida del calendario (`WeekCompose`: lo escrito gana al hueco; sin hora escrita mandan la hora y la duración del hueco), diálogo «Nueva tarea» (solo al crear: al salir del título o al guardar se copian los campos y el título queda limpio; Esc no cierra el diálogo si había captura) y Bandeja. `taskFieldsOf` reparte la captura en los campos de `taskCreate`. `TasksStore.today()` nuevo. 9 tests de interfaz más (TS 991).
+- **Presupuesto (D-98 `ACCEPTED` por el usuario):** F23-02 llevó el JS total a 301,8 KB (+5 KB) con la carga inicial en 102,4 KB. El usuario eligió «dos límites»: `npm run size` mide y falla por carga inicial ≤ 120 KB y total ≤ 340 KB (`scripts/size-check.mjs` lee el manifiesto de Vite como `bundle-audit.mjs`).
 
 ## Fase 24 — Planificar mi día y bloques de tiempo
 - [ ] F24-01 `[A]` Arrastrar una tarea de la Bandeja a una franja de Día/Semana (fija hora y duración).

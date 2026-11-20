@@ -457,13 +457,20 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Notificación nativa de un evento con aviso «15 min antes»: sale a su hora con el título; pulsarla abre la app en el diálogo del evento. No hay botones de «Hecha» ni de posponer.
   - [ ] Menú contextual: «Convertir en evento» en una tarea (la tarea va a la papelera) y «Convertir en tarea» en un evento; «Borrar» un evento ofrece «Deshacer»; clic derecho en un día del calendario ofrece «Nuevo evento el …».
   - [ ] Los eventos respetan el filtro de etiquetas del sidebar; contraste legible de los bloques de evento en claro, oscuro y Mica.
-- **Fase 22 — hábitos (F22-03):**
-  - [ ] Sidebar «Hábitos»: «Nuevo hábito» con nombre, días, hora y etiqueta; aparece en la vista con sus 7 días.
-  - [ ] Marcar y desmarcar hoy y un día pasado de la semana; la racha sube y baja; un día no programado sale punteado y no rompe la racha.
-  - [ ] Hoy: «Hábitos de hoy» solo con los programados hoy; un clic marca, sale «Deshacer» y el banner cuenta «N de M hábitos»; no aparecen al elegir otro día de la tira.
-  - [ ] Con la app abierta pasada la medianoche, al volver a la ventana Hoy y Hábitos cambian de día y la racha se mantiene.
-  - [ ] Archivar, desarchivar y eliminar con «Deshacer»; los hábitos respetan el filtro de etiquetas.
-  - [ ] Contraste de las casillas marcadas, punteadas y con foco en claro, oscuro y Mica.
+- **Fase 22 — hábitos (F22-03, validada por el usuario el 2026-11-20):**
+  - [x] Sidebar «Hábitos»: «Nuevo hábito» con nombre, días, hora y etiqueta; aparece en la vista con sus 7 días.
+  - [x] Marcar y desmarcar hoy y un día pasado de la semana; la racha sube y baja; un día no programado sale punteado y no rompe la racha.
+  - [x] Hoy: «Hábitos de hoy» solo con los programados hoy; un clic marca, sale «Deshacer» y el banner cuenta «N de M hábitos»; no aparecen al elegir otro día de la tira.
+  - [x] Con la app abierta pasada la medianoche, al volver a la ventana Hoy y Hábitos cambian de día y la racha se mantiene.
+  - [x] Archivar, desarchivar y eliminar con «Deshacer»; los hábitos respetan el filtro de etiquetas.
+  - [x] Contraste de las casillas marcadas, punteadas y con foco en claro, oscuro y Mica.
+- **Fase 23 — lenguaje natural (sin tarea `[H]` propia en el plan; se valida con la Fase 24 o al cierre):**
+  - [ ] Borrador en línea (Ctrl+Mayús+N y «Nueva tarea» de un día): al escribir «Dentista mañana a las 5 durante 1h #etiqueta !2» aparece debajo, sin tapar la fila siguiente de forma molesta, «Dentista · Mañana · 17:00–18:00 · #etiqueta · Alta · Esc: tal cual»; Intro la crea con todo eso.
+  - [ ] Esc con algo detectado quita la vista previa y crea el texto tal cual; un segundo Esc descarta el borrador.
+  - [ ] Calendario Semana/Día: arrastrar un hueco y escribir «Revisión a las 16:00 durante 45 min» crea a las 16:00 de ese día con 45 min; sin hora escrita, manda el hueco.
+  - [ ] Diálogo «Nueva tarea»: al salir del título los campos de fecha, hora, fin, etiquetas, prioridad y repetición se rellenan y el título queda limpio; Esc en el título no cierra el diálogo si había algo detectado. Al editar una tarea existente no se interpreta nada.
+  - [ ] Bandeja de entrada: «Regar pasado mañana #casa» crea la tarea con fecha (sale de la Bandeja) y la etiqueta; una `#palabra` que no es etiqueta se queda en el título.
+  - [ ] La vista previa se lee bien en claro, oscuro y Mica, y Narrador anuncia «Se creará con…».
 - **Fase 24 — planificar el día:** arrastrar de la Bandeja a una franja; asistente de «Planificar mi día».
 - **Fase 25 — enfoque:** temporizador, notificación al terminar y cierre de la app con el temporizador activo.
 - **Fase 26 — resumen semanal:** cifras coherentes con la agenda y exportación a Markdown.

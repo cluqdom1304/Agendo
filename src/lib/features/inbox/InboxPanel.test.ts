@@ -2,6 +2,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 
+import { tagsStore } from "../../stores/tags.svelte";
 import { TasksStore } from "../../stores/tasks.svelte";
 import { FakeApi, makeTask } from "../../testing";
 import InboxPanel from "./InboxPanel.svelte";
@@ -54,6 +55,56 @@ describe("InboxPanel (F20-04)", () => {
       dueDate: null,
     });
     expect((field as HTMLInputElement).value).toBe("");
+  });
+
+  it("reads dates and known tags from the field, with a preview (F23-02)", async () => {
+    tagsStore.tags = [
+      {
+        id: "g1",
+        name: "Casa",
+        colorHex: "#4C8DFF",
+        parentId: null,
+        position: 0,
+        pendingCount: 0,
+        noteCount: 0,
+      },
+    ];
+    try {
+      const { api } = await mount([]);
+      const field = screen.getByRole("textbox", {
+        name: "Añadir a la bandeja de entrada",
+      });
+      await fireEvent.input(field, {
+        target: { value: "Regar plantas pasado mañana #casa #otra" },
+      });
+      const preview = document.querySelector("[data-capture-preview]")!;
+      expect(preview.textContent).toContain("jueves 12/03/2026");
+      expect(preview.textContent).toContain("#casa");
+      await fireEvent.submit(field.closest("form") as HTMLFormElement);
+      await waitFor(() => expect(api.tasks).toHaveLength(1));
+      expect(api.tasks[0]).toMatchObject({
+        title: "Regar plantas #otra",
+        dueDate: "2026-03-12",
+        tagIds: ["g1"],
+      });
+    } finally {
+      tagsStore.tags = [];
+    }
+  });
+
+  it("Esc keeps the field's text as typed", async () => {
+    const { api } = await mount([]);
+    const field = screen.getByRole("textbox", {
+      name: "Añadir a la bandeja de entrada",
+    });
+    await fireEvent.input(field, { target: { value: "Serie de hoy" } });
+    await fireEvent.keyDown(field, { key: "Escape" });
+    await fireEvent.submit(field.closest("form") as HTMLFormElement);
+    await waitFor(() => expect(api.tasks).toHaveLength(1));
+    expect(api.tasks[0]).toMatchObject({
+      title: "Serie de hoy",
+      dueDate: null,
+    });
   });
 
   it("completes a task from its circle", async () => {

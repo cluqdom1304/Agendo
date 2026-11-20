@@ -1,6 +1,7 @@
 import * as backend from "../api";
 import { toLocalIsoDate } from "../dates";
 import { t } from "../i18n";
+import type { Capture } from "../naturalInput";
 import { sameRule } from "../recurrence";
 import { TaskBatch } from "./taskBatch.svelte";
 import { TaskCompletion } from "./taskCompletion.svelte";
@@ -349,6 +350,11 @@ export class TasksStore {
       : { section: "todo" };
   }
 
+  /** Today's date, `YYYY-MM-DD`, from the store's clock. */
+  today(): string {
+    return toLocalIsoDate(this.#now());
+  }
+
   todayTarget(): DraftTarget {
     return { section: "agenda", date: toLocalIsoDate(this.#now()) };
   }
@@ -365,8 +371,13 @@ export class TasksStore {
     return this.#creator.isDraftFor(target);
   }
 
-  commitDraft(key: number, rawTitle: string, advance: boolean): Promise<void> {
-    return this.#creator.commitDraft(key, rawTitle, advance);
+  commitDraft(
+    key: number,
+    rawTitle: string,
+    advance: boolean,
+    capture?: Capture | null,
+  ): Promise<void> {
+    return this.#creator.commitDraft(key, rawTitle, advance, capture);
   }
 
   createScheduled(

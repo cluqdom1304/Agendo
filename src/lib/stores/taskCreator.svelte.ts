@@ -1,5 +1,6 @@
 // The draft row and the ways of creating a task. Composed into `TasksStore`.
 
+import { taskFieldsOf, type Capture } from "../naturalInput";
 import type { Task } from "../types";
 import type { TasksHost } from "./tasksHost";
 import type { Draft, DraftTarget, NewTaskDetails } from "./tasksTypes";
@@ -36,12 +37,14 @@ export class TaskCreator {
   /**
    * Saves the draft `key`. With `advance` (Enter) a fresh draft opens in the same block so
    * several tasks can be typed in a row. An empty title just closes the draft. If saving
-   * fails the draft stays open with its text.
+   * fails the draft stays open with its text. A `capture` (F23-02) replaces the title and
+   * adds what was read from it; its day wins over the draft's.
    */
   async commitDraft(
     key: number,
     rawTitle: string,
     advance: boolean,
+    capture?: Capture | null,
   ): Promise<void> {
     const draft = this.draft;
     if (!draft || draft.key !== key || this.#creating) return;
@@ -53,12 +56,14 @@ export class TaskCreator {
     this.#creating = true;
     try {
       const created = await this.#host.api.taskCreate({
-        title,
+        title: capture?.title ?? title,
         ...(draft.target.section === "agenda"
           ? { dueDate: draft.target.date }
           : {}),
+        ...(capture ? taskFieldsOf(capture) : {}),
       });
       this.#host.setTasks([...this.#host.tasks(), created]);
+      if (capture) this.#host.warnIfHidden(created);
       this.draft = advance ? { target: draft.target, key: ++this.#keys } : null;
     } catch (error) {
       this.#host.report(error);

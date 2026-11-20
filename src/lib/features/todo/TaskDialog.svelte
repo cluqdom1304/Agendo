@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isSettledDate } from "../../dates";
+  import { isSettledDate, toLocalIsoDate } from "../../dates";
   import { t } from "../../i18n";
   import { draftReminders, pending, toInput } from "../../reminders";
   import {
@@ -24,6 +24,8 @@
   import { tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import type { ReminderInput, Task } from "../../types";
+  import { CaptureField, captureOptions } from "../capture/capture.svelte";
+  import CapturePreview from "../capture/CapturePreview.svelte";
   import { textToDoc } from "../notes/content";
   import TagPicker from "../tags/TagPicker.svelte";
   import ReminderEditor from "./ReminderEditor.svelte";
@@ -119,6 +121,44 @@
   );
   const titleMissing = $derived(attempted && title.trim() === "");
 
+  // Only a new task reads its title (F23-02): an existing title is never reinterpreted.
+  // svelte-ignore state_referenced_locally
+  const field = task
+    ? null
+    : new CaptureField(() =>
+        captureOptions(toLocalIsoDate(now()), dueDate || undefined),
+      );
+
+  /** Copies what the title asks for into the fields; what is typed wins over them. */
+  function applyCapture() {
+    const capture = field?.capture;
+    if (!field || !capture) return;
+    title = capture.title;
+    field.settle(title);
+    if (capture.date) setDate(capture.date);
+    if (capture.time) setStart(capture.time);
+    if (capture.duration) setPreset(capture.duration);
+    for (const tag of capture.tags) {
+      if (!tagIds.includes(tag.id)) tagIds = [...tagIds, tag.id];
+    }
+    if (capture.priority > 0) priority = capture.priority;
+    const repeat = parseRule(capture.rrule);
+    if (repeat) {
+      repeatFreq = repeat.freq;
+      repeatInterval = repeat.interval;
+      repeatDays = repeat.days;
+      repeatUntil = "";
+      repeatCount = null;
+    }
+  }
+
+  function onTitleKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape" && field?.ignore()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
   function setDate(value: string) {
     dueDate = value;
     if (!value) setStart("");
@@ -173,6 +213,7 @@
   );
 
   async function submit() {
+    applyCapture();
     attempted = true;
     if (
       saving ||
@@ -259,8 +300,14 @@
         placeholder={t.newTask.titlePlaceholder}
         aria-invalid={titleMissing}
         bind:value={title}
+        oninput={(event) => field?.set(event.currentTarget.value)}
+        onkeydown={onTitleKeydown}
+        onblur={applyCapture}
       />
     </label>
+    {#if field}
+      <CapturePreview capture={field.capture} today={field.today()} />
+    {/if}
     {#if titleMissing}
       <p class="error" role="alert">{t.newTask.needsTitle}</p>
     {/if}

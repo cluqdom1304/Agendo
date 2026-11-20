@@ -1,8 +1,11 @@
 <script lang="ts">
   import { t } from "../../i18n";
+  import { taskFieldsOf } from "../../naturalInput";
   import type { TasksStore } from "../../stores/tasks.svelte";
   import Checkbox from "../todo/Checkbox.svelte";
   import ChecklistProgress from "../todo/ChecklistProgress.svelte";
+  import { CaptureField, captureOptions } from "../capture/capture.svelte";
+  import CapturePreview from "../capture/CapturePreview.svelte";
 
   // «Bandeja de entrada» (F20-04): the pending tasks without a date, beside Hoy and the
   // calendar, with a field to drop new ones in. Loaded with `import()` (D-98).
@@ -14,7 +17,7 @@
   let { store, onOpenTask }: Props = $props();
   const l = t.inbox;
 
-  let draft = $state("");
+  const field = new CaptureField(() => captureOptions(store.today()));
   let adding = $state(false);
 
   /** Pending undated tasks in the order of the list's POR HACER (tag filter included). */
@@ -22,12 +25,22 @@
 
   async function add(event: SubmitEvent) {
     event.preventDefault();
-    const title = draft.trim();
+    const title = field.text.trim();
     if (!title || adding) return;
     adding = true;
-    const created = await store.create({ title });
+    const capture = field.capture;
+    const created = await store.create(
+      capture ? { title: capture.title, ...taskFieldsOf(capture) } : { title },
+    );
     adding = false;
-    if (created) draft = "";
+    if (created) field.reset();
+  }
+
+  function onkeydown(event: KeyboardEvent) {
+    if (event.key === "Escape" && field.ignore()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
   }
 </script>
 
@@ -42,9 +55,12 @@
       type="text"
       aria-label={l.addLabel}
       placeholder={l.addPlaceholder}
-      bind:value={draft}
+      value={field.text}
+      oninput={(event) => field.set(event.currentTarget.value)}
+      {onkeydown}
       disabled={adding}
     />
+    <CapturePreview capture={field.capture} today={field.today()} />
   </form>
 
   {#if tasks.length === 0}

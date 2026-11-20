@@ -582,6 +582,13 @@ export const t = {
     empty: "Bandeja vacía",
     emptyHint: "Las tareas sin fecha aparecen aquí.",
   },
+  capture: {
+    label: "Se creará con",
+    today: "Hoy",
+    tomorrow: "Mañana",
+    day: (weekday: string, date: string) => `${weekday} ${date}`,
+    ignore: "Esc: tal cual",
+  },
   priority: {
     label: "Prioridad",
     /** Indexed by level: 0 none, 1 medium, 2 high, 3 urgent (D-93). */

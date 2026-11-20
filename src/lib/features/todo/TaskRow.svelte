@@ -1,6 +1,7 @@
 <script lang="ts">
   import { isSettledDate } from "../../dates";
   import { t } from "../../i18n";
+  import type { Capture, CaptureOptions } from "../../naturalInput";
   import { timeRange } from "../../schedule";
   import Checkbox from "./Checkbox.svelte";
   import ChecklistProgress from "./ChecklistProgress.svelte";
@@ -50,7 +51,13 @@
     picked?: boolean;
     /** Ctrl/Cmd+click toggles, Shift+click extends the selection. */
     onPick?: (mode: "toggle" | "range") => void;
-    onCommit: (text: string, trigger: "enter" | "blur") => void;
+    /** Natural-language reading of a draft's text (F23-02). */
+    capture?: () => CaptureOptions;
+    onCommit: (
+      text: string,
+      trigger: "enter" | "blur",
+      capture?: Capture | null,
+    ) => void;
     onCancel?: () => void;
   }
 
@@ -79,6 +86,7 @@
     onToggleReminders,
     settling = false,
     draft = false,
+    capture,
     onToggle,
     onSelect,
     picked = false,
@@ -152,6 +160,7 @@
     placeholder={draft ? t.tasks.newTaskPlaceholder : ""}
     completed={checked}
     focusOnMount={draft}
+    {capture}
     {onCommit}
     {onCancel}
   />
