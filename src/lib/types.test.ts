@@ -27,6 +27,7 @@ import type {
   TagWithCount,
   Task,
   TasksSections,
+  TimeEntry,
 } from "./types";
 
 // Written by `cargo test contract` from the real Rust DTOs (src-tauri/src/contract_tests.rs).
@@ -49,6 +50,8 @@ interface Fixture {
   noteTitle: NoteTitle;
   noteTemplate: NoteTemplate;
   event: CalendarEvent;
+  timeEntry: TimeEntry;
+  timeEntryRunning: TimeEntry;
   habit: Habit;
   habitLog: HabitLog;
   eventAllDay: CalendarEvent;
@@ -213,6 +216,14 @@ const habitLogKeys: Record<keyof HabitLog, true> = {
   date: true,
 };
 
+const timeEntryKeys: Record<keyof TimeEntry, true> = {
+  id: true,
+  taskId: true,
+  startedAt: true,
+  endedAt: true,
+  plannedMinutes: true,
+};
+
 const noteReminderKeys: Record<keyof NoteReminder, true> = {
   id: true,
   noteId: true,
@@ -299,6 +310,8 @@ describe("Rust DTO serialization matches the TypeScript types", () => {
     expect(keys(fixture.noteTemplate)).toEqual(keys(noteTemplateKeys));
     expect(keys(fixture.noteReminder)).toEqual(keys(noteReminderKeys));
     expect(keys(fixture.event)).toEqual(keys(eventKeys));
+    expect(keys(fixture.timeEntry)).toEqual(keys(timeEntryKeys));
+    expect(fixture.timeEntryRunning.endedAt).toBeNull();
     expect(keys(fixture.habit)).toEqual(keys(habitKeys));
     expect(keys(fixture.habitLog)).toEqual(keys(habitLogKeys));
     expect(fixture.habit.days).toBe(31);

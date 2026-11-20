@@ -311,7 +311,7 @@ fn upgrading_a_v1_database_keeps_every_row() {
     conn.execute("INSERT INTO settings VALUES ('theme', 'dark')", [])
         .expect("setting");
 
-    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v17"), 17);
+    assert_eq!(migrate::migrate(&mut conn, &MIGRATIONS).expect("v18"), 18);
 
     assert_eq!(count(&conn, "SELECT COUNT(*) FROM tasks"), 3);
     assert_eq!(
@@ -447,4 +447,39 @@ fn habits_check_their_days_and_logs_cascade() {
     conn.execute("DELETE FROM habits WHERE id = 'h1'", [])
         .expect("delete");
     assert_eq!(count(&conn, "SELECT COUNT(*) FROM habit_logs"), 0);
+}
+
+#[test]
+fn time_entries_allow_one_running_session_and_cascade_from_the_task() {
+    let conn = database();
+    task(&conn, "t1");
+    conn.execute(
+        "INSERT INTO time_entries (id, task_id, started_at, ended_at, planned_minutes)
+         VALUES ('done', 't1', '2026-03-10T10:00:00Z', '2026-03-10T10:25:00Z', 25)",
+        [],
+    )
+    .expect("finished session");
+    conn.execute(
+        "INSERT INTO time_entries (id, task_id, started_at, planned_minutes)
+         VALUES ('run', 't1', '2026-03-10T11:00:00Z', 25)",
+        [],
+    )
+    .expect("running session");
+
+    for bad in [
+        "INSERT INTO time_entries (id, task_id, started_at, planned_minutes)
+         VALUES ('two', 't1', '2026-03-10T12:00:00Z', 25)",
+        "INSERT INTO time_entries (id, task_id, started_at, ended_at, planned_minutes)
+         VALUES ('b1', 't1', '2026-03-10T12:00:00Z', '2026-03-10T11:00:00Z', 25)",
+        "INSERT INTO time_entries (id, task_id, started_at, ended_at, planned_minutes)
+         VALUES ('b2', 't1', 'x', 'y', 0)",
+        "INSERT INTO time_entries (id, task_id, started_at, ended_at, planned_minutes)
+         VALUES ('b3', 'missing', 'x', 'y', 5)",
+    ] {
+        assert!(conn.execute(bad, []).is_err(), "{bad} should be rejected");
+    }
+
+    conn.execute("DELETE FROM tasks WHERE id = 't1'", [])
+        .expect("delete task");
+    assert_eq!(count(&conn, "SELECT COUNT(*) FROM time_entries"), 0);
 }

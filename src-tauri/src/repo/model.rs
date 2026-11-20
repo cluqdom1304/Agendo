@@ -393,3 +393,14 @@ pub struct HabitLog {
     pub habit_id: String,
     pub date: String,
 }
+
+/// A focus session on a task (D-97). Without `ended_at` it is still running.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TimeEntry {
+    pub id: String,
+    pub task_id: String,
+    pub started_at: String,
+    pub ended_at: Option<String>,
+    pub planned_minutes: i64,
+}

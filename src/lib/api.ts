@@ -47,6 +47,7 @@ import type {
   TasksListQuery,
   TasksSections,
   ThemeMode,
+  TimeEntry,
 } from "./types";
 
 export type * from "./types";
@@ -168,6 +169,28 @@ export function habitSetDone(
 /** The days marked between two local days, inclusive, for every live habit. */
 export function habitLogs(from: string, to: string): Promise<HabitLog[]> {
   return invoke<HabitLog[]>("habit_logs", { from, to });
+}
+
+/** The focus session in progress, if any (D-97). */
+export function focusCurrent(): Promise<TimeEntry | null> {
+  return invoke<TimeEntry | null>("focus_current");
+}
+
+export function focusStart(
+  taskId: string,
+  plannedMinutes: number,
+): Promise<TimeEntry> {
+  return invoke<TimeEntry>("focus_start", { taskId, plannedMinutes });
+}
+
+/** Ends the session now; `null` if none was running. */
+export function focusStop(): Promise<TimeEntry | null> {
+  return invoke<TimeEntry | null>("focus_stop");
+}
+
+/** Sessions that started between two local days, inclusive. */
+export function focusList(from: string, to: string): Promise<TimeEntry[]> {
+  return invoke<TimeEntry[]>("focus_list", { from, to });
 }
 
 export function taskCreate(input: TaskCreateInput = {}): Promise<Task> {

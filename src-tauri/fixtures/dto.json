@@ -430,5 +430,19 @@
     ],
     "title": "Entregar práctica",
     "updatedAt": "2026-03-10T11:00:00Z"
+  },
+  "timeEntry": {
+    "endedAt": "2026-03-12T09:25:00Z",
+    "id": "entry-1",
+    "plannedMinutes": 25,
+    "startedAt": "2026-03-12T09:00:00Z",
+    "taskId": "task-1"
+  },
+  "timeEntryRunning": {
+    "endedAt": null,
+    "id": "entry-2",
+    "plannedMinutes": 50,
+    "startedAt": "2026-03-12T10:00:00Z",
+    "taskId": "task-1"
   }
 }

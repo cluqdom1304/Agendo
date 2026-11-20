@@ -21,6 +21,7 @@ pub mod settings;
 pub mod tags;
 pub mod tasks;
 pub mod templates;
+pub mod time_entries;
 pub mod versions;
 
 #[cfg(test)]

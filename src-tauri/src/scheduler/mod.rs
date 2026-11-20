@@ -17,7 +17,7 @@ use crate::{
     error::AppResult,
     notify::{Fired, FiredSink, Notification, Notifier},
     repo::reminders,
-    services::events,
+    services::{events, focus},
     state::AppState,
 };
 
@@ -172,6 +172,9 @@ impl Engine {
                 }
             }
         }
+        if let Err(error) = focus::finish_due(state, notifier) {
+            log(&format!("no se pudo cerrar la sesión de enfoque: {error}"));
+        }
         Ok(report)
     }
 
@@ -184,6 +187,9 @@ impl Engine {
             .read(|conn| Ok(reminders::next_after(conn, &dates::format_instant(now))?))?;
         if let Some(instant) = next.and_then(|text| dates::parse_instant(&text).ok()) {
             wake = wake.min(instant);
+        }
+        if let Some(end) = focus::next_end(state)? {
+            wake = wake.min(end);
         }
         if let Some(retry) = self.retries.values().map(|retry| retry.not_before).min() {
             wake = wake.min(retry);

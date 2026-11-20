@@ -150,6 +150,15 @@ export interface HabitLog {
   date: string;
 }
 
+/** A focus session on a task; without `endedAt` it is still running (D-97). */
+export interface TimeEntry {
+  id: string;
+  taskId: string;
+  startedAt: string;
+  endedAt: string | null;
+  plannedMinutes: number;
+}
+
 export interface Task {
   id: string;
   title: string;

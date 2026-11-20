@@ -18,7 +18,7 @@ use crate::{
         model::{
             Event, EventOccurrence, Folder, FolderWithCount, Habit, HabitLog, Note, NoteReminder,
             NoteSummary, NoteTemplate, NoteTitle, NoteVersion, NoteVersionSummary, Reminder, Tag,
-            TagWithCount, Task,
+            TagWithCount, Task, TimeEntry,
         },
         search::SearchHit,
     },
@@ -202,6 +202,20 @@ fn current() -> Value {
         "habitLog": HabitLog {
             habit_id: "habit-1".into(),
             date: "2026-03-12".into(),
+        },
+        "timeEntry": TimeEntry {
+            id: "entry-1".into(),
+            task_id: "task-1".into(),
+            started_at: "2026-03-12T09:00:00Z".into(),
+            ended_at: Some("2026-03-12T09:25:00Z".into()),
+            planned_minutes: 25,
+        },
+        "timeEntryRunning": TimeEntry {
+            id: "entry-2".into(),
+            task_id: "task-1".into(),
+            started_at: "2026-03-12T10:00:00Z".into(),
+            ended_at: None,
+            planned_minutes: 50,
         },
         "noteReminder": NoteReminder {
             id: "nreminder-1".into(),
