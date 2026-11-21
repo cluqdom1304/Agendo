@@ -16,8 +16,8 @@
 | 1.0.x | publicada (1.0.0 a 1.0.7) | 0–6 | Agenda con recordatorios, calendario, etiquetas, copia de seguridad |
 | 2.0.x | publicada (2.0.0 a 2.0.3) | 7–15 (+11B) | Notas con carpetas, editor, adjuntos, historial, enlaces, recurrencia, interoperabilidad; 2.0.1–2.0.3 corrigen menús cortados |
 | 3.0.0 | **publicada** (la 2.1.0 no se publica; incluye lo hecho en 16–17) | 16–27 | Rendimiento, mejoras de lo existente, rediseño tipo «Woday», prioridades, eventos, hábitos, lenguaje natural, planificar el día, enfoque y resumen semanal |
-| 3.0.1 | preparada (sin publicar) | — | Corrige botones de la notificación recortados y eventos/tareas del calendario que solo mostraban la hora |
-| 3.0.2 | preparada (sin publicar) | — | La ventana recuerda tamaño, posición y estado maximizado al cerrar y volver a abrir |
+| 3.0.1 | **publicada** | — | Corrige botones de la notificación recortados y eventos/tareas del calendario que solo mostraban la hora |
+| 3.0.2 | **publicada** | — | La ventana recuerda tamaño, posición y estado maximizado al cerrar y volver a abrir |
 | Anexos | — | — | Métricas, discrepancias, cierre de 1.0.0 y registro cronológico de sesión |
 
 ---
