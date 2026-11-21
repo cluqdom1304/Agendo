@@ -58,24 +58,46 @@ body {
   background: color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
+/* Thin rounded thumb inset from the edge (F26.1-18): the bar keeps a transparent border so
+   the visible pill never touches the panel's edge, and the track stops short of the rounded
+   corners. It only shows while the pointer or the focus is inside the scroller. */
 ::-webkit-scrollbar {
   width: var(--scrollbar-width);
   height: var(--scrollbar-width);
 }
 
 ::-webkit-scrollbar-track {
+  margin: var(--space-3) 0;
+  background: transparent;
+}
+
+::-webkit-scrollbar-track:horizontal {
+  margin: 0 var(--space-3);
+}
+
+::-webkit-scrollbar-button,
+::-webkit-scrollbar-corner {
+  display: none;
   background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: var(--radius-chip);
+  min-height: 32px;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-color: transparent;
+  background-clip: padding-box;
   transition: background-color var(--motion-fast) var(--ease-apple);
 }
 
 :hover::-webkit-scrollbar-thumb,
 :focus-within::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
+  background-color: var(--scrollbar-thumb);
+}
+
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--text-secondary);
 }
 
 /* ---- Shared controls (D-39, F26.1): one definition instead of a copy per component. ---- */

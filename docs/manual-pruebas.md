@@ -515,6 +515,7 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Abrir y cerrar diálogos y la paleta sin tirones con Mica activado.
   - [ ] «Planificar mi día» con tareas que ya son de hoy y otras sin fecha: cada grupo en su tarjeta, sin filas montadas, y las tarjetas visibles en modo oscuro.
   - [ ] En modo claro, el borde superior de la ventana no muestra una línea clara sobre la barra oscura.
+  - [ ] Barras de desplazamiento (Ajustes, paneles, notas): píldora fina separada del borde, que no llega a las esquinas redondeadas y se marca al pasar el ratón.
   - [ ] Jerarquía: títulos de fila y horas en negrita, etiquetas de grupo con contador en píldora, y más separación entre bloques, filas y tarjetas sin que nada se vea apretado.
   - [ ] Contraste y legibilidad del acento coral en claro y oscuro (texto, foco y número de hoy); con «Reducir movimiento» de Windows no hay animaciones.
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.

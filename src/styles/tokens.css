@@ -97,7 +97,7 @@
   --space-6: 24px;
   --space-8: 32px;
 
-  --scrollbar-width: 4px;
+  --scrollbar-width: 11px;
 
   /* The sidebar and the bar above it stay dark in both themes (D-92): the same values here,
      outside the theme blocks. Content sits on panels that do follow the theme. */
