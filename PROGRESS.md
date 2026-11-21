@@ -668,7 +668,8 @@ Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la inter
 ## Versión 3.0.1 (2026-11-21)
 - Notificación de tarea: botones acortados a «Hecha», «+10 min», «+1 h» y «Mañana» para que Windows no recorte los textos (mismas acciones e ids).
 - Calendario semanal/diario: en los bloques el título va primero y la hora debajo; en el mes el título se recorta con puntos suspensivos y la hora no lo desplaza.
-- Batería `[A]` en verde (cargo 570 tests, vitest 1049, size 107,6/316,1 KB). `[H]`: V3.0.1-01 en `docs/manual-pruebas.md`.
+- Posponer desde la notificación (+10 min, +1 h, Mañana) ahora mueve también la fecha y hora de la tarea (las de «Mañana» a las 9:00), crea el aviso a esa hora (sin duplicar uno ya existente) y descarta los avisos relativos que quedarían en el pasado; una tarea sin fecha solo recibe el aviso. Los avisos pospuestos sobreviven a editar la tarea. Cada acción recibida se registra en `agendo.log` («acción «…» recibida») para diagnosticar que el botón no responda: el plugin de Windows solo informa del clic mientras el aviso está en pantalla, no una vez en el Centro de actividades.
+- Batería `[A]` en verde (cargo 571 tests, vitest 1049, size 107,6/316,1 KB). `[H]`: V3.0.1-01 en `docs/manual-pruebas.md`.
 
 ## Métricas
 

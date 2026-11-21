@@ -235,6 +235,33 @@ pub fn replace_unsent(
     Ok(())
 }
 
+/// Deletes the unsent reminders relative to the task's time that are due at `instant` or before.
+pub fn delete_unsent_relative_through(
+    tx: &Transaction<'_>,
+    task_id: &str,
+    instant: &str,
+) -> rusqlite::Result<()> {
+    tx.prepare_cached(
+        "DELETE FROM reminders
+         WHERE task_id = ?1 AND is_sent = 0 AND offset_minutes IS NOT NULL AND notify_at <= ?2",
+    )?
+    .execute(params![task_id, instant])?;
+    Ok(())
+}
+
+/// Whether the task already has an unsent reminder exactly at `instant`.
+pub fn unsent_exists_at(
+    tx: &Transaction<'_>,
+    task_id: &str,
+    instant: &str,
+) -> rusqlite::Result<bool> {
+    tx.prepare_cached(
+        "SELECT EXISTS(SELECT 1 FROM reminders
+                       WHERE task_id = ?1 AND is_sent = 0 AND notify_at = ?2)",
+    )?
+    .query_row(params![task_id, instant], |row| row.get(0))
+}
+
 /// Adds one unsent reminder at a custom time without touching the ones the task already has
 /// (a snoozed notification, F17-02).
 pub fn insert_custom(

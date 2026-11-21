@@ -243,3 +243,45 @@ fn a_click_opens_the_task_or_the_note_and_does_not_complete_anything() {
         .expect("task");
     assert!(!still_open.is_completed);
 }
+
+#[test]
+fn snoozing_a_dated_task_moves_its_time_and_rings_there() {
+    let (state, _) = crate::state::test_state();
+    let madrid = chrono::FixedOffset::east_opt(3600).expect("offset");
+    let id = tasks::create(
+        &state,
+        tasks::TaskCreateInput {
+            title: Some("Entregar".into()),
+            due_date: Some("2026-03-10".into()),
+            due_time: Some("10:30".into()),
+            duration_minutes: Some(60),
+            ..tasks::TaskCreateInput::default()
+        },
+    )
+    .expect("task")
+    .id;
+    snooze(&state, &id, ACTION_SNOOZE_10, &madrid).expect("snooze");
+    let task = state
+        .db
+        .read(|conn| Ok(crate::repo::tasks::get(conn, &id)?))
+        .expect("read")
+        .expect("task");
+    // The test clock reads 10:00 UTC, which is 11:00 in Madrid.
+    assert_eq!(task.due_date.as_deref(), Some("2026-03-10"));
+    assert_eq!(task.due_time.as_deref(), Some("11:10"));
+    assert_eq!(task.duration_minutes, Some(60));
+    assert_eq!(unsent_times(&state, &id), ["2026-03-10T10:10:00Z"]);
+
+    snooze(&state, &id, ACTION_SNOOZE_TOMORROW, &madrid).expect("tomorrow");
+    let task = state
+        .db
+        .read(|conn| Ok(crate::repo::tasks::get(conn, &id)?))
+        .expect("read")
+        .expect("task");
+    assert_eq!(task.due_date.as_deref(), Some("2026-03-11"));
+    assert_eq!(task.due_time.as_deref(), Some("09:00"));
+    assert_eq!(
+        unsent_times(&state, &id),
+        ["2026-03-10T10:10:00Z", "2026-03-11T08:00:00Z"]
+    );
+}

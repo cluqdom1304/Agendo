@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use chrono::{Duration, Local, NaiveTime, TimeZone};
+use chrono::{Duration, Local, NaiveTime, TimeZone, Timelike};
 use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, Runtime};
@@ -218,8 +218,10 @@ pub fn perform_action(
     }
 }
 
-/// Adds a reminder of the task 10 minutes or an hour from now, or at `TOMORROW_AT` tomorrow in
-/// `zone`. The reminders the task already has stay as they are.
+/// Postpones the task: its date and time move to 10 minutes or an hour from now, or to
+/// `TOMORROW_AT` tomorrow in `zone`, and a reminder sounds at the new time. A task without a
+/// date only gets the reminder. Reminders relative to the time follow the task; the ones that
+/// would already be in the past are dropped so they do not sound again at once.
 fn snooze<Tz: TimeZone>(
     state: &AppState,
     task_id: &str,
@@ -227,24 +229,60 @@ fn snooze<Tz: TimeZone>(
     zone: &Tz,
 ) -> Result<(), AppError> {
     let now = state.clock.now();
-    let at = match action_id {
-        ACTION_SNOOZE_10 => now + Duration::minutes(10),
-        ACTION_SNOOZE_HOUR => now + Duration::hours(1),
+    let (date, time) = match action_id {
+        ACTION_SNOOZE_10 | ACTION_SNOOZE_HOUR => {
+            let delta = if action_id == ACTION_SNOOZE_10 {
+                Duration::minutes(10)
+            } else {
+                Duration::hours(1)
+            };
+            let local = dates::utc_to_local(zone, now + delta);
+            let time = NaiveTime::from_hms_opt(local.hour(), local.minute(), 0)
+                .ok_or_else(|| AppError::Internal("hora de posponer no válida".into()))?;
+            (local.date(), time)
+        }
         ACTION_SNOOZE_TOMORROW => {
-            let tomorrow = dates::utc_to_local(zone, now).date() + Duration::days(1);
             let time = NaiveTime::from_hms_opt(TOMORROW_AT.0, TOMORROW_AT.1, 0)
                 .ok_or_else(|| AppError::Internal("hora de «mañana» no válida".into()))?;
-            dates::local_to_utc(zone, tomorrow, time)?
+            (
+                dates::utc_to_local(zone, now).date() + Duration::days(1),
+                time,
+            )
         }
         _ => return Err(AppError::Internal("acción de posponer desconocida".into())),
     };
+    let at = dates::local_to_utc(zone, date, time)?;
     let notify_at = dates::format_instant(at);
+    let now_text = dates::format_instant(now);
+
+    let task = state
+        .db
+        .read(|conn| Ok(repo::tasks::get(conn, task_id)?))?
+        .filter(|task| !task.is_completed)
+        .ok_or_else(|| AppError::NotFound("tarea no encontrada".into()))?;
+    if task.due_date.is_some() {
+        let start = i64::from(time.hour()) * 60 + i64::from(time.minute());
+        let overflows = task
+            .duration_minutes
+            .is_some_and(|duration| start + duration > 24 * 60);
+        tasks::update(
+            state,
+            task_id,
+            tasks::TaskPatchInput {
+                due_date: Some(Some(dates::format_date(date))),
+                due_time: Some(Some(dates::format_time(time))),
+                duration_minutes: overflows.then_some(None),
+                ..Default::default()
+            },
+        )?;
+    }
+
     let created = state.clock.now_string();
     state.db.write(|tx| {
-        let task = repo::tasks::get(tx, task_id)?
-            .filter(|task| !task.is_completed)
-            .ok_or_else(|| AppError::NotFound("tarea no encontrada".into()))?;
-        reminder_repo::insert_custom(tx, &state.ids.new_id(), &task.id, &notify_at, &created)?;
+        reminder_repo::delete_unsent_relative_through(tx, task_id, &now_text)?;
+        if !reminder_repo::unsent_exists_at(tx, task_id, &notify_at)? {
+            reminder_repo::insert_custom(tx, &state.ids.new_id(), task_id, &notify_at, &created)?;
+        }
         Ok(())
     })?;
     state.wake.notify_one();
@@ -276,6 +314,14 @@ pub fn install_actions<R: Runtime>(app: &AppHandle<R>, state: Arc<AppState>) {
                 .and_then(|extra| extra.get(key))
                 .and_then(Value::as_str)
         };
+        crate::applog::info(
+            "notify",
+            &format!(
+                "acción «{}» recibida (tarea: {})",
+                performed.action_id(),
+                text(EXTRA_TASK).is_some()
+            ),
+        );
         let outcome = perform_action(
             &state,
             performed.action_id(),
