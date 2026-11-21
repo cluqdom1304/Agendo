@@ -520,3 +520,6 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
   - [ ] Contraste y legibilidad del acento coral en claro y oscuro (texto, foco y número de hoy); con «Reducir movimiento» de Windows no hay animaciones.
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.
 
+
+## Versión 3.0.1
+- [ ] V3.0.1-01 `[H]`: la notificación de una tarea muestra los cuatro botones completos («Hecha», «+10 min», «+1 h», «Mañana»); y en el calendario (semana, día y mes) los eventos y tareas muestran su título, no solo la hora.

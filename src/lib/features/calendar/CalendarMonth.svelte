@@ -110,7 +110,7 @@
                 {#if timeRangeOf(occurrence)}<span class="time"
                     >{occurrence.startTime}</span
                   >{/if}
-                {name}
+                <span class="title">{name}</span>
               </button>
             {:else if entry.task}
               {@const task = entry.task}
@@ -126,7 +126,7 @@
                 onclick={() => onOpenTask(task)}
               >
                 {#if task.dueTime}<span class="time">{task.dueTime}</span>{/if}
-                {task.title || t.calendar.untitled}
+                <span class="title">{task.title || t.calendar.untitled}</span>
                 {#if tag}<span class="tag-name"
                     >{tag.name}{#if moreTags?.(task)}
                       +{moreTags(task)}{/if}</span
@@ -242,9 +242,26 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    display: flex;
+    align-items: baseline;
+    min-width: 0;
     transition:
       background-color var(--motion-instant) linear,
       transform var(--motion-instant) var(--ease-out);
+  }
+
+  .chip .title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chip .tag-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .chip:hover {
@@ -274,6 +291,7 @@
   }
 
   .time {
+    flex: none;
     color: var(--text-secondary);
     margin-right: 4px;
     font-variant-numeric: tabular-nums;

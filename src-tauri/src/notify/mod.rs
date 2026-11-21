@@ -35,15 +35,15 @@ pub const OPEN_EVENT: &str = "reminder:open";
 /// Action type of the notifications of tasks, and the id and title of its one button (F13-06).
 const TASK_ACTIONS: &str = "task-reminder";
 const ACTION_DONE: &str = "done";
-const ACTION_DONE_TITLE: &str = "Marcar como hecha";
+const ACTION_DONE_TITLE: &str = "Hecha";
 /// Snooze buttons (F17-02): the id says for how long.
 const ACTION_SNOOZE_10: &str = "snooze-10m";
 const ACTION_SNOOZE_HOUR: &str = "snooze-1h";
 const ACTION_SNOOZE_TOMORROW: &str = "snooze-tomorrow";
 const SNOOZE_BUTTONS: [(&str, &str); 3] = [
-    (ACTION_SNOOZE_10, "Posponer 10 min"),
-    (ACTION_SNOOZE_HOUR, "Posponer 1 h"),
-    (ACTION_SNOOZE_TOMORROW, "Posponer a mañana"),
+    (ACTION_SNOOZE_10, "+10 min"),
+    (ACTION_SNOOZE_HOUR, "+1 h"),
+    (ACTION_SNOOZE_TOMORROW, "Mañana"),
 ];
 /// Local time at which a task snoozed to tomorrow sounds again.
 const TOMORROW_AT: (u32, u32) = (9, 0);

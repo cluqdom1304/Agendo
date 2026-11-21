@@ -310,13 +310,15 @@
                   if (!taskDrag.consumeClick()) onOpenTask(item.task);
                 }}
               >
+                <span class="title">
+                  {item.task.title || t.calendar.untitled}
+                </span>
                 <span class="time">
                   {timeRange(
                     item.task.dueTime ?? "",
                     item.task.durationMinutes,
                   )}
                 </span>
-                {item.task.title || t.calendar.untitled}
                 {#if tag}<span class="tag-name"
                     >{tag.name}{#if moreTags?.(item.task)}
                       +{moreTags(item.task)}{/if}</span
@@ -371,8 +373,8 @@
                     onOpenEvent?.(occurrence.eventId);
                 }}
               >
+                <span class="title">{name}</span>
                 <span class="time">{timeRangeOf(occurrence)}</span>
-                {name}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <span
                   class="handle"
@@ -692,10 +694,24 @@
     cursor: ns-resize;
   }
 
+  .block {
+    white-space: normal;
+  }
+
+  .block .title {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .block .time {
+    display: block;
+    overflow: hidden;
     color: var(--text-secondary);
-    margin-right: 4px;
+    font-size: 11px;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .now {
