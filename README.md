@@ -14,6 +14,9 @@ Agenda y editor de notas de escritorio para Windows 11. Combina la estructura de
 - **POR HACER y AGENDA:** tareas sin fecha con orden manual y bloques por día con hora opcional.
 - **Etiquetas:** una por asignatura, con color, contador de pendientes y filtro en la barra lateral.
 - **Notas:** editor con negrita, cursiva, código, resaltado, títulos, listas, casillas, tablas, citas, bloques de código e imágenes; carpetas de hasta 5 niveles, etiquetas, notas fijadas, plantillas, historial de versiones, enlaces entre notas con enlaces entrantes, nota diaria y recordatorios.
+- **Prioridades, subtareas y captura en lenguaje natural:** prioridad en cuatro niveles, progreso de checklist en cada fila y «mañana a las 10 reunión #trabajo !alta» se convierte en tarea.
+- **Eventos y hábitos:** eventos con duración y repetición, hábitos con rachas y gráfico de 7 días.
+- **Planificar mi día, Enfoque y resumen semanal:** reparte tareas en bloques de tiempo, cronometra con pausa y revisa tu semana.
 - **Hoy:** tareas del día, nota diaria y notas fijadas en una sola vista (`Ctrl+Mayús+3`).
 - **Tareas recurrentes** (diaria, semanal, mensual o anual) y botón «Marcar como hecha» en la notificación.
 - **Exportar e importar:** notas a Markdown (con imágenes) y HTML, todo a JSON, carpetas de Markdown y `.txt`, y exportaciones de Evernote (`.enex`).

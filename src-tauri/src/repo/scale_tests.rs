@@ -456,3 +456,155 @@ fn a_1_0_7_database_migrates_to_the_current_schema_keeping_its_data() {
     assert_eq!(integrity, "ok");
     assert_eq!(count("SELECT COUNT(*) FROM pragma_foreign_key_check"), 0);
 }
+
+/// F27-01: the schema of 2.0.3 is version 14. Build it, fill tasks, notes and tags like a user
+/// would, and open it with every migration of 3.0.0 without losing or altering anything.
+#[test]
+fn a_2_0_3_database_migrates_to_3_0_0_keeping_its_data() {
+    let dir = TempDir::new();
+    let path = dir.database();
+    std::fs::create_dir_all(path.parent().expect("parent")).expect("dir");
+    {
+        let mut conn = Connection::open(&path).expect("open 2.0.3");
+        migrate::migrate(&mut conn, &MIGRATIONS[..14]).expect("schema 14");
+        assert_eq!(migrate::current_version(&conn).expect("version"), 14);
+        conn.execute_batch(
+            "INSERT INTO tags (id, name, color_hex, position, created_at)
+               VALUES ('g1', 'Trabajo', '#4C8DFF', 0, '2026-01-01T00:00:00Z');
+             INSERT INTO folders (id, name, position, created_at, updated_at)
+               VALUES ('f1', 'Diario', 0, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+             INSERT INTO notes (id, folder_id, title, content_text, created_at, updated_at)
+               VALUES ('n1', 'f1', 'Reunión', 'álgebra proyecto', '2026-01-01T00:00:00Z',
+                       '2026-01-01T00:00:00Z');
+             INSERT INTO note_tags (note_id, tag_id) VALUES ('n1', 'g1');
+             INSERT INTO tasks (id, title, due_date, due_time, position, created_at, updated_at)
+               VALUES ('t1', 'Entrega', '2026-02-03', '09:30', 0,
+                       '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+             INSERT INTO tasks (id, title, is_completed, completed_at, position, created_at, updated_at)
+               VALUES ('t2', 'Hecha', 1, '2026-01-05T10:00:00Z', 1,
+                       '2026-01-01T00:00:00Z', '2026-01-05T10:00:00Z');
+             INSERT INTO task_tags (task_id, tag_id) VALUES ('t1', 'g1');
+             INSERT INTO reminders (id, task_id, notify_at, offset_minutes, is_sent, created_at)
+               VALUES ('r1', 't1', '2026-02-03T08:30:00Z', 60, 0, '2026-01-01T00:00:00Z');
+             INSERT INTO settings (key, value) VALUES ('theme', 'dark');
+             INSERT INTO tasks_fts (task_id, title, content_text) VALUES ('t1', 'Entrega', '');",
+        )
+        .expect("user data");
+    }
+
+    let conn = db::open(&path, &MIGRATIONS).expect("migrated");
+    assert_eq!(
+        migrate::current_version(&conn).expect("version"),
+        MIGRATIONS.len() as u32
+    );
+    let count = |sql: &str| -> i64 { conn.query_row(sql, [], |r| r.get(0)).expect(sql) };
+    assert_eq!(count("SELECT COUNT(*) FROM tasks"), 2);
+    assert_eq!(
+        count(
+            "SELECT COUNT(*) FROM tasks WHERE priority = 0 AND checklist_done = 0 AND checklist_total = 0"
+        ),
+        2
+    );
+    assert_eq!(
+        count(
+            "SELECT COUNT(*) FROM tasks WHERE id = 't1' AND due_date = '2026-02-03' AND due_time = '09:30'"
+        ),
+        1
+    );
+    assert_eq!(
+        count("SELECT COUNT(*) FROM tasks WHERE id = 't2' AND is_completed = 1"),
+        1
+    );
+    assert_eq!(
+        count("SELECT COUNT(*) FROM notes WHERE id = 'n1' AND folder_id = 'f1'"),
+        1
+    );
+    assert_eq!(count("SELECT COUNT(*) FROM note_tags"), 1);
+    assert_eq!(count("SELECT COUNT(*) FROM task_tags"), 1);
+    assert_eq!(count("SELECT COUNT(*) FROM reminders WHERE id = 'r1'"), 1);
+    assert_eq!(
+        count("SELECT COUNT(*) FROM settings WHERE key = 'theme' AND value = 'dark'"),
+        1
+    );
+    for table in [
+        "events",
+        "event_tags",
+        "event_reminders",
+        "habits",
+        "habit_logs",
+        "time_entries",
+    ] {
+        assert_eq!(
+            count(&format!("SELECT COUNT(*) FROM {table}")),
+            0,
+            "{table}"
+        );
+    }
+    assert_eq!(
+        super::search::search(&conn, "Entrega", 10)
+            .expect("search")
+            .len(),
+        1
+    );
+    let integrity: String = conn
+        .query_row("PRAGMA integrity_check", [], |r| r.get(0))
+        .expect("integrity");
+    assert_eq!(integrity, "ok");
+    assert_eq!(count("SELECT COUNT(*) FROM pragma_foreign_key_check"), 0);
+}
+
+/// F27-01: events (a fifth of them recurring) and habits with a year of marks stay fast to read.
+#[test]
+fn events_and_habits_at_scale_read_fast() {
+    use super::{events, habits};
+
+    let (event_count, runs) = if cfg!(debug_assertions) {
+        (1_000, 1)
+    } else {
+        (20_000, 5)
+    };
+    let conn = db::open_in_memory(&MIGRATIONS).expect("database");
+    conn.execute(
+        "WITH RECURSIVE n(i) AS (SELECT 0 UNION ALL SELECT i + 1 FROM n WHERE i < ?1 - 1)
+         INSERT INTO events (id, title, start_date, start_time, end_date, end_time, rrule,
+                             created_at, updated_at)
+         SELECT 'e' || i, 'Evento ' || i, date('2026-01-01', '+' || (i % 365) || ' days'),
+                '10:00', date('2026-01-01', '+' || (i % 365) || ' days'), '11:00',
+                CASE WHEN i % 5 = 0 THEN 'FREQ=WEEKLY' END, ?2, ?2
+         FROM n",
+        params![event_count, NOW],
+    )
+    .expect("events");
+    conn.execute_batch(
+        "WITH RECURSIVE n(i) AS (SELECT 0 UNION ALL SELECT i + 1 FROM n WHERE i < 199)
+         INSERT INTO habits (id, title, position, created_at, updated_at)
+         SELECT 'h' || i, 'Hábito ' || i, i, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z' FROM n;
+         WITH RECURSIVE d(i) AS (SELECT 0 UNION ALL SELECT i + 1 FROM d WHERE i < 364)
+         INSERT INTO habit_logs (habit_id, date)
+         SELECT h.id, date('2026-01-01', '+' || d.i || ' days') FROM habits h, d
+         WHERE (d.i + CAST(substr(h.id, 2) AS INTEGER)) % 2 = 0;",
+    )
+    .expect("habits");
+
+    let mut found = 0;
+    let month = best_of(runs, || {
+        found = events::candidates(&conn, "2026-03-01", "2026-03-31")
+            .expect("events")
+            .len();
+    });
+    assert!(found > 0);
+    let list = best_of(runs, || {
+        assert_eq!(habits::list(&conn, false).expect("habits").len(), 200);
+    });
+    let marks = best_of(runs, || {
+        assert_eq!(habits::all_marks(&conn).expect("marks").len(), 200);
+    });
+    eprintln!(
+        "F27-01 {event_count} events: month {month:?}; 200 habits: list {list:?}, all marks {marks:?}"
+    );
+    if !cfg!(debug_assertions) {
+        assert!(month.as_millis() < 30, "event month took {month:?}");
+        assert!(list.as_millis() < 30, "habit list took {list:?}");
+        assert!(marks.as_millis() < 250, "habit marks took {marks:?}");
+    }
+}

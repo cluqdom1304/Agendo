@@ -1,6 +1,6 @@
 [package]
 name = "agendo"
-version = "2.0.3"
+version = "3.0.0"
 description = "Agenda y editor de notas de escritorio, 100 % local."
 authors = ["Cristian Luque Domínguez"]
 edition = "2024"

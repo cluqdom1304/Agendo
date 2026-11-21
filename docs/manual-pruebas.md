@@ -429,7 +429,7 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
 ## U-01 — Cambio de sección sin parpadeo (`[H]`)
 - [x] (confirmado por el usuario) Pasar varias veces de Agenda a Notas y a Hoy (también justo tras arrancar): la barra Agenda/Notas/Hoy no debe parpadear ni saltar, y el panel lateral debe aparecer sin desplazar la barra de herramientas.
 
-## Versión 3.0.0 (`[H]`, pendientes; se detallan al implementar cada fase)
+## Versión 3.0.0 (`[H]`, pendientes de validación humana)
 
 - **Fase 19 — shell y sistema visual (F19-06):**
   - [ ] Sidebar y barra superior oscuros en tema claro y oscuro, con Mica, Acrylic y sin efecto; texto legible en todos los casos (también en las carpetas, etiquetas y el editor de etiquetas).

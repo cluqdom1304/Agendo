@@ -1,6 +1,6 @@
 # PROGRESS.md
 
-**Fase activa:** versión 3.0.0, Fase 24 (Fases 18 a 23 hechas; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
+**Fase activa:** versión 3.0.0 cerrada y publicada (Fase 27 hecha; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
 **Siguiente tarea:** Fase 24 terminada (`[A]` en verde); falta F24-03 `[H]` (lista «Fase 24» de `docs/manual-pruebas.md`) y F21-05. Fase 25 terminada (`[A]` en verde, F25-03 validada); falta F25-06 `[H]`, la ampliación de pausa, cambio de tarea y registro exacto (últimos ítems de la lista «Fase 25» de `docs/manual-pruebas.md`). Fase 26 terminada (`[A]` en verde); falta F26-04 `[H]`. Fase 26.1 (rediseño visual, D-101) terminada (`[A]` en verde); falta F26.1-12 `[H]`. La Fase 27 no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
 **Última actualización:** 2026-11-20 (Fase 26.1 de rediseño visual completada; Fases 24 a 26.1 pendientes de `[H]`)
@@ -15,7 +15,7 @@
 |---------|--------|-------|-----------|
 | 1.0.x | publicada (1.0.0 a 1.0.7) | 0–6 | Agenda con recordatorios, calendario, etiquetas, copia de seguridad |
 | 2.0.x | publicada (2.0.0 a 2.0.3) | 7–15 (+11B) | Notas con carpetas, editor, adjuntos, historial, enlaces, recurrencia, interoperabilidad; 2.0.1–2.0.3 corrigen menús cortados |
-| 3.0.0 | **planificada** (la 2.1.0 no se publica; incluye lo hecho en 16–17) | 16–27 | Rendimiento, mejoras de lo existente, rediseño tipo «Woday», prioridades, eventos, hábitos, lenguaje natural, planificar el día, enfoque y resumen semanal |
+| 3.0.0 | **publicada** (la 2.1.0 no se publica; incluye lo hecho en 16–17) | 16–27 | Rendimiento, mejoras de lo existente, rediseño tipo «Woday», prioridades, eventos, hábitos, lenguaje natural, planificar el día, enfoque y resumen semanal |
 | Anexos | — | — | Métricas, discrepancias, cierre de 1.0.0 y registro cronológico de sesión |
 
 ---
@@ -645,9 +645,15 @@ Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la inter
 - **Discrepancia:** CLAUDE.md §2 pide un commit por tarea; las tareas de esta fase comparten tokens y clases y se entregan en un solo commit de diseño.
 
 ## Fase 27 — Cierre de 3.0.0
-- [ ] F27-01 `[A]` Migración real desde una base 2.0.3 con datos (integridad) y pruebas de escala en release con eventos y hábitos.
-- [ ] F27-02 `[A]` Versión `3.0.0` en los 5 sitios (CLAUDE.md §10), entrada en este archivo, `docs/manual-pruebas.md` § «Versión 3.0.0», `docs/metricas.md` y README.
-- [ ] F27-03 `[A]` Batería completa de CLAUDE.md §4 en verde; `Estado: AWAITING_HUMAN` con los `[H]` de F16 a F26. Etiqueta, push e instaladores **solo** si el usuario dice «subir a GitHub» / «sacar la nueva versión».
+- [x] F27-01 `[A]` Migración real desde una base 2.0.3 con datos (integridad) y pruebas de escala en release con eventos y hábitos.
+- [x] F27-02 `[A]` Versión `3.0.0` en los 5 sitios (CLAUDE.md §10), entrada en este archivo, `docs/manual-pruebas.md` § «Versión 3.0.0», `docs/metricas.md` y README.
+- [x] F27-03 `[A]` Batería completa de CLAUDE.md §4 en verde; `Estado: AWAITING_HUMAN` con los `[H]` de F16 a F26. Etiqueta, push e instaladores **solo** si el usuario dice «subir a GitHub» / «sacar la nueva versión».
+
+**Cierre de F27 (2026-11-21):** el usuario ordenó cerrar y publicar la 3.0.0.
+- F27-01: tests `a_2_0_3_database_migrates_to_3_0_0_keeping_its_data` (esquema 14 con tareas, notas, etiquetas y recordatorios → esquema 19, `integrity_check` ok, sin pérdidas) y `events_and_habits_at_scale_read_fast` (release: 20 000 eventos, mes 4,8 ms; 200 hábitos con un año de marcas, lista 0,14 ms, todas las marcas 12 ms).
+- F27-02: versión 3.0.0 en `package.json`, `Cargo.toml`, `tauri.conf.json` y los dos lockfiles; README y métricas al día.
+- F27-03: batería completa en verde (`cargo fmt --check`, `clippy -D warnings`, Rust 570 + integración, lint, check 0/0, TS 1049, build, size 107,6 KB inicial / 316,0 KB total). Ejecutable release 12 064 768 B; instaladores `Agendo_3.0.0_x64-setup.exe` (3,36 MiB) y `Agendo_3.0.0_x64_es-ES.msi` (5,35 MiB), sin firma.
+- Siguen pendientes los `[H]` de F8 a F26 (`docs/manual-pruebas.md`), N-01/N-02 y `npm run e2e`; el agente no los marca.
 
 **Riesgos:** es la versión más grande (3 migraciones nuevas, 2 entidades nuevas y rediseño del shell). Los eventos repetidos y sus recordatorios tocan el scheduler (`Clock`, `domain/dates.rs`); el sidebar oscuro fijo exige revisar contraste y Mica en claro (D-36); el presupuesto de JS obliga a cargar las vistas nuevas con `import()`. Cada fase termina en `AWAITING_HUMAN` (CLAUDE.md §3); se pueden agrupar fases en una sola validación si el usuario lo pide.
 **Orden de recorte si falta tiempo:** Enfoque (F25) → atrás/adelante (F19-03) → expansión de eventos repetidos (F21) → gráfico de 7 días en hábitos.
