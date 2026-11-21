@@ -521,6 +521,9 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.
 
 
+## Versión 3.0.2
+- [ ] V3.0.2-01 `[H]`: cambiar el tamaño y la posición de la ventana, cerrar y abrir: vuelve igual. Repetir maximizada (al abrir sigue maximizada y al restaurarla recupera el tamaño anterior) y con un segundo monitor desconectado (la ventana aparece centrada en el principal).
+
 ## Versión 3.0.1
 - [ ] V3.0.1-01 `[H]`: la notificación de una tarea muestra los cuatro botones completos («Hecha», «+10 min», «+1 h», «Mañana»); y en el calendario (semana, día y mes) los eventos y tareas muestran su título, no solo la hora.
 - [ ] V3.0.1-02 `[H]`: con una tarea con fecha y hora y un aviso, pulsar «+10 min» mientras el aviso está en pantalla: la hora de la tarea pasa a +10 min, vuelve a sonar entonces y el aviso aparece en su detalle. Si el botón no hace nada, mirar `agendo.log` (¿aparece «acción … recibida»?) y anotar si el aviso seguía en pantalla.

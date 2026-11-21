@@ -17,6 +17,7 @@
 | 2.0.x | publicada (2.0.0 a 2.0.3) | 7–15 (+11B) | Notas con carpetas, editor, adjuntos, historial, enlaces, recurrencia, interoperabilidad; 2.0.1–2.0.3 corrigen menús cortados |
 | 3.0.0 | **publicada** (la 2.1.0 no se publica; incluye lo hecho en 16–17) | 16–27 | Rendimiento, mejoras de lo existente, rediseño tipo «Woday», prioridades, eventos, hábitos, lenguaje natural, planificar el día, enfoque y resumen semanal |
 | 3.0.1 | preparada (sin publicar) | — | Corrige botones de la notificación recortados y eventos/tareas del calendario que solo mostraban la hora |
+| 3.0.2 | preparada (sin publicar) | — | La ventana recuerda tamaño, posición y estado maximizado al cerrar y volver a abrir |
 | Anexos | — | — | Métricas, discrepancias, cierre de 1.0.0 y registro cronológico de sesión |
 
 ---
@@ -664,6 +665,10 @@ Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la inter
 ---
 
 # Anexos transversales
+
+## Versión 3.0.2 (2026-11-21)
+- La ventana guarda su geometría (tamaño, posición, maximizada) en `window-state.json` dentro de la carpeta de datos al pedir el cierre (`window/state.rs`, `window::remember`) y la recupera al arrancar (`window::restore`). Sin dependencias nuevas. Si está maximizada se conserva el tamaño normal anterior; si está minimizada no se guarda; si el monitor ya no existe se centra; un tamaño menor que el mínimo se descarta. En desarrollo usa la carpeta `.dev` (D-53).
+- Batería `[A]`: cargo fmt/clippy/test (577 de lib) en verde. `[H]`: V3.0.2-01 en `docs/manual-pruebas.md`.
 
 ## Versión 3.0.1 (2026-11-21)
 - Notificación de tarea: botones acortados a «Hecha», «+10 min», «+1 h» y «Mañana» para que Windows no recorte los textos (mismas acciones e ids).

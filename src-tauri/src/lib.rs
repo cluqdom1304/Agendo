@@ -109,8 +109,19 @@ pub fn run() {
                 Arc::new(TauriNotifier(handle.clone())),
                 Arc::new(TauriFiredSink(handle)),
             ));
+            if let Some(window) = app.get_webview_window("main") {
+                window::restore(&window, &dir);
+            }
             startup::mark("setup_done");
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event
+                && let Some(webview) = window.app_handle().get_webview_window(window.label())
+                && let Ok(dir) = data_dir(window.app_handle())
+            {
+                window::remember(&webview, &dir);
+            }
         })
         .on_page_load(|_webview, payload| match payload.event() {
             PageLoadEvent::Started => startup::mark("page_load_started"),
