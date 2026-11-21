@@ -17,7 +17,7 @@ body {
   height: 100vh;
   overflow: hidden;
   border-radius: var(--radius-window);
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--window-edge);
   background: var(--bg-window-solid);
 }
 

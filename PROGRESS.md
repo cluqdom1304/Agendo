@@ -628,6 +628,7 @@ Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la inter
   - **Editor de notas:** títulos de nivel 2 en negrita y un poco de aire entre párrafos seguidos.
   - **Fluidez:** se quita el `backdrop-filter` de los fondos de modal y paleta (coste a pantalla completa en WebView2 con ventana transparente).
 - [x] F26.1-16 `[A]` «Planificar mi día» roto (captura del usuario): la fila de las tareas que ya son de hoy usaba la clase `fixed`, que Tailwind (cargado en `app.css`) convierte en `position: fixed`; la fila salía del flujo y se montaba sobre el grupo siguiente. Renombrada a `in-today`; el aro de «Nueva tarea» de la Bandeja (`ring`, que añadía una sombra de anillo de Tailwind) pasa a `new-ring`. Dentro de diálogos y popovers (`.ui-form`) las tarjetas usan un tinte translúcido del texto: en oscuro `--bg-card` era igual que `--bg-popover` y la lista y «Tu día» no se distinguían. Nuevo `tailwindClasses.test.ts`: ningún componente puede usar como clase propia una utilidad de Tailwind que cambie posición o dibujo.
+- [x] F26.1-17 `[A]` Línea clara en el borde superior de la ventana en modo claro: el borde de 1 px de `.app-root` usaba `--border-subtle` (negro translúcido) sobre el fondo claro de la ventana. Como la barra superior es oscura en ambos temas, el borde usa el nuevo token opaco `--window-edge`. Batería completa en verde (568 Rust, 1049 TS, lint, check 0/0, build, size).
 - [ ] F26.1-12 `[H]` Revisión visual en Windows 11 (lista «Fase 26.1» de `docs/manual-pruebas.md`).
 
 **Verificaciones [A] de la Fase 26.1:**

@@ -118,6 +118,9 @@
   --top-bar-height: 52px;
   /* The close red of every Windows window, so the caption buttons behave as usual. */
   --caption-close: #c42b1c;
+  /* The window's top edge sits on the top bar, dark in both themes: opaque, so the light
+     window background never shows through it as a pale line. */
+  --window-edge: rgb(40, 40, 45);
   --sidebar-width: 236px;
 }
 
