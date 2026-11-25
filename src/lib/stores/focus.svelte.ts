@@ -87,6 +87,11 @@ export class FocusStore {
     this.#notices.dismiss();
   }
 
+  /** Shows the failure of a focus request made outside this store. */
+  report(error: unknown): void {
+    this.#notices.report(error);
+  }
+
   async load(): Promise<void> {
     try {
       const wasRunning = this.current !== null;

@@ -860,6 +860,12 @@ export const t = {
     dailyNote: "Nota del día",
     createAt: (date: string) => `Crear una tarea el ${date}`,
     openEvent: (title: string) => `Editar el evento «${title}»`,
+    focusSlot: (title: string) => `Enfoque · ${title}`,
+    focusPaused: (spent: string) => `${spent} en pausa`,
+    focusRunning: "en marcha",
+    openFocus: (title: string, detail: string) =>
+      `Enfoque en «${title}», ${detail}. Ver los detalles`,
+    focusDay: (spent: string) => `Enfoque: ${spent}`,
   },
   detail: {
     label: "Detalles de la tarea",

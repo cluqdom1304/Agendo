@@ -106,6 +106,18 @@ pub fn between(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<
     .collect()
 }
 
+/// Sessions with some part in `[from, to)`, oldest first: one that started before the window and
+/// ended inside it counts, and so does the running one.
+pub fn overlapping(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<TimeEntry>> {
+    conn.prepare_cached(&format!(
+        "SELECT {COLUMNS} FROM time_entries
+         WHERE started_at < ?2 AND (started_at >= ?1 OR ended_at IS NULL OR ended_at > ?1)
+         ORDER BY started_at, id"
+    ))?
+    .query_map(params![from, to], map_entry)?
+    .collect()
+}
+
 /// Title of a live task, for the end-of-session notice.
 pub fn task_title(conn: &Connection, task_id: &str) -> rusqlite::Result<Option<String>> {
     conn.prepare_cached("SELECT title FROM tasks WHERE id = ?1 AND deleted_at IS NULL")?

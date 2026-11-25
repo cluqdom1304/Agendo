@@ -7,6 +7,7 @@
   import { t } from "../../i18n";
   import SegmentedControl from "../../shell/SegmentedControl.svelte";
   import type { EventsStore } from "../../stores/events.svelte";
+  import { focusStore, type FocusStore } from "../../stores/focus.svelte";
   import { tagDrag } from "../../stores/tagDrag.svelte";
   import { NO_TAG, tagsStore } from "../../stores/tags.svelte";
   import type { TasksStore } from "../../stores/tasks.svelte";
@@ -15,6 +16,8 @@
   import CalendarDay from "./CalendarDay.svelte";
   import CalendarMonth from "./CalendarMonth.svelte";
   import CalendarWeek from "./CalendarWeek.svelte";
+  import { FocusHistory } from "./focusHistory.svelte";
+  import { focusDays } from "./focusSlots";
   import {
     addDays,
     BLOCK_MINUTES,
@@ -35,10 +38,21 @@
     onOpenEvent: (eventId: string) => void;
     /** Opens the dialog of a new event on a day, at a time if one is given. */
     onNewEvent: (date: string, time: string | null) => void;
+    /** The session in progress: a change to it or to the totals reloads the history. */
+    focus?: FocusStore;
+    history?: FocusHistory;
   }
 
-  let { store, eventStore, view, onOpenTask, onOpenEvent, onNewEvent }: Props =
-    $props();
+  let {
+    store,
+    eventStore,
+    view,
+    onOpenTask,
+    onOpenEvent,
+    onNewEvent,
+    focus = focusStore,
+    history = new FocusHistory({ onError: (error) => focus.report(error) }),
+  }: Props = $props();
 
   const SCALES: { value: ViewMode; label: string }[] = [
     { value: "day", label: t.views.day },
@@ -79,6 +93,16 @@
   $effect(() => {
     void eventStore.show(range.from, range.to);
   });
+  $effect(() => {
+    // Read only to depend on them: starting, pausing, ending or editing time changes one.
+    void focus.current;
+    void focus.totals;
+    void history.show(range.from, range.to);
+  });
+  // The tag filter also hides the time of the tasks it hides; trashed tasks have none.
+  const focused = $derived(
+    focusDays(history.entries, store.visibleTasks, current),
+  );
   const moveEvent = (
     occurrence: EventOccurrence,
     date: string,
@@ -200,6 +224,7 @@
         {today}
         tasksByDate={byDate}
         eventsByDate={eventStore.byDate}
+        focusSeconds={focused.seconds}
         label={t.calendar.monthGrid}
         onShowDay={(date) => view.showDay(date)}
         {onOpenTask}
@@ -215,6 +240,7 @@
         {nowMinutes}
         tasksByDate={byDate}
         eventsByDate={eventStore.byDate}
+        focusByDate={focused.slots}
         label={t.calendar.weekGrid}
         onCreate={create}
         {onOpenTask}
@@ -234,6 +260,7 @@
         {nowMinutes}
         tasksByDate={byDate}
         eventsByDate={eventStore.byDate}
+        focusByDate={focused.slots}
         label={t.calendar.dayGrid}
         onCreate={create}
         {onOpenTask}

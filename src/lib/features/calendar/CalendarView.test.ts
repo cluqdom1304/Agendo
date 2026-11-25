@@ -13,6 +13,9 @@ import {
 } from "../../testing";
 import type { Task, ViewMode } from "../../types";
 import CalendarView from "./CalendarView.svelte";
+import { FocusStore } from "../../stores/focus.svelte";
+import type { TimeEntry } from "../../types";
+import { FocusHistory } from "./focusHistory.svelte";
 
 installLayoutStubs();
 
@@ -34,6 +37,7 @@ async function mount(
   mode: ViewMode,
   tasks: Task[] = [],
   seed: (api: FakeEventsApi) => void = () => undefined,
+  sessions: TimeEntry[] = [],
 ) {
   const api = new FakeApi(tasks);
   const store = new TasksStore({
@@ -53,7 +57,12 @@ async function mount(
   const events = new EventsStore({ api: eventsApi });
   const onOpenEvent = vi.fn();
   const onNewEvent = vi.fn();
+  const focus = new FocusStore({ tickMs: 0 });
+  const focusList = vi.fn(async () => sessions);
+  const history = new FocusHistory({ api: { focusList } });
   render(CalendarView, {
+    focus,
+    history,
     store,
     eventStore: events,
     view,
@@ -70,6 +79,8 @@ async function mount(
     eventsApi,
     onOpenEvent,
     onNewEvent,
+    focus,
+    focusList,
   };
 }
 
@@ -631,5 +642,97 @@ describe("timed tasks in the grid (F24)", () => {
     await pointer("pointerup", window, 0);
     await fireEvent.click(block);
     expect(onOpenTask).toHaveBeenCalled();
+  });
+});
+
+describe("focus time", () => {
+  // Built from local times so the expectations do not depend on the zone of the machine.
+  const session = (
+    id: string,
+    from: string,
+    to: string,
+    seconds: number,
+  ): TimeEntry => ({
+    id,
+    taskId: "a",
+    startedAt: new Date(from).toISOString(),
+    endedAt: new Date(to).toISOString(),
+    plannedMinutes: 25,
+    pausedSeconds: 0,
+    pausedAt: null,
+    spentSeconds: seconds,
+  });
+  const study = makeTask({
+    id: "a",
+    title: "Estudiar",
+    dueDate: "2026-03-10",
+    dueTime: "09:00",
+    durationMinutes: 60,
+  });
+  const morning = session(
+    "s1",
+    "2026-03-10T09:00:00",
+    "2026-03-10T09:30:00",
+    1800,
+  );
+  const slots = (id: string) =>
+    document.querySelectorAll<HTMLElement>(`[data-focus-id="${id}"]`);
+
+  it("draws each session behind the blocks and opens its task", async () => {
+    const { onOpenTask } = await mount("week", [study], undefined, [morning]);
+    await waitFor(() => expect(slots("s1")).toHaveLength(1));
+    const [element] = slots("s1");
+    expect(element.style.top).toBe(`${at(9)}px`);
+    expect(element.style.height).toBe(`${at(0, 30) - 2}px`);
+    expect(element.textContent).toContain("Enfoque · Estudiar");
+    expect(element.textContent).toContain("09:00 – 09:30 · 30 min");
+    const block = document.querySelector<HTMLElement>(".block[data-task-id]");
+    expect(block?.style.left).toContain("8px");
+
+    await fireEvent.click(element);
+    expect(onOpenTask).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "a" }),
+    );
+  });
+
+  it("splits a session that crosses midnight between its two days", async () => {
+    const night = session(
+      "s2",
+      "2026-03-10T23:30:00",
+      "2026-03-11T00:30:00",
+      3600,
+    );
+    await mount("week", [study], undefined, [night]);
+    await waitFor(() => expect(slots("s2")).toHaveLength(2));
+    const [before, after] = slots("s2");
+    expect(before.style.top).toBe(`${at(23, 30)}px`);
+    expect(after.style.top).toBe("0px");
+  });
+
+  it("hides the time of tasks that are not shown", async () => {
+    const { focusList } = await mount("day", [], undefined, [morning]);
+    await waitFor(() => expect(focusList).toHaveBeenCalled());
+    expect(slots("s1")).toHaveLength(0);
+  });
+
+  it("adds up each day in the month view", async () => {
+    const later = session(
+      "s3",
+      "2026-03-10T16:00:00",
+      "2026-03-10T17:10:00",
+      4200,
+    );
+    await mount("month", [study], undefined, [morning, later]);
+    const total = await screen.findByText("Enfoque: 1 h 40 min");
+    expect(total.closest("[data-date]")?.getAttribute("data-date")).toBe(
+      "2026-03-10",
+    );
+  });
+
+  it("reads the history again when the focus time changes", async () => {
+    const { focus, focusList } = await mount("week", [study]);
+    await waitFor(() => expect(focusList).toHaveBeenCalledTimes(1));
+    focus.totals = { a: 60 };
+    await waitFor(() => expect(focusList).toHaveBeenCalledTimes(2));
   });
 });

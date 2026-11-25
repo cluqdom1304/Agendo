@@ -182,6 +182,27 @@ fn list_returns_the_sessions_of_the_local_days_asked_for() {
 }
 
 #[test]
+fn list_includes_a_session_that_crosses_midnight_into_the_range() {
+    let (state, clock) = test_state();
+    let id = task(&state, "Estudiar");
+    clock.set(dates::parse_instant("2026-03-10T22:50:00Z").expect("late")); // 23:50 local
+    start(&state, &id, 25).expect("start");
+
+    // Still running: it may already reach the next day.
+    let running = list(&state, "2026-03-11", "2026-03-11", &zone()).expect("list");
+    assert_eq!(running.len(), 1);
+
+    clock.advance(Duration::minutes(25));
+    stop(&state).expect("stop");
+    for day in ["2026-03-10", "2026-03-11"] {
+        let found = list(&state, day, day, &zone()).expect("list");
+        assert_eq!(found.len(), 1, "{day}");
+    }
+    let after = list(&state, "2026-03-12", "2026-03-12", &zone()).expect("list");
+    assert!(after.is_empty());
+}
+
+#[test]
 fn deleting_the_task_for_good_removes_its_sessions() {
     let (state, _) = test_state();
     let id = task(&state, "Estudiar");

@@ -670,3 +670,13 @@ Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`
 - **Movimiento:** las entradas usan los muelles ya definidos (`--ease-spring`) con animaciones solo de `transform` y `opacity` (`view-in`, `menu-in`, `slide-in-right`); `prefers-reduced-motion` sigue anulándolas.
 - **Tintes de color (F26.1-15):** cualquier texto de color sobre un tinte de su propio color (píldoras, chips, avisos, peligro en menús) usa `color-mix(color 78 %, --text-primary)` sobre un 12 % del color, para no bajar de AA. Los botones de ventana usan el rojo de cierre de Windows (`--caption-close`), no `--danger`.
 - **Alternativas descartadas:** mantener el azul (la referencia usa coral y negro); acento coral también para selecciones y menús (se confundiría con «peligro» y con «vencida»); reescribir `TaskRow` de la lista completa (riesgo alto para su teclado, arrastre y selección múltiple; se ajusta solo su estilo). Sin dependencias nuevas ni migraciones.
+
+## D-102 — Tiempo de enfoque en el calendario (3.1.0)
+- **Estado:** ACCEPTED (pedido por el usuario el 2026-11-25; disposición, pausas, entradas a mano y vista Mes elegidas por él) · **Fecha:** 2026-11-25 · **Validación:** `[A]` batería completa; `[H]` aspecto en Windows 11 (V3.1.0-01..03)
+- **Semana y Día:** cada sesión es un bloque rayado, con el color de la primera etiqueta de la tarea, por detrás de tareas y eventos; los bloques que coinciden con él se estrechan 8 px por lado para que se vea. Las sesiones que se solapan entre sí van en carriles. Pulsarlo abre la tarea; no se arrastra ni se redimensiona. La sesión en marcha llega hasta la línea «ahora».
+- **Pausas:** un solo bloque de inicio a fin, con el tiempo concentrado y el total en pausa (los tramos no se guardan, D-99).
+- **Tiempo añadido a mano:** se muestra como una sesión más, terminando en el momento en que se añadió.
+- **Mes:** total por día; como en el resumen semanal (D-100), la sesión cuenta en el día en que empezó. En Semana y Día, la que cruza medianoche se parte entre los dos días.
+- **Qué se oculta:** sesiones de 0 s, tareas en la papelera y tareas ocultas por el filtro de etiquetas.
+- **Datos:** `focus_list` pasa a devolver las sesiones que se solapan con el rango, no solo las que empiezan en él (nadie más lo usaba). Sin migraciones ni dependencias.
+- **Alternativas descartadas:** franja lateral o carriles compartidos (menos sitio); tabla de tramos de pausa; marcar las entradas manuales para ocultarlas.

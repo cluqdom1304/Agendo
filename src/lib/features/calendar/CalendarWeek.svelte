@@ -6,6 +6,7 @@
   import type { EventOccurrence, Tag, Task } from "../../types";
   import { blockOf, isTimedBlock, timeRangeOf } from "../events/occurrences";
   import { columnDateAt, EventDrag } from "./eventDrag.svelte";
+  import { focusDetail, type FocusSlot } from "./focusSlots";
   import {
     HOUR_PX,
     layoutBlocks,
@@ -20,6 +21,10 @@
   import CapturePreview from "../capture/CapturePreview.svelte";
 
   const FIRST_VISIBLE_HOUR = 7;
+  /** Minutes a very short session is laid out with, so two of them do not pile up. */
+  const MIN_FOCUS_MINUTES = 18;
+  /** Pixels a block steps in from each side so the focus time behind it stays visible. */
+  const FOCUS_INSET = 8;
 
   interface Props {
     /** The columns: seven dates for a week, one for a day. */
@@ -30,6 +35,8 @@
     tasksByDate: Map<string, Task[]>;
     /** The events of each day: timed ones are blocks of the grid, the rest sit in the all-day row. */
     eventsByDate?: Map<string, EventOccurrence[]>;
+    /** The focus time of each day, drawn behind tasks and events (D-102). */
+    focusByDate?: Map<string, FocusSlot[]>;
     label: string;
     /** `duration` is only given when the span was dragged out (D-33). */
     onCreate: (
@@ -67,6 +74,7 @@
     nowMinutes,
     tasksByDate,
     eventsByDate,
+    focusByDate,
     label,
     tagOf,
     moreTags,
@@ -135,6 +143,18 @@
     dates.map((date) => {
       const tasks = tasksByDate.get(date) ?? [];
       const occurrences = eventsByDate?.get(date) ?? [];
+      const focus = layoutBlocks<FocusSlot>(
+        (focusByDate?.get(date) ?? []).map((slot) => ({
+          item: slot,
+          key: slot.entry.id,
+          start: slot.start,
+          span: Math.max(slot.span, MIN_FOCUS_MINUTES),
+        })),
+      );
+      const overFocus = (start: number, span: number) =>
+        focus.some(
+          (slot) => slot.start < start + span && start < slot.start + slot.span,
+        );
       return {
         date,
         isToday: date === today,
@@ -143,6 +163,7 @@
         nowLine: today < date ? "full" : date === today ? "start" : "faint",
         allDay: tasks.filter((task) => task.dueTime === null),
         allDayEvents: occurrences.filter((item) => !isTimedBlock(item)),
+        focus,
         placed: layoutBlocks<Item>([
           ...tasks
             .filter((task) => task.dueTime !== null)
@@ -157,7 +178,16 @@
             key: occurrence.eventId,
             ...blockOf(occurrence),
           })),
-        ]),
+        ]).map((block) => {
+          const inset = overFocus(block.start, block.span) ? FOCUS_INSET : 0;
+          const left = (block.lane / block.lanes) * 100;
+          const width = 100 / block.lanes;
+          return {
+            ...block,
+            left: inset ? `calc(${left}% + ${inset}px)` : `${left}%`,
+            width: `calc(${width}% - ${2 + inset * 2}px)`,
+          };
+        }),
       };
     }),
   );
@@ -276,6 +306,29 @@
           onpointerdown={(event) => week.pointerDown(event, column.date)}
           onkeydown={(event) => week.columnKeydown(event, column.date)}
         >
+          {#each column.focus as slot (slot.item.entry.id)}
+            {@const session = slot.item}
+            {@const tag = tagOf?.(session.task)}
+            {@const name = session.task.title || t.calendar.untitled}
+            {@const detail = focusDetail(session)}
+            <button
+              type="button"
+              class="focus-slot"
+              class:running={session.running}
+              style:--tag={tag?.colorHex}
+              data-block
+              data-focus-id={session.entry.id}
+              style:top="{top(session.start)}px"
+              style:height="{top(session.span) - 2}px"
+              style:left="{(slot.lane / slot.lanes) * 100}%"
+              style:width="calc({100 / slot.lanes}% - 2px)"
+              title={t.calendar.openFocus(name, detail)}
+              onclick={() => onOpenTask(session.task)}
+            >
+              <span class="title">{t.calendar.focusSlot(name)}</span>
+              <span class="time">{detail}</span>
+            </button>
+          {/each}
           {#each column.placed as block (block.item.kind === "task" ? `t:${block.item.task.id}` : `e:${block.item.occurrence.eventId}:${block.item.occurrence.startDate}`)}
             {#if block.item.kind === "task"}
               {@const item = { ...block, task: block.item.task }}
@@ -301,8 +354,8 @@
                 data-task-id={item.task.id}
                 style:top="{top(item.start)}px"
                 style:height="{top(item.span) - 2}px"
-                style:left="{(item.lane / item.lanes) * 100}%"
-                style:width="calc({100 / item.lanes}% - 2px)"
+                style:left={item.left}
+                style:width={item.width}
                 title={t.calendar.openTask(
                   item.task.title || t.calendar.untitled,
                 )}
@@ -356,8 +409,8 @@
                 data-event-id={occurrence.eventId}
                 style:top="{top(block.start)}px"
                 style:height="{top(block.span) - 2}px"
-                style:left="{(block.lane / block.lanes) * 100}%"
-                style:width="calc({100 / block.lanes}% - 2px)"
+                style:left={block.left}
+                style:width={block.width}
                 title={t.calendar.openEvent(name)}
                 onpointerdown={(event) =>
                   eventDrag.begin(
@@ -636,6 +689,59 @@
 
   .column.today {
     background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+  }
+
+  /* Focus time is a hatched backdrop, unlike the solid blocks of tasks and events. */
+  .focus-slot {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: safe flex-end;
+    min-height: 14px;
+    padding: 1px 6px;
+    overflow: hidden;
+    border: 1px solid
+      color-mix(in srgb, var(--tag, var(--accent)) 45%, transparent);
+    border-radius: 6px;
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tag, var(--accent)) 24%, var(--bg-card)) 0 4px,
+      color-mix(in srgb, var(--tag, var(--accent)) 5%, var(--bg-card)) 4px 10px
+    );
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 11px;
+    line-height: 1.2;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .focus-slot.running {
+    border-style: dashed;
+  }
+
+  .focus-slot:hover {
+    border-color: var(--tag, var(--accent));
+  }
+
+  .focus-slot:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .focus-slot span {
+    flex: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .focus-slot .title {
+    font-weight: 600;
+  }
+
+  .focus-slot .time {
+    font-variant-numeric: tabular-nums;
   }
 
   .block {

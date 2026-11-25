@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from "../../i18n";
   import { sortDay } from "../../ordering";
+  import { spentLabel } from "../../schedule";
   import type { EventOccurrence, Tag, Task } from "../../types";
   import { timeRangeOf } from "../events/occurrences";
   import { isSameMonth, monthGrid, type WeekDay } from "./grid";
@@ -16,6 +17,8 @@
     tasksByDate: Map<string, Task[]>;
     /** The events of each day, shown before its tasks. */
     eventsByDate?: Map<string, EventOccurrence[]>;
+    /** Seconds of focus of each day (D-102). */
+    focusSeconds?: Map<string, number>;
     label: string;
     onShowDay: (date: string) => void;
     onOpenTask: (task: Task) => void;
@@ -34,6 +37,7 @@
     today,
     tasksByDate,
     eventsByDate,
+    focusSeconds,
     label,
     onShowDay,
     onOpenTask,
@@ -64,6 +68,7 @@
           isToday: date === today,
           shown: entries.slice(0, VISIBLE_TASKS),
           hidden: Math.max(entries.length - VISIBLE_TASKS, 0),
+          focus: focusSeconds?.get(date) ?? 0,
         };
       }),
     ),
@@ -141,6 +146,16 @@
               onclick={() => onShowDay(day.date)}
             >
               {t.calendar.more(day.hidden)}
+            </button>
+          {/if}
+          {#if day.focus > 0}
+            <button
+              type="button"
+              class="focus-total"
+              data-focus-total
+              onclick={() => onShowDay(day.date)}
+            >
+              {t.calendar.focusDay(spentLabel(day.focus))}
             </button>
           {/if}
         </div>
@@ -323,7 +338,31 @@
     color: var(--text-primary);
   }
 
+  .focus-total {
+    flex: none;
+    align-self: flex-start;
+    max-width: 100%;
+    margin-top: auto;
+    padding: 0 6px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    border-radius: var(--radius-small);
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 24%, var(--bg-card)) 0 4px,
+      color-mix(in srgb, var(--accent) 5%, var(--bg-card)) 4px 10px
+    );
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
   .number:focus-visible,
+  .focus-total:focus-visible,
   .chip:focus-visible,
   .more:focus-visible {
     outline: 2px solid var(--accent);

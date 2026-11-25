@@ -2,6 +2,7 @@
   import type { Capture } from "../../naturalInput";
   import type { EventOccurrence, Tag, Task } from "../../types";
   import CalendarWeek from "./CalendarWeek.svelte";
+  import type { FocusSlot } from "./focusSlots";
 
   interface Props {
     date: string;
@@ -9,6 +10,7 @@
     nowMinutes: number;
     tasksByDate: Map<string, Task[]>;
     eventsByDate?: Map<string, EventOccurrence[]>;
+    focusByDate?: Map<string, FocusSlot[]>;
     label: string;
     onCreate: (
       title: string,

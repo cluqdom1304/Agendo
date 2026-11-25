@@ -521,6 +521,11 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.
 
 
+## Versión 3.1.0
+- [ ] V3.1.0-01 `[H]`: hacer una sesión de enfoque (con una pausa) y mirar Semana y Día: aparece un bloque rayado con el color de la etiqueta, desde la hora de inicio hasta la de fin, con el tiempo concentrado y el de pausa. Se lee bien en tema claro y oscuro.
+- [ ] V3.1.0-02 `[H]`: con la sesión en marcha, el bloque (borde discontinuo) crece hasta la línea «ahora»; al terminarla queda fijo. Una tarea programada a esa misma hora deja ver el rayado por los lados; pulsar el rayado abre la tarea y arrastrar una tarea o evento sigue funcionando.
+- [ ] V3.1.0-03 `[H]`: la vista Mes muestra «Enfoque: …» en los días con sesiones y al pulsarlo se abre el día; filtrar por otra etiqueta o borrar la tarea oculta su tiempo.
+
 ## Versión 3.0.2
 - [ ] V3.0.2-01 `[H]`: cambiar el tamaño y la posición de la ventana, cerrar y abrir: vuelve igual. Repetir maximizada (al abrir sigue maximizada y al restaurarla recupera el tamaño anterior) y con un segundo monitor desconectado (la ventana aparece centrada en el principal).
 

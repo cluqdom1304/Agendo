@@ -69,7 +69,7 @@ pub fn stop(state: &AppState) -> AppResult<Option<TimeEntry>> {
     Ok(entry)
 }
 
-/// The sessions that started on the local days `from` to `to` (inclusive, `YYYY-MM-DD`).
+/// The sessions with some time on the local days `from` to `to` (inclusive, `YYYY-MM-DD`).
 pub fn list<Tz: TimeZone>(
     state: &AppState,
     from: &str,
@@ -92,7 +92,7 @@ pub fn list<Tz: TimeZone>(
     let start = dates::local_to_utc(zone, first, midnight)?;
     let end = dates::local_to_utc(zone, last + Duration::days(1), midnight)?;
     state.db.read(|conn| {
-        Ok(repo::between(
+        Ok(repo::overlapping(
             conn,
             &dates::format_instant(start),
             &dates::format_instant(end),
