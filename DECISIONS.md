@@ -680,3 +680,8 @@ Estas decisiones **no** pueden tomarse por el agente. Se siguen en `BLOCKERS.md`
 - **Qué se oculta:** sesiones de 0 s, tareas en la papelera y tareas ocultas por el filtro de etiquetas.
 - **Datos:** `focus_list` pasa a devolver las sesiones que se solapan con el rango, no solo las que empiezan en él (nadie más lo usaba). Sin migraciones ni dependencias.
 - **Alternativas descartadas:** franja lateral o carriles compartidos (menos sitio); tabla de tramos de pausa; marcar las entradas manuales para ocultarlas.
+
+## D-103 — Una sesión de enfoque sobrevive al cierre de la app (3.1.0)
+- **Estado:** ACCEPTED (ordenado por el usuario el 2026-11-25) · **Fecha:** 2026-11-25 · **Validación:** `[A]` tests de arranque; `[H]` V3.1.0-04
+- **Decisión:** al arrancar, una sesión sin fin cuyo tiempo previsto no ha pasado sigue en marcha y el tiempo con la app cerrada cuenta. Si ya pasó, se cierra a su hora prevista sin notificación tardía. Si estaba en pausa, se cierra donde empezó la pausa, como hasta ahora (D-99).
+- **Sustituye:** la parte de D-97 que cerraba toda sesión abierta al arrancar. Corrige la discrepancia con `docs/manual-pruebas.md` (Fase 25).

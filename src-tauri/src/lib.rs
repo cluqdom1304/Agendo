@@ -98,7 +98,7 @@ pub fn run() {
             if let Ok(dir) = commands::attachments::dir(app.handle()) {
                 let _ = attachments::collect_orphans(&state, &dir);
             }
-            // A session left running when the app was closed ends where it was left.
+            // A focus session that ran out, or was paused, while the app was closed ends here.
             let _ = services::focus::recover_orphans(&state);
             app.manage(Arc::clone(&state));
             tauri::async_runtime::spawn(autobackup::run(Arc::clone(&state), data_dir(app)?));

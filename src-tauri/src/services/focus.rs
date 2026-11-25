@@ -150,14 +150,20 @@ pub fn finish_due(state: &AppState, notifier: &dyn Notifier) -> AppResult<Option
     Ok(Some(closed))
 }
 
-/// At start-up a session without an end is closed: the app was closed while it ran. Its end is
-/// the moment it was left, capped at the planned time (D-97). Returns the closed session.
+/// At start-up, deals with a session left without an end: the app was closed while it ran. One
+/// whose planned time is not over keeps running (D-103). One whose time is over is closed at its
+/// planned end, without a late notice, and one left in pause where the pause began. Returns the
+/// closed session, if any.
 pub fn recover_orphans(state: &AppState) -> AppResult<Option<TimeEntry>> {
     let now = state.clock.now();
     let Some(entry) = current(state)? else {
         return Ok(None);
     };
-    let end = planned_end(&entry)?.min(now);
+    let end = planned_end(&entry)?;
+    if entry.paused_at.is_none() && end > now {
+        return Ok(None);
+    }
+    let end = end.min(now);
     state
         .db
         .write(|tx| Ok(repo::finish(tx, &dates::format_instant(end))?))

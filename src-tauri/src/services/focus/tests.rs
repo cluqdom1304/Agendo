@@ -141,12 +141,21 @@ fn an_orphan_session_is_closed_at_start_up_capped_at_its_planned_time() {
     let closed = recover_orphans(&state).expect("recover").expect("closed");
     assert_eq!(closed.ended_at.as_deref(), Some("2026-03-10T10:25:00Z"));
     assert_eq!(recover_orphans(&state).expect("none"), None);
+}
 
-    // Reopened before the planned end, it ends where it was.
-    start(&state, &id, 60).expect("start");
+#[test]
+fn a_session_reopened_before_its_planned_end_keeps_running() {
+    let (state, clock) = test_state();
+    let id = task(&state, "Estudiar");
+    let entry = start(&state, &id, 60).expect("start");
     clock.advance(Duration::minutes(12));
-    let closed = recover_orphans(&state).expect("recover").expect("closed");
-    assert_eq!(closed.ended_at.as_deref(), Some("2026-03-10T13:12:00Z"));
+
+    assert_eq!(recover_orphans(&state).expect("recover"), None);
+    assert_eq!(current(&state).expect("current"), Some(entry));
+    assert_eq!(
+        next_end(&state).expect("end").map(dates::format_instant),
+        Some("2026-03-10T11:00:00Z".to_string())
+    );
 }
 
 #[test]
