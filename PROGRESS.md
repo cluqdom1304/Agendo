@@ -733,6 +733,8 @@ Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la inter
 - 2026-11-19 · Carril de datos integrado (A2–A4; migraciones 012–014, esquema 14; D-62 a D-66). Mejoras medidas a 50 000 filas: FTS 21,9 ms→44 µs, agenda con recordatorios 13,4 s→0,1 s, ventana de notas 75→0,3 ms. Pool de 3 lectores, ENEX y `.agendo` en flujo, apagado ordenado. Rust 491 tests, TS 695.
 - 2026-11-19 · Integrados el carril frontend (A6-01, A8 tareas/calendario, A11 TS) y el de Rust (A5 registro propio D-90, A7-01..04: módulos divididos y `services/`). Tests de tiempos: causa real = sobresuscripción de hilos; `RUST_TEST_THREADS=8` (suite Rust 10,5 s → 4,7 s, estable). Rust 498 tests, TS 699.
 
-## Versión 3.1.0 (2026-11-25, en preparación)
+## Versión 3.1.0 (2026-11-25)
 - [x] V3.1.0-1: el calendario muestra el tiempo de enfoque (D-102): bloques rayados en Semana y Día y total por día en Mes. Batería `[A]` en verde (Rust 578 + 10, Vitest 1054, JS 107,7 KB inicial / 317,1 KB total). Los tests Rust de tiempos con 10 000 filas y dos de copias fallaron en ejecuciones con la máquina ocupada y pasaron al repetir con `RUST_TEST_THREADS=4`.
-- Pendiente: subir el número de versión, etiqueta y publicación (CLAUDE.md §10); `[H]` V3.1.0-01..03.
+- [x] V3.1.0-2: una sesión de enfoque en marcha sigue al reabrir la app si no ha pasado su tiempo (D-103).
+- [x] V3.1.0-3: versión 3.1.0 fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y los lockfiles.
+- Pendiente `[H]`: V3.1.0-01..04.
