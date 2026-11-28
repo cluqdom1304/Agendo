@@ -194,8 +194,10 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
+    min-width: 0;
     margin: 0;
     padding-top: 6px;
+    overflow-wrap: anywhere;
     font-family: var(--font-display);
     font-size: 18px;
     font-weight: 700;
@@ -221,7 +223,8 @@
 
   .cards {
     display: grid;
-    gap: 8px;
+    gap: var(--space-2);
+    min-width: 0;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -230,9 +233,7 @@
   .cards > :global(li) {
     border-radius: var(--radius-card);
     background: var(--bg-card);
-    transition:
-      background-color var(--motion-fast) var(--ease-out),
-      transform var(--motion-fast) var(--ease-spring);
+    transition: background-color var(--motion-fast) var(--ease-out);
   }
 
   .cards > :global(li:hover) {
@@ -241,6 +242,7 @@
 
   .row {
     display: flex;
+    min-width: 0;
     padding: 10px 12px;
   }
 </style>

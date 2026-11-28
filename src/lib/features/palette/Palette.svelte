@@ -389,7 +389,7 @@
   }
 
   .results {
-    max-height: 360px;
+    max-height: min(360px, calc(88vh - 150px));
     margin: 0;
     padding: 6px;
     border-top: 1px solid var(--separator);
@@ -411,7 +411,7 @@
 
   .hit {
     display: grid;
-    grid-template-columns: 18px 1fr auto;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
     align-items: center;
     gap: 1px var(--space-3);
     padding: 7px 10px;
@@ -463,9 +463,12 @@
   }
 
   .detail {
+    max-width: 240px;
+    overflow: hidden;
     color: var(--text-secondary);
     font-size: 12px;
     font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
@@ -487,18 +490,44 @@
   .forget {
     border: 0;
     background: transparent;
-    color: var(--accent);
+    color: var(--text-primary);
     font: inherit;
     font-size: 12px;
     cursor: pointer;
   }
 
+  /* The accent is kept for what is "now" (D-101): saving a view is a plain action. */
   .save {
     margin: 0 var(--space-4) var(--space-3);
+    padding: 2px 0;
+    font-weight: 600;
+  }
+
+  .save:hover {
+    text-decoration: underline;
   }
 
   .forget {
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border-radius: var(--radius-chip);
     color: var(--text-secondary);
+    transition:
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear;
+  }
+
+  .forget:hover {
+    background: var(--bg-control-hover);
+    color: var(--text-primary);
+  }
+
+  /* Inside the clipped detail column: the ring is drawn inwards so it is not cut. */
+  .forget:focus-visible {
+    outline-offset: -2px;
   }
 
   .status {

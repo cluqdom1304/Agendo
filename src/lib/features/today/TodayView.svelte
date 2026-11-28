@@ -427,9 +427,10 @@
     flex-direction: column;
     align-items: center;
     gap: 1px;
+    min-width: 0;
     padding: 6px 0 5px;
     border: 0;
-    border-radius: 12px;
+    border-radius: var(--radius-menu);
     background: transparent;
     color: var(--text-primary);
     font: inherit;
@@ -513,6 +514,7 @@
   }
 
   .headline {
+    min-width: 0;
     font-size: 15px;
     font-weight: 600;
   }
@@ -528,8 +530,9 @@
     align-items: center;
     padding: 2px 10px;
     border-radius: var(--radius-chip);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-weight: 600;
+    white-space: nowrap;
   }
 
   .pill.event {
@@ -573,14 +576,15 @@
   .ratio {
     flex: none;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-variant-numeric: tabular-nums;
   }
 
   .block {
     display: grid;
     align-content: start;
-    gap: 8px;
+    gap: var(--space-2);
+    min-width: 0;
   }
 
   /* Flat rows, as in the reference: the hover lights a rounded tile, no hairlines. */
@@ -632,6 +636,11 @@
     cursor: pointer;
   }
 
+  /* A habit's name is not a button: no hand over it. */
+  .open.habit {
+    cursor: default;
+  }
+
   .open.solo {
     width: 100%;
     padding: 0 12px;
@@ -676,7 +685,7 @@
   .time,
   .excerpt {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   .time {

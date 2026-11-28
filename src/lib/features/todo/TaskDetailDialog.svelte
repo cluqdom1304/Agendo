@@ -366,7 +366,7 @@
     margin: 0;
     padding-right: var(--space-8);
     font-family: var(--font-display);
-    font-size: 24px;
+    font-size: var(--text-title);
     font-weight: 700;
     line-height: 1.25;
     letter-spacing: -0.02em;
@@ -376,13 +376,6 @@
   h2.done {
     color: var(--text-secondary);
     text-decoration: line-through;
-  }
-
-  h3 {
-    margin: 0 0 6px;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
   }
 
   /* One grouped card with hairlines between rows, like a settings list. */
@@ -407,7 +400,7 @@
 
   dt {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-weight: 600;
   }
 
@@ -417,6 +410,8 @@
     background: transparent;
     color: var(--accent);
     font: inherit;
+    text-align: left;
+    overflow-wrap: anywhere;
     cursor: pointer;
   }
 
@@ -434,7 +429,7 @@
     min-width: 0;
     margin: 0;
     overflow-wrap: anywhere;
-    font-size: 14px;
+    font-size: var(--text-body);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
@@ -469,6 +464,15 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .entries li > span {
+    min-width: 0;
+  }
+
+  .entries .btn {
+    flex: none;
   }
 
   .manual {

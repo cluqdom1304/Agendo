@@ -197,6 +197,6 @@
   .error {
     margin: 0;
     color: var(--danger);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 </style>

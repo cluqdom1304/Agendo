@@ -316,7 +316,7 @@
     gap: 10px;
     width: 100%;
     min-height: 34px;
-    padding: 5px 10px;
+    padding: 5px var(--space-2);
     border: 0;
     border-radius: var(--radius-card);
     background: transparent;
@@ -356,7 +356,7 @@
 
   /* Favourites carry a filled yellow star, as pinned items do in the reference. */
   .item svg.star {
-    color: #ffcc00;
+    color: var(--highlight-strong);
   }
 
   .item svg.star path {
@@ -388,7 +388,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 10px;
+    padding: 3px var(--space-2);
     border: 0;
     border-radius: var(--radius-small);
     background: transparent;

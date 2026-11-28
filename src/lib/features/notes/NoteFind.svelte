@@ -112,7 +112,8 @@
     animation: rise-in var(--motion-fast) var(--ease-out);
   }
 
-  .find:focus-within {
+  /* The ring is the field's: the step buttons draw their own when they take the focus. */
+  .find:has(.field:focus-visible) {
     box-shadow:
       inset 0 0 0 1px var(--accent),
       0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
@@ -136,7 +137,7 @@
   .count {
     flex: none;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }

@@ -150,12 +150,13 @@
 
   .item {
     display: flex;
+    flex: none;
     align-items: center;
     gap: var(--space-2);
-    min-height: 26px;
+    min-height: 28px;
     padding: 0 var(--space-2);
     border: 0;
-    border-radius: var(--radius-small);
+    border-radius: 7px;
     background: transparent;
     color: var(--text-primary);
     font: inherit;
@@ -172,8 +173,9 @@
 
   .dot {
     flex: none;
-    width: 10px;
-    height: 10px;
+    box-sizing: border-box;
+    width: 9px;
+    height: 9px;
     border-radius: var(--radius-chip);
   }
 
@@ -191,12 +193,7 @@
 
   .check {
     flex: none;
-    color: var(--accent);
-  }
-
-  .item:hover .check,
-  .item:focus-visible .check {
-    color: inherit;
+    color: var(--text-primary);
   }
 
   .hint {

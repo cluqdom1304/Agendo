@@ -176,6 +176,11 @@
     text-transform: uppercase;
   }
 
+  /* The last column is today, marked with the accent as in the calendar. */
+  .cell-head:last-child {
+    color: var(--accent);
+  }
+
   .open {
     display: grid;
     flex: 1;
@@ -198,7 +203,7 @@
 
   .title {
     overflow: hidden;
-    font-size: 14px;
+    font-size: var(--text-body);
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -206,8 +211,12 @@
 
   .meta,
   .streak {
+    overflow: hidden;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .dot {
@@ -215,8 +224,9 @@
     height: 22px;
     box-sizing: border-box;
     padding: 0;
+    flex: none;
     border: 1.5px solid var(--text-secondary);
-    border-radius: 50%;
+    border-radius: var(--radius-chip);
     background: transparent;
     cursor: pointer;
     transition:
@@ -235,6 +245,10 @@
   .dot.done {
     border-color: var(--ink);
     background: var(--ink);
+  }
+
+  .dot.done:hover {
+    background: color-mix(in srgb, var(--ink) 84%, var(--bg-card));
   }
 
   .dot.off {

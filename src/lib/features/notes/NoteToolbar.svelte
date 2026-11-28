@@ -283,7 +283,7 @@
     gap: 1px;
     margin: var(--note-toolbar-margin, 0 0 var(--space-1));
     padding: 2px;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-chip);
     background: var(--note-toolbar-bg, var(--bg-control));
     max-width: 100%;
     overflow-x: auto;
@@ -299,11 +299,11 @@
     height: var(--note-tool-size, 24px);
     padding: 0 5px;
     border: 0;
-    border-radius: var(--radius-small);
+    border-radius: var(--radius-chip);
     background: transparent;
     color: var(--text-secondary);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-weight: 600;
     cursor: pointer;
     transition:
@@ -321,9 +321,15 @@
     transform: scale(0.92);
   }
 
-  .tool.active {
+  /* Pressed stays pressed under the pointer: the plain hover would otherwise win. */
+  .tool.active,
+  .tool.active:hover:not(:disabled) {
     background: var(--ink);
     color: var(--on-ink);
+  }
+
+  .tool.active:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ink) 84%, var(--bg-panel));
   }
 
   .tool:disabled {
@@ -381,10 +387,14 @@
     font-weight: 700;
   }
 
-  .tool:focus-visible,
-  .link-action:focus-visible {
+  .tool:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: -1px;
+  }
+
+  .link-action:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
   }
 
   .separator {
@@ -426,13 +436,17 @@
     height: 26px;
     padding: 0 var(--space-2);
     border: 0;
-    border-radius: var(--radius-small);
+    border-radius: var(--radius-control);
     background: var(--bg-control);
     box-shadow: inset 0 0 0 0.5px var(--border-subtle);
     color: var(--text-primary);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--text-caption);
     outline: none;
+  }
+
+  .link-input::placeholder {
+    color: var(--text-secondary);
   }
 
   .link-input:focus-visible {
@@ -447,26 +461,36 @@
       0 0 0 3px color-mix(in srgb, var(--danger) 30%, transparent);
   }
 
+  /* Capsules like every other button (D-101); the accent is kept for what is "now". A lift of
+     the text colour, so they show both in the popover and on the field of a task's note. */
   .link-action {
-    height: 24px;
-    padding: 0 var(--space-2);
+    flex: none;
+    height: 26px;
+    padding: 0 var(--space-3);
     border: 0;
-    border-radius: var(--radius-small);
-    background: transparent;
-    color: var(--accent);
+    border-radius: var(--radius-chip);
+    background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+    color: var(--text-primary);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-weight: 500;
+    white-space: nowrap;
     cursor: pointer;
-    transition: background-color var(--motion-instant) linear;
+    transition:
+      background-color var(--motion-instant) linear,
+      transform var(--motion-instant) var(--ease-out);
   }
 
   .link-action:hover {
-    background: var(--bg-hover);
+    background: color-mix(in srgb, var(--text-primary) 14%, transparent);
+  }
+
+  .link-action:active {
+    transform: scale(0.96);
   }
 
   .link-error {
     color: var(--danger);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 </style>

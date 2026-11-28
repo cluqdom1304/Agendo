@@ -167,9 +167,13 @@
 <style>
   .month {
     display: grid;
-    grid-template-rows: auto repeat(var(--rows), minmax(96px, 1fr));
+    /* Plain 1fr rows grow to their content (the cell's own min-height sets the floor), so a
+       full day never spills over the week below; a short window scrolls the month instead. */
+    grid-template-rows: auto repeat(var(--rows), 1fr);
     height: 100%;
     min-height: 0;
+    overflow-y: auto;
+    --tag-fallback: var(--text-secondary);
   }
 
   .row {
@@ -178,13 +182,17 @@
   }
 
   .weekday {
-    padding: var(--space-2) 0;
+    min-width: 0;
+    padding: var(--space-2) var(--space-1);
+    overflow: hidden;
     color: var(--text-secondary);
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-align: center;
+    text-overflow: ellipsis;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .cell {
@@ -192,7 +200,9 @@
     flex-direction: column;
     gap: 2px;
     min-width: 0;
-    padding: 4px;
+    min-height: 96px;
+    box-sizing: border-box;
+    padding: var(--space-1);
     border-top: 1px solid var(--separator);
     border-left: 1px solid var(--separator);
   }
@@ -240,18 +250,19 @@
   }
 
   .chip {
+    flex: none;
     padding: 2px 6px;
     border: 0;
-    border-radius: 6px;
-    border-left: 3px solid var(--tag, var(--accent));
+    border-radius: var(--radius-small);
+    border-left: 3px solid var(--tag, var(--tag-fallback));
     background: color-mix(
       in srgb,
-      var(--tag, var(--accent)) 14%,
+      var(--tag, var(--tag-fallback)) 14%,
       var(--bg-card)
     );
     color: var(--text-primary);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--text-caption);
     text-align: left;
     cursor: pointer;
     overflow: hidden;
@@ -282,7 +293,7 @@
   .chip:hover {
     background: color-mix(
       in srgb,
-      var(--tag, var(--accent)) 24%,
+      var(--tag, var(--tag-fallback)) 24%,
       var(--bg-card)
     );
   }
@@ -294,7 +305,7 @@
   .chip.event {
     background: color-mix(
       in srgb,
-      var(--tag, var(--accent)) 22%,
+      var(--tag, var(--tag-fallback)) 22%,
       var(--bg-card)
     );
     font-weight: 600;
@@ -331,10 +342,13 @@
     color: var(--text-secondary);
     font: inherit;
     font-size: 11px;
+    font-variant-numeric: tabular-nums;
     cursor: pointer;
+    transition: background-color var(--motion-instant) linear;
   }
 
   .more:hover {
+    background: var(--bg-hover);
     color: var(--text-primary);
   }
 
@@ -345,12 +359,12 @@
     margin-top: auto;
     padding: 0 6px;
     overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tag-fallback) 45%, transparent);
     border-radius: var(--radius-small);
     background: repeating-linear-gradient(
       135deg,
-      color-mix(in srgb, var(--accent) 24%, var(--bg-card)) 0 4px,
-      color-mix(in srgb, var(--accent) 5%, var(--bg-card)) 4px 10px
+      color-mix(in srgb, var(--tag-fallback) 24%, var(--bg-card)) 0 4px,
+      color-mix(in srgb, var(--tag-fallback) 5%, var(--bg-card)) 4px 10px
     );
     color: var(--text-primary);
     font: inherit;

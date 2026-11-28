@@ -283,16 +283,19 @@
     border: 0;
     border-radius: var(--radius-small);
     background: transparent;
-    color: var(--accent);
+    color: var(--text-secondary);
     font: inherit;
     font-size: 11px;
     cursor: pointer;
-    transition: background-color var(--motion-instant) linear;
+    transition:
+      background-color var(--motion-instant) linear,
+      color var(--motion-instant) linear;
   }
 
   .bulk button:hover,
   .only:hover {
     background: var(--bg-control-hover);
+    color: var(--text-primary);
   }
 
   .list {

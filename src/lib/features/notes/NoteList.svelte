@@ -361,17 +361,22 @@
   }
 
   .count {
+    overflow: hidden;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-weight: 500;
+    font-variant-numeric: tabular-nums;
     line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .anchor {
     position: relative;
   }
 
-  .icon-btn.open {
+  .icon-btn.open,
+  .icon-btn.open:hover:not(:disabled) {
     background: var(--bg-active);
     color: var(--text-primary);
   }
@@ -439,7 +444,7 @@
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font-size: 14px;
+    font-size: var(--text-body);
     font-weight: 600;
     line-height: 18px;
     text-overflow: ellipsis;
@@ -455,8 +460,9 @@
     color: var(--text-secondary);
   }
 
+  /* The selection is neutral (D-101): the coral accent is kept for what is "now". */
   .selected .pin {
-    color: var(--accent);
+    color: var(--text-primary);
   }
 
   .excerpt {
@@ -465,7 +471,7 @@
     margin-top: 2px;
     overflow: hidden;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     line-height: 17px;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -496,8 +502,15 @@
     overflow: hidden;
   }
 
+  /* In a narrow column two long tags share the line and ellipsize instead of being cut. */
+  .tags :global(.chip) {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
   .extra {
     flex: none;
+    font-variant-numeric: tabular-nums;
     color: var(--text-secondary);
     font-size: 11px;
     font-weight: 600;
@@ -507,7 +520,6 @@
     position: absolute;
     top: 7px;
     right: 8px;
-    color: var(--accent);
   }
 
   .card:focus-visible {

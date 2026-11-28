@@ -280,14 +280,24 @@
   .muted {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
   }
 
   .status {
     min-height: 1em;
     margin: 0;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
+  }
+
+  /* The shared toolbar never shrinks; four controls beside the title do not fit at the
+     minimum window width, so here it wraps instead of overflowing. */
+  .summary .view-actions {
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
   }
 
   .retry {
@@ -309,7 +319,7 @@
 
   .figures {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-3);
     margin: 0;
   }
@@ -322,19 +332,23 @@
   .figures dd {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 30px;
+    font-size: var(--text-large-title);
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
     line-height: 1.1;
   }
 
   .figures dt {
+    overflow: hidden;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .figures .late dd {
-    color: var(--danger, var(--accent));
+    color: var(--danger);
   }
 
   .tags {
@@ -358,6 +372,14 @@
     border-top: 1px solid var(--separator);
     text-align: right;
     font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Right-aligned figures need room between them, or the headers run into each other. */
+  .tags th:not(:first-child),
+  .tags td {
+    padding-left: var(--space-3);
+    white-space: nowrap;
   }
 
   .tags thead th {
@@ -368,6 +390,7 @@
   }
 
   .tags th:first-child {
+    overflow-wrap: anywhere;
     text-align: left;
   }
 
@@ -376,7 +399,7 @@
     width: 8px;
     height: 8px;
     margin-right: 6px;
-    border-radius: 50%;
+    border-radius: var(--radius-chip);
   }
 
   .habits {
@@ -389,9 +412,9 @@
 
   .habits li {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 6px var(--space-3);
-    font-size: 14px;
+    font-size: var(--text-body);
     font-weight: 600;
   }
 
@@ -405,7 +428,7 @@
     grid-column: 1 / -1;
     height: 6px;
     overflow: hidden;
-    border-radius: 3px;
+    border-radius: var(--radius-chip);
     background: var(--bg-control-hover);
   }
 
@@ -418,7 +441,7 @@
 
   .bars {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: var(--space-2);
     margin: var(--space-3) 0 0;
     padding: 0;
@@ -442,7 +465,7 @@
     display: block;
     width: 100%;
     min-height: 2px;
-    border-radius: 4px 4px 0 0;
+    border-radius: var(--radius-small) var(--radius-small) 0 0;
     background: var(--ink);
   }
 

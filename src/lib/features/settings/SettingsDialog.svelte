@@ -394,7 +394,7 @@
     min-height: 44px;
     padding: 8px 14px;
     background: var(--bg-card);
-    font-size: 14px;
+    font-size: var(--text-body);
     font-weight: 500;
   }
 
@@ -425,7 +425,7 @@
     display: block;
     margin: 2px 0 0;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-weight: 400;
     line-height: 1.4;
   }

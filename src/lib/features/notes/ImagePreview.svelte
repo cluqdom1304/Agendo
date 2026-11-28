@@ -109,7 +109,7 @@
     height: 28px;
     padding: 0;
     border: 0;
-    border-radius: 50%;
+    border-radius: var(--radius-chip);
     background: var(--bg-popover);
     color: var(--text-primary);
     box-shadow: var(--shadow-popover);

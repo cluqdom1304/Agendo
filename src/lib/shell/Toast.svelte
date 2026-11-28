@@ -61,6 +61,12 @@
     animation: toast-in var(--motion-spring) var(--ease-bounce);
   }
 
+  /* A long message wraps inside the pill instead of pushing the buttons out. */
+  .toast > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
   .toast.error {
     box-shadow:
       inset 0 0 0 1px var(--danger),

@@ -69,6 +69,7 @@
     display: grid;
     gap: var(--space-2);
     margin: var(--space-1) var(--space-3) var(--space-2) 40px;
+    min-width: 0;
     padding: var(--space-3);
     border-radius: var(--radius-card);
     background: var(--bg-card);

@@ -99,12 +99,12 @@
     display: block;
     margin: 0;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   .info {
     display: grid;
-    grid-template-columns: max-content 1fr;
+    grid-template-columns: max-content minmax(0, 1fr);
     gap: 4px var(--space-4);
     margin: 8px 0;
     padding: 12px 14px;
@@ -119,11 +119,8 @@
   }
 
   .info dd {
-    font-weight: 500;
-  }
-
-  .info dd {
     margin: 0;
+    font-weight: 500;
     overflow-wrap: anywhere;
     user-select: text;
   }

@@ -521,6 +521,12 @@ Orden sugerido; las secciones «Auditoría A2–A4», «A6–A12», «A8» y «A
 - **Fase 27 — cierre:** abrir con una base real de la 2.0.3 y comprobar que no se pierde nada; N-01, N-02 y `npm run e2e`.
 
 
+## Versión 3.1.1
+- [ ] V3.1.1-01 `[H]`: con la ventana al mínimo (720×480) recorrer Hoy, Próximas, Bandeja abierta, Calendario (Mes, Semana, Día), Eventos, Hábitos, Resumen, Notas y Ajustes: nada se sale por la derecha ni queda cortado abajo, las barras de herramientas pasan a otra línea y no hay barra de desplazamiento horizontal. Repetir maximizada y con escala al 125 % y 150 %.
+- [ ] V3.1.1-02 `[H]`: títulos, carpetas, etiquetas y eventos con nombres muy largos terminan en «…» en la paleta, la lista de notas, el menú de etiquetas, las sugerencias `#` y `[[`, el historial y las cabeceras del calendario.
+- [ ] V3.1.1-03 `[H]`: en tema claro y oscuro, el coral solo aparece en lo de «ahora» (hoy, línea «ahora», carpeta activa, foco); los elementos sin etiqueta del calendario y los eventos sin etiqueta se ven grises; los botones pulsados (fijar nota, herramientas del editor, filtros) mantienen su relleno al pasar el ratón; los desplegables se ven oscuros en tema oscuro.
+- [ ] V3.1.1-04 `[H]`: con una sesión de enfoque en marcha y la ventana estrecha, la barra superior no tapa los botones de ventana; el separador del menú contextual no pisa el elemento anterior; los botones desactivados no se iluminan al pasar el ratón.
+
 ## Versión 3.1.0
 - [ ] V3.1.0-01 `[H]`: hacer una sesión de enfoque (con una pausa) y mirar Semana y Día: aparece un bloque rayado con el color de la etiqueta, desde la hora de inicio hasta la de fin, con el tiempo concentrado y el de pausa. Se lee bien en tema claro y oscuro.
 - [ ] V3.1.0-02 `[H]`: con la sesión en marcha, el bloque (borde discontinuo) crece hasta la línea «ahora»; al terminarla queda fijo. Una tarea programada a esa misma hora deja ver el rayado por los lados; pulsar el rayado abre la tarea y arrastrar una tarea o evento sigue funcionando.

@@ -168,10 +168,11 @@
   .in-today {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
+    min-width: 0;
     min-height: 40px;
     padding: 0 14px;
-    font-size: 14px;
+    font-size: var(--text-body);
   }
 
   label {
@@ -215,10 +216,11 @@
     border-radius: var(--radius-chip);
     background: var(--bg-control);
     color: var(--text-primary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     line-height: 18px;
+    white-space: nowrap;
   }
 
   .meta.none {
@@ -242,14 +244,17 @@
   }
 
   .summary-label {
+    flex: none;
     color: var(--text-secondary);
     font-size: 12.5px;
     font-weight: 700;
   }
 
   .total {
+    min-width: 0;
     margin: 0;
-    font-size: 14px;
+    font-size: var(--text-body);
+    text-align: right;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }

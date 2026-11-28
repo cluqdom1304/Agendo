@@ -65,10 +65,11 @@
 
   .chip {
     padding: 1px 6px;
-    border-radius: 999px;
+    border-radius: var(--radius-chip);
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     color: color-mix(in srgb, var(--accent) 78%, var(--text-primary));
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
 

@@ -152,8 +152,9 @@
   }
 
   .progress-text {
+    flex: none;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-variant-numeric: tabular-nums;
   }
 
@@ -169,7 +170,8 @@
     display: block;
     width: 100%;
     height: 100%;
-    background: var(--accent);
+    /* Progress, not "now": the ink of a ticked box rather than the accent (D-101). */
+    background: var(--ink);
     transform-origin: left;
     transition: transform var(--motion-base) var(--ease-out);
   }
@@ -246,9 +248,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
-  }
-
-  .name {
     align-self: stretch;
   }
 
@@ -260,7 +259,7 @@
   .due {
     flex: none;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-variant-numeric: tabular-nums;
   }
 

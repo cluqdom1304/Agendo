@@ -509,10 +509,11 @@
     display: block;
     margin: 0 calc(var(--space-2) * -1);
     padding: 3px var(--space-2);
-    color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 600;
     border-radius: var(--radius-small);
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .tree {
@@ -526,14 +527,13 @@
 
   .row,
   .row-wrap {
-    border-radius: var(--radius-small);
+    border-radius: var(--radius-card);
   }
 
   .row {
     display: flex;
     align-items: center;
     min-height: 32px;
-    border-radius: var(--radius-card);
     transition: background-color var(--motion-fast) var(--ease-out);
   }
 
@@ -576,8 +576,14 @@
     width: 100%;
   }
 
+  /* Quiet icons, lit only on the chosen row: the same as the sections above (D-101). */
   .row svg {
     flex: none;
+    color: var(--text-secondary);
+  }
+
+  .row.active > .name svg,
+  .smart-row.active > svg {
     color: var(--accent);
   }
 
@@ -680,7 +686,7 @@
     gap: 6px;
     padding: 6px 4px 8px 12px;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     animation: rise-in var(--motion-fast) var(--ease-out);
   }
 

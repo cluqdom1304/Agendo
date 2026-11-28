@@ -385,7 +385,10 @@
     opacity: 0.45;
   }
 
+  /* The hairline is placed against the item itself, in the gap above it, so it never lands on
+     the hover background of the item before. */
   .item.separated {
+    position: relative;
     margin-top: 9px;
   }
 

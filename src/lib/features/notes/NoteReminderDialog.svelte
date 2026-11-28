@@ -130,7 +130,7 @@
   .error {
     margin: 0;
     color: var(--danger);
-    font-size: 13px;
+    font-size: var(--text-caption);
   }
 
   .row {

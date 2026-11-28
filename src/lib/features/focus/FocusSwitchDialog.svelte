@@ -112,6 +112,11 @@
     background: var(--bg-card-hover);
   }
 
+  /* The list clips its rounded corners: the ring is drawn inside the row so it shows whole. */
+  .choice:focus-visible {
+    outline-offset: -2px;
+  }
+
   .choice:disabled {
     color: var(--text-secondary);
     cursor: default;

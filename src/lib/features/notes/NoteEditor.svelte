@@ -297,7 +297,7 @@
       class="suggest"
       role="listbox"
       aria-label={t.notesApp.linkSuggestions}
-      style:left="{linkMenu.query.left}px"
+      style:left="min({linkMenu.query.left}px, calc(100vw - 268px))"
       style:top="{linkMenu.query.bottom + 6}px"
     >
       {#each linkMenu.choices as choice, index ("create" in choice ? `new:${choice.create}` : choice.id)}
@@ -316,7 +316,9 @@
           >
             {#if "create" in choice}
               <span class="plus" aria-hidden="true">+</span>
-              {t.notesApp.linkCreate(choice.create)}
+              <span class="link-title"
+                >{t.notesApp.linkCreate(choice.create)}</span
+              >
             {:else}
               <svg
                 viewBox="0 0 16 16"
@@ -346,7 +348,7 @@
       class="suggest"
       role="listbox"
       aria-label={t.notesApp.noteTags}
-      style:left="{tagMenu.query.left}px"
+      style:left="min({tagMenu.query.left}px, calc(100vw - 268px))"
       style:top="{tagMenu.query.bottom + 6}px"
     >
       {#each tagMenu.suggestions as tag, index (tag.id)}
@@ -364,7 +366,7 @@
             }}
           >
             <span class="dot" style:background={tag.colorHex}></span>
-            {tag.name}
+            <span class="link-title">{tag.name}</span>
           </button>
         </li>
       {/each}
@@ -388,6 +390,7 @@
 
   .as-field {
     min-height: 72px;
+    border-radius: var(--radius-control);
     padding: var(--space-2) 10px;
     background: var(--bg-control);
   }
@@ -420,13 +423,17 @@
     padding-top: 3px;
   }
 
+  /* Shaped like the shared menu (Menu.svelte); the inline left is clamped so a caret near the
+     right edge never pushes the list out of the window. */
   .suggest {
     position: fixed;
     z-index: 30;
     min-width: 160px;
     max-width: 260px;
+    max-height: min(320px, 50vh);
     margin: 0;
-    padding: 4px;
+    padding: 5px;
+    overflow-y: auto;
     border-radius: var(--radius-menu);
     background: var(--bg-popover);
     box-shadow: var(--shadow-popover);
@@ -439,7 +446,8 @@
     align-items: center;
     gap: var(--space-2);
     width: 100%;
-    padding: 5px var(--space-2);
+    min-height: 28px;
+    padding: 4px var(--space-2);
     border: 0;
     border-radius: var(--radius-small);
     background: transparent;
@@ -451,7 +459,7 @@
   }
 
   .suggestion:hover {
-    background: var(--bg-control-hover);
+    background: var(--bg-menu-hover);
   }
 
   .suggestion.active {
@@ -474,6 +482,7 @@
   }
 
   .link-title {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -539,7 +548,7 @@
     border: 1px dashed var(--separator);
     border-radius: var(--radius-control);
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   /* The corner to drag: only on hover or while the image is chosen. */
@@ -575,7 +584,7 @@
     margin: 0;
     padding: 2px 0;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   /* The editor module usually arrives at once: the notice only shows if it does not. */
@@ -962,12 +971,14 @@
   .surface :global(.tr-due) {
     flex: none;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-variant-numeric: tabular-nums;
   }
 
   .surface :global(.tr-tag) {
     flex: none;
+    max-width: 120px;
+    overflow: hidden;
     padding: 0 7px;
     border-radius: var(--radius-chip);
     background: color-mix(in srgb, var(--tag) 20%, transparent);
@@ -975,6 +986,8 @@
     font-size: 11px;
     font-weight: 600;
     line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* A task that was deleted: struck through, with a way back. */
@@ -992,13 +1005,14 @@
     border-style: dashed;
   }
 
+  /* A capsule like every other button (D-101): the accent is kept for what is "now". */
   .surface :global(.task-ref .tr-restore) {
     flex: none;
-    padding: 2px 8px;
-    border-radius: var(--radius-small);
-    color: var(--accent);
-    font-size: 12px;
-    font-weight: 500;
+    padding: 2px 10px;
+    border-radius: var(--radius-chip);
+    color: var(--text-primary);
+    font-size: var(--text-caption);
+    font-weight: 600;
   }
 
   .surface :global(.task-ref .tr-restore:hover) {

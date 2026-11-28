@@ -94,7 +94,8 @@
     width: 7px;
     height: 7px;
     border-radius: var(--radius-chip);
-    background: var(--tag, var(--danger));
+    /* Untagged events stay neutral: red reads as "overdue" next to tasks (D-101). */
+    background: var(--tag, var(--text-secondary));
   }
 
   .text {

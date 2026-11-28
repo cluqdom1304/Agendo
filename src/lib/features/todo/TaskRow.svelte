@@ -432,7 +432,12 @@
     outline-offset: 1px;
   }
 
+  .source svg {
+    flex: none;
+  }
+
   .source-title {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -445,7 +450,9 @@
   }
 
   .more {
+    flex: none;
     color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
     font-size: 11px;
     font-weight: 600;
   }
@@ -527,7 +534,8 @@
     background: transparent;
     color: var(--text-secondary);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
     opacity: 0;
     cursor: pointer;
     transition:
@@ -553,8 +561,9 @@
     opacity: 1;
   }
 
+  /* Ink, not the accent: coral is kept for what is "now" (D-101). */
   .notes-toggle.has-notes {
-    color: var(--accent);
+    color: var(--text-primary);
   }
 
   .notes-icon {
@@ -572,11 +581,13 @@
     gap: var(--space-1);
     flex: none;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   .clock {
+    flex: none;
     width: 12px;
     height: 12px;
     fill: none;

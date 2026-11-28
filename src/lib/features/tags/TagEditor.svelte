@@ -336,13 +336,14 @@
 
   .custom {
     display: flex;
+    align-items: center;
     gap: 6px;
   }
 
   .picker {
     flex: none;
     width: 32px;
-    height: 28px;
+    height: 30px;
     padding: 0;
     border: 0;
     border-radius: var(--radius-small);
@@ -374,6 +375,7 @@
   }
   .merge-row {
     display: flex;
+    align-items: center;
     gap: var(--space-2);
   }
 

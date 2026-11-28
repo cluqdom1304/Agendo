@@ -288,10 +288,14 @@
 
   .nav {
     align-items: center;
-    padding: var(--space-1) var(--space-2) var(--space-4) 12px;
+    padding: var(--space-1) var(--space-2) var(--space-4) var(--space-3);
   }
 
+  /* The shared toolbar never shrinks; here it may, so it wraps instead of pushing past the
+     window edge at the minimum width. */
   .nav .view-actions {
+    flex: 0 1 auto;
+    min-width: 0;
     flex-wrap: wrap;
     justify-content: flex-end;
     padding-top: 0;
@@ -302,7 +306,7 @@
   }
 
   .gap {
-    width: 4px;
+    width: var(--space-1);
   }
 
   /* The grid sits on its own card, clipped to the rounded corners. */

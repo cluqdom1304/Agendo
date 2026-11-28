@@ -608,7 +608,7 @@
     padding-left: var(--space-2);
     overflow: hidden;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -624,19 +624,28 @@
     position: relative;
   }
 
-  .icon-btn.on {
-    color: var(--accent);
+  /* Pinned is a pressed state: the neutral ink of every pressed control (D-101), also under
+     the pointer, where the plain hover would otherwise hide it. */
+  .icon-btn.on,
+  .icon-btn.on:hover:not(:disabled) {
+    background: var(--ink);
+    color: var(--on-ink);
   }
 
-  .icon-btn.open {
+  .icon-btn.open,
+  .icon-btn.open:hover:not(:disabled) {
     background: var(--bg-active);
     color: var(--text-primary);
   }
 
+  /* The sheet's side padding follows the pane, not the window: with the sidebar open a wide
+     window can still leave the note a narrow column. */
   .body {
     flex: 1;
     min-height: 0;
+    overflow-x: hidden;
     overflow-y: auto;
+    container-type: inline-size;
   }
 
   /* A column of comfortable reading width, centred when the window is wide. */
@@ -675,6 +684,7 @@
     color: var(--text-secondary);
     font-size: 11.5px;
     font-weight: 500;
+    font-variant-numeric: tabular-nums;
     user-select: none;
   }
 
@@ -731,7 +741,7 @@
     background: transparent;
     color: var(--text-secondary);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--text-caption);
     cursor: pointer;
     transition:
       background-color var(--motion-instant) linear,
@@ -757,7 +767,7 @@
     outline-offset: 1px;
   }
 
-  @media (max-width: 860px) {
+  @container (max-width: 600px) {
     .sheet {
       padding-right: var(--space-6);
       padding-left: var(--space-6);

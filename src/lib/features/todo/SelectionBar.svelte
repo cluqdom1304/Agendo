@@ -72,8 +72,13 @@
     bottom: 72px;
     z-index: 30;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
     gap: var(--space-2);
+    box-sizing: border-box;
+    /* At the minimum window the actions wrap instead of leaving the screen. */
+    max-width: calc(100vw - 2 * var(--space-4));
     padding: 6px 8px 6px 18px;
     transform: translateX(-50%);
     border-radius: var(--radius-chip);
@@ -91,13 +96,16 @@
   }
 
   .count {
+    flex: none;
     padding-right: var(--space-2);
+    white-space: nowrap;
     color: var(--text-primary);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
 
   .action {
+    flex: none;
     box-sizing: border-box;
     min-height: 28px;
     padding: 0 14px;
@@ -108,6 +116,7 @@
     font: inherit;
     font-size: 13px;
     font-weight: 500;
+    white-space: nowrap;
     cursor: pointer;
     transition:
       background-color var(--motion-fast) var(--ease-out),
@@ -120,6 +129,12 @@
 
   .action:active {
     transform: scale(0.96);
+    transition-duration: var(--motion-instant);
+  }
+
+  select.action option {
+    background: var(--bg-popover);
+    color: var(--text-primary);
   }
 
   .action:focus-visible {

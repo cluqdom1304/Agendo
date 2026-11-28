@@ -536,6 +536,8 @@
     min-height: 0;
     height: 100%;
     user-select: none;
+    /* Untagged items stay neutral: the accent is kept for what is "now" (D-101). */
+    --tag-fallback: var(--text-secondary);
   }
 
   .row {
@@ -557,8 +559,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: var(--space-1);
+    min-width: 0;
     height: 40px;
+    padding: 0 2px;
+    overflow: hidden;
     border-left: 1px solid var(--separator);
     color: var(--text-secondary);
     font-size: 11px;
@@ -567,13 +572,22 @@
     text-transform: uppercase;
   }
 
+  .head-cell .weekday {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .head-cell .number {
     display: inline-grid;
+    flex: none;
     place-items: center;
     min-width: 26px;
     height: 26px;
     font-size: 15px;
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0;
     color: var(--text-primary);
   }
@@ -591,11 +605,15 @@
     min-height: 28px;
   }
 
+  /* A day with many all-day items scrolls on its own, so the hour grid below keeps its room
+     in a short window. */
   .allday-cell {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    max-height: 96px;
     padding: 2px;
+    overflow-y: auto;
     border-left: 1px solid var(--separator);
     min-width: 0;
   }
@@ -603,15 +621,15 @@
   .chip,
   .block {
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     background: color-mix(
       in srgb,
-      var(--tag, var(--accent)) 14%,
+      var(--tag, var(--tag-fallback)) 14%,
       var(--bg-card)
     );
     color: var(--text-primary);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--text-caption);
     text-align: left;
     cursor: pointer;
     overflow: hidden;
@@ -626,7 +644,7 @@
   .block:hover {
     background: color-mix(
       in srgb,
-      var(--tag, var(--accent)) 24%,
+      var(--tag, var(--tag-fallback)) 24%,
       var(--bg-card)
     );
   }
@@ -636,8 +654,19 @@
     transform: scale(0.98);
   }
 
+  /* Same chip as the month: small radius and the tag's stripe on the left. */
   .chip {
+    flex: none;
     padding: 2px 6px;
+    border-left: 3px solid var(--tag, var(--tag-fallback));
+    border-radius: var(--radius-small);
+  }
+
+  /* Inset so the ring is not cut by the scrolling all-day cell or hour grid. */
+  .chip:focus-visible,
+  .block:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
   }
 
   .chip.done,
@@ -701,12 +730,14 @@
     padding: 1px 6px;
     overflow: hidden;
     border: 1px solid
-      color-mix(in srgb, var(--tag, var(--accent)) 45%, transparent);
-    border-radius: 6px;
+      color-mix(in srgb, var(--tag, var(--tag-fallback)) 45%, transparent);
+    border-radius: var(--radius-small);
     background: repeating-linear-gradient(
       135deg,
-      color-mix(in srgb, var(--tag, var(--accent)) 24%, var(--bg-card)) 0 4px,
-      color-mix(in srgb, var(--tag, var(--accent)) 5%, var(--bg-card)) 4px 10px
+      color-mix(in srgb, var(--tag, var(--tag-fallback)) 24%, var(--bg-card)) 0
+        4px,
+      color-mix(in srgb, var(--tag, var(--tag-fallback)) 5%, var(--bg-card)) 4px
+        10px
     );
     color: var(--text-primary);
     font: inherit;
@@ -721,7 +752,7 @@
   }
 
   .focus-slot:hover {
-    border-color: var(--tag, var(--accent));
+    border-color: var(--tag, var(--tag-fallback));
   }
 
   .focus-slot:focus-visible {
@@ -749,7 +780,7 @@
     min-height: 14px;
     padding: 4px 8px;
     line-height: 1.25;
-    border-left: 3px solid var(--tag, var(--accent));
+    border-left: 3px solid var(--tag, var(--tag-fallback));
   }
 
   .tag-name {
@@ -766,7 +797,7 @@
   .block.event {
     background: color-mix(
       in srgb,
-      var(--tag, var(--accent)) 22%,
+      var(--tag, var(--tag-fallback)) 22%,
       var(--bg-card)
     );
     font-weight: 600;
@@ -786,7 +817,7 @@
   .block.ghost {
     right: 2px;
     left: 0;
-    border: 1px dashed var(--tag, var(--accent));
+    border: 1px dashed var(--tag, var(--tag-fallback));
     box-shadow: var(--shadow-raised);
     pointer-events: none;
   }
@@ -826,7 +857,7 @@
     z-index: 3;
     height: 1px;
     margin-top: -0.5px;
-    background: var(--danger);
+    background: var(--accent);
     pointer-events: none;
   }
 
@@ -842,7 +873,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--danger);
+    background: var(--accent);
     box-shadow: 0 0 0 2px var(--bg-window-solid);
   }
 
@@ -851,9 +882,9 @@
     inset-inline: 2px;
     z-index: 2;
     padding: 2px 6px;
-    border-radius: 5px;
-    background: color-mix(in srgb, var(--accent) 30%, transparent);
-    box-shadow: inset 0 0 0 1px var(--accent);
+    border-radius: var(--radius-small);
+    background: color-mix(in srgb, var(--ink) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 55%, transparent);
     font-size: 11px;
     pointer-events: none;
   }
@@ -869,7 +900,7 @@
     margin-top: 2px;
     padding: 2px 6px;
     border: 0;
-    border-radius: 4px;
+    border-radius: var(--radius-small);
     background: var(--bg-popover);
     color: var(--text-primary);
     font: inherit;
@@ -880,5 +911,6 @@
 
   .quick:focus-visible {
     outline: 2px solid var(--accent);
+    outline-offset: 0;
   }
 </style>

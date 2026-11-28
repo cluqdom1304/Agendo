@@ -306,11 +306,14 @@
     font-weight: 700;
   }
 
+  /* Wraps so the repeat controls stay inside a narrow popover. */
   .field {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
-    font-size: 12px;
+    min-width: 0;
+    font-size: var(--text-caption);
     color: var(--text-secondary);
   }
 
@@ -329,7 +332,7 @@
   .muted {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   .list {
@@ -339,6 +342,7 @@
     padding: 0;
     list-style: none;
     font-size: 13px;
+    font-variant-numeric: tabular-nums;
   }
 
   .list li {
@@ -349,12 +353,18 @@
     min-height: 28px;
   }
 
+  .list li > span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
   /* Already sounded: same rows, visibly set apart from the ones still to come. */
   .done {
     color: var(--text-secondary);
   }
 
   .badge {
+    flex: none;
     padding: 0 var(--space-2);
     border-radius: var(--radius-chip);
     background: var(--bg-control);
@@ -368,6 +378,7 @@
     place-items: center;
     width: 22px;
     height: 22px;
+    padding: 0;
     border: 0;
     border-radius: var(--radius-chip);
     background: transparent;
@@ -383,5 +394,10 @@
   .remove:hover {
     background: var(--bg-control);
     color: var(--danger);
+  }
+
+  .remove:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
   }
 </style>

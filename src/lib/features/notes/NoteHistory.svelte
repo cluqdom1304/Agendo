@@ -119,8 +119,10 @@
 </Modal>
 
 <style>
+  /* minmax(0, …) tracks: a long version title ellipsizes instead of widening the grid. */
   .box {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-4);
     min-width: 0;
   }
@@ -140,6 +142,7 @@
 
   .list {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-content: start;
     gap: 1px;
     max-height: 50vh;
@@ -151,9 +154,10 @@
 
   .version {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2px;
     width: 100%;
-    padding: 8px 12px;
+    padding: var(--space-2) var(--space-3);
     border: 0;
     border-radius: var(--radius-card);
     background: transparent;
@@ -180,13 +184,13 @@
 
   .stamp {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-variant-numeric: tabular-nums;
   }
 
   .vtitle {
     overflow: hidden;
-    font-size: 14px;
+    font-size: var(--text-body);
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;

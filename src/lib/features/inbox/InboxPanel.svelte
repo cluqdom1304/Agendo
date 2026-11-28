@@ -116,7 +116,8 @@
     display: flex;
     flex: none;
     flex-direction: column;
-    width: 290px;
+    /* Narrower in a small window, so the list beside it keeps room to read. */
+    width: clamp(248px, 30vw, 290px);
     min-height: 0;
     margin-left: var(--panel-gap);
     overflow: hidden;
@@ -137,7 +138,11 @@
   }
 
   h2 {
+    min-width: 0;
     margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-family: var(--font-display);
     font-size: var(--text-title);
     font-weight: 700;
@@ -145,11 +150,12 @@
   }
 
   .count {
+    flex: none;
     padding: 1px 8px;
     border-radius: var(--radius-chip);
     background: var(--bg-control);
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
@@ -199,6 +205,10 @@
     color: var(--text-secondary);
   }
 
+  .add input:disabled {
+    opacity: 0.6;
+  }
+
   .add :global([data-capture-preview]) {
     flex-basis: 100%;
   }
@@ -217,6 +227,7 @@
 
   .row {
     display: flex;
+    min-width: 0;
     padding: 10px 12px;
     border-radius: var(--radius-card);
     transition: background-color var(--motion-fast) var(--ease-out);
@@ -232,7 +243,7 @@
     gap: 2px;
     padding: var(--space-3) 18px;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   .none strong {

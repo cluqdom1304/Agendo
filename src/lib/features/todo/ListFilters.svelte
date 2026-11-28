@@ -78,10 +78,28 @@
     gap: var(--space-1);
   }
 
+  /* Outside a .ui-form the select is native: it takes the look of the chips beside it. */
   select {
     width: auto;
     height: 26px;
+    padding: 0 var(--space-2) 0 var(--space-3);
+    border: 0;
     border-radius: var(--radius-chip);
-    font-size: 12px;
+    background: var(--bg-control);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--text-caption);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color var(--motion-fast) var(--ease-out);
+  }
+
+  select:hover {
+    background: var(--bg-control-hover);
+  }
+
+  select option {
+    background: var(--bg-popover);
+    color: var(--text-primary);
   }
 </style>

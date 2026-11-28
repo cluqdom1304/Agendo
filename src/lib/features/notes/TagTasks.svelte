@@ -69,7 +69,7 @@
     width: 100%;
     padding: 8px var(--space-3);
     border: 0;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-card);
     background: transparent;
     color: var(--text-primary);
     font: inherit;
@@ -136,9 +136,13 @@
   }
 
   .meta {
+    overflow: hidden;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
     line-height: 17px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .empty {

@@ -46,13 +46,15 @@
     align-items: center;
     gap: 3px;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     font-weight: 500;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
 
+  /* A finished list reads in ink: coral is kept for what is "now" (D-101). */
   .checklist.complete {
-    color: var(--accent);
+    color: var(--text-primary);
   }
 
   /* Read by screen readers instead of the bare «2/5». */

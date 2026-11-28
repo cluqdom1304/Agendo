@@ -175,7 +175,7 @@
     flex: 1;
     min-width: 96px;
     overflow-wrap: anywhere;
-    font-size: 14px;
+    font-size: var(--text-body);
     font-weight: 600;
   }
 
@@ -193,8 +193,14 @@
     gap: var(--space-2);
   }
 
+  /* Keeps its red under the pointer, tinted as the danger items of the menus (D-101). */
   .btn.quiet.danger {
     color: var(--danger);
+  }
+
+  .btn.quiet.danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    color: color-mix(in srgb, var(--danger) 78%, var(--text-primary));
   }
 
   .rename {
@@ -225,7 +231,7 @@
   .label {
     color: var(--text-secondary);
     font-size: 12.5px;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .text {

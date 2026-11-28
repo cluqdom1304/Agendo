@@ -97,7 +97,7 @@
   /* One card per event, as «Próximas» draws its items. */
   .card {
     display: grid;
-    gap: 8px;
+    gap: var(--space-2);
     margin: 0;
     padding: 0;
     list-style: none;

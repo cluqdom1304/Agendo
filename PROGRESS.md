@@ -3,7 +3,7 @@
 **Fase activa:** versión 3.0.0 cerrada y publicada (Fase 27 hecha; la 2.1.0 no se publica); Fases 16 y 17 con sus tareas `[A]` hechas, falta la validación humana F17-10; la 2.0.3 es la última publicada
 **Estado:** AWAITING_HUMAN   <!-- IN_PROGRESS | AWAITING_HUMAN | BLOCKED | DONE -->
 **Siguiente tarea:** Fase 24 terminada (`[A]` en verde); falta F24-03 `[H]` (lista «Fase 24» de `docs/manual-pruebas.md`) y F21-05. Fase 25 terminada (`[A]` en verde, F25-03 validada); falta F25-06 `[H]`, la ampliación de pausa, cambio de tarea y registro exacto (últimos ítems de la lista «Fase 25» de `docs/manual-pruebas.md`). Fase 26 terminada (`[A]` en verde); falta F26-04 `[H]`. Fase 26.1 (rediseño visual, D-101) terminada (`[A]` en verde); falta F26.1-12 `[H]`. La Fase 27 no empieza sin confirmación. Siguen pendientes los `[H]` de F8 a F16 y la primera ejecución de `npm run e2e`.
-**Última actualización:** 2026-11-20 (Fase 26.1 de rediseño visual completada; Fases 24 a 26.1 pendientes de `[H]`)
+**Última actualización:** 2026-11-28 (versión 3.1.1 de pulido UI/UX preparada, sin publicar)
 
 > Reglas: marcar `[x]` solo al pasar la batería de verificación (CLAUDE.md §4). Los ítems `[H]` nunca se marcan como verificados por el agente.
 
@@ -18,6 +18,7 @@
 | 3.0.0 | **publicada** (la 2.1.0 no se publica; incluye lo hecho en 16–17) | 16–27 | Rendimiento, mejoras de lo existente, rediseño tipo «Woday», prioridades, eventos, hábitos, lenguaje natural, planificar el día, enfoque y resumen semanal |
 | 3.0.1 | **publicada** | — | Corrige botones de la notificación recortados y eventos/tareas del calendario que solo mostraban la hora |
 | 3.0.2 | **publicada** | — | La ventana recuerda tamaño, posición y estado maximizado al cerrar y volver a abrir |
+| 3.1.1 | preparada (sin publicar) | — | Auditoría UI/UX: pulido visual, coherencia con D-101 y adaptación a la ventana mínima 720×480, sin cambios de funcionalidad |
 | Anexos | — | — | Métricas, discrepancias, cierre de 1.0.0 y registro cronológico de sesión |
 
 ---
@@ -732,6 +733,18 @@ Solo diseño: sin cambios de datos, IPC ni Rust. Objetivo: acercar toda la inter
 - 2026-11-19 · A8 parcial integrada: stores de notas, `+page.svelte`, `editor.ts` y `context/entries.ts` modularizados sin cambio de API; JS 269,5 KB gzip (+1 KB). Pendientes: `tasks.svelte.ts` (con A6-01), `CalendarWeek`, `TaskDialog`; `[H]` en «Auditoría A8».
 - 2026-11-19 · Carril de datos integrado (A2–A4; migraciones 012–014, esquema 14; D-62 a D-66). Mejoras medidas a 50 000 filas: FTS 21,9 ms→44 µs, agenda con recordatorios 13,4 s→0,1 s, ventana de notas 75→0,3 ms. Pool de 3 lectores, ENEX y `.agendo` en flujo, apagado ordenado. Rust 491 tests, TS 695.
 - 2026-11-19 · Integrados el carril frontend (A6-01, A8 tareas/calendario, A11 TS) y el de Rust (A5 registro propio D-90, A7-01..04: módulos divididos y `services/`). Tests de tiempos: causa real = sobresuscripción de hilos; `RUST_TEST_THREADS=8` (suite Rust 10,5 s → 4,7 s, estable). Rust 498 tests, TS 699.
+
+## Versión 3.1.1 (2026-11-28, preparada; sin publicar)
+- [x] V3.1.1-1: auditoría UI/UX de todos los módulos (shell, paleta, menús, ajustes, etiquetas, tareas, Hoy, Próximas, Bandeja, Planificar, calendario, eventos, hábitos, resumen y notas). Solo estilo, maquetación y accesibilidad; sin cambios de lógica, atajos ni datos. 51 ficheros.
+  - **Ventana pequeña (720×480):** las barras de las vistas (`.view-actions`) se encogen y pasan a otra línea; la barra superior oculta el nombre de la tarea en enfoque por debajo de 880 px; la paleta, el mes del calendario, la celda de todo el día de Semana, la barra de selección, el editor de recordatorios y los formularios de tarea, evento y hábito ya no se salen; la Bandeja usa `clamp(248px, 30vw, 290px)`; las listas de sugerencias del editor no se salen por la derecha.
+  - **Textos largos:** puntos suspensivos en títulos de la paleta, cabeceras de sección, días de la semana, chips de etiquetas de notas, historial de versiones, menú de etiquetas y sugerencias; los avisos largos ya no empujan los botones.
+  - **Coherencia D-101:** el coral queda para lo «ahora» (hoy, la línea «ahora», la carpeta activa); lo seleccionado, pulsado o completado usa la tinta neutra; los elementos sin etiqueta del calendario y los eventos sin etiqueta pasan a gris (antes coral o rojo «vencida»); iconos de carpetas grises.
+  - **Estados:** `.icon-btn` tiene estado desactivado y no reacciona al pasar o pulsar desactivado; los botones pulsados conservan la tinta al pasar el ratón; anillos de foco que ya no se recortan en listas con desplazamiento; marcadores de posición con color del tema; desplegables nativos con fondo del tema oscuro.
+  - **Detalle:** tamaños, radios y espacios con tokens (`--text-caption`, `--radius-*`, `--space-*`); cifras tabulares en horas, fechas y contadores; alturas iguales en controles de una misma fila (búsqueda 32 px, color de etiqueta 30 px, elementos de menú 28 px); separador del menú contextual en su sitio; cabeceras de tabla del resumen separadas.
+  - Batería `[A]` en verde: `cargo fmt/clippy`, `cargo test` (589), `npm run lint`, `check` (0/0), `test` (1054), `build`, `size` (JS 317,2 KB gzip de 340).
+- [x] V3.1.1-2: versión 3.1.1 fijada en `package.json`, `Cargo.toml`, `tauri.conf.json` y los lockfiles.
+- No corregido (cambiaría comportamiento o requiere lógica de posición): el aviso de hora al arrastrar y el menú contextual raíz pueden salirse del borde; las acciones ocultas de `TaskRow` reservan espacio a 720 px; la barra lateral anima `width`.
+- Pendiente `[H]`: V3.1.1-01..04.
 
 ## Versión 3.1.0 (2026-11-25, publicada)
 - [x] V3.1.0-1: el calendario muestra el tiempo de enfoque (D-102): bloques rayados en Semana y Día y total por día en Mes. Batería `[A]` en verde (Rust 578 + 10, Vitest 1054, JS 107,7 KB inicial / 317,1 KB total). Los tests Rust de tiempos con 10 000 filas y dos de copias fallaron en ejecuciones con la máquina ocupada y pasaron al repetir con `RUST_TEST_THREADS=4`.

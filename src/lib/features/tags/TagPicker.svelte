@@ -86,7 +86,7 @@
   }
 
   .option.selected {
-    box-shadow: inset 0 0 0 2px var(--tag, var(--accent));
+    box-shadow: inset 0 0 0 2px var(--tag, var(--ink));
     color: var(--text-primary);
   }
 

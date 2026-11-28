@@ -437,7 +437,7 @@
 
   .row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-3);
   }
 
@@ -466,13 +466,13 @@
   .error {
     margin: 0;
     color: var(--danger);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   .hint {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   .repeat {
@@ -483,23 +483,35 @@
 
   .days {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-2);
   }
 
   .day {
+    flex: none;
     width: 32px;
     height: 32px;
+    padding: 0;
     border: 0;
-    border-radius: 50%;
+    border-radius: var(--radius-chip);
     background: var(--bg-control);
     color: var(--text-primary);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--text-caption);
     cursor: pointer;
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out),
+      transform var(--motion-fast) var(--ease-spring);
   }
 
   .day:hover {
     background: var(--bg-control-hover);
+  }
+
+  .day:active {
+    transform: scale(0.92);
+    transition-duration: var(--motion-instant);
   }
 
   .day[aria-pressed="true"] {
@@ -516,6 +528,7 @@
 
   .actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
     margin-top: var(--space-1);

@@ -547,9 +547,10 @@
     gap: 6px;
   }
 
+  /* minmax(0, …): the date field and its «Quitar» button never push the columns apart. */
   .row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-3);
   }
 
@@ -557,6 +558,17 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    min-width: 0;
+  }
+
+  /* Fills its column, as the time field beside it does. */
+  .inline input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .inline .btn {
+    flex: none;
   }
 
   .label {
@@ -585,13 +597,13 @@
   .error {
     margin: 0;
     color: var(--danger);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   .hint {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   .repeat {
@@ -602,29 +614,42 @@
 
   .days {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-2);
   }
 
   .day {
+    flex: none;
     width: 32px;
     height: 32px;
+    padding: 0;
     border: 0;
-    border-radius: 50%;
+    border-radius: var(--radius-chip);
     background: var(--bg-control);
     color: var(--text-primary);
     font: inherit;
-    font-size: 12px;
+    font-size: var(--text-caption);
+    font-weight: 500;
     cursor: pointer;
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out),
+      transform var(--motion-fast) var(--ease-spring);
   }
 
   .day:hover {
     background: var(--bg-control-hover);
   }
 
+  .day:active {
+    transform: scale(0.92);
+    transition-duration: var(--motion-instant);
+  }
+
   .day[aria-pressed="true"] {
-    border-color: var(--ink);
     background: var(--ink);
     color: var(--on-ink);
+    font-weight: 600;
   }
 
   .durations {
@@ -642,6 +667,7 @@
 
   /* The ring of the checkbox, small, so the level reads the same here and in the list. */
   .dot {
+    flex: none;
     width: 9px;
     height: 9px;
     box-sizing: border-box;
@@ -655,7 +681,7 @@
     gap: var(--space-2);
     margin-left: auto;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   .actions {

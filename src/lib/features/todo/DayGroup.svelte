@@ -193,11 +193,11 @@
   }
 
   .day {
-    margin: 16px var(--space-3) 4px;
+    margin: var(--space-4) var(--space-3) var(--space-1);
     padding-top: var(--space-3);
     border-top: 1px solid var(--separator);
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: var(--text-body);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }

@@ -126,7 +126,8 @@
   }
 
   .count {
-    font-size: 12px;
+    flex: none;
+    font-size: var(--text-caption);
     font-variant-numeric: tabular-nums;
   }
 
@@ -174,7 +175,7 @@
     min-width: 0;
     overflow: hidden;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: var(--text-caption);
     text-overflow: ellipsis;
   }
 

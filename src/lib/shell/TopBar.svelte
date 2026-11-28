@@ -367,6 +367,7 @@
 
   .focus:active {
     transform: scale(0.97);
+    transition-duration: var(--motion-instant);
   }
 
   .focus:hover {
@@ -398,11 +399,20 @@
   }
 
   .what {
+    min-width: 0;
     max-width: 160px;
     overflow: hidden;
     color: var(--text-secondary);
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Below this width the chip, the inbox, the settings and the caption buttons no longer fit
+     beside the search: the task name goes (it stays in the tooltip) before the bar overflows. */
+  @media (max-width: 880px) {
+    .what {
+      display: none;
+    }
   }
 
   /* A paused session stops pulsing the accent: the dot goes grey and the time dims. */
@@ -420,7 +430,7 @@
     align-items: center;
     gap: var(--space-2);
     min-width: 0;
-    height: 34px;
+    height: 32px;
     padding: 0 8px 0 14px;
     border: 0;
     border-radius: var(--radius-chip);
